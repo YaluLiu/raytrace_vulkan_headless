@@ -1,8 +1,12 @@
-set(PROJNAME demo_headless)
+set(PROJNAME headless)
+set(PROJNAME vk_${PROJNAME}_KHR)
+
 #--------------------------------------------------------------------------------------------------
 # C++ target and defines
 add_executable(${PROJNAME} main.cpp)
-_add_project_definitions(${PROJNAME})
+
+# can not add here,because spv file path changed
+# _add_project_definitions(${PROJNAME})
 
 #--------------------------------------------------------------------------------------------------
 # include
@@ -24,5 +28,5 @@ _finalize_target( ${PROJNAME} )
 #------------------------------------------------------------------------------------------------
 # can replace _add_project_definitions &&_finalize_target
 # 
-# target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
-# target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../headless")
+target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
+target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../headless")

@@ -9,6 +9,9 @@
 #include "nvpsystem.hpp"
 #include "nvvk/context_vk.hpp"
 
+#if ENABLE_GL_VK_CONVERSION
+#include "gl_vkpp.hpp"
+#endif
 class HeadlessHelloVulkanApp
 {
 public:
@@ -16,7 +19,7 @@ public:
   HeadlessHelloVulkanApp(int width = 1280, int height = 720);
   ~HeadlessHelloVulkanApp();
 
-  // 初始化Vulkan和HelloVulkan
+  // init vulkan and hello-vulkan
   void initialize();
 
   // 加载OBJ模型
@@ -43,14 +46,18 @@ private:
 
   HelloVulkan m_helloVk;
 
-  // Vulkan相关
+  // Vulkan context
   nvvk::Context m_vkctx;
 
-  // 内部辅助函数
+  // for init 
   void setupCamera();
   void setupContext();
   void setupHelloVulkan();
 
-  // 计时，计算动画
+  // for compute animation,test on the Specified model file
   std::chrono::system_clock::time_point m_startTime;
+#if ENABLE_GL_VK_CONVERSION
+  interop::ResourceAllocatorGLInterop m_allocGL;
+  interop::Texture2DVkGL    m_rtOutputGL;
+#endif
 };

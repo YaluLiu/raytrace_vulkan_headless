@@ -66,6 +66,9 @@ void HeadlessHelloVulkanApp::setupHelloVulkan()
   createInfo.queueIndices   = {m_vkctx.m_queueGCT.familyIndex};
   createInfo.size           = {uint32_t(m_width), uint32_t(m_height)};
   m_helloVk.create(createInfo);
+#if ENABLE_GL_VK_CONVERSION
+  m_allocGL.init(m_vkctx.m_device, m_vkctx.m_physicalDevice);
+#endif
 }
 
 void HeadlessHelloVulkanApp::loadScene()

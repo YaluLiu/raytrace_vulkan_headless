@@ -44,6 +44,15 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 
 
 #--------------------------------------------------------------------------------------------------
+# compile option
+# convert vulkan to opengl for hydra plugin
+option(ENABLE_GL_VK_CONVERSION "Enable OpenGL/Vulkan conversion" OFF)
+# 让子目录可以访问
+set(ENABLE_GL_VK_CONVERSION ${ENABLE_GL_VK_CONVERSION} CACHE BOOL "Enable OpenGL/Vulkan conversion")
+
+
+message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
+#--------------------------------------------------------------------------------------------------
 # Sub examples
 add_subdirectory(demo)
 add_subdirectory(headless)

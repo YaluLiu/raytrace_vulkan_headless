@@ -71,6 +71,13 @@ foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
 endforeach(RELEASELIB)
 
 #--------------------------------------------------------------------------------------------------
+# option
+#
+target_compile_definitions(libheadless PRIVATE
+  $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
+  $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
+)
+#--------------------------------------------------------------------------------------------------
 # copies binaries that need to be put next to the exe files (ZLib, etc.)
 #
 _finalize_target( ${PROJNAME} )
