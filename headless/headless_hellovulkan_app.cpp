@@ -84,7 +84,10 @@ void HeadlessHelloVulkanApp::loadScene()
   }
   // 球体
   m_helloVk.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
+}
 
+void HeadlessHelloVulkanApp::createBVH()
+{
   // 后续初始化
   m_helloVk.createOffscreenRender();
   m_helloVk.createDescriptorSetLayout();

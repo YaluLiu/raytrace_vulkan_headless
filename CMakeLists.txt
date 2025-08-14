@@ -45,6 +45,7 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 
 #--------------------------------------------------------------------------------------------------
 # Sub examples
+add_subdirectory(demo)
 add_subdirectory(headless)
 
 #--------------------------------------------------------------------------------------------------

@@ -23,7 +23,7 @@ function test() {
 }
 
 function headless() {
-    app_name="headless"
+    app_name="demo_headless"
     test
 }
 

@@ -22,6 +22,9 @@ public:
   // 加载OBJ模型
   void loadScene();
 
+  // 创建光追结构
+  void createBVH();
+
   // 更新模型的mesh和translation
   void update();
 

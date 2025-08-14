@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
 #--------------------------------------------------------------------------------------------------
 # Project setting
 get_filename_component(PROJNAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-set(PROJNAME vk_${PROJNAME}_KHR)
+set(PROJNAME lib${PROJNAME})
 project(${PROJNAME} LANGUAGES C CXX)
 message(STATUS "-------------------------------")
 message(STATUS "Processing Project ${PROJNAME}:")
@@ -16,7 +16,7 @@ message(STATUS "Processing Project ${PROJNAME}:")
 #--------------------------------------------------------------------------------------------------
 # C++ target and defines
 set(CMAKE_CXX_STANDARD 20)
-add_executable(${PROJNAME})
+add_library(${PROJNAME})
 _add_project_definitions(${PROJNAME})
 
 
