@@ -46,13 +46,13 @@ extern std::vector<std::string> defaultSearchPaths;
 //
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
+#if ENABLE_GL_VK_CONVERSION
+  m_allocGL.init(device, physicalDevice);
+#endif
   AppBaseVk::setup(instance, device, physicalDevice, queueFamily);
   m_alloc.init(instance, device, physicalDevice);
   m_debug.setup(m_device);
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
-#if ENABLE_GL_VK_CONVERSION
-  m_allocGL.init(device, physicalDevice);
-#endif
 }
 
 //--------------------------------------------------------------------------------------------------

@@ -54,7 +54,7 @@ set(ENABLE_GL_VK_CONVERSION ${ENABLE_GL_VK_CONVERSION} CACHE BOOL "Enable OpenGL
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 #--------------------------------------------------------------------------------------------------
 # Sub examples
-add_subdirectory(demo)
+# add_subdirectory(demo)
 add_subdirectory(headless)
 add_subdirectory(ray_tracing_animation)
 #--------------------------------------------------------------------------------------------------

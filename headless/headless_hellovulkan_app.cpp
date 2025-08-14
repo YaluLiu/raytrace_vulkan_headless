@@ -5,6 +5,10 @@
 #include <array>
 #include "headless_hellovulkan_app.hpp"
 
+// opengl上下文
+#include "nvgl/contextwindow_gl.hpp"
+#include <algorithm>
+
 std::vector<std::string> defaultSearchPaths;
 
 HeadlessHelloVulkanApp::HeadlessHelloVulkanApp() {}
@@ -55,6 +59,25 @@ void HeadlessHelloVulkanApp::setupContext()
   contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);
   contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
+#if ENABLE_GL_VK_CONVERSION
+  contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+  
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+  
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+
+  contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+#endif
+
   m_vkctx.initInstance(contextInfo);
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
   assert(!compatibleDevices.empty());
@@ -70,9 +93,6 @@ void HeadlessHelloVulkanApp::setupHelloVulkan()
   createInfo.queueIndices   = {m_vkctx.m_queueGCT.familyIndex};
   createInfo.size           = {uint32_t(m_width), uint32_t(m_height)};
   m_helloVk.create(createInfo);
-#if ENABLE_GL_VK_CONVERSION
-  m_allocGL.init(m_vkctx.m_device, m_vkctx.m_physicalDevice);
-#endif
 }
 
 void HeadlessHelloVulkanApp::loadScene()
@@ -148,7 +168,12 @@ void HeadlessHelloVulkanApp::render()
 
 void HeadlessHelloVulkanApp::saveFrame(std::string outputImagePath)
 {
+#if ENABLE_GL_VK_CONVERSION
+  outputImagePath = "headless_gl.png";
+  m_helloVk.dumpInteropTexture(outputImagePath.c_str());
+  outputImagePath = "headless_vk.png";
   m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
+#endif
 }
 
 void HeadlessHelloVulkanApp::cleanup()

@@ -86,7 +86,7 @@ int main(int argc, char** argv)
   UNUSED(argc);
 
   // Setup GLFW window
-  glfwSetErrorCallback(onErrorCallback);
+  // glfwSetErrorCallback(onErrorCallback);
   if(!glfwInit())
   {
     return 1;

@@ -16,7 +16,7 @@ message(STATUS "Processing Project ${PROJNAME}:")
 #--------------------------------------------------------------------------------------------------
 # C++ target and defines
 set(CMAKE_CXX_STANDARD 20)
-add_library(${PROJNAME})
+add_executable(${PROJNAME})
 _add_project_definitions(${PROJNAME})
 
 
@@ -73,7 +73,7 @@ endforeach(RELEASELIB)
 #--------------------------------------------------------------------------------------------------
 # option
 #
-target_compile_definitions(libheadless PRIVATE
+target_compile_definitions(${PROJNAME} PRIVATE
   $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
   $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
 )

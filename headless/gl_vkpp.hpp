@@ -20,6 +20,8 @@
 
 #pragma once
 
+// #include <vulkan/vulkan.h>
+
 #ifdef WIN32
 #include <handleapi.h>
 #endif
@@ -107,15 +109,11 @@ struct Texture2DVkGL
   GLuint     oglId{0};  // Extra: OpenGL object ID
   uint32_t   mipLevels{1};
   VkExtent2D imgSize{0, 0};
-  GLuint memoryObject{0};
 
   void destroy(nvvk::ResourceAllocator& alloc)
   {
     alloc.destroy(texVk);
     glDeleteBuffers(1, &oglId);
-    if(memoryObject != 0) {
-      glDeleteMemoryObjectsEXT(1, &memoryObject);
-    }
   }
 };
 
@@ -132,8 +130,7 @@ inline void createBufferGL(BufferVkGL& bufGl, ResourceAllocatorGLInterop& memAll
 inline void createTextureGL(Texture2DVkGL& texGl, int format, int minFilter, int magFilter, int wrap, ResourceAllocatorGLInterop& memAllocGL)
 {
   const nvvk::AllocationGL allocGL = memAllocGL.getAllocationGL(texGl.texVk.memHandle);
-  texGl.memoryObject = allocGL.memoryObject;
-  
+
   // Create a 'memory object' in OpenGL, and associate it with the memory allocated in Vulkan
   glCreateTextures(GL_TEXTURE_2D, 1, &texGl.oglId);
   glTextureStorageMem2DEXT(texGl.oglId, static_cast<GLsizei>(texGl.mipLevels), format,
@@ -144,46 +141,5 @@ inline void createTextureGL(Texture2DVkGL& texGl, int format, int minFilter, int
   glTextureParameteri(texGl.oglId, GL_TEXTURE_WRAP_S, wrap);
   glTextureParameteri(texGl.oglId, GL_TEXTURE_WRAP_T, wrap);
 }
-
-// inline void createTextureGL(Texture2DVkGL& texGl, int format, int minFilter, int magFilter, int wrap, ResourceAllocatorGLInterop& memAllocGL)
-// {
-//   const nvvk::AllocationGL allocGL = memAllocGL.getAllocationGL(texGl.texVk.memHandle);
-
-//   // Create a 'memory object' in OpenGL, and associate it with the memory allocated in Vulkan
-//   glGenTextures(1, &texGl.oglId);
-//   glBindTexture(GL_TEXTURE_2D, texGl.oglId);
-//   // 设置纹理参数和数据
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-//   glTextureStorageMem2DEXT(GL_TEXTURE_2D, static_cast<GLsizei>(texGl.mipLevels), format,
-//                           static_cast<GLsizei>(texGl.imgSize.width), static_cast<GLsizei>(texGl.imgSize.height),
-//                           allocGL.memoryObject, allocGL.offset);
-// }
-
-// inline GLuint vulkan_to_gl(Texture2DVkGL& texGl, ResourceAllocatorGLInterop& memAllocGL)
-// {
-//   //createTextureGL(m_rtOutputGL, GL_RGBA32F, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, m_allocGL);
-//   GLuint oglId;
-//   int format = GL_RGBA;
-//   int minFilter = GL_LINEAR_MIPMAP_LINEAR;
-//   int magFilter = GL_LINEAR;
-//   int wrap = GL_REPEAT;
-//   const nvvk::AllocationGL allocGL = memAllocGL.getAllocationGL(texGl.texVk.memHandle);
-
-//   // Create a 'memory object' in OpenGL, and associate it with the memory allocated in Vulkan
-//   //glCreateTextures(GL_TEXTURE_2D, 1, &oglId);
-//   glGenTextures(1, &oglId);
-//   glTextureParameteri(oglId, GL_TEXTURE_MIN_FILTER, minFilter);
-//   glTextureParameteri(oglId, GL_TEXTURE_MAG_FILTER, magFilter);
-//   glTextureParameteri(oglId, GL_TEXTURE_WRAP_S, wrap);
-//   glTextureParameteri(oglId, GL_TEXTURE_WRAP_T, wrap);
-//   glTextureStorageMem2DEXT(oglId, static_cast<GLsizei>(texGl.mipLevels), format,
-//                            static_cast<GLsizei>(texGl.imgSize.width), static_cast<GLsizei>(texGl.imgSize.height),
-//                            allocGL.memoryObject, allocGL.offset);
-//   return oglId;
-// }
 
 }  // namespace interop

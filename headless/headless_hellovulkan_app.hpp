@@ -8,10 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "nvpsystem.hpp"
 #include "nvvk/context_vk.hpp"
-
-#if ENABLE_GL_VK_CONVERSION
-#include "gl_vkpp.hpp"
-#endif
 class HeadlessHelloVulkanApp
 {
 public:
@@ -59,8 +55,4 @@ private:
 
   // for compute animation,test on the Specified model file
   std::chrono::system_clock::time_point m_startTime;
-#if ENABLE_GL_VK_CONVERSION
-  interop::ResourceAllocatorGLInterop m_allocGL;
-  interop::Texture2DVkGL    m_rtOutputGL;
-#endif
 };
