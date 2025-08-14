@@ -22,6 +22,9 @@ public:
   // init vulkan and hello-vulkan
   void initialize();
 
+  // 渲染
+  void resize(int w, int h);
+
   // 加载OBJ模型
   void loadScene();
 

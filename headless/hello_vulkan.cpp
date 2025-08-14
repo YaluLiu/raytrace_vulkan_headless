@@ -439,8 +439,12 @@ void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
 // 窗口大小变化时的回调：重建离屏渲染、后处理和光追相关的描述符集
 // w, h: 新窗口宽高（未使用）
 //headless:模式下一般不会有窗口 resize
-void HelloVulkan::onResize(int /*w*/, int /*h*/)
+void HelloVulkan::onResize(int w, int h)
 {
+  if(w == (int)m_size.width && h == (int)m_size.height)
+    return;
+  m_size.width = w;
+  m_size.height = h;
   // 重建离屏渲染（包括color/depth framebuffer、renderpass等）
   createOffscreenRender();
   // 更新后处理描述符集（采样新的offscreen image）

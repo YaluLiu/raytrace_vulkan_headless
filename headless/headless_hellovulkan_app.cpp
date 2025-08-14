@@ -27,6 +27,10 @@ void HeadlessHelloVulkanApp::initialize()
   setupHelloVulkan();
 }
 
+void HeadlessHelloVulkanApp::resize(int w, int h)
+{
+  m_helloVk.onResize(w,h);
+}
 void HeadlessHelloVulkanApp::setupCamera()
 {
   CameraManip.setWindowSize(m_width, m_height);
