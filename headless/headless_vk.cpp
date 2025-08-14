@@ -47,9 +47,9 @@ void nvvkhl::AppOffline::create(const AppBaseVkCreateInfo& info)
 void nvvkhl::AppOffline::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t graphicsQueueIndex)
 {
   // 保存 Vulkan 实例、逻辑设备、物理设备
-  m_instance           = instance;
-  m_device             = device;
-  m_physicalDevice     = physicalDevice;
+  m_instance       = instance;
+  m_device         = device;
+  m_physicalDevice = physicalDevice;
   // 保存图形队列的 family index
   m_graphicsQueueIndex = graphicsQueueIndex;
   // 获取队列（index=0），存入 m_queue
@@ -89,7 +89,7 @@ void nvvkhl::AppOffline::destroy()
   vkDestroyCommandPool(m_device, m_cmdPool, nullptr);
 }
 
-void nvvkhl::AppOffline::createCommandBuffers() 
+void nvvkhl::AppOffline::createCommandBuffers()
 {
   // 为每个frame分配一个命令缓冲区
   VkCommandBufferAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
@@ -98,7 +98,7 @@ void nvvkhl::AppOffline::createCommandBuffers()
   allocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   m_commandBuffers.resize(m_imageCount);
   vkAllocateCommandBuffers(m_device, &allocateInfo, m_commandBuffers.data());
-  
+
   // // 为每一帧（每个swapchain image）创建一个Fence用于同步
   // m_waitFences.resize(m_imageCount);
   // for(auto& fence : m_waitFences)

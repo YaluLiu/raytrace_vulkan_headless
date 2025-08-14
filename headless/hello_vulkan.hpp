@@ -70,7 +70,6 @@ public:
     uint32_t  objIndex{0};  // Model index reference
   };
 
-
   // Information pushed at each draw call
   PushConstantRaster m_pcRaster{
       {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},  // Identity matrix
@@ -85,7 +84,6 @@ public:
   std::vector<ObjDesc>     m_objDesc;    // Model description for device access
   std::vector<ObjInstance> m_instances;  // Scene model instances
 
-
   // Graphic pipeline
   VkPipelineLayout            m_pipelineLayout;
   VkPipeline                  m_graphicsPipeline;
@@ -99,20 +97,18 @@ public:
 
   std::vector<nvvk::Texture> m_textures;  // vector of all textures of the scene
 
-
   nvvk::ResourceAllocatorDma m_alloc;  // Allocator for buffer, images, acceleration structures
   nvvk::DebugUtil            m_debug;  // Utility to name objects
-
 
   // #Post - Draw the rendered image on a quad using a tonemapper
   void createOffscreenRender();
 
-  VkRenderPass                m_offscreenRenderPass{VK_NULL_HANDLE};
-  VkFramebuffer               m_offscreenFramebuffer{VK_NULL_HANDLE};
-  nvvk::Texture               m_offscreenColor;
-  nvvk::Texture               m_offscreenDepth;
-  VkFormat                    m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  VkFormat                    m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
+  VkRenderPass  m_offscreenRenderPass{VK_NULL_HANDLE};
+  VkFramebuffer m_offscreenFramebuffer{VK_NULL_HANDLE};
+  nvvk::Texture m_offscreenColor;
+  nvvk::Texture m_offscreenDepth;
+  VkFormat      m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
   // #VKRay
   void initRayTracing();
@@ -123,7 +119,6 @@ public:
   void updateRtDescriptorSet();
   void createRtPipeline();
   void raytrace(const VkCommandBuffer& cmdBuf, const glm::vec4& clearColor);
-
 
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
   nvvk::RaytracingBuilderKHR                        m_rtBuilder;

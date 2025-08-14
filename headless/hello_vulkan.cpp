@@ -17,15 +17,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 #include <sstream>
-
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "obj_loader.h"
 #include "stb_image.h"
 
-#include "hello_vulkan.h"
+#include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/fileoperations.hpp"
@@ -67,9 +65,9 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   const float    aspectRatio = m_size.width / static_cast<float>(m_size.height);
   GlobalUniforms hostUBO     = {};
   // 获取摄像机view矩阵
-  const auto&    view        = CameraManip.getMatrix();
+  const auto& view = CameraManip.getMatrix();
   // 构造右手坐标系的投影矩阵，并调整Y轴（Vulkan标准）
-  glm::mat4      proj        = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
+  glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
   proj[1][1] *= -1;  // Vulkan坐标系Y反转
 
   // 填充UBO内容
@@ -421,8 +419,8 @@ void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
   for(const HelloVulkan::ObjInstance& inst : m_instances)
   {
     auto& model            = m_objModel[inst.objIndex];
-    m_pcRaster.objIndex    = inst.objIndex;      // 当前物体索引，传给shader
-    m_pcRaster.modelMatrix = inst.transform;     // 当前实例变换矩阵
+    m_pcRaster.objIndex    = inst.objIndex;   // 当前物体索引，传给shader
+    m_pcRaster.modelMatrix = inst.transform;  // 当前实例变换矩阵
 
     // 推送常量（变换矩阵/物体索引/光源等）给shader
     vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
@@ -602,12 +600,12 @@ void HelloVulkan::createTopLevelAS()
   for(const HelloVulkan::ObjInstance& inst : m_instances)
   {
     VkAccelerationStructureInstanceKHR rayInst{};
-    rayInst.transform                      = nvvk::toTransformMatrixKHR(inst.transform);  // 实例变换矩阵
-    rayInst.instanceCustomIndex            = inst.objIndex;                               // 自定义索引用于shader区分
-    rayInst.accelerationStructureReference = m_rtBuilder.getBlasDeviceAddress(inst.objIndex); // BLAS地址
-    rayInst.flags                          = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-    rayInst.mask                           = 0xFF;       // 所有射线都能命中
-    rayInst.instanceShaderBindingTableRecordOffset = 0;  // 所有实例共用同一hitgroup
+    rayInst.transform                              = nvvk::toTransformMatrixKHR(inst.transform);  // 实例变换矩阵
+    rayInst.instanceCustomIndex                    = inst.objIndex;  // 自定义索引用于shader区分
+    rayInst.accelerationStructureReference         = m_rtBuilder.getBlasDeviceAddress(inst.objIndex);  // BLAS地址
+    rayInst.flags                                  = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+    rayInst.mask                                   = 0xFF;  // 所有射线都能命中
+    rayInst.instanceShaderBindingTableRecordOffset = 0;     // 所有实例共用同一hitgroup
     m_tlas.emplace_back(rayInst);
   }
 
@@ -625,8 +623,7 @@ void HelloVulkan::createRtDescriptorSet()
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eTlas, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1,
                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
   // 添加输出图像绑定（只在raygen可见）
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eOutImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+  m_rtDescSetLayoutBind.addBinding(RtxBindings::eOutImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
   // 创建描述符池和布局
   m_rtDescPool      = m_rtDescSetLayoutBind.createPool(m_device);
@@ -651,7 +648,6 @@ void HelloVulkan::createRtDescriptorSet()
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &imageInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
-
 
 //--------------------------------------------------------------------------------------------------
 // 更新光线追踪描述符集中的输出图像（离屏渲染结果）
@@ -705,7 +701,8 @@ void HelloVulkan::createRtPipeline()
   stages[eMiss] = stage;
 
   // Shadow Miss shader（二次/阴影射线未命中时调用，判断是否被遮挡）
-  stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytraceShadow.rmiss.spv", true, defaultSearchPaths, true));
+  stage.module =
+      nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytraceShadow.rmiss.spv", true, defaultSearchPaths, true));
   stage.stage    = VK_SHADER_STAGE_MISS_BIT_KHR;
   stages[eMiss2] = stage;
 
@@ -760,9 +757,9 @@ void HelloVulkan::createRtPipeline()
 
   // 5. 创建Ray Tracing Pipeline对象
   VkRayTracingPipelineCreateInfoKHR rayPipelineInfo{VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR};
-  rayPipelineInfo.stageCount = static_cast<uint32_t>(stages.size());    // 所有着色器阶段
+  rayPipelineInfo.stageCount = static_cast<uint32_t>(stages.size());  // 所有着色器阶段
   rayPipelineInfo.pStages    = stages.data();
-  rayPipelineInfo.groupCount = static_cast<uint32_t>(m_rtShaderGroups.size()); // 所有shader group
+  rayPipelineInfo.groupCount = static_cast<uint32_t>(m_rtShaderGroups.size());  // 所有shader group
   rayPipelineInfo.pGroups    = m_rtShaderGroups.data();
 
   // 设置递归深度（如主射线+阴影射线=2即可，太大影响性能）
@@ -932,18 +929,18 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
 
   // 1. 获取 image 信息
   // VkFormat     format    = m_offscreenColor.imageFormat;
-  VkExtent2D   extent    = m_size;
-  VkImage      srcImage  = m_offscreenColor.image;
-  uint32_t     w         = extent.width;
-  uint32_t     h         = extent.height;
-  size_t       pixelSize = 4 * sizeof(float); // VK_FORMAT_R32G32B32A32_SFLOAT
+  VkExtent2D extent    = m_size;
+  VkImage    srcImage  = m_offscreenColor.image;
+  uint32_t   w         = extent.width;
+  uint32_t   h         = extent.height;
+  size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT
 
   // 2. 创建主机可见buffer
   VkDeviceSize imageSize = w * h * pixelSize;
 
   VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-  bufferInfo.size  = imageSize;
-  bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  bufferInfo.size        = imageSize;
+  bufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
   VkBuffer       stagingBuffer;
@@ -954,9 +951,10 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   vkGetBufferMemoryRequirements(device, stagingBuffer, &memReqs);
 
   VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-  allocInfo.allocationSize  = memReqs.size;
+  allocInfo.allocationSize = memReqs.size;
   // 主机可见
-  allocInfo.memoryTypeIndex = getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  allocInfo.memoryTypeIndex =
+      getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   vkAllocateMemory(device, &allocInfo, nullptr, &stagingMemory);
   vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
 
@@ -965,26 +963,26 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
 
   // 转换 image layout: GENERAL -> TRANSFER_SRC_OPTIMAL
   VkImageMemoryBarrier imgBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-  imgBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-  imgBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  imgBarrier.image     = srcImage;
+  imgBarrier.oldLayout        = VK_IMAGE_LAYOUT_GENERAL;
+  imgBarrier.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  imgBarrier.image            = srcImage;
   imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  imgBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-  imgBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+  imgBarrier.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+  imgBarrier.dstAccessMask    = VK_ACCESS_TRANSFER_READ_BIT;
 
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                       0, nullptr, 0, nullptr, 1, &imgBarrier);
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                       nullptr, 1, &imgBarrier);
 
-  VkBufferImageCopy region = {};
-  region.bufferOffset      = 0;
-  region.bufferRowLength   = 0; // tightly packed
-  region.bufferImageHeight = 0;
+  VkBufferImageCopy region               = {};
+  region.bufferOffset                    = 0;
+  region.bufferRowLength                 = 0;  // tightly packed
+  region.bufferImageHeight               = 0;
   region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   region.imageSubresource.mipLevel       = 0;
   region.imageSubresource.baseArrayLayer = 0;
   region.imageSubresource.layerCount     = 1;
-  region.imageOffset = {0, 0, 0};
-  region.imageExtent = {w, h, 1};
+  region.imageOffset                     = {0, 0, 0};
+  region.imageExtent                     = {w, h, 1};
 
   vkCmdCopyImageToBuffer(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer, 1, &region);
 
@@ -992,8 +990,8 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   std::swap(imgBarrier.oldLayout, imgBarrier.newLayout);
   imgBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
   imgBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
-                       0, nullptr, 0, nullptr, 1, &imgBarrier);
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
+                       nullptr, 1, &imgBarrier);
 
   submitTempCmdBuffer(cmd);
 
@@ -1003,14 +1001,14 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
 
   // 数据格式: float RGBA，需转为 uint8 RGBA
   std::vector<uint8_t> imageData(w * h * 4);
-  float* src = reinterpret_cast<float*>(data);
+  float*               src = reinterpret_cast<float*>(data);
 
   for(uint32_t i = 0; i < w * h; ++i)
   {
-    float r = src[i * 4 + 0];
-    float g = src[i * 4 + 1];
-    float b = src[i * 4 + 2];
-    float a = src[i * 4 + 3];
+    float r              = src[i * 4 + 0];
+    float g              = src[i * 4 + 1];
+    float b              = src[i * 4 + 2];
+    float a              = src[i * 4 + 3];
     imageData[i * 4 + 0] = uint8_t(glm::clamp(r, 0.0f, 1.0f) * 255.0f);
     imageData[i * 4 + 1] = uint8_t(glm::clamp(g, 0.0f, 1.0f) * 255.0f);
     imageData[i * 4 + 2] = uint8_t(glm::clamp(b, 0.0f, 1.0f) * 255.0f);

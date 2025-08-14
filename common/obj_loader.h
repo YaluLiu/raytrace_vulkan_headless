@@ -34,7 +34,8 @@
 
 #include "ModelLoader.h"
 
-class ObjLoader : public ModelLoader {
-public:
-    void loadModel(const std::string& filename) override;
+class ObjLoader : public ModelLoader
+{
+  public:
+  void loadModel(const std::string& filename) override;
 };

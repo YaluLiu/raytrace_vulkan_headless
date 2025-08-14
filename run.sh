@@ -13,6 +13,9 @@ function build() {
 app_name="ray_tracing_animation"
 app_name="headless"
 
+function format(){
+    find headless -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
+}
 
 function test() {
     build
