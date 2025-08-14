@@ -18,6 +18,9 @@
  */
 
 #pragma once
+#if ENABLE_GL_VK_CONVERSION
+#include "gl_vkpp.hpp"
+#endif
 
 #include "nvvkhl/appbase_vk.hpp"
 #include "nvvk/debug_util_vk.hpp"
@@ -29,6 +32,7 @@
 // #VKRay
 #include "nvvk/raytraceKHR_vk.hpp"
 #include "nvvk/sbtwrapper_vk.hpp"
+
 
 //--------------------------------------------------------------------------------------------------
 // Simple rasterizer of OBJ objects
@@ -169,4 +173,12 @@ public:
   VkPipelineLayout            m_compPipelineLayout;
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
+
+  // change for test
+#if ENABLE_GL_VK_CONVERSION
+  void createOutputImage();
+  void dumpInteropTexture(const char* filename);
+  interop::Texture2DVkGL m_rtOutputGL;
+  interop::ResourceAllocatorGLInterop m_allocGL;
+#endif
 };

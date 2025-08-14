@@ -39,6 +39,9 @@
 #include "nvvk/context_vk.hpp"
 
 
+#if ENABLE_GL_VK_CONVERSION
+#include "nvgl/contextwindow_gl.hpp"
+#endif
 //////////////////////////////////////////////////////////////////////////
 #define UNUSED(x) (void)(x)
 //////////////////////////////////////////////////////////////////////////
@@ -88,6 +91,23 @@ int main(int argc, char** argv)
   {
     return 1;
   }
+
+#if ENABLE_GL_VK_CONVERSION
+  // 设置 GLFW 窗口使用 OpenGL 4.5
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  // 创建 GLFW 窗口
+  GLFWwindow* gl_window = glfwCreateWindow(100, 100, PROJECT_NAME, NULL, NULL);
+  // 检查窗口创建是否成功
+  if(gl_window == nullptr)
+    return -1;
+  // 设置当前 OpenGL 上下文
+  glfwMakeContextCurrent(gl_window);
+
+  // 加载OpenGL函数
+  load_GL(nvgl::ContextWindow::sysGetProcAddress);
+#endif
+
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GLFWwindow* window = glfwCreateWindow(SAMPLE_WIDTH, SAMPLE_HEIGHT, PROJECT_NAME, nullptr, nullptr);
 
@@ -133,6 +153,25 @@ int main(int argc, char** argv)
   VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
   contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);  // To use vkCmdTraceRaysKHR
   contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);  // Required by ray tracing pipeline
+
+#if ENABLE_GL_VK_CONVERSION
+  contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+  
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+  
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+
+  contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+#endif
 
   // Creating Vulkan base application
   nvvk::Context vkctx{};
@@ -294,6 +333,9 @@ int main(int argc, char** argv)
     // Submit for display
     vkEndCommandBuffer(cmdBuf);
     helloVk.submitFrame();
+#if ENABLE_GL_VK_CONVERSION
+    helloVk.dumpInteropTexture("anim.png");
+#endif
   }
 
   // Cleanup
