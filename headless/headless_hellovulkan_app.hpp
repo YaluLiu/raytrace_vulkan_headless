@@ -12,6 +12,7 @@
 class HeadlessHelloVulkanApp
 {
 public:
+    HeadlessHelloVulkanApp();
     HeadlessHelloVulkanApp(int width = 1280, int height = 720);
     ~HeadlessHelloVulkanApp();
 
@@ -21,22 +22,23 @@ public:
     // 加载OBJ模型
     void loadScene();
 
-    // 渲染循环，frameCount为渲染帧数
-    void renderLoop(int frameCount = 10);
+    // 更新模型的mesh和translation
+    void update();
+
+    // 渲染
+    void render();
 
     // 清理资源
     void cleanup();
 
-    // 获取渲染输出图片路径
-    const std::string& getOutputImagePath() const { return m_outputImagePath; }
+    // save local png file
+    void saveFrame(std::string outputImagePath="headless.png");
 
 private:
     int m_width = 1280;
     int m_height = 720;
 
     HelloVulkan m_helloVk;
-    std::string m_outputImagePath = "headless.png";
-    std::chrono::system_clock::time_point m_startTime;
 
     // Vulkan相关
     nvvk::Context m_vkctx;
@@ -45,4 +47,7 @@ private:
     void setupCamera();
     void setupContext();
     void setupHelloVulkan();
+
+    // 计时，计算动画
+    std::chrono::system_clock::time_point m_startTime;
 };

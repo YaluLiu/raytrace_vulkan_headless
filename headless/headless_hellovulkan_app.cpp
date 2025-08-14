@@ -5,9 +5,11 @@
 #include <array>
 #include "headless_hellovulkan_app.hpp"
 
-#define UNUSED(x) (void)(x)
-
 std::vector<std::string> defaultSearchPaths;
+
+HeadlessHelloVulkanApp::HeadlessHelloVulkanApp()
+{
+}
 
 HeadlessHelloVulkanApp::HeadlessHelloVulkanApp(int width, int height)
     : m_width(width), m_height(height)
@@ -106,38 +108,38 @@ void HeadlessHelloVulkanApp::loadScene()
     m_startTime = std::chrono::system_clock::now();
 }
 
-void HeadlessHelloVulkanApp::renderLoop(int frameCount)
+void HeadlessHelloVulkanApp::update()
 {
+    std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
+    m_helloVk.animationObject(diff.count());
+    m_helloVk.animationInstances(diff.count());
+}
+
+void HeadlessHelloVulkanApp::render()
+{
+    auto curFrame = m_helloVk.getCurFrame();
+    const VkCommandBuffer& cmdBuf = m_helloVk.getCommandBuffers()[curFrame];
+
+    VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(cmdBuf, &beginInfo);
+
+    m_helloVk.updateUniformBuffer(cmdBuf);
+
+    std::array<VkClearValue, 2> clearValues{};
     glm::vec4 clearColor   = glm::vec4(1, 1, 1, 1.00f);
+    clearValues[0].color        = {{clearColor[0], clearColor[1], clearColor[2], clearColor[3]}};
+    clearValues[1].depthStencil = {1.0f, 0};
 
-    int frame_idx = 0;
-    while(frame_idx < frameCount)
-    {
-        std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
-        m_helloVk.animationObject(diff.count());
-        m_helloVk.animationInstances(diff.count());
+    m_helloVk.raytrace(cmdBuf, clearColor);
 
-        auto curFrame = m_helloVk.getCurFrame();
-        const VkCommandBuffer& cmdBuf = m_helloVk.getCommandBuffers()[curFrame];
+    vkEndCommandBuffer(cmdBuf);
+    m_helloVk.submitFrame();
+}
 
-        VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(cmdBuf, &beginInfo);
-
-        m_helloVk.updateUniformBuffer(cmdBuf);
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color        = {{clearColor[0], clearColor[1], clearColor[2], clearColor[3]}};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        m_helloVk.raytrace(cmdBuf, clearColor);
-
-        vkEndCommandBuffer(cmdBuf);
-        m_helloVk.submitFrame();
-
-        m_helloVk.saveOffscreenColorToFile(m_outputImagePath.c_str());
-        frame_idx++;
-    }
+void HeadlessHelloVulkanApp::saveFrame(std::string outputImagePath)
+{
+    m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
 void HeadlessHelloVulkanApp::cleanup()

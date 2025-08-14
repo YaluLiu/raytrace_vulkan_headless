@@ -5,7 +5,10 @@ int main()
     HeadlessHelloVulkanApp app(1280, 720);
     app.initialize();
     app.loadScene();
-    app.renderLoop(10);     // 渲染10帧
-    // 渲染结束后自动清理
+    for(int i = 0; i < 10; i ++){
+        app.update();
+        app.render();
+        app.saveFrame();
+    }
     return 0;
 }
