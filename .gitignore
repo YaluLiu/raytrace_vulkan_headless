@@ -39,3 +39,24 @@
 
 # debug information files
 *.dwo
+
+
+# log file 
+log_*.txt
+
+# config and build
+.vscode
+build/
+/build/*
+/out/build/x64-Debug
+/.vs
+media
+
+# test file
+chatgpt.md 
+*.png
+ray_tracing_animation/
+
+
+
+
