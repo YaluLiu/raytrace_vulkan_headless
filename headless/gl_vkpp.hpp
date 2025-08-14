@@ -113,7 +113,7 @@ struct Texture2DVkGL
   void destroy(nvvk::ResourceAllocator& alloc)
   {
     alloc.destroy(texVk);
-    glDeleteBuffers(1, &oglId);
+    glDeleteTextures(1, &oglId);
   }
 };
 

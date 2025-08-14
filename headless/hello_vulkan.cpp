@@ -35,6 +35,7 @@
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 
+#include "nvgl/contextwindow_gl.hpp"
 extern std::vector<std::string> defaultSearchPaths;
 
 //--------------------------------------------------------------------------------------------------
@@ -47,6 +48,17 @@ extern std::vector<std::string> defaultSearchPaths;
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
 #if ENABLE_GL_VK_CONVERSION
+  glfwInit();
+  // 设置 GLFW 窗口使用 OpenGL 4.5
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  // 创建 GLFW 窗口
+  GLFWwindow* gl_window = glfwCreateWindow(100, 100, PROJECT_NAME, NULL, NULL);
+  // 设置当前 OpenGL 上下文
+  glfwMakeContextCurrent(gl_window);
+
+  // 加载OpenGL函数
+  load_GL(nvgl::ContextWindow::sysGetProcAddress);
   m_allocGL.init(device, physicalDevice);
 #endif
   // 调用基类的setup，初始化Vulkan低层对象
