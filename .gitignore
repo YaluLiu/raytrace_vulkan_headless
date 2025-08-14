@@ -45,6 +45,7 @@
 log_*.txt
 
 # config and build
+**/spv/*.spv
 .vscode
 build/
 /build/*
