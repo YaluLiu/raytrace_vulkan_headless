@@ -13,11 +13,7 @@
 
 std::vector<std::string> defaultSearchPaths;
 
-RayTraceApp::RayTraceApp() {}
-
-RayTraceApp::RayTraceApp(int width, int height)
-    : m_width(width)
-    , m_height(height)
+RayTraceApp::RayTraceApp() 
 {
 }
 
@@ -26,8 +22,10 @@ RayTraceApp::~RayTraceApp()
   cleanup();
 }
 
-void RayTraceApp::initialize()
+void RayTraceApp::setup(int width, int height)
 {
+  m_width = width;
+  m_height = height;
   setupCamera();
   setupContext();
   setupHelloVulkan();
@@ -37,10 +35,15 @@ void RayTraceApp::resize(int w, int h)
 {
   m_helloVk.onResize(w,h);
 }
+
 void RayTraceApp::setupCamera()
 {
   CameraManip.setWindowSize(m_width, m_height);
   CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+}
+
+void RayTraceApp::UpdateCamera()
+{
 }
 
 void RayTraceApp::setupContext()
@@ -97,33 +100,6 @@ void RayTraceApp::setupHelloVulkan()
   m_helloVk.create(createInfo);
 }
 
-void RayTraceApp::loadScene()
-{
-  // 平面
-  ObjLoader planeLoader;
-  planeLoader.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(planeLoader,
-                      glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
-
-  // wuson
-  ObjLoader wusonLoader;
-  wusonLoader.loadModel(nvh::findFile("media/scenes/wuson.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(wusonLoader);
-
-  // 多个wuson实例
-  uint32_t  wusonId = 1;
-  glm::mat4 identity{1};
-  for(int i = 0; i < 5; i++)
-  {
-    m_helloVk.m_instances.push_back({identity, wusonId});
-  }
-
-  // 球体
-  ObjLoader sphereLoader;
-  sphereLoader.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(sphereLoader);
-}
-
 void RayTraceApp::createBVH()
 {
   // 后续初始化
@@ -144,15 +120,6 @@ void RayTraceApp::createBVH()
   // 计算着色器相关
   m_helloVk.createCompDescriptors();
   m_helloVk.createCompPipelines();
-
-  m_startTime = std::chrono::system_clock::now();
-}
-
-void RayTraceApp::update()
-{
-  std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
-  m_helloVk.animationObject(diff.count());
-  m_helloVk.animationInstances(diff.count());
 }
 
 void RayTraceApp::render()
@@ -187,14 +154,50 @@ void RayTraceApp::saveFrame(std::string outputImagePath)
   m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
-GLuint RayTraceApp::getOpenGLFrame()
-{
-  return m_helloVk.getOpenGLFrame();
-}
 void RayTraceApp::cleanup()
 {
   vkDeviceWaitIdle(m_helloVk.getDevice());
   m_helloVk.destroyResources();
   m_helloVk.destroy();
   m_vkctx.deinit();
+}
+
+//-----------------------------------------------------------------------------------------------------
+// for demo local test
+// 
+void RayTraceApp::loadScene()
+{
+  // 平面
+  ObjLoader planeLoader;
+  planeLoader.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true));
+  m_helloVk.loadModel(planeLoader,
+                      glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
+
+  // wuson
+  ObjLoader wusonLoader;
+  wusonLoader.loadModel(nvh::findFile("media/scenes/wuson.obj", defaultSearchPaths, true));
+  m_helloVk.loadModel(wusonLoader);
+
+  // 多个wuson实例
+  uint32_t  wusonId = 1;
+  glm::mat4 identity{1};
+  for(int i = 0; i < 5; i++)
+  {
+    m_helloVk.m_instances.push_back({identity, wusonId});
+  }
+
+  // 球体
+  ObjLoader sphereLoader;
+  sphereLoader.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
+  m_helloVk.loadModel(sphereLoader);
+
+  // 
+  m_startTime = std::chrono::system_clock::now();
+}
+
+void RayTraceApp::animation()
+{
+  std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
+  m_helloVk.animationObject(diff.count());
+  m_helloVk.animationInstances(diff.count());
 }

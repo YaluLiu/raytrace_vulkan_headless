@@ -13,11 +13,10 @@ class RayTraceApp
 {
 public:
   RayTraceApp();
-  RayTraceApp(int width = 1280, int height = 720);
   ~RayTraceApp();
 
   // init vulkan and hello-vulkan
-  void initialize();
+  void setup(int width = 1280, int height = 720);
 
   // 渲染
   void resize(int w, int h);
@@ -29,7 +28,7 @@ public:
   void createBVH();
 
   // 更新模型的mesh和translation
-  void update();
+  void animation();
 
   // 渲染
   void render();
@@ -39,8 +38,10 @@ public:
 
   // save local png file
   void saveFrame(std::string outputImagePath = "headless.png");
-  // save local png file
-  GLuint getOpenGLFrame();
+
+  // 
+  GLuint getOpenGLFrame() { return m_helloVk.getOpenGLFrame(); }
+  HelloVulkan& getVulkan() { return m_helloVk; };
 
 private:
   int m_width  = 1280;
@@ -53,6 +54,8 @@ private:
 
   // for init 
   void setupCamera();
+  void UpdateCamera();
+
   void setupContext();
   void setupHelloVulkan();
 

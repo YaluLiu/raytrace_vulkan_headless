@@ -54,7 +54,7 @@ build/
 media
 
 # test file
-chatgpt.md 
+chatgpt.cpp
 *.png
 
 

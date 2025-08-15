@@ -56,10 +56,9 @@ source_group("Headers"      FILES ${HEADER_FILES})
 source_group("Shader Sources"  FILES ${GLSL_SOURCES})
 source_group("Shader Headers"  FILES ${GLSL_HEADERS})
 
-
 #--------------------------------------------------------------------------------------------------
-# Linkage
-#
+# Linkage 
+# 
 target_link_libraries(${PROJNAME} ${PLATFORM_LIBRARIES} nvpro_core)
 
 foreach(DEBUGLIB ${LIBRARIES_DEBUG})
