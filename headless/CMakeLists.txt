@@ -17,8 +17,12 @@ message(STATUS "Processing Project ${PROJNAME}:")
 # C++ target and defines
 set(CMAKE_CXX_STANDARD 20)
 add_library(${PROJNAME})
-_add_project_definitions(${PROJNAME})
 
+#------------------------------------------------------------------------------------------------
+# replace _add_project_definitions,because add_definitions can not send to Caller
+# _add_project_definitions(${PROJNAME})
+target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
+target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../headless")
 
 #--------------------------------------------------------------------------------------------------
 # Source files for this project
@@ -46,6 +50,13 @@ target_sources(${PROJNAME} PUBLIC ${COMMON_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${PACKAGE_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${GLSL_SOURCES} ${GLSL_HEADERS})
 
+#--------------------------------------------------------------------------------------------------
+# include
+#
+target_include_directories(${PROJNAME} PUBLIC
+  ${PROJECT_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/common
+)
 
 #--------------------------------------------------------------------------------------------------
 # Sub-folders in Visual Studio
