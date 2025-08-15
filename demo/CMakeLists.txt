@@ -21,6 +21,13 @@ target_include_directories(${PROJNAME} PRIVATE
 #
 target_link_libraries(${PROJNAME} PRIVATE libheadless)
 
+#--------------------------------------------------------------------------------------------------
+# Linkage
+#
+target_compile_definitions(${PROJNAME} PRIVATE
+  $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
+  $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
+)
 #------------------------------------------------------------------------------------------------
 _finalize_target( ${PROJNAME} )
 

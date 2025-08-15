@@ -35,9 +35,95 @@
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 
-#include "nvgl/contextwindow_gl.hpp"
+
 extern std::vector<std::string> defaultSearchPaths;
 
+
+// USE_EGL_CONTEXT always be false,never use it unless you can load opengl funtion under EGL
+// keep it because EGL is real headless, may fix it on future
+#if USE_EGL_CONTEXT
+
+// EGL context
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <glad/glad.h>
+
+void createEGLContext() {
+    // 1. 获取默认显示
+    EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    if (egl_display == EGL_NO_DISPLAY) {
+        // 错误处理
+        return;
+    }
+
+    // 2. 初始化 EGL
+    EGLint major, minor;
+    if (!eglInitialize(egl_display, &major, &minor)) {
+        // 错误处理
+        return;
+    }
+
+    // 3. 配置属性
+    EGLint attribs[] = {
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT, // 使用OpenGL（不是OpenGL ES）
+        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,   // 离屏surface，最小配置
+        EGL_NONE
+    };
+    EGLConfig egl_config;
+    EGLint num_configs;
+    if (!eglChooseConfig(egl_display, attribs, &egl_config, 1, &num_configs)) {
+        // 错误处理
+        return;
+    }
+
+    // 4. 创建一个最小的 pbuffer surface
+    EGLint pbuffer_attribs[] = {
+        EGL_WIDTH, 1,
+        EGL_HEIGHT, 1,
+        EGL_NONE,
+    };
+    EGLSurface egl_surface = eglCreatePbufferSurface(egl_display, egl_config, pbuffer_attribs);
+    if (egl_surface == EGL_NO_SURFACE) {
+        // 错误处理
+        return;
+    }
+
+    // 5. 创建OpenGL上下文
+    EGLint context_attribs[] = {
+        EGL_CONTEXT_MAJOR_VERSION, 4,
+        EGL_CONTEXT_MINOR_VERSION, 5,
+        EGL_NONE
+    };
+    EGLContext egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
+    if (egl_context == EGL_NO_CONTEXT) {
+        // 错误处理
+        return;
+    }
+
+    // 6. 使 context 当前
+    if (!eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context)) {
+        // 错误处理
+        return;
+    }
+}
+#else
+// opengl context with windows
+#include "nvgl/contextwindow_gl.hpp"
+void createOpenGLContext()
+{
+  glfwInit();
+  // 设置 GLFW 窗口使用 OpenGL 4.5
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // 创建隐藏窗口
+  // 创建 GLFW 窗口
+  GLFWwindow* gl_window = glfwCreateWindow(1, 1, PROJECT_NAME, NULL, NULL);
+  // 设置当前 OpenGL 上下文
+  glfwMakeContextCurrent(gl_window);
+  // 加载OpenGL函数
+  load_GL(nvgl::ContextWindow::sysGetProcAddress);
+}
+#endif
 //--------------------------------------------------------------------------------------------------
 // 初始化 HelloVulkan 示例的各项成员，包括分配器、调试工具和离屏深度格式
 // instance         : Vulkan实例
@@ -48,17 +134,11 @@ extern std::vector<std::string> defaultSearchPaths;
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
 #if ENABLE_GL_VK_CONVERSION
-  glfwInit();
-  // 设置 GLFW 窗口使用 OpenGL 4.5
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  // 创建 GLFW 窗口
-  GLFWwindow* gl_window = glfwCreateWindow(100, 100, PROJECT_NAME, NULL, NULL);
-  // 设置当前 OpenGL 上下文
-  glfwMakeContextCurrent(gl_window);
-
-  // 加载OpenGL函数
-  load_GL(nvgl::ContextWindow::sysGetProcAddress);
+#if USE_EGL_CONTEXT
+  createEGLContext();
+#else
+  createOpenGLContext();
+#endif
   m_allocGL.init(device, physicalDevice);
 #endif
   // 调用基类的setup，初始化Vulkan低层对象

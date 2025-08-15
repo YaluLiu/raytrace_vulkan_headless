@@ -162,6 +162,7 @@ public:
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
   void saveOffscreenColorToFile(const char* filename);
+  GLuint getOpenGLFrame() { return m_rtOutputGL.oglId; }
 #if ENABLE_GL_VK_CONVERSION
   void createOutputImage();
   void dumpInteropTexture(const char* filename);

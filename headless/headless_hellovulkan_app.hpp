@@ -38,6 +38,8 @@ public:
 
   // save local png file
   void saveFrame(std::string outputImagePath = "headless.png");
+  // save local png file
+  GLuint getOpenGLFrame();
 
 private:
   int m_width  = 1280;

@@ -171,11 +171,15 @@ void HeadlessHelloVulkanApp::saveFrame(std::string outputImagePath)
 #if ENABLE_GL_VK_CONVERSION
   outputImagePath = "headless_gl.png";
   m_helloVk.dumpInteropTexture(outputImagePath.c_str());
+#endif
   outputImagePath = "headless_vk.png";
   m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
-#endif
 }
 
+GLuint HeadlessHelloVulkanApp::getOpenGLFrame()
+{
+  return m_helloVk.getOpenGLFrame();
+}
 void HeadlessHelloVulkanApp::cleanup()
 {
   vkDeviceWaitIdle(m_helloVk.getDevice());

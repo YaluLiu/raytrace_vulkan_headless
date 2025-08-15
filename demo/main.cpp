@@ -1,5 +1,4 @@
 #include "headless_hellovulkan_app.hpp"
-
 int main()
 {
   int width = 1280;

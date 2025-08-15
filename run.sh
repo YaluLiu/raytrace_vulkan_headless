@@ -1,17 +1,17 @@
 #!/bin/bash
 
 BUILD_TYPE="Release"
+app_name="headless"
 
 function build() {
     set -e
     cd build
-    cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+    cmake ..  \
+        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DENABLE_GL_VK_CONVERSION=ON
     make -j20
     cd ..
 }
-
-app_name="ray_tracing_animation"
-app_name="headless"
 
 function format(){
     find headless -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
@@ -20,17 +20,15 @@ function format(){
 function test() {
     build
     build/bin/${BUILD_TYPE}/vk_${app_name}_KHR_app
-}
-
-function headless() {
-    app_name="headless"
-    test
+    # build/bin/${BUILD_TYPE}/libheadless_app
 }
 
 function anim() {
     app_name="ray_tracing_animation"
-    test
+    build
+    build/bin/${BUILD_TYPE}/vk_${app_name}_KHR_app
 }
+
 
 
 # 动态函数调用

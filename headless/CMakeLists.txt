@@ -16,7 +16,7 @@ message(STATUS "Processing Project ${PROJNAME}:")
 #--------------------------------------------------------------------------------------------------
 # C++ target and defines
 set(CMAKE_CXX_STANDARD 20)
-add_executable(${PROJNAME})
+add_library(${PROJNAME})
 _add_project_definitions(${PROJNAME})
 
 
@@ -70,6 +70,7 @@ foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
   target_link_libraries(${PROJNAME} optimized ${RELEASELIB})
 endforeach(RELEASELIB)
 
+target_link_libraries(${PROJNAME} EGL GL)
 #--------------------------------------------------------------------------------------------------
 # option
 #
