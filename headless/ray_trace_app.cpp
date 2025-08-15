@@ -147,11 +147,14 @@ void RayTraceApp::render()
 void RayTraceApp::saveFrame(std::string outputImagePath)
 {
 #if ENABLE_GL_VK_CONVERSION
-  outputImagePath = "headless_gl.png";
-  m_helloVk.dumpInteropTexture(outputImagePath.c_str());
+  std::string gl_pngname = outputImagePath;
+  gl_pngname.replace(gl_pngname.find("/"), 1, "/gl_");
+  m_helloVk.dumpInteropTexture(gl_pngname.c_str());
+#else
+  std::string vk_pngname = outputImagePath;
+  vk_pngname.replace(vk_pngname.find("/"), 1, "/vk_");
+  m_helloVk.saveOffscreenColorToFile(vk_pngname.c_str());
 #endif
-  outputImagePath = "headless_vk.png";
-  m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
 void RayTraceApp::cleanup()
