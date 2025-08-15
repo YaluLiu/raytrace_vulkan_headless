@@ -40,8 +40,9 @@ public:
 
             if (!m_testOnUsd) {
                 animate();
+            } else {
+                updatecamera();
             }
-            updatecamera();
             m_app.render();
 
             std::string pngname = "result/" + std::to_string(i) + ".png";
@@ -61,7 +62,7 @@ public:
       // 假设 up 是 (0, 1, 0)，在水平面围绕 ctr 旋转
       float x = ctr.x + radius * cos(m_yaw);
       float z = ctr.z + radius * sin(m_yaw);
-      float y = ctr.y + 0.0f; // 可以固定高度，也可以做垂直旋转
+      float y = ctr.y + 1.0f; // 可以固定高度，也可以做垂直旋转
 
       glm::vec3 eye(x, y, z);
 
