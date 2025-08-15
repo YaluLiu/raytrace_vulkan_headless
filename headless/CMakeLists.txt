@@ -84,7 +84,7 @@ target_link_libraries(${PROJNAME} EGL GL)
 #--------------------------------------------------------------------------------------------------
 # option
 #
-target_compile_definitions(${PROJNAME} PRIVATE
+target_compile_definitions(${PROJNAME} PUBLIC
   $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
   $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
 )
