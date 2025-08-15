@@ -1,9 +1,9 @@
-#include "headless_hellovulkan_app.hpp"
+#include "ray_trace_app.hpp"
 int main()
 {
   int width = 1280;
   int height = 720;
-  HeadlessHelloVulkanApp app(width, height);
+  RayTraceApp app(width, height);
   app.initialize();
   app.loadScene();
   app.createBVH();

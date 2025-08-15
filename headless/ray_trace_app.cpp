@@ -3,7 +3,7 @@
 #include "nvvk/commands_vk.hpp"
 #include <cassert>
 #include <array>
-#include "headless_hellovulkan_app.hpp"
+#include "ray_trace_app.hpp"
 
 // opengl上下文
 #include "nvgl/contextwindow_gl.hpp"
@@ -11,37 +11,37 @@
 
 std::vector<std::string> defaultSearchPaths;
 
-HeadlessHelloVulkanApp::HeadlessHelloVulkanApp() {}
+RayTraceApp::RayTraceApp() {}
 
-HeadlessHelloVulkanApp::HeadlessHelloVulkanApp(int width, int height)
+RayTraceApp::RayTraceApp(int width, int height)
     : m_width(width)
     , m_height(height)
 {
 }
 
-HeadlessHelloVulkanApp::~HeadlessHelloVulkanApp()
+RayTraceApp::~RayTraceApp()
 {
   cleanup();
 }
 
-void HeadlessHelloVulkanApp::initialize()
+void RayTraceApp::initialize()
 {
   setupCamera();
   setupContext();
   setupHelloVulkan();
 }
 
-void HeadlessHelloVulkanApp::resize(int w, int h)
+void RayTraceApp::resize(int w, int h)
 {
   m_helloVk.onResize(w,h);
 }
-void HeadlessHelloVulkanApp::setupCamera()
+void RayTraceApp::setupCamera()
 {
   CameraManip.setWindowSize(m_width, m_height);
   CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 }
 
-void HeadlessHelloVulkanApp::setupContext()
+void RayTraceApp::setupContext()
 {
   NVPSystem system("raytrace_vulkan_headless");
   defaultSearchPaths = {
@@ -84,7 +84,7 @@ void HeadlessHelloVulkanApp::setupContext()
   m_vkctx.initDevice(compatibleDevices[0], contextInfo);
 }
 
-void HeadlessHelloVulkanApp::setupHelloVulkan()
+void RayTraceApp::setupHelloVulkan()
 {
   nvvkhl::AppBaseVkCreateInfo createInfo;
   createInfo.instance       = m_vkctx.m_instance;
@@ -95,7 +95,7 @@ void HeadlessHelloVulkanApp::setupHelloVulkan()
   m_helloVk.create(createInfo);
 }
 
-void HeadlessHelloVulkanApp::loadScene()
+void RayTraceApp::loadScene()
 {
   // 地面
   m_helloVk.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true),
@@ -113,7 +113,7 @@ void HeadlessHelloVulkanApp::loadScene()
   m_helloVk.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
 }
 
-void HeadlessHelloVulkanApp::createBVH()
+void RayTraceApp::createBVH()
 {
   // 后续初始化
   m_helloVk.createOffscreenRender();
@@ -137,14 +137,14 @@ void HeadlessHelloVulkanApp::createBVH()
   m_startTime = std::chrono::system_clock::now();
 }
 
-void HeadlessHelloVulkanApp::update()
+void RayTraceApp::update()
 {
   std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
   m_helloVk.animationObject(diff.count());
   m_helloVk.animationInstances(diff.count());
 }
 
-void HeadlessHelloVulkanApp::render()
+void RayTraceApp::render()
 {
   auto                   curFrame = m_helloVk.getCurFrame();
   const VkCommandBuffer& cmdBuf   = m_helloVk.getCommandBuffers()[curFrame];
@@ -166,7 +166,7 @@ void HeadlessHelloVulkanApp::render()
   m_helloVk.submitFrame();
 }
 
-void HeadlessHelloVulkanApp::saveFrame(std::string outputImagePath)
+void RayTraceApp::saveFrame(std::string outputImagePath)
 {
 #if ENABLE_GL_VK_CONVERSION
   outputImagePath = "headless_gl.png";
@@ -176,11 +176,11 @@ void HeadlessHelloVulkanApp::saveFrame(std::string outputImagePath)
   m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
-GLuint HeadlessHelloVulkanApp::getOpenGLFrame()
+GLuint RayTraceApp::getOpenGLFrame()
 {
   return m_helloVk.getOpenGLFrame();
 }
-void HeadlessHelloVulkanApp::cleanup()
+void RayTraceApp::cleanup()
 {
   vkDeviceWaitIdle(m_helloVk.getDevice());
   m_helloVk.destroyResources();

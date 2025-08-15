@@ -8,12 +8,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "nvpsystem.hpp"
 #include "nvvk/context_vk.hpp"
-class HeadlessHelloVulkanApp
+
+class RayTraceApp
 {
 public:
-  HeadlessHelloVulkanApp();
-  HeadlessHelloVulkanApp(int width = 1280, int height = 720);
-  ~HeadlessHelloVulkanApp();
+  RayTraceApp();
+  RayTraceApp(int width = 1280, int height = 720);
+  ~RayTraceApp();
 
   // init vulkan and hello-vulkan
   void initialize();
