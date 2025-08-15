@@ -34,7 +34,7 @@
 #include "nvvk/raytraceKHR_vk.hpp"
 #include "nvvk/sbtwrapper_vk.hpp"
 
-
+#include "ModelLoader.h"
 
 //--------------------------------------------------------------------------------------------------
 // Simple rasterizer of OBJ objects
@@ -49,7 +49,7 @@ public:
   void setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily) override;
   void createDescriptorSetLayout();
   void createGraphicsPipeline();
-  void loadModel(const std::string& filename, glm::mat4 transform = glm::mat4(1));
+  void loadModel(ModelLoader& loader, glm::mat4 transform = glm::mat4(1));
   void updateDescriptorSet();
   void createUniformBuffer();
   void createObjDescriptionBuffer();

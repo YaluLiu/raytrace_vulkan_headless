@@ -9,6 +9,8 @@
 #include "nvgl/contextwindow_gl.hpp"
 #include <algorithm>
 
+#include "obj_loader.h"
+
 std::vector<std::string> defaultSearchPaths;
 
 RayTraceApp::RayTraceApp() {}
@@ -97,11 +99,17 @@ void RayTraceApp::setupHelloVulkan()
 
 void RayTraceApp::loadScene()
 {
-  // 地面
-  m_helloVk.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true),
+  // 平面
+  ObjLoader planeLoader;
+  planeLoader.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true));
+  m_helloVk.loadModel(planeLoader,
                       glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
+
   // wuson
-  m_helloVk.loadModel(nvh::findFile("media/scenes/wuson.obj", defaultSearchPaths, true));
+  ObjLoader wusonLoader;
+  wusonLoader.loadModel(nvh::findFile("media/scenes/wuson.obj", defaultSearchPaths, true));
+  m_helloVk.loadModel(wusonLoader);
+
   // 多个wuson实例
   uint32_t  wusonId = 1;
   glm::mat4 identity{1};
@@ -109,8 +117,11 @@ void RayTraceApp::loadScene()
   {
     m_helloVk.m_instances.push_back({identity, wusonId});
   }
+
   // 球体
-  m_helloVk.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
+  ObjLoader sphereLoader;
+  sphereLoader.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
+  m_helloVk.loadModel(sphereLoader);
 }
 
 void RayTraceApp::createBVH()

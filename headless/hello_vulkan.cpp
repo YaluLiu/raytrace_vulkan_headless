@@ -20,7 +20,7 @@
 #include <sstream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "obj_loader.h"
+#include <glm/glm.hpp>
 #include "stb_image.h"
 
 #include "hello_vulkan.hpp"
@@ -291,12 +291,8 @@ void HelloVulkan::createGraphicsPipeline()
 // 加载OBJ模型，并构建顶点、索引、材质等buffer
 // filename: obj文件路径
 // transform: 模型实例变换矩阵
-void HelloVulkan::loadModel(const std::string& filename, glm::mat4 transform)
+void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
 {
-  LOGI("Loading File:  %s \n", filename.c_str());
-  ObjLoader loader;
-  loader.loadModel(filename);
-
   // 将材质颜色从SRGB空间转换到线性空间
   for(auto& m : loader.m_materials)
   {
@@ -319,10 +315,13 @@ void HelloVulkan::loadModel(const std::string& filename, glm::mat4 transform)
   model.indexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | rayTracingFlags);
   model.matColorBuffer = m_alloc.createBuffer(cmdBuf, loader.m_materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
   model.matIndexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_matIndx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
+
   // 纹理贴图（若有），并记录偏移
   auto txtOffset = static_cast<uint32_t>(m_textures.size());
   createTextureImages(cmdBuf, loader.m_textures);
   cmdBufGet.submitAndWait(cmdBuf);
+
+  // 分配mesh和texture完毕
   m_alloc.finalizeAndReleaseStaging();
 
   std::string objNb = std::to_string(m_objModel.size());
