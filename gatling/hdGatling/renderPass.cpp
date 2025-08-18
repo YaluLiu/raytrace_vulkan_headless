@@ -32,7 +32,7 @@
 #include <iostream>
 #include "perf_test/scope_timer.hpp"
 #include "nvh/fileoperations.hpp"
-
+#include "nvh/cameramanipulator.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,19 +57,6 @@ bool HdGatlingRenderPass::IsConverged() const
   return _isConverged;
 }
 
-glm::mat4 computeProjectionMatrix(const GiCameraDesc& cameraDesc, float aspectRatio) {
-    // 将垂直视场角转换为弧度
-    float fov = glm::radians(cameraDesc.vfov);
-    // 获取近裁剪面和远裁剪面
-    float near = cameraDesc.clipStart;
-    float far = cameraDesc.clipEnd;
-    // 计算投影矩阵（右手坐标系，零到一深度）
-    glm::mat4 proj = glm::perspectiveRH_ZO(fov, aspectRatio, near, far);
-    // 翻转 Y 轴以适应 Vulkan
-    proj[1][1] *= -1;
-    return proj;
-}
-
 void printMatrix(const glm::mat4& matrix, const std::string& name) {
     std::cout << name << ":\n";
     for (int i = 0; i < 4; ++i) {
@@ -83,58 +70,8 @@ void printMatrix(const glm::mat4& matrix, const std::string& name) {
     std::cout << "\n";
 }
 
-void HdGatlingRenderPass::_ConstructGiCamera(const HdCamera& camera, GiCameraDesc& giCamera) const
-{
-  const GfMatrix4d& transform = camera.GetTransform();
-
-  GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
-  GfVec3d forward = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
-  GfVec3d up = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
-
-  forward.Normalize();
-  up.Normalize();
-
-  // See https://wiki.panotools.org/Field_of_View
-  float aperture = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
-  float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
-  float vfov = 2.0f * std::atan(aperture / (2.0f * focalLength));
-
-  bool focusOn = true;
-#if PXR_VERSION >= 2311
-  focusOn = camera.GetFocusOn();
-#endif
-
-  giCamera.position[0] = (float) position[0];
-  giCamera.position[1] = (float) position[1];
-  giCamera.position[2] = (float) position[2];
-  giCamera.forward[0] = (float) forward[0];
-  giCamera.forward[1] = (float) forward[1];
-  giCamera.forward[2] = (float) forward[2];
-  giCamera.up[0] = (float) up[0];
-  giCamera.up[1] = (float) up[1];
-  giCamera.up[2] = (float) up[2];
-  giCamera.vfov = vfov;
-  giCamera.fStop = float(focusOn) * camera.GetFStop();
-  giCamera.focusDistance = camera.GetFocusDistance();
-  giCamera.focalLength = focalLength;
-  giCamera.clipStart = camera.GetClippingRange().GetMin();
-  giCamera.clipEnd = camera.GetClippingRange().GetMax();
-  giCamera.exposure = camera.GetExposure();
-
-  glm::vec3 camPos(giCamera.position[0], giCamera.position[1], giCamera.position[2]);
-  glm::vec3 camForward(giCamera.forward[0], giCamera.forward[1], giCamera.forward[2]);
-  glm::vec3 camUp(giCamera.up[0], giCamera.up[1], giCamera.up[2]);
-  glm::vec3 target = camPos + camForward; // 目标点 = 位置 + 朝向
-  giCamera.viewMatrix = glm::lookAtRH(camPos, target, camUp);
-
-  // 生成投影矩阵
-  float aspectRatio = 1.0f; // 假设宽高比为1.0，需根据实际渲染上下文设置
-  giCamera.projMatrix = glm::perspectiveRH_ZO(
-      giCamera.vfov,           // 垂直视场角（弧度）
-      aspectRatio,             // 宽高比
-      giCamera.clipStart,      // 近裁剪面
-      giCamera.clipEnd         // 远裁剪面
-  );
+void PrintVec3(const std::string& name, const glm::vec3& v) {
+    std::cout << name << ": (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
 }
 
 #define USE_RAY_TRACE 1
@@ -148,24 +85,19 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     return;
   }
   const auto& hdAovBindings = renderPassState->GetAovBindings();
-  app_init(hdAovBindings[0]);
 #if USE_RAY_TRACE
-  std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
-  _renderApp.getVulkan().animationObject(diff.count());
-  _renderApp.getVulkan().animationInstances(diff.count());
-  _renderApp.render();
+  app_init(hdAovBindings[0]);
+  app_updateCamera(*hdcamera);
+  app_test_base();
 #endif
 
-  
   for (const HdRenderPassAovBinding& binding : hdAovBindings)
   {
     const TfToken& name = binding.aovName;
     HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-    auto width = renderBuffer->GetWidth();
-    auto height = renderBuffer->GetHeight();
     if(name == HdAovTokens->color) {
 #if USE_RAY_TRACE
-      renderBuffer->MakeHgiTexture(_renderApp.getOpenGLFrame());
+      renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLFrame());
 #else
       renderBuffer->change_show_image();
       renderBuffer->ConvertToHgiTexture();
@@ -195,6 +127,54 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
   } else {
     _renderApp.resize(width,height);
   }
+}
+
+void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera) const
+{
+    const GfMatrix4d& transform = camera.GetTransform();
+
+    // 摄像机位置
+    GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
+    // 摄像机前向
+    GfVec3d forward = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
+    // 摄像机up
+    GfVec3d up = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
+
+    // 保证归一化
+    forward.Normalize();
+    up.Normalize();
+
+    // 构造glm向量
+    glm::vec3 camPos(position[0], position[1], position[2]);
+    glm::vec3 camForward(forward[0], forward[1], forward[2]);
+    glm::vec3 camUp(up[0], up[1], up[2]);
+    glm::vec3 camCenter = camPos + camForward; // 目标点
+
+    // 检查up和forward是否接近共线，避免view矩阵异常
+    if (glm::length(glm::cross(camForward, camUp)) < 1e-6) {
+        // up和forward共线，强制修正up向量
+        camUp = glm::vec3(0, 1, 0); // 或者根据实际场景选择
+    }
+
+    // 计算FOV（垂直方向）
+    float aperture = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
+    float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
+    float vfov = 2.0f * std::atan(aperture / (2.0f * focalLength)); // 单位：弧度
+    float vfov_deg = glm::degrees(vfov); // 单位：度
+
+    // 防止FOV异常
+    vfov_deg = std::clamp(vfov_deg, 1.0f, 179.0f);
+
+    // 设置CameraManipulator
+    CameraManip.setCamera({camPos, camCenter, camUp, vfov_deg});
+}
+
+void HdGatlingRenderPass::app_test_base()
+{
+  std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
+  _renderApp.getVulkan().animationObject(diff.count());
+  _renderApp.getVulkan().animationInstances(diff.count());
+  _renderApp.render();
 }
 #endif
 PXR_NAMESPACE_CLOSE_SCOPE

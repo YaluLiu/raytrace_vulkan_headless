@@ -73,8 +73,9 @@ private:
 // ----------------------------------------------------------------------------------
 // for headless ray trace app
 private:
-  void _ConstructGiCamera(const HdCamera& camera, GiCameraDesc& giCamera) const;
+  void app_updateCamera(const HdCamera& camera) const;
   void app_init(const HdRenderPassAovBinding& binding);
+  void app_test_base();
 
   // 是否初始化了mesh和材质
   bool _isAppInited = false;

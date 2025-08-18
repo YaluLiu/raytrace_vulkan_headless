@@ -40,7 +40,6 @@ public:
   void saveFrame(std::string outputImagePath = "headless.png");
 
   // 
-  GLuint getOpenGLFrame() { return m_helloVk.getOpenGLFrame(); }
   HelloVulkan& getVulkan() { return m_helloVk; };
 
 private:
