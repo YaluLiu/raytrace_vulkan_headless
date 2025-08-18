@@ -1,0 +1,28 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HdGatlingRendererPlugin": {
+                        "bases": ["HdRendererPlugin"],
+                        "displayName": "Gatling",
+                        "priority": 99
+                    },
+                    "HdGatlingMdlDiscoveryPlugin": {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "MDL Discovery"
+                    },
+                    "HdGatlingMdlParserPlugin": {
+                        "bases": ["NdrParserPlugin"],
+                        "displayName": "MDL Node Parser"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "hdGatling",
+            "ResourcePath": "resources",
+            "Root": "..",
+            "Type": "library"
+        }
+    ]
+}
