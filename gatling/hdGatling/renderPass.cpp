@@ -75,6 +75,8 @@ void PrintVec3(const std::string& name, const glm::vec3& v) {
 }
 
 #define USE_RAY_TRACE 1
+#define USE_BASE_RENDER 0
+
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState,
                                   const TfTokenVector& renderTags)
 {
@@ -88,7 +90,12 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
 #if USE_RAY_TRACE
   app_init(hdAovBindings[0]);
   app_updateCamera(*hdcamera);
-  app_render();
+#if USE_BASE_RENDER
+  app_anim_base();
+#else
+  app_anim_real();
+#endif
+  _renderApp.render();
 #endif
 
   for (const HdRenderPassAovBinding& binding : hdAovBindings)
@@ -123,17 +130,19 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
   if (!_isAppInited) {
     _isAppInited = true;
     _renderApp.setup(_width, _height);
-    // _renderApp.loadScene();
-    for(auto& cur_mesh:_scene.v_mesh){
+#if USE_BASE_RENDER
+  _renderApp.loadScene();
+#else
+  for(auto& cur_mesh:_scene.v_mesh){
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh,loader);
       add_default_material(loader);
       loader.m_textures.clear();
       loader.m_textures.push_back("aMedKitm_albedo.jpg");
       loader.m_textures.push_back("PatrickStar.jpg");
-      _renderApp.getVulkan().loadModel(loader);
-       
+      _renderApp.getVulkan().loadModel(loader);    
     }
+#endif
     _renderApp.createBVH();
   } else {
     _renderApp.resize(_width,_height);
@@ -192,7 +201,7 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
     CameraManip.setCamera({camPos, target, camUp, vfov_deg});
 }
 
-void HdGatlingRenderPass::app_render()
+void HdGatlingRenderPass::app_anim_real()
 {
   for(size_t i = 0; i < _scene.v_mesh.size(); ++i){
     if(_scene.v_mesh[i]._changed){
@@ -202,15 +211,13 @@ void HdGatlingRenderPass::app_render()
     }
     _renderApp.getVulkan().updateTlas(i,_scene.v_mesh[i]._transform);
   }
-  _renderApp.render();
 }
 
-void HdGatlingRenderPass::app_render_base()
+void HdGatlingRenderPass::app_anim_base()
 {
   std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
   _renderApp.getVulkan().animationObject(diff.count());
   _renderApp.getVulkan().animationInstances(diff.count());
-  _renderApp.render();
 }
 #endif
 PXR_NAMESPACE_CLOSE_SCOPE
