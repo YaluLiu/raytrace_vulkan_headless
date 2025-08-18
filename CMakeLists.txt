@@ -54,6 +54,7 @@ set(ENABLE_HYDRA ${ENABLE_HYDRA} CACHE BOOL "Enable OpenUsd hydra plugins")
 
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 #--------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 # Sub examples
 add_subdirectory(headless)
 add_subdirectory(ray_tracing_animation)

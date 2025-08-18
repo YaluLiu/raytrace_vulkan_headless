@@ -7,7 +7,7 @@ function format(){
     find headless -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
 }
 
-function test() {
+function demo() {
     set -e
     cd build
     cmake ..  \

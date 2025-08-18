@@ -13,6 +13,7 @@ Headless Vulkan ray tracing demo
 
 - 需要额外克隆 [nvpro-samples/nvpro_core](https://github.com/nvpro-samples/nvpro_core) 仓库。
 - nvpro_core 支持两种放置方式：
+
   1. 放在当前项目根目录下；
   2. 或与本项目处于同一级目录下。
 
@@ -23,32 +24,35 @@ Headless Vulkan ray tracing demo
 编译流程与 [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR) 完全一致：
 
 1. 克隆本仓库和 nvpro_core：
-    ```bash
-    git clone https://github.com/YaluLiu/raytrace_vulkan_headless.git
-    git clone https://github.com/nvpro-samples/nvpro_core.git
-    ```
-    > 可以将nvpro_core放在raytrace_vulkan_headless同级目录。
 
-2. 创建构建目录并编译：
-    ```bash
-    cd raytrace_vulkan_headless
-    mkdir build
-    cd build
-    cmake ..
-    make -j
-    ```
+   ```bash
+   git clone https://github.com/YaluLiu/raytrace_vulkan_headless.git
+   git clone https://github.com/nvpro-samples/nvpro_core.git
+   ```
+
+   > 可以将 nvpro_core 放在 raytrace_vulkan_headless 同级目录。
 
 ## 运行方式
 
 编译完成后，直接运行：
+
 ```bash
-bash run.sh headless
+bash install.sh demo
 ```
+
+可以运行 headless 的测试 demo
+
+```bash
+bash install.sh gatling
+```
+
+可以运行基于 headless 编译的 hydra 插件
 
 ## 参考
 
 - [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR)
 - [nvpro-samples/nvpro_core](https://github.com/nvpro-samples/nvpro_core)
+- [pablode/gatling](https://github.com/pablode/gatling.git)
 
 ## License
 

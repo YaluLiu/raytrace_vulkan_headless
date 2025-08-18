@@ -14,6 +14,7 @@ Major modifications include:
 
 - You need to clone [nvpro-samples/nvpro_core](https://github.com/nvpro-samples/nvpro_core) in addition to this repository.
 - The `nvpro_core` directory can be placed either:
+
   1. Inside the root of this project, **or**
   2. At the same directory level as this project.
 
@@ -24,32 +25,35 @@ Major modifications include:
 The build process is identical to [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR):
 
 1. Clone this repository and `nvpro_core`:
-    ```bash
-    git clone https://github.com/YaluLiu/raytrace_vulkan_headless.git
-    git clone https://github.com/nvpro-samples/nvpro_core.git
-    ```
-    > You can place `nvpro_core` inside `raytrace_vulkan_headless` or at the same level.
 
-2. Create a build directory and compile:
-    ```bash
-    cd raytrace_vulkan_headless
-    mkdir build
-    cd build
-    cmake ..
-    make -j
-    ```
+   ```bash
+   git clone https://github.com/YaluLiu/raytrace_vulkan_headless.git
+   git clone https://github.com/nvpro-samples/nvpro_core.git
+   ```
+
+   > You can place `nvpro_core` inside `raytrace_vulkan_headless` or at the same level.
 
 ## Run
 
-After building, run:
+After building, you can use the following commands to run demos or plugins:
+
 ```bash
-bash run.sh headless
+bash install.sh demo
 ```
+
+Runs the headless test demo.
+
+```bash
+bash install.sh gatling
+```
+
+Runs the Hydra plugin based on headless mode.
 
 ## References
 
 - [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR)
 - [nvpro-samples/nvpro_core](https://github.com/nvpro-samples/nvpro_core)
+- [pablode/gatling](https://github.com/pablode/gatling.git)
 
 ## License
 
