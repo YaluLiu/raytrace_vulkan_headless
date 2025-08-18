@@ -73,7 +73,7 @@ private:
 // ----------------------------------------------------------------------------------
 // for headless ray trace app
 private:
-  void app_updateCamera(const HdCamera& camera) const;
+  void app_updateCamera(const HdCamera& camera);
   void app_init(const HdRenderPassAovBinding& binding);
   void app_test_base();
 
@@ -83,6 +83,9 @@ private:
   RayTraceApp _renderApp;
   GiCameraDesc _camera;
   std::chrono::system_clock::time_point m_startTime;
+
+  int _width;
+  int _height;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

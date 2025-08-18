@@ -113,23 +113,24 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
 void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
 {
   HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-  auto width = renderBuffer->GetWidth();
-  auto height = renderBuffer->GetHeight();
+  _width = renderBuffer->GetWidth();
+  _height = renderBuffer->GetHeight();
+  
   // const GfVec4d &viewport = renderPassState->GetViewport();
   // int width = static_cast<int>(viewport[2]);
   // int height = static_cast<int>(viewport[3]);
   // std::cout << "[HydraInfo]" << width << "," << height << std::endl;
   if (!_isAppInited) {
     _isAppInited = true;
-    _renderApp.setup(width, height);
+    _renderApp.setup(_width, _height);
     _renderApp.loadScene();
     _renderApp.createBVH();
   } else {
-    _renderApp.resize(width,height);
+    _renderApp.resize(_width,_height);
   }
 }
 
-void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera) const
+void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {
     const GfMatrix4d& transform = camera.GetTransform();
 
@@ -148,7 +149,7 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera) const
     glm::vec3 camPos(position[0], position[1], position[2]);
     glm::vec3 camForward(forward[0], forward[1], forward[2]);
     glm::vec3 camUp(up[0], up[1], up[2]);
-    glm::vec3 camCenter = camPos + camForward; // 目标点
+    glm::vec3 target = camPos + camForward; // 目标点
 
     // 检查up和forward是否接近共线，避免view矩阵异常
     if (glm::length(glm::cross(camForward, camUp)) < 1e-6) {
@@ -162,11 +163,22 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera) const
     float vfov = 2.0f * std::atan(aperture / (2.0f * focalLength)); // 单位：弧度
     float vfov_deg = glm::degrees(vfov); // 单位：度
 
+    float clipStart = camera.GetClippingRange().GetMin();
+    float clipEnd = camera.GetClippingRange().GetMax();
+
     // 防止FOV异常
     vfov_deg = std::clamp(vfov_deg, 1.0f, 179.0f);
 
+    // _renderApp.getVulkan().hydra_viewMatrix = glm::lookAtRH(camPos, target, camUp);
+    // float aspectRatio = float(_width)/(float)_height; // 假设宽高比为1.0，需根据实际渲染上下文设置
+    // _renderApp.getVulkan().hydra_projMatrix = glm::perspectiveRH_ZO(
+    //     vfov,           // 垂直视场角（弧度）
+    //     aspectRatio,             // 宽高比
+    //     clipStart,      // 近裁剪面
+    //     clipEnd         // 远裁剪面
+    // );
     // 设置CameraManipulator
-    CameraManip.setCamera({camPos, camCenter, camUp, vfov_deg});
+    CameraManip.setCamera({camPos, target, camUp, vfov_deg});
 }
 
 void HdGatlingRenderPass::app_test_base()
