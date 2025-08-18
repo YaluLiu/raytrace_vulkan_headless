@@ -88,7 +88,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
 #if USE_RAY_TRACE
   app_init(hdAovBindings[0]);
   app_updateCamera(*hdcamera);
-  app_test_base();
+  app_render();
 #endif
 
   for (const HdRenderPassAovBinding& binding : hdAovBindings)
@@ -123,7 +123,17 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
   if (!_isAppInited) {
     _isAppInited = true;
     _renderApp.setup(_width, _height);
-    _renderApp.loadScene();
+    // _renderApp.loadScene();
+    for(auto& cur_mesh:_scene.v_mesh){
+      ModelLoader loader;
+      ConvertVmeshToLoader(cur_mesh,loader);
+      add_default_material(loader);
+      loader.m_textures.clear();
+      loader.m_textures.push_back("aMedKitm_albedo.jpg");
+      loader.m_textures.push_back("PatrickStar.jpg");
+      _renderApp.getVulkan().loadModel(loader);
+       
+    }
     _renderApp.createBVH();
   } else {
     _renderApp.resize(_width,_height);
@@ -169,6 +179,7 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
     // 防止FOV异常
     vfov_deg = std::clamp(vfov_deg, 1.0f, 179.0f);
 
+    // 直接设置矩阵和设置cameraManip是一个效果
     // _renderApp.getVulkan().hydra_viewMatrix = glm::lookAtRH(camPos, target, camUp);
     // float aspectRatio = float(_width)/(float)_height; // 假设宽高比为1.0，需根据实际渲染上下文设置
     // _renderApp.getVulkan().hydra_projMatrix = glm::perspectiveRH_ZO(
@@ -177,11 +188,24 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
     //     clipStart,      // 近裁剪面
     //     clipEnd         // 远裁剪面
     // );
-    // 设置CameraManipulator
+    // 设置CameraManipulator 
     CameraManip.setCamera({camPos, target, camUp, vfov_deg});
 }
 
-void HdGatlingRenderPass::app_test_base()
+void HdGatlingRenderPass::app_render()
+{
+  for(size_t i = 0; i < _scene.v_mesh.size(); ++i){
+    if(_scene.v_mesh[i]._changed){
+      _scene.v_mesh[i]._changed = false;
+      ConvertVmeshToLoader(_scene.v_mesh[i],_renderApp.getVulkan().m_Loader[i]);
+      _renderApp.getVulkan().updateBlas(i);
+    }
+    _renderApp.getVulkan().updateTlas(i,_scene.v_mesh[i]._transform);
+  }
+  _renderApp.render();
+}
+
+void HdGatlingRenderPass::app_render_base()
 {
   std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
   _renderApp.getVulkan().animationObject(diff.count());

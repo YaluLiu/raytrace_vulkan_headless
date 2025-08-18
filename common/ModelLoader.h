@@ -9,8 +9,8 @@ class ModelLoader
 {
   public:
   // Pure virtual function to enforce implementation in derived classes
-  virtual void loadModel(const std::string& filename) = 0;
-  virtual ~ModelLoader() = default; // Virtual destructor for proper cleanup
+  void loadModel(const std::string& filename){};
+  ~ModelLoader() = default; // Virtual destructor for proper cleanup
 
   void print_info() {
     int print_num = 10;

@@ -86,6 +86,7 @@ public:
   };
 
   // Array of objects and instances in the scene
+  std::vector<ModelLoader> m_Loader;   // Model on host
   std::vector<ObjModel>    m_objModel;   // Model on host
   std::vector<ObjDesc>     m_objDesc;    // Model description for device access
   std::vector<ObjInstance> m_instances;  // Scene model instances
@@ -169,4 +170,7 @@ public:
   interop::Texture2DVkGL m_rtOutputGL;
   interop::ResourceAllocatorGLInterop m_allocGL;
 #endif
+  void updateTlas(uint32_t mesh_Id,glm::mat4 transform);
+  // 动画处理球体对象的顶点，在 C++ 端进行缩放
+  void updateBlas(uint32_t mesh_Id);
 };

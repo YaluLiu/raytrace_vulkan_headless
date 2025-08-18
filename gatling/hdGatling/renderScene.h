@@ -17,7 +17,7 @@
 #include <optional>
 #include <mutex>
 #include <assert.h>
-#include <usd_loader.h>
+#include <ModelLoader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,10 +45,10 @@ struct HdGatlingScene
 
 
 //添加默认材质
-void add_default_material(UsdLoader& Loader);
-void ConvertVmeshToLoader(const _VertexStreams& v_mesh, UsdLoader& Loader);
-void compareLoaders(const UsdLoader& tempLoader, const UsdLoader& loader);
+void add_default_material(ModelLoader& Loader);
+void ConvertVmeshToLoader(const _VertexStreams& v_mesh, ModelLoader& Loader);
+void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader);
 
 //根据模型大小生成一个自定义的scale矩阵
-void PrintLoader(const UsdLoader& loader, int n=5); 
+void PrintLoader(const ModelLoader& loader, int n=5); 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -75,7 +75,10 @@ private:
 private:
   void app_updateCamera(const HdCamera& camera);
   void app_init(const HdRenderPassAovBinding& binding);
-  void app_test_base();
+  void app_render();
+
+  // 使用headless的基础渲染模式，五头牛+一个圆球
+  void app_render_base();
 
   // 是否初始化了mesh和材质
   bool _isAppInited = false;

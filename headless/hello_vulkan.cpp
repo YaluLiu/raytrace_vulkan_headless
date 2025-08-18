@@ -347,6 +347,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   // 存储模型与描述
   m_objModel.emplace_back(model);
   m_objDesc.emplace_back(desc);
+  m_Loader.emplace_back(loader);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -1025,6 +1026,55 @@ void HelloVulkan::createCompPipelines()
   vkDestroyShaderModule(m_device, computePipelineCreateInfo.stage.module, nullptr);
 }
 
+
+//--------------------------------------------------------------------------------------------------
+// update blas & tlas
+//--------------------------------------------------------------------------------------------------
+void HelloVulkan::updateTlas(uint32_t mesh_Id,glm::mat4 transform)
+{
+  VkAccelerationStructureInstanceKHR& tinst = m_tlas[mesh_Id];
+  tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
+  // Updating the top level acceleration structure
+  m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
+}
+// 动画处理球体对象的顶点，在 C++ 端进行缩放
+void HelloVulkan::updateBlas(uint32_t mesh_Id)
+{
+    // std::cout << "[ANIM]  points[1]:" << 
+    //   now_vertices[1].pos.x << "," << 
+    //   now_vertices[1].pos.y << "," << 
+    //   now_vertices[1].pos.z <<std::endl;
+
+    //更新了loader的对应顶点数据
+    std::vector<VertexObj>& now_vertices = m_Loader[mesh_Id].m_vertices;
+    ObjModel& model = m_objModel[mesh_Id];
+
+    // 创建命令池和命令缓冲区
+    nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
+    VkCommandBuffer cmdBuf = genCmdBuf.createCommandBuffer();
+
+    // 更新模型的顶点数量
+    model.nbVertices = static_cast<uint32_t>(now_vertices.size());
+
+
+    // 定义缓冲区使用标志
+    VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    VkBufferUsageFlags rayTracingFlags =
+        flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+    // 销毁旧的顶点缓冲区，防止内存泄漏
+    m_alloc.destroy(model.vertexBuffer);
+
+    // 创建新的顶点缓冲区并上传修改后的顶点数据
+    model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
+
+    // 提交命令缓冲区并等待执行完成
+    genCmdBuf.submitAndWait(cmdBuf);
+
+    // 更新底层加速结构（BLAS），使用新的顶点缓冲区
+    m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
+                           VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
+}
 //-------------------------------------------------------------------------------------------------------------------
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"

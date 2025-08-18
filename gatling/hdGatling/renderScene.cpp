@@ -1,3 +1,4 @@
+#include <pxr/base/gf/vec3f.h>
 #include "renderScene.h"
 #include <iostream>
 #include <iomanip>
@@ -39,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // 转换函数
 // 辅助函数：将 v_mesh 转换为 UsdLoader
-void ConvertVmeshToLoader(const _VertexStreams& mesh, UsdLoader& Loader) {
+void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader) {
     size_t vertexOffset = 0;
 
     Loader.m_vertices.clear();
@@ -94,7 +95,7 @@ void ConvertVmeshToLoader(const _VertexStreams& mesh, UsdLoader& Loader) {
     vertexOffset += points.size();
 }
 
-void add_default_material(UsdLoader& Loader)
+void add_default_material(ModelLoader& Loader)
 {
     // 2. 创建默认材质
     MaterialObj mat;
@@ -131,7 +132,7 @@ void add_default_material(UsdLoader& Loader)
 }
 
 // 函数：打印 v_mesh 和 loader 的信息以验证转换结果
-void PrintLoader(const UsdLoader& loader, int n) {
+void PrintLoader(const ModelLoader& loader, int n) {
     // 设置浮点数输出格式：固定小数点，精度为 6 位
     std::cout << std::fixed << std::setprecision(6);
 
@@ -191,7 +192,7 @@ void PrintLoader(const UsdLoader& loader, int n) {
 }
 
 // 主函数：比较 v_mesh 转换后的 loader 与输入的 loader
-void compareLoaders(const UsdLoader& tempLoader, const UsdLoader& loader) {
+void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader) {
     // 步骤 2：比较 tempLoader 和 loader
     // 比较 m_vertices
     if (tempLoader.m_vertices.size() != loader.m_vertices.size()) {

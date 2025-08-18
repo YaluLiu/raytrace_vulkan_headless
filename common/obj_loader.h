@@ -37,5 +37,5 @@
 class ObjLoader : public ModelLoader
 {
   public:
-  void loadModel(const std::string& filename) override;
+  void loadModel(const std::string& filename);
 };
