@@ -27,7 +27,11 @@
 #include <pxr/imaging/hd/vtBufferSource.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/base/gf/matrix3d.h>
-
+#include <vector>
+#include <unordered_set>
+#include <thread>
+#include <future>
+#include <algorithm>
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -588,41 +592,128 @@ std::optional<HdGatlingMesh::ProcessedPrimvar> HdGatlingMesh::_ProcessPrimvar(Hd
   };
 }
 
-HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(HdSceneDelegate* sceneDelegate,
-                                                          const VtIntArray& primitiveParams,
-                                                          const VtVec3iArray& faces,
-                                                          uint32_t vertexCount,
-                                                          bool indexingAllowed)
+// HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(HdSceneDelegate* sceneDelegate,
+//                                                           const VtIntArray& primitiveParams,
+//                                                           const VtVec3iArray& faces,
+//                                                           uint32_t vertexCount,
+//                                                           bool indexingAllowed)
+// {
+//   PrimvarMap map;
+
+//   for (int i = 0; i < int(HdInterpolationCount); i++)
+//   {
+//     const auto& primvarDescs = GetPrimvarDescriptors(sceneDelegate, (HdInterpolation) i);
+
+//     for (const HdPrimvarDescriptor& primvar : primvarDescs)
+//     {
+//       const TfToken& name = primvar.name;
+
+//       if (name.IsEmpty() || name == HdTokens->points)
+//       {
+//         continue;
+//       }
+
+//       // Force primvars that could be baked into vertices to be vertex-interpolated
+//       bool forceVertexInterpolation = _IsPrimvarEligibleForVertexData(name, primvar.role);
+
+//       auto p = _ProcessPrimvar(sceneDelegate, primitiveParams, primvar, faces, vertexCount, indexingAllowed, forceVertexInterpolation);
+//       if (p.has_value())
+//       {
+//         map[name] = *p;
+//       }
+//     }
+//   }
+
+//   return map;
+// }
+
+HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(
+    HdSceneDelegate* sceneDelegate,
+    const VtIntArray& primitiveParams,
+    const VtVec3iArray& faces,
+    uint32_t vertexCount,
+    bool indexingAllowed)
 {
-  PrimvarMap map;
+    PrimvarMap map;
 
-  for (int i = 0; i < int(HdInterpolationCount); i++)
-  {
-    const auto& primvarDescs = GetPrimvarDescriptors(sceneDelegate, (HdInterpolation) i);
-
-    for (const HdPrimvarDescriptor& primvar : primvarDescs)
-    {
-      const TfToken& name = primvar.name;
-
-      if (name.IsEmpty() || name == HdTokens->points)
-      {
-        continue;
-      }
-
-      // Force primvars that could be baked into vertices to be vertex-interpolated
-      bool forceVertexInterpolation = _IsPrimvarEligibleForVertexData(name, primvar.role);
-
-      auto p = _ProcessPrimvar(sceneDelegate, primitiveParams, primvar, faces, vertexCount, indexingAllowed, forceVertexInterpolation);
-      if (p.has_value())
-      {
-        map[name] = *p;
-      }
+    // 一次性收集所有 primvar descriptors
+    std::vector<HdPrimvarDescriptor> primvarDescsAll;
+    primvarDescsAll.reserve(int(HdInterpolationCount) * 8);
+    for (int i = 0; i < int(HdInterpolationCount); i++) {
+        const auto& primvarDescs = GetPrimvarDescriptors(sceneDelegate, (HdInterpolation)i);
+        primvarDescsAll.insert(primvarDescsAll.end(), primvarDescs.begin(), primvarDescs.end());
     }
-  }
 
-  return map;
+    // 过滤有效的 primvar
+    std::vector<std::pair<size_t, HdPrimvarDescriptor>> validPrimvars;
+    validPrimvars.reserve(primvarDescsAll.size());
+    
+    for (size_t idx = 0; idx < primvarDescsAll.size(); ++idx) {
+        const HdPrimvarDescriptor& primvar = primvarDescsAll[idx];
+        const TfToken& name = primvar.name;
+        
+        if (name.IsEmpty() || name == HdTokens->points) continue;
+        
+        validPrimvars.emplace_back(idx, primvar);
+    }
+
+    if (validPrimvars.empty()) {
+        return map;
+    }
+
+    // 使用多线程处理
+    const size_t numThreads = std::min(std::thread::hardware_concurrency(), static_cast<unsigned int>(validPrimvars.size()));
+    const size_t chunkSize = (validPrimvars.size() + numThreads - 1) / numThreads;
+
+    std::vector<std::future<std::vector<std::pair<TfToken, ProcessedPrimvar>>>> futures;
+    futures.reserve(numThreads);
+
+    for (size_t threadIdx = 0; threadIdx < numThreads; ++threadIdx) {
+        size_t startIdx = threadIdx * chunkSize;
+        size_t endIdx = std::min(startIdx + chunkSize, validPrimvars.size());
+        
+        if (startIdx >= endIdx) break;
+
+        futures.emplace_back(std::async(std::launch::async, 
+            [this, sceneDelegate, &primitiveParams, &faces, vertexCount, indexingAllowed, &validPrimvars, startIdx, endIdx]() -> std::vector<std::pair<TfToken, ProcessedPrimvar>> {
+                
+                std::vector<std::pair<TfToken, ProcessedPrimvar>> localResults;
+                localResults.reserve(endIdx - startIdx);
+
+                for (size_t i = startIdx; i < endIdx; ++i) {
+                    const HdPrimvarDescriptor& primvar = validPrimvars[i].second;
+                    const TfToken& name = primvar.name;
+
+                    bool forceVertexInterpolation = _IsPrimvarEligibleForVertexData(name, primvar.role);
+
+                    auto p = _ProcessPrimvar(
+                        sceneDelegate,
+                        primitiveParams,
+                        primvar,
+                        faces,
+                        vertexCount,
+                        indexingAllowed,
+                        forceVertexInterpolation);
+
+                    if (p.has_value()) {
+                        localResults.emplace_back(name, std::move(*p));
+                    }
+                }
+
+                return localResults;
+            }));
+    }
+
+    // 收集所有线程的结果
+    for (auto& future : futures) {
+        auto results = future.get();
+        for (auto& result : results) {
+            map[result.first] = std::move(result.second);
+        }
+    }
+
+    return map;
 }
-
 void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
 {
   const SdfPath& id = GetId();
