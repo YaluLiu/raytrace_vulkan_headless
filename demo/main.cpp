@@ -121,6 +121,12 @@ private:
         m_app.createBVH();
     }
 
+    void loadScene()
+    {
+        m_app.loadScene();
+        m_app.createBVH();
+    }
+
     void animate()
     {
         std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;

@@ -46,13 +46,16 @@ void RayTraceApp::UpdateCamera()
 {
 }
 
+#include <filesystem>
+namespace fs = std::filesystem;
 void RayTraceApp::setupContext()
 {
   NVPSystem system("raytrace_vulkan_headless");
+  std::string currentDir = fs::current_path().string();
   defaultSearchPaths = {
       NVPSystem::exePath() + PROJECT_RELDIRECTORY,
-      NVPSystem::exePath() + PROJECT_RELDIRECTORY "..",
-      std::string("raytrace_vulkan_headless"),
+      NVPSystem::exePath() + PROJECT_RELDIRECTORY "/..",
+      currentDir + "/headless",
   };
 
   nvvk::ContextCreateInfo contextInfo;

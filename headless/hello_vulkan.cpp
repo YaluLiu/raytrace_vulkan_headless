@@ -133,14 +133,6 @@ void createOpenGLContext()
 // 改动建议: 保持不变，但要保证传入的 Vulkan 对象是 headless 环境下初始化的（比如没有 window/surface）。
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
-#if ENABLE_GL_VK_CONVERSION
-#if USE_EGL_CONTEXT
-  createEGLContext();
-#else
-  createOpenGLContext();
-#endif
-  m_allocGL.init(device, physicalDevice);
-#endif
   // 调用基类的setup，初始化Vulkan低层对象
   AppOffline::setup(instance, device, physicalDevice, queueFamily);
   // 初始化资源分配器，用于设备上分配buffer/image等
@@ -149,6 +141,12 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_debug.setup(m_device);
   // 查找适合的离屏深度格式
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
+#if ENABLE_GL_VK_CONVERSION
+#if !ENABLE_HYDRA
+  createOpenGLContext();
+#endif
+  m_allocGL.init(device, physicalDevice);
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -163,8 +161,10 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   const auto& view = CameraManip.getMatrix();
   // 构造右手坐标系的投影矩阵，并调整Y轴（Vulkan标准）
   glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
+#if !ENABLE_HYDRA
   proj[1][1] *= -1;  // Vulkan坐标系Y反转
-
+#endif
+  
   // 填充UBO内容
   hostUBO.viewProj    = proj * view;
   hostUBO.viewInverse = glm::inverse(view);

@@ -61,4 +61,6 @@ private:
 
   // for compute animation,test on the Specified model file
   std::chrono::system_clock::time_point m_startTime;
+
+  bool _cleaned = false;
 };

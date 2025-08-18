@@ -46,10 +46,11 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 #--------------------------------------------------------------------------------------------------
 # compile option
 # convert vulkan to opengl for hydra plugin
+option(ENABLE_HYDRA "Enable OpenUsd hydra plugins" OFF)
 option(ENABLE_GL_VK_CONVERSION "Enable OpenGL/Vulkan conversion" ON)
 # 让子目录可以访问
 set(ENABLE_GL_VK_CONVERSION ${ENABLE_GL_VK_CONVERSION} CACHE BOOL "Enable OpenGL/Vulkan conversion")
-
+set(ENABLE_HYDRA ${ENABLE_HYDRA} CACHE BOOL "Enable OpenUsd hydra plugins")
 
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 #--------------------------------------------------------------------------------------------------
@@ -57,7 +58,7 @@ message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 add_subdirectory(headless)
 add_subdirectory(ray_tracing_animation)
 add_subdirectory(demo)
-# add_subdirectory(gatling)
+add_subdirectory(gatling)
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory
 install(DIRECTORY "media" 
