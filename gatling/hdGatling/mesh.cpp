@@ -714,6 +714,7 @@ HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(
 
     return map;
 }
+
 void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
 {
   const SdfPath& id = GetId();
