@@ -136,89 +136,10 @@ void HdGatlingRenderPass::_ConstructGiCamera(const HdCamera& camera, GiCameraDes
       giCamera.clipEnd         // 远裁剪面
   );
 }
-namespace
-{
-  enum class GiAovId
-  {
-    Color = 0,
-    Normal,
-    NEE,
-    Barycentrics,
-    Texcoords,
-    Bounces,
-    ClockCycles,
-    Opacity,
-    Tangents,
-    Bitangents,
-    ThinWalled,
-    ObjectId,
-    Depth,
-    FaceId,
-    InstanceId,
-    DoubleSided,
-    COUNT
-  };
-
-  const static std::unordered_map<TfToken, GiAovId, TfToken::HashFunctor> _aovIdMappings {
-    { HdAovTokens->color,                    GiAovId::Color        },
-    { HdAovTokens->normal,                   GiAovId::Normal       },
-    { HdGatlingAovTokens->debugNee,          GiAovId::NEE          },
-    { HdGatlingAovTokens->debugBarycentrics, GiAovId::Barycentrics },
-    { HdGatlingAovTokens->debugTexcoords,    GiAovId::Texcoords    },
-    { HdGatlingAovTokens->debugBounces,      GiAovId::Bounces      },
-    { HdGatlingAovTokens->debugClockCycles,  GiAovId::ClockCycles  },
-    { HdGatlingAovTokens->debugOpacity,      GiAovId::Opacity      },
-    { HdGatlingAovTokens->debugTangents,     GiAovId::Tangents     },
-    { HdGatlingAovTokens->debugBitangents,   GiAovId::Bitangents   },
-    { HdGatlingAovTokens->debugThinWalled,   GiAovId::ThinWalled   },
-    { HdAovTokens->primId,                   GiAovId::ObjectId     },
-    { HdAovTokens->depth,                    GiAovId::Depth        },
-    { HdAovTokens->elementId,                GiAovId::FaceId       },
-    { HdAovTokens->instanceId,               GiAovId::InstanceId   },
-    { HdGatlingAovTokens->debugDoubleSided,  GiAovId::DoubleSided  },
-  };
-
-  struct GiAovBinding
-  {
-    GiAovId         aovId;
-    uint8_t         clearValue[16];
-  };
-
-  std::vector<GiAovBinding> _PrepareAovBindings(const HdRenderPassAovBindingVector& aovBindings)
-  {
-    std::vector<GiAovBinding> result;
-
-    for (const HdRenderPassAovBinding& binding : aovBindings)
-    {
-      HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-      const TfToken& name = binding.aovName;
-
-      auto it = _aovIdMappings.find(name);
-      if (it == _aovIdMappings.end())
-      {
-        TF_RUNTIME_ERROR(TfStringPrintf("Unsupported AOV %s", name.GetText()));
-        renderBuffer->SetConverged(true);
-        continue;
-      }
-
-      auto valueType = HdGetValueTupleType(binding.clearValue).type;
-      size_t valueSize = HdDataSizeOfType(valueType);
-      const void* valuePtr = HdGetValueData(binding.clearValue);
-
-      GiAovBinding b;
-      b.aovId = it->second;
-      memcpy(&b.clearValue[0], valuePtr, valueSize);
-
-      result.push_back(b);
-    }
-
-    return result;
-  }
-}
 
 #define USE_RAY_TRACE 1
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState,
-                                   const TfTokenVector& renderTags)
+                                  const TfTokenVector& renderTags)
 {
   TF_UNUSED(renderTags);
   const HdCamera* hdcamera = renderPassState->GetCamera();
@@ -227,36 +148,15 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     return;
   }
   const auto& hdAovBindings = renderPassState->GetAovBindings();
-
-  std::vector<GiAovBinding> aovBindings = _PrepareAovBindings(hdAovBindings);
-  if (aovBindings.empty())
-  {
-    // If this is due to an unsupported AOV, we already logged an error about it.
-    return;
-  }
-
-  for (const HdRenderPassAovBinding& binding : hdAovBindings)
-  {
-    const TfToken& name = binding.aovName;
-    HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-    auto width = renderBuffer->GetWidth();
-    auto height = renderBuffer->GetHeight();
+  app_init(hdAovBindings[0]);
 #if USE_RAY_TRACE
-    if (!_isAppInited) {
-      _isAppInited = true;
-      _renderApp.setup(width, height);
-      _renderApp.loadScene();
-      _renderApp.createBVH();
-    } else {
-      _renderApp.resize(width,height);
-    }
-#endif
-  }
-
   std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
   _renderApp.getVulkan().animationObject(diff.count());
   _renderApp.getVulkan().animationInstances(diff.count());
   _renderApp.render();
+#endif
+
+  
   for (const HdRenderPassAovBinding& binding : hdAovBindings)
   {
     const TfToken& name = binding.aovName;
@@ -277,14 +177,24 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   _frame_idx++;
 }
 
-void HdGatlingRenderPass::init_render_app()
+#if USE_RAY_TRACE
+void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
 {
-//   if (_isAppInited){
-//     return;
-//   }
-//   _isAppInited = true;
-// #if USE_RAY_TRACE
-// #endif
+  HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+  auto width = renderBuffer->GetWidth();
+  auto height = renderBuffer->GetHeight();
+  // const GfVec4d &viewport = renderPassState->GetViewport();
+  // int width = static_cast<int>(viewport[2]);
+  // int height = static_cast<int>(viewport[3]);
+  // std::cout << "[HydraInfo]" << width << "," << height << std::endl;
+  if (!_isAppInited) {
+    _isAppInited = true;
+    _renderApp.setup(width, height);
+    _renderApp.loadScene();
+    _renderApp.createBVH();
+  } else {
+    _renderApp.resize(width,height);
+  }
 }
-
+#endif
 PXR_NAMESPACE_CLOSE_SCOPE

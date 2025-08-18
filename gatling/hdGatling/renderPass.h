@@ -64,21 +64,22 @@ protected:
                 const TfTokenVector& renderTags) override;
 
 private:
-  void _ConstructGiCamera(const HdCamera& camera, GiCameraDesc& giCamera) const;
-  void init_render_app();
-
-private:
   const HdRenderSettingsMap& _settings;
   bool _isConverged;
   int _frame_idx = 0;
+  // 资源场景指针
+  HdGatlingScene& _scene;
+
+// ----------------------------------------------------------------------------------
+// for headless ray trace app
+private:
+  void _ConstructGiCamera(const HdCamera& camera, GiCameraDesc& giCamera) const;
+  void app_init(const HdRenderPassAovBinding& binding);
 
   // 是否初始化了mesh和材质
   bool _isAppInited = false;
   // 渲染框架
   RayTraceApp _renderApp;
-  // 资源场景指针
-  HdGatlingScene& _scene;
-
   GiCameraDesc _camera;
   std::chrono::system_clock::time_point m_startTime;
 };
