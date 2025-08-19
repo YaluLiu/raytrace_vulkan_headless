@@ -133,13 +133,17 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
 #if USE_BASE_RENDER
   _renderApp.loadScene();
 #else
+  bool init_texture = true;
   for(auto& cur_mesh:_scene.v_mesh){
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh,loader);
       add_default_material(loader);
       loader.m_textures.clear();
-      loader.m_textures.push_back("aMedKitm_albedo.jpg");
-      loader.m_textures.push_back("PatrickStar.jpg");
+      if(init_texture) {
+        loader.m_textures.push_back("aMedKitm_albedo.jpg");
+        loader.m_textures.push_back("PatrickStar.jpg");
+        init_texture = false;
+      }
       _renderApp.getVulkan().loadModel(loader);    
     }
 #endif
@@ -208,8 +212,8 @@ void HdGatlingRenderPass::app_anim_real()
       _scene.v_mesh[i]._changed = false;
       ConvertVmeshToLoader(_scene.v_mesh[i],_renderApp.getVulkan().m_Loader[i]);
       _renderApp.getVulkan().updateBlas(i);
+      _renderApp.getVulkan().updateTlas(i,_scene.v_mesh[i]._transform);
     }
-    _renderApp.getVulkan().updateTlas(i,_scene.v_mesh[i]._transform);
   }
 }
 

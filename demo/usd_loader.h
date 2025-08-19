@@ -22,7 +22,7 @@
 
 class UsdLoader : public ModelLoader {
 public:
-    void loadModel(const std::string& filename) override;
+    void loadModel(const std::string& filename);
 
     //自定义的的分开接口
     void loadVertices(pxr::UsdGeomMesh& mesh);

@@ -317,7 +317,9 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   model.matIndexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_matIndx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
 
   // 纹理贴图（若有），并记录偏移
-  auto txtOffset = static_cast<uint32_t>(m_textures.size());
+  // 不记录偏移，全部mesh复用第一个mesh的贴图，作为全局贴图
+  // todo: add global textures
+  auto txtOffset = 0;//static_cast<uint32_t>(m_textures.size());
   createTextureImages(cmdBuf, loader.m_textures);
   cmdBufGet.submitAndWait(cmdBuf);
 

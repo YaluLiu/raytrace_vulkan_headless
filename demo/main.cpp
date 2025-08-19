@@ -106,11 +106,26 @@ private:
 
         // todo: change usd texture file path
         catloader.m_textures.clear();
-        catloader.m_textures.push_back("texture_pbr_v128.png");
+        catloader.m_textures.push_back("PatrickStar.jpg");   //yellow
+        catloader.m_textures.push_back("aMedKitm_albedo.jpg"); //red
+        catloader.m_textures.push_back("aMedKitm_normal.jpg"); //blue
+        catloader.m_materials[0].textureID = 2;
 
         m_app.getVulkan().loadModel(catloader,
-            glm::scale(glm::mat4(1.f), glm::vec3(4.f, 4.f, 4.f)) *
+            glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f)) *
             glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f)));
+
+
+        UsdLoader ballloader;
+        ballloader.loadModel(m_cwd / "media/scenes/beautyball/beautyball.usdz");
+
+        // todo: change usd texture file path
+        ballloader.m_textures.clear();
+        ballloader.m_materials[0].textureID = 0;
+
+        m_app.getVulkan().loadModel(ballloader,
+            glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f)) *
+            glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.5f, 1.0f)));
 
         // 平面,只有obj的平面
         ObjLoader planeLoader;
