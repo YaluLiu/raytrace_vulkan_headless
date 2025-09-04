@@ -25,8 +25,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdGatlingInstancer final : public HdInstancer
 {
 public:
-  HdGatlingInstancer(HdSceneDelegate* delegate,
-                     const SdfPath& id);
+  HdGatlingInstancer(HdSceneDelegate* delegate, const SdfPath& id);
 
   ~HdGatlingInstancer() override;
 
@@ -35,9 +34,7 @@ public:
 
   std::vector<GiPrimvarData> ComputeFlattenedPrimvars(const SdfPath& prototypeId);
 
-  void Sync(HdSceneDelegate* sceneDelegate,
-            HdRenderParam* renderParam,
-            HdDirtyBits* dirtyBits) override;
+  void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 
 private:
   std::vector<GiPrimvarData> MakeGiPrimvars(const SdfPath& prototypeId);

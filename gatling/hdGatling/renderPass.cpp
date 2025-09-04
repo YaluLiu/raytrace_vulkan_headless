@@ -222,9 +222,8 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 
 void HdGatlingRenderPass::app_anim_real()
 {
-  UsdScopeTimer timer("app_anim_real");
-  size_t        tlas_id     = 0;
-  bool          update_tlas = false;
+  size_t tlas_id     = 0;
+  bool   update_tlas = false;
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
     auto& cur_mesh = _scene.v_mesh[mesh_id];
