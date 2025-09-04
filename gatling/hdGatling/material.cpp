@@ -22,66 +22,79 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id,
-                             HdGatlingScene& scene)
-  : HdMaterial(id)
-  , _scene(scene)
+HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id, HdGatlingScene& scene)
+    : HdMaterial(id)
+    , _scene(scene)
 {
 }
 
-void HdGatlingMaterial::Finalize(HdRenderParam* renderParam)
-{
-}
+void HdGatlingMaterial::Finalize(HdRenderParam* renderParam) {}
 
 HdDirtyBits HdGatlingMaterial::GetInitialDirtyBitsMask() const
 {
   return DirtyBits::DirtyParams;
 }
 
-void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate,
-                             HdRenderParam* renderParam,
-                             HdDirtyBits* dirtyBits)
+void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
-    if (!TF_VERIFY(sceneDelegate)) return;
+  if(!TF_VERIFY(sceneDelegate))
+    return;
 
-    HdDirtyBits bits = *dirtyBits;
-    *dirtyBits = HdMaterial::Clean;
+  HdDirtyBits bits = *dirtyBits;
+  *dirtyBits       = HdMaterial::Clean;
 
-    if (!(bits & HdMaterial::DirtyResource)) {
-        return;  // 材质不需要更新
+  if(!(bits & HdMaterial::DirtyResource))
+  {
+    return;  // 材质不需要更新
+  }
+
+  const SdfPath& id       = GetId();
+  const VtValue& resource = sceneDelegate->GetMaterialResource(id);
+
+  if(!resource.IsHolding<HdMaterialNetworkMap>())
+  {
+    return;
+  }
+
+  const HdMaterialNetworkMap& networkMap = resource.UncheckedGet<HdMaterialNetworkMap>();
+  bool                        isVolume   = false;
+
+  HdMaterialNetwork2 network = HdConvertToHdMaterialNetwork2(networkMap, &isVolume);
+  if(isVolume)
+  {
+    TF_WARN("Volume %s unsupported", id.GetText());
+    return;
+  }
+
+  // 修正遍历方式
+  for(const auto& nodePair : network.nodes)
+  {
+    const SdfPath&         nodePath = nodePair.first;
+    const HdMaterialNode2& node     = nodePair.second;
+    std::cout << "---------------------------------------------------" << std::endl;
+    std::cout << "Node: " << nodePath.GetString() << ", NodeType: " << node.nodeTypeId << std::endl;
+
+    // 打印参数
+    for(const auto& paramPair : node.parameters)
+    {
+      const TfToken& paramName  = paramPair.first;
+      const VtValue& paramValue = paramPair.second;
+      std::cout << paramName.GetString() << "(" << paramValue.GetTypeName().c_str() << ") = " << paramValue << std::endl;
     }
 
-    // 获取 HdMaterialNetwork2 类型
-    VtValue val = sceneDelegate->GetMaterialResource(GetId());
-    if (!val.IsHolding<HdMaterialNetwork2>()) {
-        TF_WARN("MaterialResource不是 HdMaterialNetwork2 类型: %s", GetId().GetText());
-        return;
+    // 打印 inputConnections（参数与贴图的连接）
+    for(const auto& connPair : node.inputConnections)
+    {
+      const TfToken&                            paramName   = connPair.first;
+      const std::vector<HdMaterialConnection2>& connections = connPair.second;
+      for(const auto& conn : connections)
+      {
+        // HdMaterialConnection2 通常包含 .upstreamNode（SdfPath）和 .upstreamOutputName（TfToken）
+        std::cout << paramName.GetString() << " <- " << conn.upstreamNode.GetString() << "."
+                  << conn.upstreamOutputName.GetString() << std::endl;
+      }
     }
-
-    const HdMaterialNetwork2& net = val.UncheckedGet<HdMaterialNetwork2>();
-
-    // net.nodes 是 map<SdfPath, HdMaterialNode2>
-    for (const auto& [path, node] : net.nodes) {
-        if (node.nodeTypeId == TfToken("UsdUVTexture")) {
-            auto it = node.parameters.find(TfToken("file"));
-            if (it != node.parameters.end()
-                && it->second.IsHolding<SdfAssetPath>()) {
-                
-                const SdfAssetPath& assetPath = it->second.UncheckedGet<SdfAssetPath>();
-                const std::string texturePath =
-                    assetPath.GetResolvedPath().empty() ?
-                    assetPath.GetAssetPath() :
-                    assetPath.GetResolvedPath();
-
-                std::cout << "Found texture at node " 
-                          << path.GetName() 
-                          << ": " << texturePath << std::endl;
-
-                // TODO: 将 texturePath 缓存到类成员或进一步处理
-            }
-        }
-    }
+  }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
