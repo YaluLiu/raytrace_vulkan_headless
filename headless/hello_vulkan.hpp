@@ -79,14 +79,14 @@ public:
   // Information pushed at each draw call
   PushConstantRaster m_pcRaster{
       {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},  // Identity matrix
-      {5.f, 10.f, 5.f},                                 // light position
+      {5.f, 10.f, 5.f},                                  // light position
       0,                                                 // instance Id
-      30000.f,                                             // light intensity
+      30000.f,                                           // light intensity
       0                                                  // light type
   };
 
   // Array of objects and instances in the scene
-  std::vector<ModelLoader> m_Loader;   // Model on host
+  std::vector<ModelLoader> m_Loader;     // Model on host
   std::vector<ObjModel>    m_objModel;   // Model on host
   std::vector<ObjDesc>     m_objDesc;    // Model description for device access
   std::vector<ObjInstance> m_instances;  // Scene model instances
@@ -162,15 +162,16 @@ public:
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
-  void saveOffscreenColorToFile(const char* filename);
+  void   saveOffscreenColorToFile(const char* filename);
   GLuint getOpenGLFrame() { return m_rtOutputGL.oglId; }
 #if ENABLE_GL_VK_CONVERSION
-  void createOutputImage();
-  void dumpInteropTexture(const char* filename);
-  interop::Texture2DVkGL m_rtOutputGL;
+  void                                createOutputImage();
+  void                                dumpInteropTexture(const char* filename);
+  interop::Texture2DVkGL              m_rtOutputGL;
   interop::ResourceAllocatorGLInterop m_allocGL;
 #endif
-  void updateTlas(uint32_t mesh_Id,glm::mat4 transform);
+  void updateTlas(uint32_t mesh_Id, glm::mat4 transform);
+  void updateTlasEnd();
   // 动画处理球体对象的顶点，在 C++ 端进行缩放
   void updateBlas(uint32_t mesh_Id);
 };

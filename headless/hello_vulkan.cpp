@@ -48,63 +48,62 @@ extern std::vector<std::string> defaultSearchPaths;
 #include <EGL/eglext.h>
 #include <glad/glad.h>
 
-void createEGLContext() {
-    // 1. 获取默认显示
-    EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (egl_display == EGL_NO_DISPLAY) {
-        // 错误处理
-        return;
-    }
+void createEGLContext()
+{
+  // 1. 获取默认显示
+  EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  if(egl_display == EGL_NO_DISPLAY)
+  {
+    // 错误处理
+    return;
+  }
 
-    // 2. 初始化 EGL
-    EGLint major, minor;
-    if (!eglInitialize(egl_display, &major, &minor)) {
-        // 错误处理
-        return;
-    }
+  // 2. 初始化 EGL
+  EGLint major, minor;
+  if(!eglInitialize(egl_display, &major, &minor))
+  {
+    // 错误处理
+    return;
+  }
 
-    // 3. 配置属性
-    EGLint attribs[] = {
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT, // 使用OpenGL（不是OpenGL ES）
-        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,   // 离屏surface，最小配置
-        EGL_NONE
-    };
-    EGLConfig egl_config;
-    EGLint num_configs;
-    if (!eglChooseConfig(egl_display, attribs, &egl_config, 1, &num_configs)) {
-        // 错误处理
-        return;
-    }
+  // 3. 配置属性
+  EGLint    attribs[] = {EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,  // 使用OpenGL（不是OpenGL ES）
+                         EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,    // 离屏surface，最小配置
+                         EGL_NONE};
+  EGLConfig egl_config;
+  EGLint    num_configs;
+  if(!eglChooseConfig(egl_display, attribs, &egl_config, 1, &num_configs))
+  {
+    // 错误处理
+    return;
+  }
 
-    // 4. 创建一个最小的 pbuffer surface
-    EGLint pbuffer_attribs[] = {
-        EGL_WIDTH, 1,
-        EGL_HEIGHT, 1,
-        EGL_NONE,
-    };
-    EGLSurface egl_surface = eglCreatePbufferSurface(egl_display, egl_config, pbuffer_attribs);
-    if (egl_surface == EGL_NO_SURFACE) {
-        // 错误处理
-        return;
-    }
+  // 4. 创建一个最小的 pbuffer surface
+  EGLint pbuffer_attribs[] = {
+      EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE,
+  };
+  EGLSurface egl_surface = eglCreatePbufferSurface(egl_display, egl_config, pbuffer_attribs);
+  if(egl_surface == EGL_NO_SURFACE)
+  {
+    // 错误处理
+    return;
+  }
 
-    // 5. 创建OpenGL上下文
-    EGLint context_attribs[] = {
-        EGL_CONTEXT_MAJOR_VERSION, 4,
-        EGL_CONTEXT_MINOR_VERSION, 5,
-        EGL_NONE
-    };
-    EGLContext egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
-    if (egl_context == EGL_NO_CONTEXT) {
-        // 错误处理
-        return;
-    }
+  // 5. 创建OpenGL上下文
+  EGLint     context_attribs[] = {EGL_CONTEXT_MAJOR_VERSION, 4, EGL_CONTEXT_MINOR_VERSION, 5, EGL_NONE};
+  EGLContext egl_context       = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
+  if(egl_context == EGL_NO_CONTEXT)
+  {
+    // 错误处理
+    return;
+  }
 
-    // 6. 使 context 当前
-    if (!eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context)) {
-        // 错误处理
-        return;
-    }
+  // 6. 使 context 当前
+  if(!eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context))
+  {
+    // 错误处理
+    return;
+  }
 }
 #else
 // opengl context with windows
@@ -115,7 +114,7 @@ void createOpenGLContext()
   // 设置 GLFW 窗口使用 OpenGL 4.5
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // 创建隐藏窗口
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // 创建隐藏窗口
   // 创建 GLFW 窗口
   GLFWwindow* gl_window = glfwCreateWindow(1, 1, PROJECT_NAME, NULL, NULL);
   // 设置当前 OpenGL 上下文
@@ -164,7 +163,7 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 #if !ENABLE_HYDRA
   proj[1][1] *= -1;  // Vulkan坐标系Y反转
 #endif
-  
+
   // 填充UBO内容
   hostUBO.viewProj    = proj * view;
   hostUBO.viewInverse = glm::inverse(view);
@@ -319,7 +318,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   // 纹理贴图（若有），并记录偏移
   // 不记录偏移，全部mesh复用第一个mesh的贴图，作为全局贴图
   // todo: add global textures
-  auto txtOffset = 0;//static_cast<uint32_t>(m_textures.size());
+  auto txtOffset = 0;  //static_cast<uint32_t>(m_textures.size());
   createTextureImages(cmdBuf, loader.m_textures);
   cmdBufGet.submitAndWait(cmdBuf);
 
@@ -545,7 +544,7 @@ void HelloVulkan::onResize(int w, int h)
 {
   if(w == (int)m_size.width && h == (int)m_size.height)
     return;
-  m_size.width = w;
+  m_size.width  = w;
   m_size.height = h;
   // 重建离屏渲染（包括color/depth framebuffer、renderpass等）
   createOffscreenRender();
@@ -923,7 +922,7 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf, const glm::vec4& clear
 
 //-----------------------------------------------------------------------------------------------------
 // for demo local test
-// 
+//
 //--------------------------------------------------------------------------------------------------
 // 让Wuson模型实例围绕场景圆形运动
 // time: 当前时间（秒），用于动画偏移
@@ -1032,50 +1031,55 @@ void HelloVulkan::createCompPipelines()
 //--------------------------------------------------------------------------------------------------
 // update blas & tlas
 //--------------------------------------------------------------------------------------------------
-void HelloVulkan::updateTlas(uint32_t mesh_Id,glm::mat4 transform)
+void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform)
 {
   VkAccelerationStructureInstanceKHR& tinst = m_tlas[mesh_Id];
   tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
+}
+
+void HelloVulkan::updateTlasEnd()
+{
   // Updating the top level acceleration structure
   m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
 }
+
 // 动画处理球体对象的顶点，在 C++ 端进行缩放
 void HelloVulkan::updateBlas(uint32_t mesh_Id)
 {
-    // std::cout << "[ANIM]  points[1]:" << 
-    //   now_vertices[1].pos.x << "," << 
-    //   now_vertices[1].pos.y << "," << 
-    //   now_vertices[1].pos.z <<std::endl;
+  // std::cout << "[ANIM]  points[1]:" <<
+  //   now_vertices[1].pos.x << "," <<
+  //   now_vertices[1].pos.y << "," <<
+  //   now_vertices[1].pos.z <<std::endl;
 
-    //更新了loader的对应顶点数据
-    std::vector<VertexObj>& now_vertices = m_Loader[mesh_Id].m_vertices;
-    ObjModel& model = m_objModel[mesh_Id];
+  //更新了loader的对应顶点数据
+  std::vector<VertexObj>& now_vertices = m_Loader[mesh_Id].m_vertices;
+  ObjModel&               model        = m_objModel[mesh_Id];
 
-    // 创建命令池和命令缓冲区
-    nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-    VkCommandBuffer cmdBuf = genCmdBuf.createCommandBuffer();
+  // 创建命令池和命令缓冲区
+  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
+  VkCommandBuffer   cmdBuf = genCmdBuf.createCommandBuffer();
 
-    // 更新模型的顶点数量
-    model.nbVertices = static_cast<uint32_t>(now_vertices.size());
+  // 更新模型的顶点数量
+  model.nbVertices = static_cast<uint32_t>(now_vertices.size());
 
 
-    // 定义缓冲区使用标志
-    VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    VkBufferUsageFlags rayTracingFlags =
-        flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  // 定义缓冲区使用标志
+  VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+  VkBufferUsageFlags rayTracingFlags =
+      flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-    // 销毁旧的顶点缓冲区，防止内存泄漏
-    m_alloc.destroy(model.vertexBuffer);
+  // 销毁旧的顶点缓冲区，防止内存泄漏
+  m_alloc.destroy(model.vertexBuffer);
 
-    // 创建新的顶点缓冲区并上传修改后的顶点数据
-    model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
+  // 创建新的顶点缓冲区并上传修改后的顶点数据
+  model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
 
-    // 提交命令缓冲区并等待执行完成
-    genCmdBuf.submitAndWait(cmdBuf);
+  // 提交命令缓冲区并等待执行完成
+  genCmdBuf.submitAndWait(cmdBuf);
 
-    // 更新底层加速结构（BLAS），使用新的顶点缓冲区
-    m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
-                           VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
+  // 更新底层加速结构（BLAS），使用新的顶点缓冲区
+  m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
+                         VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
 }
 //-------------------------------------------------------------------------------------------------------------------
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -1189,12 +1193,12 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
 void HelloVulkan::createOutputImage()
 {
   m_rtOutputGL.destroy(m_allocGL);
-  auto          usage   = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+  auto usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   //VK_FORMAT_R32_SFLOAT 对应 GL_R32F
   //VK_FORMAT_R32G32B32A32_SFLOAT  对应 GL_RGBA32F
   // VK_FORMAT_R8G8B8A8_UNORM 对应 GL_RGBA
-  VkFormat      format   = m_offscreenColorFormat; 
-  VkImageLayout layout   = VK_IMAGE_LAYOUT_GENERAL;
+  VkFormat      format = m_offscreenColorFormat;
+  VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
 
   VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};  // default values
   VkImageCreateInfo   imageCreateInfo = nvvk::makeImage2DCreateInfo(m_size, format, usage);
@@ -1214,7 +1218,7 @@ void HelloVulkan::createOutputImage()
 }
 
 void HelloVulkan::dumpInteropTexture(const char* filename)
-{ 
+{
   int width  = m_rtOutputGL.imgSize.width;
   int height = m_rtOutputGL.imgSize.height;
   glBindTexture(GL_TEXTURE_2D, m_rtOutputGL.oglId);
@@ -1224,9 +1228,9 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
   std::vector<unsigned char> out_pixels(width * height * 4);
   for(size_t i = 0; i < pixels.size(); ++i)
   {
-      float v = pixels[i];
-      v = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
-      out_pixels[i] = static_cast<unsigned char>(v * 255.0f);
+    float v       = pixels[i];
+    v             = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
+    out_pixels[i] = static_cast<unsigned char>(v * 255.0f);
   }
   stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
   printf("Saved %s (%ux%u)\n", filename, width, height);

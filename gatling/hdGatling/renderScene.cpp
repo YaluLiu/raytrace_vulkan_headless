@@ -114,15 +114,15 @@ void add_default_material(ModelLoader& Loader)
   mat.textureID = -1;
   mat.illum     = 2;  // 默认使用Phong光照模型
 
+  mat.textureID = -1;
+  mat.diffuse   = glm::vec3(0.1f, 0.5f, 0.1f);
+  Loader.m_materials.emplace_back(mat);
+
   //测试代码
   mat.textureID = 0;
   Loader.m_materials.emplace_back(mat);
 
   mat.textureID = 1;
-  Loader.m_materials.emplace_back(mat);
-
-  mat.textureID = -1;
-  mat.diffuse   = glm::vec3(0.1f, 0.8f, 0.1f);
   Loader.m_materials.emplace_back(mat);
 
   // 如果没有材质，添加默认材质

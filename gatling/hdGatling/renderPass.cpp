@@ -139,8 +139,9 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
     _renderApp.loadScene();
 #else
     bool init_texture = true;
-    for(auto& cur_mesh : _scene.v_mesh)
+    for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
     {
+      auto&       cur_mesh = _scene.v_mesh[mesh_id];
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       add_default_material(loader);
@@ -152,6 +153,10 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
         init_texture = false;
       }
       _renderApp.getVulkan().loadModel(loader);
+      for(int i = 1; i < cur_mesh._vec_trans_mat.size(); i++)
+      {
+        _renderApp.getVulkan().m_instances.push_back({cur_mesh._vec_trans_mat[i], mesh_id});
+      }
     }
 #endif
     _renderApp.createBVH();
@@ -217,15 +222,36 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 
 void HdGatlingRenderPass::app_anim_real()
 {
-  for(size_t i = 0; i < _scene.v_mesh.size(); ++i)
+  UsdScopeTimer timer("app_anim_real");
+  size_t        tlas_id     = 0;
+  bool          update_tlas = false;
+  for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
-    if(_scene.v_mesh[i]._changed)
+    auto& cur_mesh = _scene.v_mesh[mesh_id];
+    if(cur_mesh._blas_changed)
     {
-      _scene.v_mesh[i]._changed = false;
-      ConvertVmeshToLoader(_scene.v_mesh[i], _renderApp.getVulkan().m_Loader[i]);
-      _renderApp.getVulkan().updateBlas(i);
-      _renderApp.getVulkan().updateTlas(i, _scene.v_mesh[i]._vec_trans_mat[0]);
+      cur_mesh._blas_changed = false;
+      ConvertVmeshToLoader(cur_mesh, _renderApp.getVulkan().m_Loader[mesh_id]);
+      _renderApp.getVulkan().updateBlas(mesh_id);
     }
+    if(cur_mesh._tlas_changed)
+    {
+      update_tlas            = true;
+      cur_mesh._tlas_changed = false;
+      for(int ins_id = 0; ins_id < cur_mesh._vec_trans_mat.size(); ins_id++)
+      {
+        _renderApp.getVulkan().updateTlas(tlas_id, cur_mesh._vec_trans_mat[ins_id]);
+        tlas_id++;
+      }
+    }
+    else
+    {
+      tlas_id += cur_mesh._vec_trans_mat.size();
+    }
+  }
+  if(update_tlas)
+  {
+    _renderApp.getVulkan().updateTlasEnd();
   }
 }
 
