@@ -386,7 +386,6 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
 {
   // primvars:displayColor 的 token
   TfToken displayColorToken("displayColor");
-  auto&   cur_mesh = _scene.v_mesh[_mesh_id];
   // 获取 primvar
   VtValue displayColorValue = GetPrimvar(sceneDelegate, displayColorToken);
 
@@ -396,10 +395,10 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
     const VtVec3fArray& colors = displayColorValue.UncheckedGet<VtVec3fArray>();
     for(size_t i = 0; i < colors.size(); ++i)
     {
-      const GfVec3f& c                = colors[i];
-      cur_mesh.materialObj.diffuse[0] = c[0];
-      cur_mesh.materialObj.diffuse[1] = c[1];
-      cur_mesh.materialObj.diffuse[2] = c[2];
+      const GfVec3f& c                               = colors[i];
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[0] = c[0];
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[1] = c[1];
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[2] = c[2];
     }
   }
   else if(displayColorValue.IsHolding<VtVec4fArray>())
@@ -447,7 +446,6 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   std::vector<glm::mat4> trans_instances = {glm::mat4(1.0f)};  // 用于存放所有实例的变换
   glm::mat4              trans_single    = glm::mat4(1);
   size_t                 num_instances   = 1;
-  auto&                  cur_mesh        = _scene.v_mesh[_mesh_id];
 
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
   {
@@ -490,7 +488,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       }
       trans_instances[k] = mat;
     }
-    cur_mesh._tlas_changed = true;
+    _scene.v_mesh[_mesh_id]._tlas_changed = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
@@ -503,14 +501,14 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
         trans_single[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
       }
     }
-    cur_mesh._tlas_changed = true;
+    _scene.v_mesh[_mesh_id]._tlas_changed = true;
   }
 
   // std::cout << "Num_instances:" << num_instances << std::endl;
-  cur_mesh._vec_trans_mat.resize(num_instances);
+  _scene.v_mesh[_mesh_id]._vec_trans_mat.resize(num_instances);
   for(uint32_t k = 0; k < num_instances; ++k)
   {
-    cur_mesh._vec_trans_mat[k] = trans_single * trans_instances[k];
+    _scene.v_mesh[_mesh_id]._vec_trans_mat[k] = trans_single * trans_instances[k];
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyMaterialId))
@@ -524,17 +522,17 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     if(materialPrim)
     {
-      GfVec3f diffuse_color           = materialPrim->_diffuse_color;
-      cur_mesh.materialObj.diffuse[0] = diffuse_color[0];
-      cur_mesh.materialObj.diffuse[1] = diffuse_color[1];
-      cur_mesh.materialObj.diffuse[2] = diffuse_color[2];
-      cur_mesh._material_changed      = true;
+      GfVec3f diffuse_color                          = materialPrim->_diffuse_color;
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[0] = diffuse_color[0];
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[1] = diffuse_color[1];
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[2] = diffuse_color[2];
+      _scene.v_mesh[_mesh_id]._material_changed      = true;
     }
     else
     {
-      cur_mesh.materialObj.diffuse[0] = 0.9;
-      cur_mesh.materialObj.diffuse[1] = 0.9;
-      cur_mesh.materialObj.diffuse[2] = 0.9;
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[0] = 0.9;
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[1] = 0.9;
+      _scene.v_mesh[_mesh_id].materialObj.diffuse[2] = 0.9;
       GetDisplayColor(sceneDelegate);
     }
   }
