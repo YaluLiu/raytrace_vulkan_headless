@@ -381,6 +381,42 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
 
 void HdGatlingMesh::Finalize(HdRenderParam* renderParam) {}
 
+
+void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
+{
+  // primvars:displayColor 的 token
+  TfToken displayColorToken("displayColor");
+  auto&   cur_mesh = _scene.v_mesh[_mesh_id];
+  // 获取 primvar
+  VtValue displayColorValue = GetPrimvar(sceneDelegate, displayColorToken);
+
+  // 检查类型是否正确（通常为 VtVec3fArray 或 VtVec4fArray）
+  if(displayColorValue.IsHolding<VtVec3fArray>())
+  {
+    const VtVec3fArray& colors = displayColorValue.UncheckedGet<VtVec3fArray>();
+    for(size_t i = 0; i < colors.size(); ++i)
+    {
+      const GfVec3f& c                = colors[i];
+      cur_mesh.materialObj.diffuse[0] = c[0];
+      cur_mesh.materialObj.diffuse[1] = c[1];
+      cur_mesh.materialObj.diffuse[2] = c[2];
+    }
+  }
+  else if(displayColorValue.IsHolding<VtVec4fArray>())
+  {
+    const VtVec4fArray& colors = displayColorValue.UncheckedGet<VtVec4fArray>();
+    for(size_t i = 0; i < colors.size(); ++i)
+    {
+      const GfVec4f& c = colors[i];
+      printf("displayColor[%zu]: R: %.4f, G: %.4f, B: %.4f, A: %.4f\n", i, c[0], c[1], c[2], c[3]);
+    }
+  }
+  else
+  {
+    printf("displayColor primvar not found or not a supported type.\n");
+  }
+}
+
 void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, const TfToken& reprToken)
 {
   TF_UNUSED(renderParam);
@@ -503,6 +539,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       cur_mesh.materialObj.diffuse[0] = 0.9;
       cur_mesh.materialObj.diffuse[1] = 0.9;
       cur_mesh.materialObj.diffuse[2] = 0.9;
+      GetDisplayColor(sceneDelegate);
     }
   }
   *dirtyBits = HdChangeTracker::Clean;
