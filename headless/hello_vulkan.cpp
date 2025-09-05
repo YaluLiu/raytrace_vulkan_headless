@@ -1031,9 +1031,10 @@ void HelloVulkan::createCompPipelines()
 //--------------------------------------------------------------------------------------------------
 // update blas & tlas
 //--------------------------------------------------------------------------------------------------
-void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform)
+void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible)
 {
   VkAccelerationStructureInstanceKHR& tinst = m_tlas[mesh_Id];
+  tinst.mask                                = visible ? 0xFF : 0x00;
   tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
 }
 

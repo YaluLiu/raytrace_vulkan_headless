@@ -443,6 +443,14 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     return;
   }
 
+  if(*dirtyBits & HdChangeTracker::DirtyVisibility)
+  {
+    _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
+    _scene.v_mesh[_mesh_id]._visible = sceneDelegate->GetVisible(id);
+    //visible be updated on tlas-update-function
+    _scene.v_mesh[_mesh_id]._tlas_changed = true;
+  }
+
   std::vector<glm::mat4> trans_instances = {glm::mat4(1.0f)};  // 用于存放所有实例的变换
   glm::mat4              trans_single    = glm::mat4(1);
   size_t                 num_instances   = 1;
@@ -473,7 +481,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     }
 
     num_instances       = uint32_t(transforms.size());
-    auto transformsData = (const float(*)[4][4])transforms[0].data();
+    auto transformsData = (const float (*)[4][4])transforms[0].data();
     trans_instances.resize(num_instances);
     for(uint32_t k = 0; k < num_instances; ++k)
     {
@@ -536,6 +544,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       GetDisplayColor(sceneDelegate);
     }
   }
+
   *dirtyBits = HdChangeTracker::Clean;
 }
 

@@ -170,7 +170,7 @@ public:
   interop::Texture2DVkGL              m_rtOutputGL;
   interop::ResourceAllocatorGLInterop m_allocGL;
 #endif
-  void updateTlas(uint32_t mesh_Id, glm::mat4 transform);
+  void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);
   void updateTlasEnd();
   // 动画处理球体对象的顶点，在 C++ 端进行缩放
   void updateBlas(uint32_t mesh_Id);
