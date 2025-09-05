@@ -81,7 +81,7 @@ public:
       {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},  // Identity matrix
       {5.f, 10.f, 5.f},                                  // light position
       0,                                                 // instance Id
-      30000.f,                                           // light intensity
+      100.f,                                             // light intensity
       0                                                  // light type
   };
 
@@ -174,4 +174,6 @@ public:
   void updateTlasEnd();
   // 动画处理球体对象的顶点，在 C++ 端进行缩放
   void updateBlas(uint32_t mesh_Id);
+  void updateMaterialAtRuntime(int modelIndex, int materialIndex, const MaterialObj& newMaterial);
+  void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 };

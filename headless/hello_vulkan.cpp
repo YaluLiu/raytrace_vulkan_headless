@@ -318,7 +318,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   // 纹理贴图（若有），并记录偏移
   // 不记录偏移，全部mesh复用第一个mesh的贴图，作为全局贴图
   // todo: add global textures
-  auto txtOffset = 0;  //static_cast<uint32_t>(m_textures.size());
+  auto txtOffset = static_cast<uint32_t>(m_textures.size());
   createTextureImages(cmdBuf, loader.m_textures);
   cmdBufGet.submitAndWait(cmdBuf);
 
@@ -1080,6 +1080,98 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
   // 更新底层加速结构（BLAS），使用新的顶点缓冲区
   m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
                          VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
+}
+
+//--------------------------------------------------------------------------------------------------
+// update material
+//--------------------------------------------------------------------------------------------------
+// 在渲染循环中修改材质
+void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, const MaterialObj& newMaterial)
+{
+  nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
+  VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
+
+  // 计算偏移量
+  VkDeviceSize offset = materialIndex * sizeof(MaterialObj);
+
+  // 确保缓冲区可见性
+  VkBufferMemoryBarrier barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+  barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  barrier.buffer        = m_objModel[modelIndex].matColorBuffer.buffer;
+  barrier.offset        = offset;
+  barrier.size          = sizeof(MaterialObj);
+
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+
+  // 更新材质数据
+  vkCmdUpdateBuffer(cmdBuf, m_objModel[modelIndex].matColorBuffer.buffer, offset, sizeof(MaterialObj), &newMaterial);
+
+  // 确保更新后的数据对着色器可见
+  barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
+                       nullptr, 1, &barrier, 0, nullptr);
+
+  cmdGen.submitAndWait(cmdBuf);
+}
+
+void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
+{
+  // 用一个命令池/命令缓冲，减少同步消耗
+  nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
+  VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
+
+  std::vector<VkBufferMemoryBarrier> preBarriers;
+  std::vector<VkBufferMemoryBarrier> postBarriers;
+
+  // 1. 先加所有Barrier，保证并行性
+  for(const auto& upd : updates)
+  {
+    VkDeviceSize offset = upd.materialIndex * sizeof(MaterialObj);
+
+    VkBufferMemoryBarrier preBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    preBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    preBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    preBarrier.buffer        = m_objModel[upd.modelIndex].matColorBuffer.buffer;
+    preBarrier.offset        = offset;
+    preBarrier.size          = sizeof(MaterialObj);
+
+    preBarriers.push_back(preBarrier);
+  }
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, static_cast<uint32_t>(preBarriers.size()),
+                       preBarriers.data(), 0, nullptr);
+
+  // 2. 更新所有材质
+  for(const auto& upd : updates)
+  {
+    VkDeviceSize offset = upd.materialIndex * sizeof(MaterialObj);
+    vkCmdUpdateBuffer(cmdBuf, m_objModel[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(MaterialObj), &upd.newMaterial);
+  }
+
+  // 3. 再加所有postBarrier，保证对shader可见
+  for(const auto& upd : updates)
+  {
+    VkDeviceSize offset = upd.materialIndex * sizeof(MaterialObj);
+
+    VkBufferMemoryBarrier postBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    postBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    postBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    postBarrier.buffer        = m_objModel[upd.modelIndex].matColorBuffer.buffer;
+    postBarrier.offset        = offset;
+    postBarrier.size          = sizeof(MaterialObj);
+
+    postBarriers.push_back(postBarrier);
+  }
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
+                       nullptr, static_cast<uint32_t>(postBarriers.size()), postBarriers.data(), 0, nullptr);
+
+  // 4. 提交命令
+  cmdGen.submitAndWait(cmdBuf);
 }
 //-------------------------------------------------------------------------------------------------------------------
 #define STB_IMAGE_WRITE_IMPLEMENTATION
