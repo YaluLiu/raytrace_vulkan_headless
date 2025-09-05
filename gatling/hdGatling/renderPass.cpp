@@ -55,27 +55,6 @@ bool HdGatlingRenderPass::IsConverged() const
   return _isConverged;
 }
 
-void printMatrix(const glm::mat4& matrix, const std::string& name)
-{
-  std::cout << name << ":\n";
-  for(int i = 0; i < 4; ++i)
-  {
-    std::cout << std::fixed << std::setprecision(4);  // Set precision for readability
-    std::cout << "| ";
-    for(int j = 0; j < 4; ++j)
-    {
-      std::cout << std::setw(8) << matrix[i][j] << " ";  // Access column-major elements
-    }
-    std::cout << "|\n";
-  }
-  std::cout << "\n";
-}
-
-void PrintVec3(const std::string& name, const glm::vec3& v)
-{
-  std::cout << name << ": (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
-}
-
 #define USE_RAY_TRACE 1
 #define USE_BASE_RENDER 0
 
@@ -146,11 +125,6 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
       ConvertVmeshToLoader(cur_mesh, loader);
       // add_default_material(loader);
       loader.m_materials.emplace_back(cur_mesh.materialObj);
-      if(mesh_id == 0)
-      {
-        std::cout << "[renderpass]" << mesh_id << " ->diffuseColor (GfVec3f): R=" << cur_mesh.materialObj.diffuse[0]
-                  << ", G=" << cur_mesh.materialObj.diffuse[1] << ", B=" << cur_mesh.materialObj.diffuse[2] << std::endl;
-      }
       loader.m_textures.clear();
       if(init_texture)
       {
