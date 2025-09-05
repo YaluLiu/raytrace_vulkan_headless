@@ -30,8 +30,7 @@ class Hgi;
 class HdGatlingRenderDelegate final : public HdRenderDelegate
 {
 public:
-  HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap,
-                          std::string_view resourcePath);
+  HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath);
 
   ~HdGatlingRenderDelegate() override;
 
@@ -45,15 +44,13 @@ public:
   bool InvokeCommand(const TfToken& command, const HdCommandArgs& args = HdCommandArgs()) override;
 
 public:
-  HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex* index,
-                                         const HdRprimCollection& collection) override;
+  HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection) override;
 
   HdResourceRegistrySharedPtr GetResourceRegistry() const override;
 
   void CommitResources(HdChangeTracker* tracker) override;
 
-  HdInstancer* CreateInstancer(HdSceneDelegate* delegate,
-                               const SdfPath& id) override;
+  HdInstancer* CreateInstancer(HdSceneDelegate* delegate, const SdfPath& id) override;
 
   void DestroyInstancer(HdInstancer* instancer) override;
 
@@ -106,14 +103,14 @@ public:
 #endif
 
 private:
-  const std::string _resourcePath;
-  HdResourceRegistrySharedPtr _resourceRegistry;
-  HdRenderSettingDescriptorList _settingDescriptors;
-  HdRenderSettingDescriptorList _debugSettingDescriptors;
+  const std::string              _resourcePath;
+  HdResourceRegistrySharedPtr    _resourceRegistry;
+  HdRenderSettingDescriptorList  _settingDescriptors;
+  HdRenderSettingDescriptorList  _debugSettingDescriptors;
   std::unique_ptr<HdRenderParam> _renderParam;
   // std::unique_str<HdGatlingRenderBuffer> _colorBuffer;
   HdGatlingScene _scene;
-  Hgi* _hgi = nullptr;
+  Hgi*           _hgi = nullptr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

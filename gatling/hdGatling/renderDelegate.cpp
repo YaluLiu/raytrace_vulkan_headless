@@ -42,17 +42,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
-{
-  const static TfTokenVector _supportedRprimTypes =
-  {
-    HdPrimTypeTokens->mesh
-  };
+namespace {
+const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
 
-  const static TfTokenVector _supportedSprimTypes =
-  {
-    HdPrimTypeTokens->camera,
-    HdPrimTypeTokens->material,
+const static TfTokenVector _supportedSprimTypes = {
+    HdPrimTypeTokens->camera, HdPrimTypeTokens->material,
     // HdPrimTypeTokens->sphereLight,
     // HdPrimTypeTokens->distantLight,
     // HdPrimTypeTokens->rectLight,
@@ -60,15 +54,12 @@ namespace
     // HdPrimTypeTokens->domeLight,
     // HdPrimTypeTokens->simpleLight, // Required for usdview domeLight creation
     // HdPrimTypeTokens->extComputation
-  };
+};
 
-  const static TfTokenVector _supportedBprimTypes =
-  {
-    HdPrimTypeTokens->renderBuffer
-  };
+const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
 
-  // By default, we visualize the display color if it exists (otherwise grey).
-  static const char* _defaultMaterialXMaterial = R"(
+// By default, we visualize the display color if it exists (otherwise grey).
+static const char* _defaultMaterialXMaterial = R"(
     <?xml version="1.0"?>
     <materialx version="1.38">
       <geompropvalue name="gatling_GP_default" type="color3">
@@ -83,33 +74,43 @@ namespace
       </surfacematerial>
     </materialx>
   )";
-}
+}  // namespace
 
-HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap,
-                                                 std::string_view resourcePath)
-  : _resourcePath(resourcePath)
-  , _resourceRegistry(std::make_shared<HdResourceRegistry>())
-  , _renderParam(std::make_unique<HdGatlingRenderParam>())
+HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
+    : _resourcePath(resourcePath)
+    , _resourceRegistry(std::make_shared<HdResourceRegistry>())
+    , _renderParam(std::make_unique<HdGatlingRenderParam>())
 {
 #if PXR_VERSION < 2408
   TF_WARN("Outdated USD version (below v24.08); material updates may not propagate to meshes");
 #endif
 
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Samples per pixel", HdGatlingSettingsTokens->spp, VtValue{1} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Max bounces", HdGatlingSettingsTokens->maxBounces, VtValue{13} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Russian roulette bounce offset", HdGatlingSettingsTokens->rrBounceOffset, VtValue{3} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Russian roulette inverse minimum terminate probability", HdGatlingSettingsTokens->rrInvMinTermProb, VtValue{0.95f} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Filter Importance Sampling", HdGatlingSettingsTokens->filterImportanceSampling, VtValue{true} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Depth of field", HdGatlingSettingsTokens->depthOfField, VtValue{false} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Light intensity multiplier", HdGatlingSettingsTokens->lightIntensityMultiplier, VtValue{1.0f} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Next event estimation", HdGatlingSettingsTokens->nextEventEstimation, VtValue{false} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Clipping planes", HdGatlingSettingsTokens->clippingPlanes, VtValue{false} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Medium stack size", HdGatlingSettingsTokens->mediumStackSize, VtValue{0} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Max volume walk length", HdGatlingSettingsTokens->maxVolumeWalkLength, VtValue{7} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Jittered sampling", HdGatlingSettingsTokens->jitteredSampling, VtValue{true} });
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{ "Meters per scene unit", HdGatlingSettingsTokens->metersPerSceneUnit, VtValue{1.0f} });
+  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Samples per pixel", HdGatlingSettingsTokens->spp, VtValue{1}});
+  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Max bounces", HdGatlingSettingsTokens->maxBounces, VtValue{13}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Russian roulette bounce offset", HdGatlingSettingsTokens->rrBounceOffset, VtValue{3}});
+  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Russian roulette inverse minimum terminate probability",
+                                                          HdGatlingSettingsTokens->rrInvMinTermProb, VtValue{0.95f}});
+  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Filter Importance Sampling",
+                                                          HdGatlingSettingsTokens->filterImportanceSampling, VtValue{true}});
+  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Depth of field", HdGatlingSettingsTokens->depthOfField, VtValue{false}});
+  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Light intensity multiplier",
+                                                          HdGatlingSettingsTokens->lightIntensityMultiplier, VtValue{1.0f}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Next event estimation", HdGatlingSettingsTokens->nextEventEstimation, VtValue{false}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Clipping planes", HdGatlingSettingsTokens->clippingPlanes, VtValue{false}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Medium stack size", HdGatlingSettingsTokens->mediumStackSize, VtValue{0}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Max volume walk length", HdGatlingSettingsTokens->maxVolumeWalkLength, VtValue{7}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Jittered sampling", HdGatlingSettingsTokens->jitteredSampling, VtValue{true}});
+  _settingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Meters per scene unit", HdGatlingSettingsTokens->metersPerSceneUnit, VtValue{1.0f}});
 
-  _debugSettingDescriptors.push_back(HdRenderSettingDescriptor{ "Progressive accumulation", HdGatlingSettingsTokens->progressiveAccumulation, VtValue{true} });
+  _debugSettingDescriptors.push_back(
+      HdRenderSettingDescriptor{"Progressive accumulation", HdGatlingSettingsTokens->progressiveAccumulation, VtValue{true}});
 
 #ifndef NDEBUG
   _settingDescriptors.insert(_settingDescriptors.end(), _debugSettingDescriptors.begin(), _debugSettingDescriptors.end());
@@ -119,18 +120,16 @@ HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& sett
   _PopulateDefaultSettings(_debugSettingDescriptors);
 #endif
 
-  for (const auto& setting : settingsMap)
+  for(const auto& setting : settingsMap)
   {
-    const TfToken& key = setting.first;
+    const TfToken& key   = setting.first;
     const VtValue& value = setting.second;
 
     _settingsMap[key] = value;
   }
 }
 
-HdGatlingRenderDelegate::~HdGatlingRenderDelegate()
-{
-}
+HdGatlingRenderDelegate::~HdGatlingRenderDelegate() {}
 
 HdRenderSettingDescriptorList HdGatlingRenderDelegate::GetRenderSettingDescriptors() const
 {
@@ -141,9 +140,9 @@ void HdGatlingRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue
 {
 #ifdef NDEBUG
   // Disallow changing debug render settings in release config.
-  for (const HdRenderSettingDescriptor& descriptor : _debugSettingDescriptors)
+  for(const HdRenderSettingDescriptor& descriptor : _debugSettingDescriptors)
   {
-    if (key == descriptor.key)
+    if(key == descriptor.key)
     {
       return;
     }
@@ -152,10 +151,8 @@ void HdGatlingRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue
   HdRenderDelegate::SetRenderSetting(key, value);
 }
 
-const HdCommandDescriptors COMMAND_DESCRIPTORS =
-{
-  HdCommandDescriptor{ HdGatlingCommandTokens->printLicenses, "Print Licenses" }
-};
+const HdCommandDescriptors COMMAND_DESCRIPTORS = {
+    HdCommandDescriptor{HdGatlingCommandTokens->printLicenses, "Print Licenses"}};
 
 HdCommandDescriptors HdGatlingRenderDelegate::GetCommandDescriptors() const
 {
@@ -164,13 +161,13 @@ HdCommandDescriptors HdGatlingRenderDelegate::GetCommandDescriptors() const
 
 bool HdGatlingRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused]] const HdCommandArgs& args)
 {
-  if (command == HdGatlingCommandTokens->printLicenses)
+  if(command == HdGatlingCommandTokens->printLicenses)
   {
     std::string licenseFilePath = TfStringCatPaths(_resourcePath, "LICENSE");
     std::string errorMessage;
 
     ArchConstFileMapping mapping = ArchMapFileReadOnly(licenseFilePath, &errorMessage);
-    if (!mapping)
+    if(!mapping)
     {
       TF_RUNTIME_ERROR("Can't execute command: %s", errorMessage.c_str());
       return false;
@@ -189,8 +186,7 @@ bool HdGatlingRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unus
   return false;
 }
 
-HdRenderPassSharedPtr HdGatlingRenderDelegate::CreateRenderPass(HdRenderIndex* index,
-                                                                const HdRprimCollection& collection)
+HdRenderPassSharedPtr HdGatlingRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
 {
   return HdRenderPassSharedPtr(new HdGatlingRenderPass(index, collection, _settingsMap, _scene));
 }
@@ -218,17 +214,15 @@ void HdGatlingRenderDelegate::DestroyInstancer(HdInstancer* instancer)
 
 HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& name) const
 {
-  if (name == HdAovTokens->color)
+  if(name == HdAovTokens->color)
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(1.0f)));
   }
-  else if (name == HdAovTokens->depth)
+  else if(name == HdAovTokens->depth)
   {
     return HdAovDescriptor(HdFormatFloat32, true, VtValue(1.0f));
   }
-  else if (name == HdAovTokens->primId ||
-           name == HdAovTokens->elementId ||
-           name == HdAovTokens->instanceId)
+  else if(name == HdAovTokens->primId || name == HdAovTokens->elementId || name == HdAovTokens->instanceId)
   {
     return HdAovDescriptor(HdFormatInt32, true, VtValue(-1));
   }
@@ -248,7 +242,7 @@ const TfTokenVector& HdGatlingRenderDelegate::GetSupportedRprimTypes() const
 
 HdRprim* HdGatlingRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath& rprimId)
 {
-  if (typeId == HdPrimTypeTokens->mesh)
+  if(typeId == HdPrimTypeTokens->mesh)
   {
     return new HdGatlingMesh(rprimId, _scene);
   }
@@ -268,10 +262,12 @@ const TfTokenVector& HdGatlingRenderDelegate::GetSupportedSprimTypes() const
 
 HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& sprimId)
 {
-  if (typeId == HdPrimTypeTokens->camera) {
+  if(typeId == HdPrimTypeTokens->camera)
+  {
     return new HdCamera(sprimId);
   }
-  else if (typeId == HdPrimTypeTokens->material) {
+  else if(typeId == HdPrimTypeTokens->material)
+  {
     return new HdGatlingMaterial(sprimId, _scene);
   }
   // else if (typeId == HdPrimTypeTokens->domeLight ||
@@ -282,7 +278,7 @@ HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPa
   //             typeId == HdPrimTypeTokens->cylinderLight ||
   //             typeId == HdPrimTypeTokens->rectLight) {
   //     return new HdStLight(sprimId, typeId);
-  // } 
+  // }
   // else if (typeId == HdPrimTypeTokens->sphereLight)
   // {
   //   return new HdGatlingSphereLight(sprimId, _giScene);
@@ -334,7 +330,7 @@ const TfTokenVector& HdGatlingRenderDelegate::GetSupportedBprimTypes() const
 
 HdBprim* HdGatlingRenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& bprimId)
 {
-  if (typeId == HdPrimTypeTokens->renderBuffer)
+  if(typeId == HdPrimTypeTokens->renderBuffer)
   {
     return new HdGatlingRenderBuffer(bprimId, this);
   }
@@ -361,42 +357,39 @@ TfToken HdGatlingRenderDelegate::GetMaterialBindingPurpose() const
 
 TfTokenVector HdGatlingRenderDelegate::GetMaterialRenderContexts() const
 {
-  return TfTokenVector{ HdGatlingRenderContexts->mtlx, HdGatlingRenderContexts->mdl };
+  return TfTokenVector{HdGatlingRenderContexts->mtlx, HdGatlingRenderContexts->mdl};
 }
 
 TfTokenVector HdGatlingRenderDelegate::GetShaderSourceTypes() const
 {
-  return TfTokenVector{ HdGatlingSourceTypes->mtlx, HdGatlingSourceTypes->mdl };
+  return TfTokenVector{HdGatlingSourceTypes->mtlx, HdGatlingSourceTypes->mdl};
 }
 
 #if PXR_VERSION >= 2408
 bool HdGatlingRenderDelegate::IsParallelSyncEnabled(const TfToken& primType) const
 {
-  return primType == HdPrimTypeTokens->mesh ||
-         primType == HdPrimTypeTokens->material ||
-         primType == HdPrimTypeTokens->instancer;
+  return primType == HdPrimTypeTokens->mesh || primType == HdPrimTypeTokens->material || primType == HdPrimTypeTokens->instancer;
 }
 #endif
 
-Hgi*
-HdGatlingRenderDelegate::GetHgi()
+Hgi* HdGatlingRenderDelegate::GetHgi()
 {
-    return _hgi;
+  return _hgi;
 }
 
-void
-HdGatlingRenderDelegate::SetDrivers(HdDriverVector const& drivers)
+void HdGatlingRenderDelegate::SetDrivers(HdDriverVector const& drivers)
 {
-    // For Storm we want to use the Hgi driver, so extract it.
-    for (HdDriver* hdDriver : drivers) {
-        if (hdDriver->name == HgiTokens->renderDriver &&
-            hdDriver->driver.IsHolding<Hgi*>()) {
-            _hgi = hdDriver->driver.UncheckedGet<Hgi*>();
-            break;
-        }
+  // For Storm we want to use the Hgi driver, so extract it.
+  for(HdDriver* hdDriver : drivers)
+  {
+    if(hdDriver->name == HgiTokens->renderDriver && hdDriver->driver.IsHolding<Hgi*>())
+    {
+      _hgi = hdDriver->driver.UncheckedGet<Hgi*>();
+      break;
     }
-    
-    TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
+  }
+
+  TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

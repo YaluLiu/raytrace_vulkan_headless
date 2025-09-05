@@ -982,12 +982,12 @@ void HelloVulkan::createCompPipelines()
 void HelloVulkan::createOutputImage()
 {
   m_rtOutputGL.destroy(m_allocGL);
-  auto          usage   = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+  auto usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   //VK_FORMAT_R32_SFLOAT 对应 GL_R32F
   //VK_FORMAT_R32G32B32A32_SFLOAT  对应 GL_RGBA32F
   // VK_FORMAT_R8G8B8A8_UNORM 对应 GL_RGBA
-  VkFormat      format   = m_offscreenColorFormat; 
-  VkImageLayout layout   = VK_IMAGE_LAYOUT_GENERAL;
+  VkFormat      format = m_offscreenColorFormat;
+  VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
 
   VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};  // default values
   VkImageCreateInfo   imageCreateInfo = nvvk::makeImage2DCreateInfo(m_size, format, usage);
@@ -1007,7 +1007,7 @@ void HelloVulkan::createOutputImage()
 }
 
 void HelloVulkan::dumpInteropTexture(const char* filename)
-{ 
+{
   int width  = m_rtOutputGL.imgSize.width;
   int height = m_rtOutputGL.imgSize.height;
   glBindTexture(GL_TEXTURE_2D, m_rtOutputGL.oglId);
@@ -1017,9 +1017,9 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
   std::vector<unsigned char> out_pixels(width * height * 4);
   for(size_t i = 0; i < pixels.size(); ++i)
   {
-      float v = pixels[i];
-      v = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
-      out_pixels[i] = static_cast<unsigned char>(v * 255.0f);
+    float v       = pixels[i];
+    v             = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
+    out_pixels[i] = static_cast<unsigned char>(v * 255.0f);
   }
   stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
   printf("Saved %s (%ux%u)\n", filename, width, height);

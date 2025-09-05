@@ -473,7 +473,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     }
 
     num_instances       = uint32_t(transforms.size());
-    auto transformsData = (const float (*)[4][4])transforms[0].data();
+    auto transformsData = (const float(*)[4][4])transforms[0].data();
     trans_instances.resize(num_instances);
     for(uint32_t k = 0; k < num_instances; ++k)
     {

@@ -36,6 +36,6 @@
 
 class ObjLoader : public ModelLoader
 {
-  public:
+public:
   void loadModel(const std::string& filename);
 };

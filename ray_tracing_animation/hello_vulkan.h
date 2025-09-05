@@ -176,9 +176,9 @@ public:
 
   // change for test
 #if ENABLE_GL_VK_CONVERSION
-  void createOutputImage();
-  void dumpInteropTexture(const char* filename);
-  interop::Texture2DVkGL m_rtOutputGL;
+  void                                createOutputImage();
+  void                                dumpInteropTexture(const char* filename);
+  interop::Texture2DVkGL              m_rtOutputGL;
   interop::ResourceAllocatorGLInterop m_allocGL;
 #endif
 };

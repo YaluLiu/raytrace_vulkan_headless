@@ -28,20 +28,31 @@ void HdGatlingConvertVtBoolArrayToVtIntArray(VtValue& values);
 
 enum class GiPrimvarType
 {
-  Float, Vec2, Vec3, Vec4, Int, Int2, Int3, Int4
+  Float,
+  Vec2,
+  Vec3,
+  Vec4,
+  Int,
+  Int2,
+  Int3,
+  Int4
 };
 
 enum class GiPrimvarInterpolation
 {
-  Constant, Instance, Uniform, Vertex, COUNT
+  Constant,
+  Instance,
+  Uniform,
+  Vertex,
+  COUNT
 };
 
 struct GiPrimvarData
 {
-  std::string name;
-  GiPrimvarType type;
+  std::string            name;
+  GiPrimvarType          type;
   GiPrimvarInterpolation interpolation;
-  std::vector<uint8_t> data;
+  std::vector<uint8_t>   data;
 };
 
 GiPrimvarType HdGatlingGetGiPrimvarType(HdType type);

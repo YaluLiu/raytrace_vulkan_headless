@@ -217,14 +217,12 @@ void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader)
     if(v1.pos != v2.pos || v1.nrm != v2.nrm || v1.texCoord != v2.texCoord || v1.color != v2.color)
     {
       std::cout << "m_vertices[" << i << "] 不一致:" << std::endl;
-      std::cout << "  ConvLoader: pos(" << v1.pos.x << ", " << v1.pos.y << ", " << v1.pos.z << "), "
-                << "nrm(" << ", " << v1.nrm.y << ", " << v1.nrm.z << "), "
-                << "texCoord(" << v1.texCoord.x << ", " << v1.texCoord.y << "), "
-                << "color(" << v1.color.x << ", " << v1.color.y << ", " << v1.color.z << ")" << std::endl;
-      std::cout << "  RealLoader: pos(" << v2.pos.x << ", " << v2.pos.y << ", " << v2.pos.z << "), "
-                << "nrm(" << v2.nrm.x << ", " << v2.nrm.y << ", " << v2.nrm.z << "), "
-                << "texCoord(" << v2.texCoord.x << ", " << v2.texCoord.y << "), "
-                << "color(" << v2.color.x << ", " << v2.color.y << ", " << v2.color.z << ")" << std::endl;
+      std::cout << "  ConvLoader: pos(" << v1.pos.x << ", " << v1.pos.y << ", " << v1.pos.z << "), " << "nrm(" << ", "
+                << v1.nrm.y << ", " << v1.nrm.z << "), " << "texCoord(" << v1.texCoord.x << ", " << v1.texCoord.y
+                << "), " << "color(" << v1.color.x << ", " << v1.color.y << ", " << v1.color.z << ")" << std::endl;
+      std::cout << "  RealLoader: pos(" << v2.pos.x << ", " << v2.pos.y << ", " << v2.pos.z << "), " << "nrm(" << v2.nrm.x
+                << ", " << v2.nrm.y << ", " << v2.nrm.z << "), " << "texCoord(" << v2.texCoord.x << ", " << v2.texCoord.y
+                << "), " << "color(" << v2.color.x << ", " << v2.color.y << ", " << v2.color.z << ")" << std::endl;
       verticesMatch = false;
     }
   }

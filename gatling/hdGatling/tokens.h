@@ -21,60 +21,35 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HD_GATLING_SETTINGS_TOKENS                           \
-  ((spp, "spp"))                                             \
-  ((maxBounces, "max-bounces"))                              \
-  ((rrBounceOffset, "rr-bounce-offset"))                     \
-  ((rrInvMinTermProb, "rr-inv-min-term-prob"))               \
-  ((nextEventEstimation, "next-event-estimation"))           \
-  ((progressiveAccumulation, "progressive-accumulation"))    \
-  ((filterImportanceSampling, "filter-importance-sampling")) \
-  ((depthOfField, "depth-of-field"))                         \
-  ((lightIntensityMultiplier, "light-intensity-multiplier")) \
-  ((mediumStackSize, "medium-stack-size"))                   \
-  ((maxVolumeWalkLength, "max-volume-walk-length"))          \
-  ((jitteredSampling, "jittered-sampling"))                  \
-  ((clippingPlanes, "clipping-planes"))                      \
-  ((metersPerSceneUnit, "meters-per-scene-unit"))
+#define HD_GATLING_SETTINGS_TOKENS                                                                                     \
+  ((spp, "spp"))((maxBounces, "max-bounces"))((rrBounceOffset, "rr-bounce-offset"))(                                   \
+      (rrInvMinTermProb, "rr-inv-min-term-prob"))((nextEventEstimation, "next-event-estimation"))(                     \
+      (progressiveAccumulation, "progressive-accumulation"))(                                                          \
+      (filterImportanceSampling, "filter-importance-sampling"))((depthOfField, "depth-of-field"))(                     \
+      (lightIntensityMultiplier, "light-intensity-multiplier"))((mediumStackSize, "medium-stack-size"))(               \
+      (maxVolumeWalkLength, "max-volume-walk-length"))((jitteredSampling, "jittered-sampling"))(                       \
+      (clippingPlanes, "clipping-planes"))((metersPerSceneUnit, "meters-per-scene-unit"))
 
 // mtlx node identifier is given by UsdMtlx.
-#define HD_GATLING_NODE_IDENTIFIER_TOKENS            \
-  (mdl)                                              \
-  (mtlx)
+#define HD_GATLING_NODE_IDENTIFIER_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_SOURCE_TYPE_TOKENS                \
-  (mdl)                                              \
-  (mtlx)
+#define HD_GATLING_SOURCE_TYPE_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_DISCOVERY_TYPE_TOKENS             \
-  (mdl)                                              \
-  (mtlx)
+#define HD_GATLING_DISCOVERY_TYPE_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_RENDER_CONTEXT_TOKENS             \
-  (mdl)                                              \
-  (mtlx)
+#define HD_GATLING_RENDER_CONTEXT_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_NODE_CONTEXT_TOKENS               \
-  (mdl)                                              \
-  (mtlx)
+#define HD_GATLING_NODE_CONTEXT_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_NODE_METADATA_TOKENS              \
-  (subIdentifier)
+#define HD_GATLING_NODE_METADATA_TOKENS (subIdentifier)
 
-#define HD_GATLING_AOV_TOKENS                        \
-  ((debugNee, "debug:nee"))                          \
-  ((debugBarycentrics, "debug:barycentrics"))        \
-  ((debugTexcoords, "debug:texcoords"))              \
-  ((debugBounces, "debug:bounces"))                  \
-  ((debugClockCycles, "debug:clock_cycles"))         \
-  ((debugOpacity, "debug:opacity"))                  \
-  ((debugTangents, "debug:tangents"))                \
-  ((debugBitangents, "debug:bitangents"))            \
-  ((debugThinWalled, "debug:thinWalled"))            \
-  ((debugDoubleSided, "debug:doubleSided"))
+#define HD_GATLING_AOV_TOKENS                                                                                          \
+  ((debugNee, "debug:nee"))((debugBarycentrics, "debug:barycentrics"))((debugTexcoords, "debug:texcoords"))(           \
+      (debugBounces, "debug:bounces"))((debugClockCycles, "debug:clock_cycles"))((debugOpacity, "debug:opacity"))(     \
+      (debugTangents, "debug:tangents"))((debugBitangents, "debug:bitangents"))(                                       \
+      (debugThinWalled, "debug:thinWalled"))((debugDoubleSided, "debug:doubleSided"))
 
-#define HD_GATLING_COMMAND_TOKENS                    \
-  (printLicenses)
+#define HD_GATLING_COMMAND_TOKENS (printLicenses)
 
 TF_DECLARE_PUBLIC_TOKENS(HdGatlingSettingsTokens, HD_GATLING_SETTINGS_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdGatlingNodeIdentifiers, HD_GATLING_NODE_IDENTIFIER_TOKENS);

@@ -33,11 +33,10 @@
 #define GB_DEBUG(fmt, ...) QUILL_LOG_DEBUG(gtl::gbGetLogger(), fmt, ##__VA_ARGS__)
 #define GB_DEBUG_DYN(fmt, ...) QUILL_LOG_DYNAMIC(gtl::gbGetLogger(), quill::LogLevel::Debug, fmt, ##__VA_ARGS__)
 
-namespace gtl
-{
-  void gbLogInit(const std::vector<std::shared_ptr<quill::Sink>>& extraSinks = {});
+namespace gtl {
+void gbLogInit(const std::vector<std::shared_ptr<quill::Sink>>& extraSinks = {});
 
-  quill::Logger* gbGetLogger();
+quill::Logger* gbGetLogger();
 
-  void gbLogFlush();
-}
+void gbLogFlush();
+}  // namespace gtl

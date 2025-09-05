@@ -13,9 +13,7 @@
 
 std::vector<std::string> defaultSearchPaths;
 
-RayTraceApp::RayTraceApp() 
-{
-}
+RayTraceApp::RayTraceApp() {}
 
 RayTraceApp::~RayTraceApp()
 {
@@ -24,7 +22,7 @@ RayTraceApp::~RayTraceApp()
 
 void RayTraceApp::setup(int width, int height)
 {
-  m_width = width;
+  m_width  = width;
   m_height = height;
   setupCamera();
   setupContext();
@@ -33,7 +31,7 @@ void RayTraceApp::setup(int width, int height)
 
 void RayTraceApp::resize(int w, int h)
 {
-  m_helloVk.onResize(w,h);
+  m_helloVk.onResize(w, h);
 }
 
 void RayTraceApp::setupCamera()
@@ -42,17 +40,15 @@ void RayTraceApp::setupCamera()
   CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 }
 
-void RayTraceApp::UpdateCamera()
-{
-}
+void RayTraceApp::UpdateCamera() {}
 
 #include <filesystem>
 namespace fs = std::filesystem;
 void RayTraceApp::setupContext()
 {
-  NVPSystem system("raytrace_vulkan_headless");
+  NVPSystem   system("raytrace_vulkan_headless");
   std::string currentDir = fs::current_path().string();
-  defaultSearchPaths = {
+  defaultSearchPaths     = {
       NVPSystem::exePath() + PROJECT_RELDIRECTORY,
       NVPSystem::exePath() + PROJECT_RELDIRECTORY "/..",
       currentDir + "/headless",
@@ -73,12 +69,12 @@ void RayTraceApp::setupContext()
   contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
   contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
-  
+
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
-  
+
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
 
@@ -170,14 +166,13 @@ void RayTraceApp::cleanup()
 
 //-----------------------------------------------------------------------------------------------------
 // for demo local test
-// 
+//
 void RayTraceApp::loadScene()
 {
   // 平面
   ObjLoader planeLoader;
   planeLoader.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(planeLoader,
-                      glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
+  m_helloVk.loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
 
   // wuson
   ObjLoader wusonLoader;
@@ -197,7 +192,7 @@ void RayTraceApp::loadScene()
   sphereLoader.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
   m_helloVk.loadModel(sphereLoader);
 
-  // 
+  //
   m_startTime = std::chrono::system_clock::now();
 }
 

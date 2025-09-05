@@ -38,13 +38,9 @@ TF_REGISTRY_FUNCTION(TfType)
   HdRendererPluginRegistry::Define<HdGatlingRendererPlugin>();
 }
 
-HdGatlingRendererPlugin::HdGatlingRendererPlugin()
-{
-}
+HdGatlingRendererPlugin::HdGatlingRendererPlugin() {}
 
-HdGatlingRendererPlugin::~HdGatlingRendererPlugin()
-{
-}
+HdGatlingRendererPlugin::~HdGatlingRendererPlugin() {}
 
 HdRenderDelegate* HdGatlingRendererPlugin::CreateRenderDelegate()
 {

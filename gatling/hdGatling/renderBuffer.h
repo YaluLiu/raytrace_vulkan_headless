@@ -41,10 +41,8 @@ public:
   ~HdGatlingRenderBuffer() override;
 
 public:
-  bool Allocate(const GfVec3i& dimensions,
-                HdFormat format,
-                bool multiSamples) override;
-  
+  bool Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSamples) override;
+
   void clear(int num = 0);
 
 public:
@@ -57,13 +55,13 @@ public:
   bool IsMultiSampled() const override;
   bool IsConverged() const override;
 
-  void SetConverged(bool converged);
+  void    SetConverged(bool converged);
   VtValue GetResource(bool multiSampled) const override;
-  int GetTextureId();
+  int     GetTextureId();
 
 public:
   void* Map() override;
-  bool IsMapped() const override;
+  bool  IsMapped() const override;
 
   void Unmap() override;
 
@@ -79,7 +77,7 @@ public:
 
   uint32_t _width;
   uint32_t _height;
-  float* map_ptr = nullptr;
+  float*   map_ptr = nullptr;
 
 protected:
   void _Deallocate() override;
@@ -89,20 +87,20 @@ private:
   size_t   _buffer_size;
 
   // 测试而已
-  int _frame_idx = 0;
-  bool _isMaped = false;
+  int  _frame_idx   = 0;
+  bool _isMaped     = false;
   bool _isConverged = false;
   // Calculate the needed buffer size, given the allocation parameters.
   static size_t _GetBufferSize(GfVec2i const& dims, HdFormat format);
 
   HdGatlingRenderDelegate* _owner;
-  Hgi* _hgi;
-  HgiTextureHandle _texture;
+  Hgi*                     _hgi;
+  HgiTextureHandle         _texture;
 
   // 测试用，测试handlek的拷贝能否成功
   HgiTextureDesc _texDesc;
-  void CopyTextureHandle();
-  void createDesc();
+  void           CopyTextureHandle();
+  void           createDesc();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

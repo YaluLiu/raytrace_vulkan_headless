@@ -23,48 +23,47 @@
 
 #include <assert.h>
 
-namespace gtl
+namespace gtl {
+static quill::Logger* s_logger = nullptr;
+
+void gbLogInit(const std::vector<std::shared_ptr<quill::Sink>>& extraSinks)
 {
-  static quill::Logger* s_logger = nullptr;
-
-  void gbLogInit(const std::vector<std::shared_ptr<quill::Sink>>& extraSinks)
+  if(s_logger)
   {
-    if (s_logger)
-    {
-      return;
-    }
+    return;
+  }
 
-    quill::ConsoleSinkConfig::Colours consoleColors;
-    consoleColors.apply_default_colours();
-    consoleColors.assign_colour_to_log_level(quill::LogLevel::Info, quill::ConsoleSinkConfig::Colours::white);
+  quill::ConsoleSinkConfig::Colours consoleColors;
+  consoleColors.apply_default_colours();
+  consoleColors.assign_colour_to_log_level(quill::LogLevel::Info, quill::ConsoleSinkConfig::Colours::white);
 
-    quill::ConsoleSinkConfig config;
-    config.set_colours(consoleColors);
+  quill::ConsoleSinkConfig config;
+  config.set_colours(consoleColors);
 
-    auto sink = quill::Frontend::create_or_get_sink<quill::ConsoleSink>("console", config);
+  auto sink = quill::Frontend::create_or_get_sink<quill::ConsoleSink>("console", config);
 
-    std::vector<std::shared_ptr<quill::Sink>> sinks = extraSinks;
-    sinks.push_back(std::move(sink));
+  std::vector<std::shared_ptr<quill::Sink>> sinks = extraSinks;
+  sinks.push_back(std::move(sink));
 
-    quill::PatternFormatterOptions formatOptions("[%(time)] (%(log_level)) %(message)", "%H:%M:%S.%Qms");
-    s_logger = quill::Frontend::create_or_get_logger("root", sinks, formatOptions);
+  quill::PatternFormatterOptions formatOptions("[%(time)] (%(log_level)) %(message)", "%H:%M:%S.%Qms");
+  s_logger = quill::Frontend::create_or_get_logger("root", sinks, formatOptions);
 #ifdef GTL_VERBOSE
-    s_logger->set_log_level(quill::LogLevel::Debug);
+  s_logger->set_log_level(quill::LogLevel::Debug);
 #endif
 
-    quill::BackendOptions options;
-    options.thread_name = "GbLog";
-    quill::Backend::start(options);
-  }
-
-  quill::Logger* gbGetLogger()
-  {
-    return s_logger;
-  }
-
-  void gbLogFlush()
-  {
-    assert(s_logger);
-    s_logger->flush_log();
-  }
+  quill::BackendOptions options;
+  options.thread_name = "GbLog";
+  quill::Backend::start(options);
 }
+
+quill::Logger* gbGetLogger()
+{
+  return s_logger;
+}
+
+void gbLogFlush()
+{
+  assert(s_logger);
+  s_logger->flush_log();
+}
+}  // namespace gtl
