@@ -16,6 +16,7 @@
 //
 
 #include "mesh.h"
+#include "material.h"
 #include "instancer.h"
 #include "utils.h"
 
@@ -410,6 +411,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   std::vector<glm::mat4> trans_instances = {glm::mat4(1.0f)};  // 用于存放所有实例的变换
   glm::mat4              trans_single    = glm::mat4(1);
   size_t                 num_instances   = 1;
+  auto&                  cur_mesh        = _scene.v_mesh[_mesh_id];
 
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
   {
@@ -456,7 +458,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       }
       trans_instances[k] = mat;
     }
-    _scene.v_mesh[_mesh_id]._tlas_changed = true;
+    cur_mesh._tlas_changed = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
@@ -469,16 +471,40 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
         trans_single[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
       }
     }
-    _scene.v_mesh[_mesh_id]._tlas_changed = true;
+    cur_mesh._tlas_changed = true;
   }
 
   // std::cout << "Num_instances:" << num_instances << std::endl;
-  _scene.v_mesh[_mesh_id]._vec_trans_mat.resize(num_instances);
+  cur_mesh._vec_trans_mat.resize(num_instances);
   for(uint32_t k = 0; k < num_instances; ++k)
   {
-    _scene.v_mesh[_mesh_id]._vec_trans_mat[k] = trans_single * trans_instances[k];
+    cur_mesh._vec_trans_mat[k] = trans_single * trans_instances[k];
   }
 
+  if((*dirtyBits & HdChangeTracker::DirtyMaterialId))
+  {
+    const SdfPath& materialId = sceneDelegate->GetMaterialId(id);
+
+    SetMaterialId(materialId);
+
+    // Because Hydra syncs Rprims last, it is guaranteed that the material has been processed
+    auto* materialPrim = static_cast<HdGatlingMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+
+    if(materialPrim)
+    {
+      GfVec3f diffuse_color           = materialPrim->_diffuse_color;
+      cur_mesh.materialObj.diffuse[0] = diffuse_color[0];
+      cur_mesh.materialObj.diffuse[1] = diffuse_color[1];
+      cur_mesh.materialObj.diffuse[2] = diffuse_color[2];
+      cur_mesh._material_changed      = true;
+    }
+    else
+    {
+      cur_mesh.materialObj.diffuse[0] = 0.9;
+      cur_mesh.materialObj.diffuse[1] = 0.9;
+      cur_mesh.materialObj.diffuse[2] = 0.9;
+    }
+  }
   *dirtyBits = HdChangeTracker::Clean;
 }
 

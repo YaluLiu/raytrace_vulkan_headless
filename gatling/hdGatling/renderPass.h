@@ -30,18 +30,18 @@ class MaterialNetworkCompiler;
 
 struct GiCameraDesc
 {
-  float position[3];
-  float forward[3];
-  float up[3];
-  float vfov;
-  float fStop;
-  float focusDistance;
-  float focalLength;
-  float clipStart;
-  float clipEnd;
-  float exposure;
-  glm::mat4      projMatrix;
-  glm::mat4      viewMatrix;
+  float     position[3];
+  float     forward[3];
+  float     up[3];
+  float     vfov;
+  float     fStop;
+  float     focusDistance;
+  float     focalLength;
+  float     clipStart;
+  float     clipEnd;
+  float     exposure;
+  glm::mat4 projMatrix;
+  glm::mat4 viewMatrix;
 };
 
 glm::mat4 computeProjectionMatrix(const GiCameraDesc& cameraDesc, float aspectRatio);
@@ -49,10 +49,7 @@ glm::mat4 computeProjectionMatrix(const GiCameraDesc& cameraDesc, float aspectRa
 class HdGatlingRenderPass final : public HdRenderPass
 {
 public:
-  HdGatlingRenderPass(HdRenderIndex* index,
-                      const HdRprimCollection& collection,
-                      const HdRenderSettingsMap& settings,
-                      HdGatlingScene& _scene);
+  HdGatlingRenderPass(HdRenderIndex* index, const HdRprimCollection& collection, const HdRenderSettingsMap& settings, HdGatlingScene& _scene);
 
   ~HdGatlingRenderPass() override;
 
@@ -60,32 +57,34 @@ public:
   bool IsConverged() const override;
 
 protected:
-  void _Execute(const HdRenderPassStateSharedPtr& renderPassState,
-                const TfTokenVector& renderTags) override;
+  void _Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags) override;
 
 private:
   const HdRenderSettingsMap& _settings;
-  bool _isConverged;
-  int _frame_idx = 0;
+  bool                       _isConverged;
+  int                        _frame_idx = 0;
   // 资源场景指针
   HdGatlingScene& _scene;
 
-// ----------------------------------------------------------------------------------
-// for headless ray trace app
+  // ----------------------------------------------------------------------------------
+  // for headless ray trace app
 private:
   void app_updateCamera(const HdCamera& camera);
   void app_init(const HdRenderPassAovBinding& binding);
 
   // 真正的openusd的mesh更新动画
   void app_anim_real();
+  void app_update_blas();
+  void app_update_tlas();
+  void app_update_material();
   // 使用headless的基础渲染模式，五头牛+一个圆球
   void app_anim_base();
 
   // 是否初始化了mesh和材质
   bool _isAppInited = false;
   // 渲染框架
-  RayTraceApp _renderApp;
-  GiCameraDesc _camera;
+  RayTraceApp                           _renderApp;
+  GiCameraDesc                          _camera;
   std::chrono::system_clock::time_point m_startTime;
 
   int _width;

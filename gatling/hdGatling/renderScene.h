@@ -28,10 +28,12 @@ struct _VertexStreams
   VtVec3fArray normals;
   VtVec2fArray texCoords;
   VtIntArray   materialIds;  // 新增：每个面的材质 ID
+  MaterialObj  materialObj;  //对应的材质
 
-  bool                   _blas_changed = false;  //blas是否被更新，基础顶点和mesh结构
-  bool                   _tlas_changed = false;  //tlas是否被更新，变换矩阵
-  int                    _mesh_id;               //在cpu和gpu的vector中的序号，必须保持一致
+  bool                   _blas_changed     = false;  //blas是否被更新，基础顶点和mesh结构
+  bool                   _tlas_changed     = false;  //tlas是否被更新，变换矩阵
+  bool                   _material_changed = false;
+  int                    _mesh_id;  //在cpu和gpu的vector中的序号，必须保持一致
   std::vector<glm::mat4> _vec_trans_mat;
 };
 

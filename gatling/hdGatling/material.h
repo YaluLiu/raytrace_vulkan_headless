@@ -29,20 +29,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdGatlingMaterial final : public HdMaterial
 {
 public:
-  HdGatlingMaterial(const SdfPath& id,
-                    HdGatlingScene& _scene);
+  HdGatlingMaterial(const SdfPath& id, HdGatlingScene& _scene);
 
   void Finalize(HdRenderParam* renderParam) override;
 
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-  void Sync(HdSceneDelegate* sceneDelegate,
-            HdRenderParam* renderParam,
-            HdDirtyBits* dirtyBits) override;
+  void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 
 public:
   HdGatlingScene& _scene;
+
+public:
+  GfVec3f _diffuse_color{0.18f, 0.18f, 0.18f};
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

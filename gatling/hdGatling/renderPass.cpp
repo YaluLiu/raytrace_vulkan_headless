@@ -144,7 +144,13 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
       auto&       cur_mesh = _scene.v_mesh[mesh_id];
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
-      add_default_material(loader);
+      // add_default_material(loader);
+      loader.m_materials.emplace_back(cur_mesh.materialObj);
+      if(mesh_id == 0)
+      {
+        std::cout << "[renderpass]" << mesh_id << " ->diffuseColor (GfVec3f): R=" << cur_mesh.materialObj.diffuse[0]
+                  << ", G=" << cur_mesh.materialObj.diffuse[1] << ", B=" << cur_mesh.materialObj.diffuse[2] << std::endl;
+      }
       loader.m_textures.clear();
       if(init_texture)
       {
@@ -222,8 +228,13 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 
 void HdGatlingRenderPass::app_anim_real()
 {
-  size_t tlas_id     = 0;
-  bool   update_tlas = false;
+  app_update_blas();
+  app_update_tlas();
+  app_update_material();
+}
+
+void HdGatlingRenderPass::app_update_blas()
+{
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
     auto& cur_mesh = _scene.v_mesh[mesh_id];
@@ -233,6 +244,17 @@ void HdGatlingRenderPass::app_anim_real()
       ConvertVmeshToLoader(cur_mesh, _renderApp.getVulkan().m_Loader[mesh_id]);
       _renderApp.getVulkan().updateBlas(mesh_id);
     }
+  }
+}
+
+void HdGatlingRenderPass::app_update_tlas()
+{
+  size_t tlas_id     = 0;
+  bool   update_tlas = false;
+
+  for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+  {
+    auto& cur_mesh = _scene.v_mesh[mesh_id];
     if(cur_mesh._tlas_changed)
     {
       update_tlas            = true;
@@ -254,6 +276,25 @@ void HdGatlingRenderPass::app_anim_real()
   }
 }
 
+void HdGatlingRenderPass::app_update_material()
+{
+  std::vector<MaterialUpdate> new_materials;
+  for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+  {
+    auto& cur_mesh = _scene.v_mesh[mesh_id];
+    if(cur_mesh._material_changed)
+    {
+      cur_mesh._material_changed = false;
+      new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), cur_mesh.materialObj});
+      // std::cout << "[RenderPass]:" << mesh_id << " ->diffuseColor (GfVec3f):(" << cur_mesh.materialObj.diffuse[0] << ","
+      //           << cur_mesh.materialObj.diffuse[1] << "," << cur_mesh.materialObj.diffuse[2] << ")" << std::endl;
+    }
+  }
+  if(!new_materials.empty())
+  {
+    _renderApp.getVulkan().updateMaterialsAtRuntime(new_materials);
+  }
+}
 void HdGatlingRenderPass::app_anim_base()
 {
   std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
