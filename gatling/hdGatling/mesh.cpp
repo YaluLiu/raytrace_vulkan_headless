@@ -377,6 +377,9 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
     : HdMesh(id)
     , _scene(scene)
 {
+  std::lock_guard guard(_scene.mutex);
+  _mesh_id = _scene.v_mesh.size();
+  _scene.v_mesh.emplace_back(_VertexStreams());
 }
 
 void HdGatlingMesh::Finalize(HdRenderParam* renderParam) {}
@@ -978,16 +981,7 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
                       ._blas_changed = true};
 
   {
-    std::lock_guard guard(_scene.mutex);
-    if(_mesh_id == -1)
-    {
-      _mesh_id = _scene.v_mesh.size();
-      _scene.v_mesh.emplace_back(s);
-    }
-    else
-    {
-      _scene.v_mesh[_mesh_id] = s;
-    }
+    _scene.v_mesh[_mesh_id] = s;
   }
 }
 
