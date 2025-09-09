@@ -446,12 +446,13 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     return;
   }
 
+  auto& _mesh = _scene.v_mesh[_mesh_id];
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)
   {
     _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
-    _scene.v_mesh[_mesh_id]._visible = sceneDelegate->GetVisible(id);
+    _mesh._visible = sceneDelegate->GetVisible(id);
     //visible be updated on tlas-update-function
-    _scene.v_mesh[_mesh_id]._tlas_changed = true;
+    _mesh._tlas_changed = true;
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
@@ -481,7 +482,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     int  num_instances  = uint32_t(transforms.size());
     auto transformsData = (const float (*)[4][4])transforms[0].data();
-    _scene.v_mesh[_mesh_id]._instanceTransforms.resize(num_instances);
+    _mesh._instanceTransforms.resize(num_instances);
     for(uint32_t k = 0; k < num_instances; ++k)
     {
       // transformsData[k] 是第 k 个实例的 4x4 矩阵
@@ -489,11 +490,11 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       {
         for(int j = 0; j < 4; ++j)
         {
-          _scene.v_mesh[_mesh_id]._instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
+          _mesh._instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
         }
       }
     }
-    _scene.v_mesh[_mesh_id]._tlas_changed = true;
+    _mesh._tlas_changed = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
@@ -503,10 +504,10 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     {
       for(int j = 0; j < 4; ++j)
       {
-        _scene.v_mesh[_mesh_id]._transform[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
+        _mesh._transform[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
       }
     }
-    _scene.v_mesh[_mesh_id]._tlas_changed = true;
+    _mesh._tlas_changed = true;
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyMaterialId))
@@ -520,17 +521,17 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     if(materialPrim)
     {
-      GfVec3f diffuse_color                          = materialPrim->_diffuse_color;
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[0] = diffuse_color[0];
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[1] = diffuse_color[1];
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[2] = diffuse_color[2];
-      _scene.v_mesh[_mesh_id]._material_changed      = true;
+      GfVec3f diffuse_color        = materialPrim->_diffuse_color;
+      _mesh.materialObj.diffuse[0] = diffuse_color[0];
+      _mesh.materialObj.diffuse[1] = diffuse_color[1];
+      _mesh.materialObj.diffuse[2] = diffuse_color[2];
+      _mesh._material_changed      = true;
     }
     else
     {
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[0] = 0.9;
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[1] = 0.9;
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[2] = 0.9;
+      _mesh.materialObj.diffuse[0] = 0.9;
+      _mesh.materialObj.diffuse[1] = 0.9;
+      _mesh.materialObj.diffuse[2] = 0.9;
       GetDisplayColor(sceneDelegate);
     }
   }
