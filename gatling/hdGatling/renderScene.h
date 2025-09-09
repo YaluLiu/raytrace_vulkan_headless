@@ -3,6 +3,7 @@
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/base/gf/matrix4f.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +19,7 @@
 #include <mutex>
 #include <assert.h>
 #include <ModelLoader.h>
+#include <glm/glm.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,11 +50,27 @@ struct HdGatlingScene
   std::vector<_VertexStreams> v_mesh;
 };
 
+// Matrix conversion utility function
+// Converts GfMatrix4f (row-major) to glm::mat4 (column-major)
+static inline glm::mat4 GfToGlm(const GfMatrix4f& m) {
+    glm::mat4 result(1.0f);
+    for(int row = 0; row < 4; ++row) {
+        for(int col = 0; col < 4; ++col) {
+            result[col][row] = m[row][col]; // Note: glm[col][row] = gf[row][col]
+        }
+    }
+    return result;
+}
+
 
 //添加默认材质
 void add_default_material(ModelLoader& Loader);
 void ConvertVmeshToLoader(const _VertexStreams& v_mesh, ModelLoader& Loader);
 void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader);
+
+// Debug functions for matrix verification
+void printMatrix(const glm::mat4& m, const std::string& name);
+void printGfMatrix(const GfMatrix4f& m, const std::string& name);
 
 //根据模型大小生成一个自定义的scale矩阵
 void PrintLoader(const ModelLoader& loader, int n = 5);

@@ -5,6 +5,29 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Debug function to print matrices
+void printMatrix(const glm::mat4& m, const std::string& name) {
+    std::cout << name << ":\n";
+    for(int row = 0; row < 4; ++row) {
+        for(int col = 0; col < 4; ++col) {
+            std::cout << std::fixed << std::setprecision(6) << m[col][row] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}
+
+void printGfMatrix(const GfMatrix4f& m, const std::string& name) {
+    std::cout << name << " (GfMatrix4f):\n";
+    for(int row = 0; row < 4; ++row) {
+        for(int col = 0; col < 4; ++col) {
+            std::cout << std::fixed << std::setprecision(6) << m[row][col] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}
+
 // void GeneratePlanarUV(const VtVec3fArray& points, VtVec2fArray& texCoords,
 //                      const GfVec3f& planeNormal = GfVec3f(0,1,0)) {
 //     texCoords.resize(points.size());

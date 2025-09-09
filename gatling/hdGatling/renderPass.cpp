@@ -132,10 +132,23 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
         init_texture = false;
       }
       _renderApp.getVulkan().loadModel(loader);
-      for(int i = 1; i < _scene.v_mesh[mesh_id]._instanceTransforms.size(); i++)
+      // Process all instances including the first one (index 0)
+      for(int i = 0; i < _scene.v_mesh[mesh_id]._instanceTransforms.size(); i++)
       {
-        _renderApp.getVulkan().m_instances.push_back(
-            {_scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[i], mesh_id});
+        if(i == 0)
+        {
+          // Fix the first instance which was loaded with default identity matrix
+          glm::mat4 baseFinal = _scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[0];
+          if(!_renderApp.getVulkan().m_instances.empty())
+          {
+            _renderApp.getVulkan().m_instances.back().transform = baseFinal;
+          }
+        }
+        else
+        {
+          _renderApp.getVulkan().m_instances.push_back(
+              {_scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[i], mesh_id});
+        }
       }
     }
 #endif

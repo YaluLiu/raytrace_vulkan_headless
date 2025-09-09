@@ -19,6 +19,7 @@
 #include "material.h"
 #include "instancer.h"
 #include "utils.h"
+#include "renderScene.h"
 
 
 #include <pxr/base/gf/matrix4f.h>
@@ -480,33 +481,20 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       // instancerPrimvars = instancer->ComputeFlattenedPrimvars(id);
     }
 
-    int  num_instances  = uint32_t(transforms.size());
-    auto transformsData = (const float (*)[4][4])transforms[0].data();
+    int num_instances = uint32_t(transforms.size());
     _mesh._instanceTransforms.resize(num_instances);
     for(uint32_t k = 0; k < num_instances; ++k)
     {
-      // transformsData[k] 是第 k 个实例的 4x4 矩阵
-      for(int i = 0; i < 4; ++i)
-      {
-        for(int j = 0; j < 4; ++j)
-        {
-          _mesh._instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
-        }
-      }
+      // Use proper GfMatrix4f to glm::mat4 conversion
+      _mesh._instanceTransforms[k] = GfToGlm(transforms[k]);
     }
     _mesh._tlas_changed = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
   {
-    auto transform = GfMatrix4f(sceneDelegate->GetTransform(id));
-    for(int i = 0; i < 4; ++i)
-    {
-      for(int j = 0; j < 4; ++j)
-      {
-        _mesh._transform[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
-      }
-    }
+    auto gf_transform = GfMatrix4f(sceneDelegate->GetTransform(id));
+    _mesh._transform = GfToGlm(gf_transform);
     _mesh._tlas_changed = true;
   }
 
