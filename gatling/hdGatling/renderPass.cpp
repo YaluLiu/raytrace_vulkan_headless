@@ -132,9 +132,10 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
         init_texture = false;
       }
       _renderApp.getVulkan().loadModel(loader);
-      for(int i = 1; i < _scene.v_mesh[mesh_id]._vec_trans_mat.size(); i++)
+      for(int i = 1; i < _scene.v_mesh[mesh_id]._instanceTransforms.size(); i++)
       {
-        _renderApp.getVulkan().m_instances.push_back({_scene.v_mesh[mesh_id]._vec_trans_mat[i], mesh_id});
+        _renderApp.getVulkan().m_instances.push_back(
+            {_scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[i], mesh_id});
       }
     }
 #endif
@@ -230,15 +231,17 @@ void HdGatlingRenderPass::app_update_tlas()
     {
       update_tlas                          = true;
       _scene.v_mesh[mesh_id]._tlas_changed = false;
-      for(int ins_id = 0; ins_id < _scene.v_mesh[mesh_id]._vec_trans_mat.size(); ins_id++)
+      for(int ins_id = 0; ins_id < _scene.v_mesh[mesh_id]._instanceTransforms.size(); ins_id++)
       {
-        _renderApp.getVulkan().updateTlas(tlas_id, _scene.v_mesh[mesh_id]._vec_trans_mat[ins_id], _scene.v_mesh[mesh_id]._visible);
+        _renderApp.getVulkan().updateTlas(tlas_id,
+                                          _scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[ins_id],
+                                          _scene.v_mesh[mesh_id]._visible);
         tlas_id++;
       }
     }
     else
     {
-      tlas_id += _scene.v_mesh[mesh_id]._vec_trans_mat.size();
+      tlas_id += _scene.v_mesh[mesh_id]._instanceTransforms.size();
     }
   }
   if(update_tlas)

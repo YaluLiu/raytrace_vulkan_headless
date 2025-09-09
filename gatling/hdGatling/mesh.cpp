@@ -454,10 +454,6 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     _scene.v_mesh[_mesh_id]._tlas_changed = true;
   }
 
-  std::vector<glm::mat4> trans_instances = {glm::mat4(1.0f)};  // 用于存放所有实例的变换
-  glm::mat4              trans_single    = glm::mat4(1);
-  size_t                 num_instances   = 1;
-
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
   {
     _UpdateInstancer(sceneDelegate, &dirtyBitsCopy);
@@ -483,21 +479,19 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       // instancerPrimvars = instancer->ComputeFlattenedPrimvars(id);
     }
 
-    num_instances       = uint32_t(transforms.size());
+    int  num_instances  = uint32_t(transforms.size());
     auto transformsData = (const float (*)[4][4])transforms[0].data();
-    trans_instances.resize(num_instances);
+    _scene.v_mesh[_mesh_id]._instanceTransforms.resize(num_instances);
     for(uint32_t k = 0; k < num_instances; ++k)
     {
-      glm::mat4 mat(1.0f);  // 默认单位阵
       // transformsData[k] 是第 k 个实例的 4x4 矩阵
       for(int i = 0; i < 4; ++i)
       {
         for(int j = 0; j < 4; ++j)
         {
-          mat[i][j] = transformsData[k][i][j];  // 按行复制
+          _scene.v_mesh[_mesh_id]._instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
         }
       }
-      trans_instances[k] = mat;
     }
     _scene.v_mesh[_mesh_id]._tlas_changed = true;
   }
@@ -509,17 +503,10 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     {
       for(int j = 0; j < 4; ++j)
       {
-        trans_single[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
+        _scene.v_mesh[_mesh_id]._transform[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
       }
     }
     _scene.v_mesh[_mesh_id]._tlas_changed = true;
-  }
-
-  // std::cout << "Num_instances:" << num_instances << std::endl;
-  _scene.v_mesh[_mesh_id]._vec_trans_mat.resize(num_instances);
-  for(uint32_t k = 0; k < num_instances; ++k)
-  {
-    _scene.v_mesh[_mesh_id]._vec_trans_mat[k] = trans_single * trans_instances[k];
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyMaterialId))

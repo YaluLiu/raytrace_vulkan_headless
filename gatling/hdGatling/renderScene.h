@@ -35,7 +35,8 @@ struct _VertexStreams
   bool                   _tlas_changed     = false;  //tlas是否被更新，变换矩阵
   bool                   _material_changed = false;
   int                    _mesh_id;  //在cpu和gpu的vector中的序号，必须保持一致
-  std::vector<glm::mat4> _vec_trans_mat;
+  std::vector<glm::mat4> _instanceTransforms;
+  glm::mat4              _transform;
 };
 
 struct HdGatlingScene
