@@ -132,11 +132,16 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
         init_texture = false;
       }
       _renderApp.getVulkan().loadModel(loader, cur_mesh.transform * cur_mesh.instanceTransforms[0]);
-      auto instance = _renderApp.getVulkan().m_instances.back();
+      auto instance          = _renderApp.getVulkan().m_instances.back();
+      auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
       for(int i = 1; i < cur_mesh.instanceTransforms.size(); i++)
       {
         instance.transform = cur_mesh.transform * cur_mesh.instanceTransforms[i];
         _renderApp.getVulkan().m_instances.push_back(instance);
+      }
+      for(int i = 0; i < cur_mesh.instanceTransforms.size(); i++)
+      {
+        cur_mesh.tlasIds.push_back(i + first_instance_id);
       }
     }
 #endif
@@ -223,26 +228,20 @@ void HdGatlingRenderPass::app_update_blas()
 
 void HdGatlingRenderPass::app_update_tlas()
 {
-  size_t tlas_id     = 0;
-  bool   update_tlas = false;
+  bool update_tlas = false;
 
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
-    if(_scene.v_mesh[mesh_id].tlas_changed)
+    auto& cur_mesh = _scene.v_mesh[mesh_id];
+    if(cur_mesh.tlas_changed)
     {
-      update_tlas                         = true;
-      _scene.v_mesh[mesh_id].tlas_changed = false;
-      for(int ins_id = 0; ins_id < _scene.v_mesh[mesh_id].instanceTransforms.size(); ins_id++)
+      update_tlas           = true;
+      cur_mesh.tlas_changed = false;
+      for(int ins_id = 0; ins_id < cur_mesh.instanceTransforms.size(); ins_id++)
       {
-        _renderApp.getVulkan().updateTlas(tlas_id,
-                                          _scene.v_mesh[mesh_id].transform * _scene.v_mesh[mesh_id].instanceTransforms[ins_id],
-                                          _scene.v_mesh[mesh_id].visible);
-        tlas_id++;
+        auto tlas_id = cur_mesh.tlasIds[ins_id];
+        _renderApp.getVulkan().updateTlas(tlas_id, cur_mesh.transform * cur_mesh.instanceTransforms[ins_id], cur_mesh.visible);
       }
-    }
-    else
-    {
-      tlas_id += _scene.v_mesh[mesh_id].instanceTransforms.size();
     }
   }
   if(update_tlas)

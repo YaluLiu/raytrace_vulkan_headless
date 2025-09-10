@@ -36,6 +36,7 @@ struct _VertexStreams
   bool                   material_changed   = false;
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1}};
   glm::mat4              transform          = glm::mat4{1};
+  std::vector<int>       tlasIds;  // 当前mesh的实例在tlas队列中对应的id
 };
 
 struct HdGatlingScene
