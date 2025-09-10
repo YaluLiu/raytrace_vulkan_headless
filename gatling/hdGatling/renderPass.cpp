@@ -118,12 +118,12 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
     _renderApp.loadScene();
 #else
     bool init_texture = true;
-    for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+    for(auto& cur_mesh : _scene.v_mesh)
     {
       ModelLoader loader;
-      ConvertVmeshToLoader(_scene.v_mesh[mesh_id], loader);
+      ConvertVmeshToLoader(cur_mesh, loader);
       // add_default_material(loader);
-      loader.m_materials.emplace_back(_scene.v_mesh[mesh_id].materialObj);
+      loader.m_materials.emplace_back(cur_mesh.materialObj);
       loader.m_textures.clear();
       if(init_texture)
       {
@@ -131,11 +131,12 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
         loader.m_textures.push_back("PatrickStar.jpg");
         init_texture = false;
       }
-      _renderApp.getVulkan().loadModel(loader);
-      for(int i = 1; i < _scene.v_mesh[mesh_id].instanceTransforms.size(); i++)
+      _renderApp.getVulkan().loadModel(loader, cur_mesh.transform * cur_mesh.instanceTransforms[0]);
+      auto instance = _renderApp.getVulkan().m_instances.back();
+      for(int i = 1; i < cur_mesh.instanceTransforms.size(); i++)
       {
-        _renderApp.getVulkan().m_instances.push_back(
-            {_scene.v_mesh[mesh_id].transform * _scene.v_mesh[mesh_id].instanceTransforms[i], mesh_id});
+        instance.transform = cur_mesh.transform * cur_mesh.instanceTransforms[i];
+        _renderApp.getVulkan().m_instances.push_back(instance);
       }
     }
 #endif
