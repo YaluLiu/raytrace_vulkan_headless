@@ -397,29 +397,20 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
   {
     const VtVec3fArray& colors = displayColorValue.UncheckedGet<VtVec3fArray>();
     assert(colors.size() == 1);
-    const GfVec3f& diffuse_color = colors[0];
-    MaterialObj    mat;
-    mat.diffuse[0]       = diffuse_color[0];
-    mat.diffuse[1]       = diffuse_color[1];
-    mat.diffuse[2]       = diffuse_color[2];
-    mat.material_changed = true;
+    const GfVec3f diffuse = colors[0];
 
-    auto _mesh = _scene.v_mesh[_mesh_id];
+    auto& _mesh = _scene.v_mesh[_mesh_id];
     if(_mesh.material_id == -1)
     {
       std::lock_guard guard(_scene.mutex);
-      auto            _mat_id = _scene.v_mat.size();
-      _scene.v_mat.emplace_back(mat);
-      _mesh.material_id = _mat_id;
+      _scene.v_mat.emplace_back(MaterialObj());
+      _mesh.material_id = _scene.v_mat.size() - 1;
     }
-    else
-    {
-      _scene.v_mat[_mesh.material_id] = mat;
-    }
-    {
-      std::lock_guard guard(_scene.mutex);
-      std::cout << "[mesh]" << "mesh_" << _mesh_id << ", material_" << _mesh.material_id << " changed" << std::endl;
-    }
+    auto& mat            = _scene.v_mat[_mesh.material_id];
+    mat.diffuse[0]       = diffuse[0];
+    mat.diffuse[1]       = diffuse[1];
+    mat.diffuse[2]       = diffuse[2];
+    mat.material_changed = true;
   }
   else if(displayColorValue.IsHolding<VtVec4fArray>())
   {
@@ -527,7 +518,8 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     _mesh.tlas_changed = true;
   }
 
-  if((*dirtyBits & HdChangeTracker::DirtyMaterialId))
+  //通过primvar改变颜色
+  if((*dirtyBits & HdChangeTracker::DirtyMaterialId) || ((*dirtyBits & HdChangeTracker::DirtyPrimvar)))
   {
     const SdfPath& materialId = sceneDelegate->GetMaterialId(id);
 
@@ -539,16 +531,13 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     if(materialPrim)
     {
       _mesh.material_id = materialPrim->_mat_id;
-      {
-        std::lock_guard guard(_scene.mutex);
-        std::cout << "[mesh]" << _mesh_id << ":" << _mesh.material_id << std::endl;
-      }
     }
     else
     {
       GetDisplayColor(sceneDelegate);
     }
   }
+
 
   *dirtyBits = HdChangeTracker::Clean;
 }

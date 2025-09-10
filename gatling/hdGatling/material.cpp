@@ -94,7 +94,7 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
           mat.diffuse[2]        = diffuse_color[2];
           mat.material_changed  = true;
           _scene.v_mat[_mat_id] = mat;
-          std::cout << "[mat]" << _mat_id << "changed!" << std::endl;
+          // std::cout << "[mat]" << _mat_id << "changed!" << std::endl;
         }
         // 检查是否为 GfVec4f 类型 (带alpha通道)
         else if(paramValue.IsHolding<GfVec4f>())
