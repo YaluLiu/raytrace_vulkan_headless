@@ -450,9 +450,9 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)
   {
     _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
-    _mesh._visible = sceneDelegate->GetVisible(id);
+    _mesh.visible = sceneDelegate->GetVisible(id);
     //visible be updated on tlas-update-function
-    _mesh._tlas_changed = true;
+    _mesh.tlas_changed = true;
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
@@ -482,19 +482,19 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     int  num_instances  = uint32_t(transforms.size());
     auto transformsData = (const float (*)[4][4])transforms[0].data();
-    _mesh._instanceTransforms.resize(num_instances);
+    _mesh.instanceTransforms.resize(num_instances);
+
     for(uint32_t k = 0; k < num_instances; ++k)
     {
-      // transformsData[k] 是第 k 个实例的 4x4 矩阵
       for(int i = 0; i < 4; ++i)
       {
         for(int j = 0; j < 4; ++j)
         {
-          _mesh._instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
+          _mesh.instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
         }
       }
     }
-    _mesh._tlas_changed = true;
+    _mesh.tlas_changed = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
@@ -504,10 +504,10 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     {
       for(int j = 0; j < 4; ++j)
       {
-        _mesh._transform[i][j] = transform[i][j];  // Direct copy since GfMatrix4f is row-major
+        _mesh.transform[i][j] = transform[i][j];  // 按行复制
       }
     }
-    _mesh._tlas_changed = true;
+    _mesh.tlas_changed = true;
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyMaterialId))
@@ -525,7 +525,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       _mesh.materialObj.diffuse[0] = diffuse_color[0];
       _mesh.materialObj.diffuse[1] = diffuse_color[1];
       _mesh.materialObj.diffuse[2] = diffuse_color[2];
-      _mesh._material_changed      = true;
+      _mesh.material_changed       = true;
     }
     else
     {
@@ -961,12 +961,12 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   }
 
   // Collect vertices and indices
-  _VertexStreams s = {.faces         = faces,
-                      .points        = points,
-                      .normals       = normals,
-                      .texCoords     = texCoords,
-                      .materialIds   = materialIds,  // 新增：每个面的材质 ID
-                      ._blas_changed = true};
+  _VertexStreams s = {.faces        = faces,
+                      .points       = points,
+                      .normals      = normals,
+                      .texCoords    = texCoords,
+                      .materialIds  = materialIds,  // 新增：每个面的材质 ID
+                      .blas_changed = true};
 
   {
     _scene.v_mesh[_mesh_id] = s;

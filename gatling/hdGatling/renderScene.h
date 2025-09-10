@@ -27,17 +27,15 @@ struct _VertexStreams
   VtVec3fArray points;
   VtVec3fArray normals;
   VtVec2fArray texCoords;
-  VtIntArray   materialIds;      // 新增：每个面的材质 ID
-  MaterialObj  materialObj;      //对应的材质
-  bool         _visible = true;  // 当前mesh是否可见
+  VtIntArray   materialIds;     // 新增：每个面的材质 ID
+  MaterialObj  materialObj;     //对应的材质
+  bool         visible = true;  // 当前mesh是否可见
 
-  bool                   _blas_changed     = false;  //blas是否被更新，基础顶点和mesh结构
-  bool                   _tlas_changed     = false;  //tlas是否被更新，变换矩阵
-  bool                   _material_changed = false;
-  int                    _mesh_id;  //在cpu和gpu的vector中的序号，必须保持一致
-  std::vector<glm::mat4> _instanceTransforms = {glm::mat4{1}};
-  glm::mat4              _transform          = glm::mat4{1};
-  std::vector<glm::mat4> _tlas_trans;
+  bool                   blas_changed       = false;  //blas是否被更新，基础顶点和mesh结构
+  bool                   tlas_changed       = false;  //tlas是否被更新，变换矩阵
+  bool                   material_changed   = false;
+  std::vector<glm::mat4> instanceTransforms = {glm::mat4{1}};
+  glm::mat4              transform          = glm::mat4{1};
 };
 
 struct HdGatlingScene

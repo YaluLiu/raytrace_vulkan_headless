@@ -132,10 +132,10 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
         init_texture = false;
       }
       _renderApp.getVulkan().loadModel(loader);
-      for(int i = 1; i < _scene.v_mesh[mesh_id]._instanceTransforms.size(); i++)
+      for(int i = 1; i < _scene.v_mesh[mesh_id].instanceTransforms.size(); i++)
       {
         _renderApp.getVulkan().m_instances.push_back(
-            {_scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[i], mesh_id});
+            {_scene.v_mesh[mesh_id].transform * _scene.v_mesh[mesh_id].instanceTransforms[i], mesh_id});
       }
     }
 #endif
@@ -211,9 +211,9 @@ void HdGatlingRenderPass::app_update_blas()
 {
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
-    if(_scene.v_mesh[mesh_id]._blas_changed)
+    if(_scene.v_mesh[mesh_id].blas_changed)
     {
-      _scene.v_mesh[mesh_id]._blas_changed = false;
+      _scene.v_mesh[mesh_id].blas_changed = false;
       ConvertVmeshToLoader(_scene.v_mesh[mesh_id], _renderApp.getVulkan().m_Loader[mesh_id]);
       _renderApp.getVulkan().updateBlas(mesh_id);
     }
@@ -227,21 +227,21 @@ void HdGatlingRenderPass::app_update_tlas()
 
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
-    if(_scene.v_mesh[mesh_id]._tlas_changed)
+    if(_scene.v_mesh[mesh_id].tlas_changed)
     {
-      update_tlas                          = true;
-      _scene.v_mesh[mesh_id]._tlas_changed = false;
-      for(int ins_id = 0; ins_id < _scene.v_mesh[mesh_id]._instanceTransforms.size(); ins_id++)
+      update_tlas                         = true;
+      _scene.v_mesh[mesh_id].tlas_changed = false;
+      for(int ins_id = 0; ins_id < _scene.v_mesh[mesh_id].instanceTransforms.size(); ins_id++)
       {
         _renderApp.getVulkan().updateTlas(tlas_id,
-                                          _scene.v_mesh[mesh_id]._transform * _scene.v_mesh[mesh_id]._instanceTransforms[ins_id],
-                                          _scene.v_mesh[mesh_id]._visible);
+                                          _scene.v_mesh[mesh_id].transform * _scene.v_mesh[mesh_id].instanceTransforms[ins_id],
+                                          _scene.v_mesh[mesh_id].visible);
         tlas_id++;
       }
     }
     else
     {
-      tlas_id += _scene.v_mesh[mesh_id]._instanceTransforms.size();
+      tlas_id += _scene.v_mesh[mesh_id].instanceTransforms.size();
     }
   }
   if(update_tlas)
@@ -255,9 +255,9 @@ void HdGatlingRenderPass::app_update_material()
   std::vector<MaterialUpdate> new_materials;
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
-    if(_scene.v_mesh[mesh_id]._material_changed)
+    if(_scene.v_mesh[mesh_id].material_changed)
     {
-      _scene.v_mesh[mesh_id]._material_changed = false;
+      _scene.v_mesh[mesh_id].material_changed = false;
       new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), _scene.v_mesh[mesh_id].materialObj});
       // std::cout << "[RenderPass]:" << mesh_id << " ->diffuseColor (GfVec3f):(" << _scene.v_mesh[mesh_id].materialObj.diffuse[0] << ","
       //           << _scene.v_mesh[mesh_id].materialObj.diffuse[1] << "," << _scene.v_mesh[mesh_id].materialObj.diffuse[2] << ")" << std::endl;
