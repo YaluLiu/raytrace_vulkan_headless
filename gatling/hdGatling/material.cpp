@@ -26,6 +26,9 @@ HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id, HdGatlingScene& scene)
     : HdMaterial(id)
     , _scene(scene)
 {
+  std::lock_guard guard(_scene.mutex);
+  _mat_id = _scene.v_mat.size();
+  _scene.v_mat.emplace_back(MaterialObj());
 }
 
 void HdGatlingMaterial::Finalize(HdRenderParam* renderParam) {}
@@ -37,7 +40,6 @@ HdDirtyBits HdGatlingMaterial::GetInitialDirtyBitsMask() const
 
 void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
-  std::cout << "[material]---------------------------------------------------" << std::endl;
   if(!TF_VERIFY(sceneDelegate))
     return;
 
@@ -72,7 +74,7 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
   {
     const SdfPath&         nodePath = nodePair.first;
     const HdMaterialNode2& node     = nodePair.second;
-    std::cout << "[material]Node: " << nodePath.GetString() << ", NodeType: " << node.nodeTypeId << std::endl;
+    // std::cout << "[material]Node: " << nodePath.GetString() << ", NodeType: " << node.nodeTypeId << std::endl;
 
     for(const auto& paramPair : node.parameters)
     {
@@ -85,9 +87,14 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         // 检查是否为 GfVec3f 类型
         if(paramValue.IsHolding<GfVec3f>())
         {
-          _diffuse_color = paramValue.Get<GfVec3f>();
-          std::cout << "[material] diffuseColor (GfVec3f): R=" << _diffuse_color[0] << ", G=" << _diffuse_color[1]
-                    << ", B=" << _diffuse_color[2] << std::endl;
+          auto        diffuse_color = paramValue.Get<GfVec3f>();
+          MaterialObj mat;
+          mat.diffuse[0]        = diffuse_color[0];
+          mat.diffuse[1]        = diffuse_color[1];
+          mat.diffuse[2]        = diffuse_color[2];
+          mat.material_changed  = true;
+          _scene.v_mat[_mat_id] = mat;
+          std::cout << "[mat]" << _mat_id << "changed!" << std::endl;
         }
         // 检查是否为 GfVec4f 类型 (带alpha通道)
         else if(paramValue.IsHolding<GfVec4f>())

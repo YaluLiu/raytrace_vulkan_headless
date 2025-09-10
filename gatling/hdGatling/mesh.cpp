@@ -396,12 +396,29 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
   if(displayColorValue.IsHolding<VtVec3fArray>())
   {
     const VtVec3fArray& colors = displayColorValue.UncheckedGet<VtVec3fArray>();
-    for(size_t i = 0; i < colors.size(); ++i)
+    assert(colors.size() == 1);
+    const GfVec3f& diffuse_color = colors[0];
+    MaterialObj    mat;
+    mat.diffuse[0]       = diffuse_color[0];
+    mat.diffuse[1]       = diffuse_color[1];
+    mat.diffuse[2]       = diffuse_color[2];
+    mat.material_changed = true;
+
+    auto _mesh = _scene.v_mesh[_mesh_id];
+    if(_mesh.material_id == -1)
     {
-      const GfVec3f& c                               = colors[i];
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[0] = c[0];
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[1] = c[1];
-      _scene.v_mesh[_mesh_id].materialObj.diffuse[2] = c[2];
+      std::lock_guard guard(_scene.mutex);
+      auto            _mat_id = _scene.v_mat.size();
+      _scene.v_mat.emplace_back(mat);
+      _mesh.material_id = _mat_id;
+    }
+    else
+    {
+      _scene.v_mat[_mesh.material_id] = mat;
+    }
+    {
+      std::lock_guard guard(_scene.mutex);
+      std::cout << "[mesh]" << "mesh_" << _mesh_id << ", material_" << _mesh.material_id << " changed" << std::endl;
     }
   }
   else if(displayColorValue.IsHolding<VtVec4fArray>())
@@ -521,17 +538,14 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     if(materialPrim)
     {
-      GfVec3f diffuse_color        = materialPrim->_diffuse_color;
-      _mesh.materialObj.diffuse[0] = diffuse_color[0];
-      _mesh.materialObj.diffuse[1] = diffuse_color[1];
-      _mesh.materialObj.diffuse[2] = diffuse_color[2];
-      _mesh.material_changed       = true;
+      _mesh.material_id = materialPrim->_mat_id;
+      {
+        std::lock_guard guard(_scene.mutex);
+        std::cout << "[mesh]" << _mesh_id << ":" << _mesh.material_id << std::endl;
+      }
     }
     else
     {
-      _mesh.materialObj.diffuse[0] = 0.9;
-      _mesh.materialObj.diffuse[1] = 0.9;
-      _mesh.materialObj.diffuse[2] = 0.9;
       GetDisplayColor(sceneDelegate);
     }
   }
@@ -961,16 +975,12 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   }
 
   // Collect vertices and indices
-  _VertexStreams s = {.faces        = faces,
-                      .points       = points,
-                      .normals      = normals,
-                      .texCoords    = texCoords,
-                      .materialIds  = materialIds,  // 新增：每个面的材质 ID
-                      .blas_changed = true};
-
-  {
-    _scene.v_mesh[_mesh_id] = s;
-  }
+  _scene.v_mesh[_mesh_id].faces        = faces;
+  _scene.v_mesh[_mesh_id].points       = points;
+  _scene.v_mesh[_mesh_id].normals      = normals;
+  _scene.v_mesh[_mesh_id].texCoords    = texCoords;
+  _scene.v_mesh[_mesh_id].materialIds  = materialIds;  // 新增：每个面的材质 ID
+  _scene.v_mesh[_mesh_id].blas_changed = true;
 }
 
 HdDirtyBits HdGatlingMesh::GetInitialDirtyBitsMask() const

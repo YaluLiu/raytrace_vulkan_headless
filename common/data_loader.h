@@ -23,7 +23,8 @@ struct MaterialObj
                          // 光照模型（参见MTL文件格式说明）
   int illum = 0;
   // 贴图ID（如果没有贴图则为-1）
-  int textureID = -1;
+  int  textureID        = -1;
+  bool material_changed = false;
 };
 
 // OBJ模型的顶点结构体

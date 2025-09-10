@@ -123,7 +123,8 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       // add_default_material(loader);
-      loader.m_materials.emplace_back(cur_mesh.materialObj);
+      auto materialObj = _scene.v_mat[cur_mesh.material_id];
+      loader.m_materials.emplace_back(materialObj);
       loader.m_textures.clear();
       if(init_texture)
       {
@@ -253,19 +254,40 @@ void HdGatlingRenderPass::app_update_tlas()
 void HdGatlingRenderPass::app_update_material()
 {
   std::vector<MaterialUpdate> new_materials;
+  for(size_t mat_id = 0; mat_id < _scene.v_mat.size(); ++mat_id)
+  {
+    auto materialObj = _scene.v_mat[mat_id];
+    if(materialObj.material_changed)
+    {
+      std::cout << "[RenderPass] material_" << mat_id << " changed" << std::endl;
+      for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+      {
+        auto& cur_mesh         = _scene.v_mesh[mesh_id];
+        auto  temp_mat_id      = cur_mesh.material_id;
+        auto  temp_materialObj = _scene.v_mat[temp_mat_id];
+        std::cout << "[RenderPass] mesh_" << mesh_id << ", material_" << temp_mat_id << ":"
+                  << temp_materialObj.material_changed << std::endl;
+      }
+    }
+  }
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
-    if(_scene.v_mesh[mesh_id].material_changed)
+    auto& cur_mesh    = _scene.v_mesh[mesh_id];
+    auto  mat_id      = cur_mesh.material_id;
+    auto  materialObj = _scene.v_mat[mat_id];
+    if(materialObj.material_changed)
     {
-      _scene.v_mesh[mesh_id].material_changed = false;
-      new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), _scene.v_mesh[mesh_id].materialObj});
-      // std::cout << "[RenderPass]:" << mesh_id << " ->diffuseColor (GfVec3f):(" << _scene.v_mesh[mesh_id].materialObj.diffuse[0] << ","
-      //           << _scene.v_mesh[mesh_id].materialObj.diffuse[1] << "," << _scene.v_mesh[mesh_id].materialObj.diffuse[2] << ")" << std::endl;
+      new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), materialObj});
+      std::cout << "[RenderPass] mesh_" << mesh_id << ", material_" << mat_id << " changed" << std::endl;
     }
   }
   if(!new_materials.empty())
   {
     _renderApp.getVulkan().updateMaterialsAtRuntime(new_materials);
+  }
+  for(auto& materialObj : _scene.v_mat)
+  {
+    materialObj.material_changed = false;
   }
 }
 void HdGatlingRenderPass::app_anim_base()

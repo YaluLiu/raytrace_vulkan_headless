@@ -40,9 +40,7 @@ public:
 
 public:
   HdGatlingScene& _scene;
-
-public:
-  GfVec3f _diffuse_color{0.18f, 0.18f, 0.18f};
+  int             _mat_id;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
