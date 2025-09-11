@@ -31,6 +31,7 @@ layout(location = 0) rayPayloadEXT hitPayload prd;
 
 layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = eOutImage, rgba32f) uniform image2D image;
+layout(set = 0, binding = eObjIdImage, r32ui) uniform uimage2D objectIdImage;   // NEW: object id
 layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
@@ -50,6 +51,9 @@ void main()
   float tMin     = 0.001;
   float tMax     = 10000.0;
 
+  // 在光追之前初始化
+  prd.objId = 0u;
+
   traceRayEXT(topLevelAS,     // acceleration structure
               rayFlags,       // rayFlags
               0xFF,           // cullMask
@@ -63,5 +67,6 @@ void main()
               0               // payload (location = 0)
   );
 
-  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));
+  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));            // 初始化
+  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), uvec4(prd.objId, 0, 0, 0));  // 写 objectId
 }

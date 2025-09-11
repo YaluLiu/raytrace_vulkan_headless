@@ -481,6 +481,7 @@ void HelloVulkan::destroyResources()
   m_alloc.destroy(m_offscreenColor);
 #endif
   m_alloc.destroy(m_offscreenDepth);
+  m_alloc.destroy(m_offscreenObjectId);
   vkDestroyRenderPass(m_device, m_offscreenRenderPass, nullptr);
   vkDestroyFramebuffer(m_device, m_offscreenFramebuffer, nullptr);
 
@@ -592,6 +593,21 @@ void HelloVulkan::createOffscreenRender()
     m_offscreenDepth = m_alloc.createTexture(image, depthStencilView);
   }
 
+  // ---- 创建 objectId image (R32_UINT) ----
+  m_alloc.destroy(m_offscreenObjectId);
+  {
+    auto idCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
+                                                    VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                                                        | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    nvvk::Image           image  = m_alloc.createImage(idCreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, idCreateInfo);
+    // storage image 不需要采样器，但 nvvk::Texture 结构里带 sampler，可用默认
+    VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenObjectId                        = m_alloc.createTexture(image, ivInfo, sampler);
+    m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  }
+
   // 设置color和depth image的初始布局
   {
     nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
@@ -599,6 +615,8 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepth.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                VK_IMAGE_ASPECT_COLOR_BIT);
 
     genCmdBuf.submitAndWait(cmdBuf);
   }
@@ -731,6 +749,8 @@ void HelloVulkan::createRtDescriptorSet()
                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
   // 添加输出图像绑定（只在raygen可见）
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eOutImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+  // NEW: objectId image
+  m_rtDescSetLayoutBind.addBinding(RtxBindings::eObjIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
   // 创建描述符池和布局
   m_rtDescPool      = m_rtDescSetLayoutBind.createPool(m_device);
@@ -749,10 +769,12 @@ void HelloVulkan::createRtDescriptorSet()
   descASInfo.accelerationStructureCount = 1;
   descASInfo.pAccelerationStructures    = &tlas;
   VkDescriptorImageInfo imageInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo idInfo{{}, m_offscreenObjectId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   std::vector<VkWriteDescriptorSet> writes;
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eTlas, &descASInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &imageInfo));
+  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eObjIdImage, &idInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 
@@ -761,10 +783,13 @@ void HelloVulkan::createRtDescriptorSet()
 // - 当窗口resize或offscreen image重建后必须调用
 void HelloVulkan::updateRtDescriptorSet()
 {
-  // (1) Output buffer: 将新的offscreen color图像信息填入描述符集
-  VkDescriptorImageInfo imageInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkWriteDescriptorSet  wds = m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &imageInfo);
-  vkUpdateDescriptorSets(m_device, 1, &wds, 0, nullptr);
+  VkDescriptorImageInfo colorInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo idInfo{{}, m_offscreenObjectId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+
+  VkWriteDescriptorSet wColor = m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &colorInfo);
+  VkWriteDescriptorSet wId    = m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eObjIdImage, &idInfo);
+  VkWriteDescriptorSet ws[2]  = {wColor, wId};
+  vkUpdateDescriptorSets(m_device, 2, ws, 0, nullptr);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -1329,3 +1354,66 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
   printf("Saved %s (%ux%u)\n", filename, width, height);
 }
 #endif
+
+// 读取 objectId 图像到 CPU 向量 (uint32 per pixel)
+std::vector<uint32_t> HelloVulkan::readObjectIdImage()
+{
+  std::vector<uint32_t> result(m_size.width * m_size.height, 0);
+
+  // 创建 staging buffer
+  VkDeviceSize       imageSize = m_size.width * m_size.height * sizeof(uint32_t);
+  VkBufferCreateInfo bInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+  bInfo.size  = imageSize;
+  bInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VkBuffer staging;
+  vkCreateBuffer(m_device, &bInfo, nullptr, &staging);
+
+  VkMemoryRequirements memReq;
+  vkGetBufferMemoryRequirements(m_device, staging, &memReq);
+
+  VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+  allocInfo.allocationSize = memReq.size;
+  allocInfo.memoryTypeIndex =
+      getMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  VkDeviceMemory mem;
+  vkAllocateMemory(m_device, &allocInfo, nullptr, &mem);
+  vkBindBufferMemory(m_device, staging, mem, 0);
+
+  // 拷贝
+  VkCommandBuffer cmd = createTempCmdBuffer();
+
+  VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+  barrier.oldLayout        = VK_IMAGE_LAYOUT_GENERAL;
+  barrier.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  barrier.image            = m_offscreenObjectId.image;
+  barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  barrier.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.dstAccessMask    = VK_ACCESS_TRANSFER_READ_BIT;
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                       nullptr, 1, &barrier);
+
+  VkBufferImageCopy region{};
+  region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+  region.imageExtent      = {m_size.width, m_size.height, 1};
+
+  vkCmdCopyImageToBuffer(cmd, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging, 1, &region);
+
+  // 还原
+  std::swap(barrier.oldLayout, barrier.newLayout);
+  barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
+                       nullptr, 1, &barrier);
+
+  submitTempCmdBuffer(cmd);
+
+  void* mapped = nullptr;
+  vkMapMemory(m_device, mem, 0, imageSize, 0, &mapped);
+  memcpy(result.data(), mapped, imageSize);
+  vkUnmapMemory(m_device, mem);
+
+  vkDestroyBuffer(m_device, staging, nullptr);
+  vkFreeMemory(m_device, mem, nullptr);
+
+  return result;
+}

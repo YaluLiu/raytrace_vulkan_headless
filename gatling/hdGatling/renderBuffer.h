@@ -79,6 +79,10 @@ public:
   uint32_t _height;
   float*   map_ptr = nullptr;
 
+public:
+  void WriteIntData(unsigned int* data, size_t count);
+  void check_format();
+
 protected:
   void _Deallocate() override;
 

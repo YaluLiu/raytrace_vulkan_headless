@@ -255,9 +255,9 @@ void HdGatlingRenderBuffer::ConvertToHgiTexture()
   HdFormat hdFormat = GetFormat();
   // HgiFormatFloat32Vec3 not a supported texture format for Vulkan. Convert
   // data to vec4 format.
-  std::vector<float> float4Data;
   if(hdFormat == HdFormatFloat32Vec3)
   {
+    std::vector<float> float4Data;
     hdFormat               = HdFormatFloat32Vec4;
     const size_t numValues = 3 * dim[0] * dim[1] * dim[2];
     _ConvertRGBtoRGBA(reinterpret_cast<const float*>(pixelData), numValues, &float4Data);
@@ -335,82 +335,7 @@ HgiTextureHandle CreateHgiTextureHandle(GLuint textureId, const HgiTextureDesc& 
 }
 
 #include <vector>
-#include <cstdint>  // 用于uint8_t
-
-GLuint CreateTestTexture(int width, int height)
-{
-  // 创建纹理对象
-  GLuint textureID;
-  glGenTextures(1, &textureID);
-  glBindTexture(GL_TEXTURE_2D, textureID);
-
-  // 计算中间分界线
-  const int midX = width / 2;
-
-  // 创建像素数据缓冲区 (RGBA格式)
-#if 0
-    std::vector<uint8_t> pixels(width * height * 4);
-    
-    // 填充像素数据
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            const int index = (y * width + x) * 4;
-            
-            // 左半部分：红色 (255, 0, 0)
-            // 右半部分：蓝色 (0, 0, 255)
-            if (x < midX) {
-                pixels[index + 0] = 255;  // R
-                pixels[index + 1] = 0;    // G
-                pixels[index + 2] = 0;    // B
-            } else {
-                pixels[index + 0] = 0;    // R
-                pixels[index + 1] = 0;    // G
-                pixels[index + 2] = 255;  // B
-            }
-            pixels[index + 3] = 255;  // A (完全不透明)
-        }
-    }
-
-
-    
-    //对应uint8_t
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, 
-                 GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-#else
-  std::vector<float> pixels(width * height * 4);
-  for(int y = 0; y < height; ++y)
-  {
-    for(int x = 0; x < width; ++x)
-    {
-      const int index = (y * width + x) * 4;
-      if(x < midX)
-      {
-        pixels[index + 0] = 1.0f;  // R (0.0-1.0范围)
-        pixels[index + 1] = 0.0f;  // G
-        pixels[index + 2] = 0.0f;  // B
-      }
-      else
-      {
-        pixels[index + 0] = 0.0f;  // R
-        pixels[index + 1] = 0.0f;  // G
-        pixels[index + 2] = 1.0f;  // B
-      }
-      pixels[index + 3] = 1.0f;  // A
-    }
-  }
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, pixels.data());
-#endif
-  // 设置纹理参数和数据
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  // 可选：生成mipmap（如果需要）
-  // glGenerateMipmap(GL_TEXTURE_2D);
-
-  return textureID;
-}
+#include <cstdint>
 
 void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId)
 {
@@ -428,9 +353,6 @@ void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId)
 
   _texDesc.initialData = pixels.data();
   _texture = _GetHgi()->CreateTexture(_texDesc);
-#elif 0
-  GLuint id = CreateTestTexture(_width, _height);
-  _texture  = CreateHgiTextureHandle(id, _texDesc);
 #else
   _texture = CreateHgiTextureHandle(textureId, _texDesc);
 #endif
@@ -441,16 +363,61 @@ VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
   return VtValue(_texture);
 }
 
-//测试用函数，没用了
-void HdGatlingRenderBuffer::CopyTextureHandle()
-{
-  HgiGLTexture* opengl_texture = (HgiGLTexture*)_texture.Get();
-  _texture = CreateHgiTextureHandle(opengl_texture->GetTextureId(), opengl_texture->GetDescriptor());
-}
-
 int HdGatlingRenderBuffer::GetTextureId()
 {
   HgiGLTexture* gl_texture = (HgiGLTexture*)_texture.Get();
   return gl_texture->GetTextureId();
+}
+
+void HdGatlingRenderBuffer::check_format()
+{
+  switch(_format)
+  {
+    case HdFormatInt32:
+      std::cout << "[renderBuffer] HdFormatInt32" << std::endl;
+      break;
+    case HdFormatFloat32:
+      std::cout << "[renderBuffer] HdFormatFloat32" << std::endl;
+      break;
+    case HdFormatFloat32Vec4:
+      std::cout << "[renderBuffer] HdFormatFloat32Vec4" << std::endl;
+      break;
+    default:
+      TF_WARN("WriteIntData: unsupported format %d", int(_format));
+      break;
+  }
+}
+
+void HdGatlingRenderBuffer::WriteIntData(unsigned int* data, size_t count)
+{
+  if(_buffer == nullptr || count == 0)
+    return;
+
+  switch(_format)
+  {
+    case HdFormatInt32:
+      memcpy(_buffer, data, sizeof(int) * count);
+      break;
+    case HdFormatFloat32: {
+      float* buf = _buffer;
+      for(size_t i = 0; i < count; ++i)
+        buf[i] = static_cast<float>(data[i]);
+    }
+    break;
+    case HdFormatFloat32Vec4: {
+      float* buf = _buffer;
+      for(size_t i = 0; i < count; ++i)
+      {
+        buf[i * 4 + 0] = static_cast<float>(data[i]);
+        buf[i * 4 + 1] = 0.0f;
+        buf[i * 4 + 2] = 0.0f;
+        buf[i * 4 + 3] = 1.0f;
+      }
+    }
+    break;
+    default:
+      TF_WARN("WriteIntData: unsupported format %d", int(_format));
+      break;
+  }
 }
 PXR_NAMESPACE_CLOSE_SCOPE

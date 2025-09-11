@@ -100,16 +100,15 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         else if(paramValue.IsHolding<GfVec4f>())
         {
           GfVec4f color = paramValue.Get<GfVec4f>();
-          std::cout << "[material] diffuseColor (GfVec4f): R=" << color[0] << ", G=" << color[1] << ", B=" << color[2]
+          std::cerr << "[material] diffuseColor (GfVec4f): R=" << color[0] << ", G=" << color[1] << ", B=" << color[2]
                     << ", A=" << color[3] << std::endl;
         }
         // 检查其他可能的颜色类型
         else
         {
-          std::cout << "diffuseColor has unexpected type: " << paramValue.GetTypeName() << std::endl;
-          std::cout << "Raw value: " << paramValue << std::endl;
+          std::cerr << "diffuseColor has unexpected type: " << paramValue.GetTypeName() << std::endl;
+          std::cerr << "Raw value: " << paramValue << std::endl;
         }
-        std::cout << paramName.GetString() << "(" << paramValue.GetTypeName().c_str() << ") = " << paramValue << std::endl;
       }
 
       // 打印 inputConnections（参数与贴图的连接）
