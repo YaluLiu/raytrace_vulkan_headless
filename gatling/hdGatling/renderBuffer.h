@@ -55,9 +55,9 @@ public:
   bool IsMultiSampled() const override;
   bool IsConverged() const override;
 
-  void    SetConverged(bool converged);
-  VtValue GetResource(bool multiSampled) const override;
-  int     GetTextureId();
+  void SetConverged(bool converged);
+
+  int GetTextureId();
 
 public:
   void* Map() override;
@@ -66,6 +66,9 @@ public:
   void Unmap() override;
 
   void Resolve() override;
+  void read_obj_id_texture(GLuint textureId);
+  void read_color_texture(GLuint textureId);
+  // VtValue GetResource(bool multiSampled) const override;
   void ConvertToHgiTexture();
   void MakeHgiTexture(GLuint textureId);
 

@@ -85,24 +85,22 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     if(name == HdAovTokens->color)
     {
       //HdFormatFloat32Vec4
-#if USE_RAY_TRACE
+#if 0 && USE_RAY_TRACE
       renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLFrame());
 #else
-      renderBuffer->change_show_image();
-      renderBuffer->ConvertToHgiTexture();
+      // renderBuffer->change_show_image();
+      // renderBuffer->ConvertToHgiTexture();
+      renderBuffer->read_color_texture(_renderApp.getVulkan().getOpenGLFrame());
 #endif
     }
     else if(name == HdAovTokens->primId)
     {
       //HdFormatInt32
-      renderBuffer->check_format();
-      renderBuffer->clear(1);
-      // // 从 Vulkan 读取 objectId buffer
-      // auto objectIds = _renderApp.getVulkan().readObjectIdImage();
-      // // 将数据写入 Hydra RenderBuffer (你需要在 HdGatlingRenderBuffer 实现一个设置 int 数据的方法)
-      // // 假设增加 API: renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
-      // renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
-      // renderBuffer->ConvertToHgiTexture();
+      // renderBuffer->check_format();
+      // renderBuffer->clear(1);
+      // 从 Vulkan 读取 objectId buffer
+      auto objectIds = _renderApp.getVulkan().readObjectIdImage();
+      renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
     }
   }
   _frame_idx++;

@@ -184,39 +184,101 @@ Hgi* HdGatlingRenderBuffer::_GetHgi()
   return _owner->GetHgi();
 }
 
+// 原来的 _getTextureUsage 替换为下面这个更完整的版本
 HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
 {
   HgiTextureUsage usage = 0;
 
-  // 根据格式确定用途
+  const bool isIdAov = (nameToken == HdAovTokens->primId) || (nameToken == HdAovTokens->instanceId) ||
+#if PXR_VERSION >= 2408
+                       (nameToken == HdAovTokens->elementId) ||  // 新版本里可能存在
+#endif
+                       false;
+
   switch(format)
   {
     case HdFormatFloat32Vec4:
     case HdFormatFloat32Vec3:
     case HdFormatUNorm8Vec4:
     case HdFormatUNorm8Vec3:
-      // 颜色格式，通常用作颜色目标或着色器读取
-      usage |= HgiTextureUsageBitsColorTarget;
+      // 典型颜色 AOV：可以作为渲染目标（如果以后想直接写进去），也允许被读取
+      usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
       break;
+
     case HdFormatFloat32:
-      // 深度格式，通常用作深度目标
+      // depth / depthStencil 场景；这里只在名称匹配时加 DepthTarget
       if(nameToken == HdAovTokens->depth || nameToken == HdAovTokens->depthStencil)
       {
         usage |= HgiTextureUsageBitsDepthTarget;
       }
+      // 如果你需要在着色器里采样（少见），可再加 ShaderRead
       break;
+
+    case HdFormatInt32:
+      // object/prim/instance id 之类整数 AOV
+      // 当前是 CPU 写 -> 上传，只需要 ShaderRead 让上层采样/拷贝
+      usage |= HgiTextureUsageBitsShaderRead;
+      // 如果以后 GPU（RT 或 compute）直接写入，可再加：
+      // usage |= HgiTextureUsageBitsStorage;
+      // 若想用作颜色 attachment（少见，一般不需要）可以：
+      // usage |= HgiTextureUsageBitsColorTarget;
+      break;
+
     default:
-      TF_WARN("Unsupported HdFormat: %d", format);
+      TF_WARN("Unsupported HdFormat in _getTextureUsage: %d", format);
       break;
   }
 
-  // 根据名称标识添加额外用途（可选）
+  // 补充：某些自定义 AOV（normal、color）我们已经在上面加了 ShaderRead，
+  // 这里如果需要对特定 Token 进行强制保障，可再次加：
   if(nameToken == HdAovTokens->color || nameToken == HdAovTokens->normal)
   {
     usage |= HgiTextureUsageBitsShaderRead;
   }
+  if(isIdAov)
+  {
+    // primId/instanceId 等如果你希望 CPU 上传后还能被别的 pass 采样，确保有 ShaderRead
+    usage |= HgiTextureUsageBitsShaderRead;
+  }
 
   return usage;
+}
+
+// 在 createDesc 中（保留你原来的函数开头），替换/补充 usage 相关段落
+void HdGatlingRenderBuffer::createDesc()
+{
+  const GfVec3i dim(GetWidth(), GetHeight(), 1);
+
+  HdFormat hdFormat = GetFormat();
+  if(hdFormat == HdFormatFloat32Vec3)
+  {
+    // Hgi 不支持直接 RGB32F，转成 RGBA32F
+    hdFormat = HdFormatFloat32Vec4;
+  }
+
+  const HgiFormat hgiFormat = HdxHgiConversions::GetHgiFormat(hdFormat);
+
+  // 构造描述
+  _texDesc.debugName   = std::string("AovInput: ") + GetId().GetName();
+  _texDesc.dimensions  = dim;
+  _texDesc.format      = hgiFormat;
+  _texDesc.layerCount  = 1;
+  _texDesc.mipLevels   = 1;
+  _texDesc.sampleCount = HgiSampleCount1;
+
+  // 关键：根据格式 + AOV 名称计算 usage
+  _texDesc.usage = _getTextureUsage(GetFormat(), GetId().GetNameToken());
+
+  // 初始数据（CPU -> GPU 一次性上传）
+  _texDesc.initialData    = _buffer;
+  _texDesc.pixelsByteSize = _buffer_size;
+
+  // 如果之前已有纹理，先销毁
+  if(_texture)
+  {
+    _GetHgi()->DestroyTexture(&_texture);
+  }
+  _texture = _GetHgi()->CreateTexture(_texDesc);
 }
 
 void _ConvertRGBtoRGBA(const float* rgbValues, size_t numRgbValues, std::vector<float>* rgbaValues)
@@ -296,33 +358,6 @@ void HdGatlingRenderBuffer::ConvertToHgiTexture()
   }
 }
 
-//---------------------------------------------------------------------
-// 渲染结果 color专属，vulkan->opengl
-//---------------------------------------------------------------------
-void HdGatlingRenderBuffer::createDesc()
-{
-  const GfVec3i dim(GetWidth(), GetHeight(), 1);
-  // std::cout << "[RenderBuff:size]" << _width << "x" << _height << std::endl;
-
-  HdFormat hdFormat = GetFormat();
-  if(hdFormat == HdFormatFloat32Vec3)
-  {
-    hdFormat = HdFormatFloat32Vec4;
-  }
-  const HgiFormat bufFormat = HdxHgiConversions::GetHgiFormat(hdFormat);
-  _texDesc.debugName        = "AovInput Texture";
-  _texDesc.dimensions       = dim;
-  _texDesc.format           = bufFormat;
-  _texDesc.layerCount       = 1;
-  _texDesc.mipLevels        = 1;
-  _texDesc.sampleCount      = HgiSampleCount1;
-  _texDesc.usage = _getTextureUsage(GetFormat(), GetId().GetNameToken()) | HgiTextureUsageBitsShaderRead;  // 纹理用途组合();
-
-  _texDesc.initialData    = _buffer;
-  _texDesc.pixelsByteSize = _buffer_size;
-  _texture                = _GetHgi()->CreateTexture(_texDesc);
-}
-
 HgiTextureHandle CreateHgiTextureHandle(GLuint textureId, const HgiTextureDesc& desc)
 {
   HgiGLTexture* texture = HgiGLTexture::CreateTextureFromId(textureId, desc);
@@ -358,10 +393,40 @@ void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId)
 #endif
 }
 
-VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
+void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
 {
-  return VtValue(_texture);
+  GLint realFormat;
+  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
+  assert(realFormat == GL_RGBA32F);
+
+  GLint memoryBound;
+  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
+  assert(memoryBound == GL_TRUE);
+  glBindTexture(GL_TEXTURE_2D, textureId);
+  std::vector<float> pixels(_width * _height * 4);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
+  memcpy(_buffer, pixels.data(), sizeof(float) * _width * _height * 4);
 }
+
+void HdGatlingRenderBuffer::read_obj_id_texture(GLuint textureId)
+{
+  GLint realFormat;
+  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
+  assert(realFormat == GL_RGBA32F);
+
+  GLint memoryBound;
+  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
+  assert(memoryBound == GL_TRUE);
+  glBindTexture(GL_TEXTURE_2D, textureId);
+  std::vector<int> pixels(_width * _height * 4);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
+  memcpy(_buffer, pixels.data(), sizeof(int) * _width * _height * 4);
+}
+
+// VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
+// {
+//   return VtValue(_texture);
+// }
 
 int HdGatlingRenderBuffer::GetTextureId()
 {
@@ -396,7 +461,8 @@ void HdGatlingRenderBuffer::WriteIntData(unsigned int* data, size_t count)
   switch(_format)
   {
     case HdFormatInt32:
-      memcpy(_buffer, data, sizeof(int) * count);
+      assert(sizeof(int) * count == _buffer_size);
+      memcpy(_buffer, data, _buffer_size);
       break;
     case HdFormatFloat32: {
       float* buf = _buffer;
