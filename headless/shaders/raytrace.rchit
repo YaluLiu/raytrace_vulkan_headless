@@ -142,4 +142,7 @@ void main()
   }
 
   prd.hitValue = vec3(lightIntensity * attenuation * (diffuse + specular));
+
+  // 设置 objectId（可换成 gl_InstanceID 若你想拾取实例）
+  prd.objId = uint(gl_InstanceCustomIndexEXT);
 }

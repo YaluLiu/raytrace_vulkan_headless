@@ -57,8 +57,6 @@ public:
 
   void SetConverged(bool converged);
 
-  int GetTextureId();
-
 public:
   void* Map() override;
   bool  IsMapped() const override;
@@ -66,7 +64,6 @@ public:
   void Unmap() override;
 
   void Resolve() override;
-  void read_obj_id_texture(GLuint textureId);
   void read_color_texture(GLuint textureId);
   // VtValue GetResource(bool multiSampled) const override;
   void ConvertToHgiTexture();
@@ -77,6 +74,7 @@ public:
   // The resolved output buffer.
   //std::vector<float> _buffer;
   float* _buffer;
+  void   print();
 
   uint32_t _width;
   uint32_t _height;

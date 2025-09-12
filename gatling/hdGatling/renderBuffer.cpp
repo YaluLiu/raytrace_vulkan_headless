@@ -408,31 +408,10 @@ void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
   memcpy(_buffer, pixels.data(), sizeof(float) * _width * _height * 4);
 }
 
-void HdGatlingRenderBuffer::read_obj_id_texture(GLuint textureId)
-{
-  GLint realFormat;
-  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
-  assert(realFormat == GL_RGBA32F);
-
-  GLint memoryBound;
-  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
-  assert(memoryBound == GL_TRUE);
-  glBindTexture(GL_TEXTURE_2D, textureId);
-  std::vector<int> pixels(_width * _height * 4);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-  memcpy(_buffer, pixels.data(), sizeof(int) * _width * _height * 4);
-}
-
 // VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
 // {
 //   return VtValue(_texture);
 // }
-
-int HdGatlingRenderBuffer::GetTextureId()
-{
-  HgiGLTexture* gl_texture = (HgiGLTexture*)_texture.Get();
-  return gl_texture->GetTextureId();
-}
 
 void HdGatlingRenderBuffer::check_format()
 {
@@ -485,5 +464,48 @@ void HdGatlingRenderBuffer::WriteIntData(unsigned int* data, size_t count)
       TF_WARN("WriteIntData: unsupported format %d", int(_format));
       break;
   }
+}
+
+void HdGatlingRenderBuffer::print()
+{
+  std::ofstream out("aa.txt");
+  if(!out)
+  {
+    std::cerr << "Failed to open file for writing: " << "aa.txt" << std::endl;
+    return;
+  }
+  auto cur_buffer = (int*)_buffer;
+  if(!cur_buffer)
+  {
+    std::cerr << "RenderBuffer mem is nullptr!" << std::endl;
+    out.close();
+    return;
+  }
+  for(int h = 0; h < _height; ++h)
+  {
+    int first_w = -1;
+    int last_w  = -1;
+    for(int w = 0; w < _width; ++w)
+    {
+      int step  = h * _width + w;
+      int value = cur_buffer[step];
+      if(value != -1)
+      {
+        if(first_w == -1)
+          first_w = w;
+        last_w = w;
+      }
+    }
+    if(first_w != -1 && last_w != -1)
+    {
+      out << "row " << h << ": first=(" << h << "," << first_w << ") last=(" << h << "," << last_w << ")" << std::endl;
+    }
+    else
+    {
+      out << "row " << h << ": no valid value" << std::endl;
+    }
+  }
+  out.close();
+  std::cout << "finish to write!" << std::endl;
 }
 PXR_NAMESPACE_CLOSE_SCOPE

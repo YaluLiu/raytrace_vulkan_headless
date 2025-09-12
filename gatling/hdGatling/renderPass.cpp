@@ -101,6 +101,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
       // 从 Vulkan 读取 objectId buffer
       auto objectIds = _renderApp.getVulkan().readObjectIdImage();
       renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
+      // renderBuffer->print();
     }
   }
   _frame_idx++;

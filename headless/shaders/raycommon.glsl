@@ -20,4 +20,5 @@
 struct hitPayload
 {
   vec3 hitValue;
+  uint objId;  // new : object id for select object on screen
 };
