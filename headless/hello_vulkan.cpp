@@ -1339,10 +1339,10 @@ void HelloVulkan::createOutputImage()
 
 void HelloVulkan::createObjectIdImage()
 {
-  // ---- 创建 objectId image (R32_UINT) ----
+  // ---- 创建 objectId image (R32_SINT) ----
   m_rtObjectIdGL.destroy(m_allocGL);
-  // auto usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  auto          usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+  auto usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  //auto          usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   VkFormat      format = m_offscreenObjectIdFormat;
   VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
 
@@ -1356,7 +1356,7 @@ void HelloVulkan::createObjectIdImage()
   m_rtObjectIdGL.imgSize       = m_size;
 
   // Making the OpenGL version of texture
-  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
+  createTextureGL(m_rtObjectIdGL, GL_R32UI, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
 
   //设置结果图片
   m_offscreenObjectId                        = m_rtObjectIdGL.texVk;
@@ -1384,12 +1384,12 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
 #endif
 
 // 读取 objectId 图像到 CPU 向量 (uint32 per pixel)
-std::vector<int> HelloVulkan::readObjectIdImage()
+std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 {
-  std::vector<int> result(m_size.width * m_size.height, 0);
+  std::vector<uint32_t> result(m_size.width * m_size.height, 0);
 
   // 创建 staging buffer
-  VkDeviceSize       imageSize = m_size.width * m_size.height * sizeof(int);
+  VkDeviceSize       imageSize = m_size.width * m_size.height * sizeof(uint32_t);
   VkBufferCreateInfo bInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   bInfo.size  = imageSize;
   bInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;

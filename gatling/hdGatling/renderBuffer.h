@@ -81,7 +81,7 @@ public:
   float*   map_ptr = nullptr;
 
 public:
-  void WriteIntData(int* data, size_t count);
+  void WriteIntData(unsigned int* data, size_t count);
   void check_format();
 
 protected:

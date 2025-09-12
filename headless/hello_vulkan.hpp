@@ -123,7 +123,7 @@ public:
 
   // 屏幕点选object
   nvvk::Texture m_offscreenObjectId;  // R32_UINT 存每像素 objectId
-  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
+  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_UINT};
 
   // #VKRay
   void initRayTracing();
@@ -173,7 +173,7 @@ public:
   void saveOffscreenColorToFile(const char* filename);
 
   //读取cpu的object buffer
-  std::vector<int> readObjectIdImage();
+  std::vector<uint32_t> readObjectIdImage();
 #if ENABLE_GL_VK_CONVERSION
   void                                createOutputImage();
   void                                createObjectIdImage();
