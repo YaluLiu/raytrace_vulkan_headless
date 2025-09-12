@@ -1356,7 +1356,7 @@ void HelloVulkan::createObjectIdImage()
   m_rtObjectIdGL.imgSize       = m_size;
 
   // Making the OpenGL version of texture
-  createTextureGL(m_rtObjectIdGL, GL_R32UI, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
+  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
 
   //设置结果图片
   m_offscreenObjectId                        = m_rtObjectIdGL.texVk;

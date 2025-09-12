@@ -122,8 +122,8 @@ public:
   VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
   // 屏幕点选object
-  nvvk::Texture m_offscreenObjectId;  // R32_UINT 存每像素 objectId
-  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_UINT};
+  nvvk::Texture m_offscreenObjectId;  // R32_SINT 存每像素 objectId
+  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
 
   // #VKRay
   void initRayTracing();

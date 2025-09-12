@@ -418,10 +418,10 @@ void HdGatlingRenderBuffer::read_object_texture(GLuint textureId)
 
   glBindTexture(GL_TEXTURE_2D, textureId);
 
-  std::vector<uint32_t> pixels(_width * _height);
+  std::vector<int> pixels(_width * _height);
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, pixels.data());
 
-  memcpy(_buffer, pixels.data(), sizeof(uint32_t) * _width * _height);
+  memcpy(_buffer, pixels.data(), sizeof(int) * _width * _height);
 }
 
 
