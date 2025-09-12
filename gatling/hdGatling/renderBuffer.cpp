@@ -352,9 +352,9 @@ void HdGatlingRenderBuffer::ConvertToHgiTexture()
     {
       _GetHgi()->DestroyTexture(&_texture);
     }
-    _texDesc.initialData    = pixelData;
-    _texDesc.pixelsByteSize = dataByteSize;
-    _texture                = _GetHgi()->CreateTexture(_texDesc);
+    // _texDesc.initialData    = pixelData;
+    // _texDesc.pixelsByteSize = dataByteSize;
+    _texture = _GetHgi()->CreateTexture(_texDesc);
   }
 }
 
@@ -376,11 +376,9 @@ void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId)
 {
   GLint realFormat;
   glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
-  assert(realFormat == GL_RGBA32F);
 
   GLint memoryBound;
   glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
-  assert(memoryBound == GL_TRUE);
 #if 0
   glBindTexture(GL_TEXTURE_2D, textureId);
   std::vector<float> pixels(_width * _height * 4);
@@ -407,6 +405,25 @@ void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
   memcpy(_buffer, pixels.data(), sizeof(float) * _width * _height * 4);
 }
+
+void HdGatlingRenderBuffer::read_object_texture(GLuint textureId)
+{
+  GLint realFormat;
+  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
+  assert(realFormat == GL_R32UI);
+
+  GLint memoryBound;
+  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
+  assert(memoryBound == GL_TRUE);
+
+  glBindTexture(GL_TEXTURE_2D, textureId);
+
+  std::vector<uint32_t> pixels(_width * _height);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, pixels.data());
+
+  memcpy(_buffer, pixels.data(), sizeof(uint32_t) * _width * _height);
+}
+
 
 VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
 {

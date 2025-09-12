@@ -65,6 +65,7 @@ public:
 
   void    Resolve() override;
   void    read_color_texture(GLuint textureId);
+  void    read_object_texture(GLuint textureId);
   VtValue GetResource(bool multiSampled) const override;
   void    ConvertToHgiTexture();
   void    MakeHgiTexture(GLuint textureId);

@@ -57,6 +57,7 @@ bool HdGatlingRenderPass::IsConverged() const
 
 #define USE_RAY_TRACE 1
 #define USE_BASE_RENDER 0
+#define ENABLE_SHARE 1
 
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
@@ -85,22 +86,22 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     if(name == HdAovTokens->color)
     {
       //HdFormatFloat32Vec4
-#if USE_RAY_TRACE
       renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLFrame());
-#else
+      // 单独测试用
       // renderBuffer->change_show_image();
+      // 先从opengl texture中读取出来buffer，然后再转换成opengl texture，测试用
+      // renderBuffer->read_color_texture(_renderApp.getVulkan().getOpenGLFrame());
       // renderBuffer->ConvertToHgiTexture();
-      renderBuffer->read_color_texture(_renderApp.getVulkan().getOpenGLFrame());
-#endif
     }
     else if(name == HdAovTokens->primId)
     {
-#if 0 && USE_RAY_TRACE
+#if 0
       renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
 #else
       // 从 Vulkan 读取 objectId buffer
-      auto objectIds = _renderApp.getVulkan().readObjectIdImage();
-      renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
+      // auto objectIds = _renderApp.getVulkan().readObjectIdImage();
+      // renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
+      renderBuffer->read_object_texture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
       renderBuffer->ConvertToHgiTexture();
 #endif
     }
