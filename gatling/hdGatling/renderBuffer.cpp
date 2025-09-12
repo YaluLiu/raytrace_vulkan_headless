@@ -74,8 +74,7 @@ bool HdGatlingRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format,
   _height      = dimensions[1];
   _format      = format;
   _buffer_size = _GetBufferSize(GfVec2i(_width, _height), _format);
-  // _buffer.resize(now_size);
-  _buffer = static_cast<float*>(aligned_alloc(64, _buffer_size));
+  _buffer      = static_cast<void*>(aligned_alloc(64, _buffer_size));
 
   createDesc();
   return true;
@@ -461,13 +460,13 @@ void HdGatlingRenderBuffer::WriteIntData(unsigned int* data, size_t count)
       memcpy(_buffer, data, _buffer_size);
       break;
     case HdFormatFloat32: {
-      float* buf = _buffer;
+      float* buf = (float*)_buffer;
       for(size_t i = 0; i < count; ++i)
         buf[i] = static_cast<float>(data[i]);
     }
     break;
     case HdFormatFloat32Vec4: {
-      float* buf = _buffer;
+      float* buf = (float*)_buffer;
       for(size_t i = 0; i < count; ++i)
       {
         buf[i * 4 + 0] = static_cast<float>(data[i]);

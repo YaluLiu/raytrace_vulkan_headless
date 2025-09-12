@@ -74,12 +74,11 @@ public:
   Hgi* _GetHgi();
   // The resolved output buffer.
   //std::vector<float> _buffer;
-  float* _buffer;
-  void   print();
+  void* _buffer;
+  void  print();
 
   uint32_t _width;
   uint32_t _height;
-  float*   map_ptr = nullptr;
 
 public:
   void WriteIntData(unsigned int* data, size_t count);

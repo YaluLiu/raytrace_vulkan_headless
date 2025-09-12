@@ -95,7 +95,9 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     }
     else if(name == HdAovTokens->primId)
     {
-#if 0
+#if 1
+      // renderBuffer->read_object_texture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
+      // renderBuffer->ConvertToHgiTexture();
       renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
 #else
       // 从 Vulkan 读取 objectId buffer

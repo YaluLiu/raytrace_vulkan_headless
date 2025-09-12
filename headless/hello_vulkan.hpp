@@ -117,13 +117,13 @@ public:
   nvvk::Texture m_offscreenColor;
   VkFormat      m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
 
-  // depth buffer
-  nvvk::Texture m_offscreenDepth;
-  VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
-
   // 屏幕点选object
   nvvk::Texture m_offscreenObjectId;  // R32_SINT 存每像素 objectId
   VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
+
+  // depth buffer
+  nvvk::Texture m_offscreenDepth;
+  VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
   // #VKRay
   void initRayTracing();
