@@ -475,6 +475,7 @@ void HelloVulkan::destroyResources()
 
 #if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
+  m_rtObjectIdGL.destroy(m_allocGL);
   m_allocGL.deinit();
 #else
   //#Post处理相关
@@ -563,19 +564,34 @@ void HelloVulkan::createOffscreenRender()
   // 释放旧的离屏color和depth资源
 #if ENABLE_GL_VK_CONVERSION
   createOutputImage();
+  createObjectIdImage();
 #else
   m_alloc.destroy(m_offscreenColor);
   // 创建color image和image view（格式通常为float32 RGBA）
   {
-    auto colorCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenColorFormat,
-                                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-                                                           | VK_IMAGE_USAGE_STORAGE_BIT);
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenColorFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
 
-    nvvk::Image           image  = m_alloc.createImage(colorCreateInfo);
-    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, colorCreateInfo);
+    nvvk::Image           image  = m_alloc.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
     VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
     m_offscreenColor                        = m_alloc.createTexture(image, ivInfo, sampler);
     m_offscreenColor.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  }
+
+  // ---- 创建 objectId image (R32_UINT) ----
+  m_alloc.destroy(m_offscreenObjectId);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
+                                                  VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                                                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    nvvk::Image           image  = m_alloc.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenObjectId                        = m_alloc.createTexture(image, ivInfo, sampler);
+    m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   }
 #endif
   // 创建depth image和image view
@@ -593,20 +609,6 @@ void HelloVulkan::createOffscreenRender()
     m_offscreenDepth = m_alloc.createTexture(image, depthStencilView);
   }
 
-  // ---- 创建 objectId image (R32_UINT) ----
-  m_alloc.destroy(m_offscreenObjectId);
-  {
-    auto idCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
-                                                    VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                                                        | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
-    nvvk::Image           image  = m_alloc.createImage(idCreateInfo);
-    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, idCreateInfo);
-    // storage image 不需要采样器，但 nvvk::Texture 结构里带 sampler，可用默认
-    VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    m_offscreenObjectId                        = m_alloc.createTexture(image, ivInfo, sampler);
-    m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-  }
 
   // 设置color和depth image的初始布局
   {
@@ -1308,13 +1310,13 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   printf("Saved %s (%ux%u)\n", filename, w, h);
 }
 #if ENABLE_GL_VK_CONVERSION
+// VK_FORMAT_R32_SFLOAT 对应 GL_R32F
+// VK_FORMAT_R32G32B32A32_SFLOAT  对应 GL_RGBA32F
+// VK_FORMAT_R8G8B8A8_UNORM 对应 GL_RGBA
 void HelloVulkan::createOutputImage()
 {
   m_rtOutputGL.destroy(m_allocGL);
-  auto usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-  //VK_FORMAT_R32_SFLOAT 对应 GL_R32F
-  //VK_FORMAT_R32G32B32A32_SFLOAT  对应 GL_RGBA32F
-  // VK_FORMAT_R8G8B8A8_UNORM 对应 GL_RGBA
+  auto          usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   VkFormat      format = m_offscreenColorFormat;
   VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
 
@@ -1333,6 +1335,32 @@ void HelloVulkan::createOutputImage()
   //设置结果图片
   m_offscreenColor                        = m_rtOutputGL.texVk;
   m_offscreenColor.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+}
+
+void HelloVulkan::createObjectIdImage()
+{
+  // ---- 创建 objectId image (R32_UINT) ----
+  m_rtObjectIdGL.destroy(m_allocGL);
+  // auto usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  auto          usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+  VkFormat      format = m_offscreenObjectIdFormat;
+  VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
+
+  VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};  // default values
+  VkImageCreateInfo   imageCreateInfo = nvvk::makeImage2DCreateInfo(m_size, format, usage);
+
+  // Creating the image and the descriptor
+  nvvk::Image           image  = m_allocGL.createImage(imageCreateInfo);
+  VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(VkImage(image.image), imageCreateInfo);
+  m_rtObjectIdGL.texVk         = m_allocGL.createTexture(image, ivInfo, samplerCreateInfo);
+  m_rtObjectIdGL.imgSize       = m_size;
+
+  // Making the OpenGL version of texture
+  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
+
+  //设置结果图片
+  m_offscreenObjectId                        = m_rtObjectIdGL.texVk;
+  m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
 void HelloVulkan::dumpInteropTexture(const char* filename)
@@ -1356,12 +1384,12 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
 #endif
 
 // 读取 objectId 图像到 CPU 向量 (uint32 per pixel)
-std::vector<uint32_t> HelloVulkan::readObjectIdImage()
+std::vector<int> HelloVulkan::readObjectIdImage()
 {
-  std::vector<uint32_t> result(m_size.width * m_size.height, 0);
+  std::vector<int> result(m_size.width * m_size.height, 0);
 
   // 创建 staging buffer
-  VkDeviceSize       imageSize = m_size.width * m_size.height * sizeof(uint32_t);
+  VkDeviceSize       imageSize = m_size.width * m_size.height * sizeof(int);
   VkBufferCreateInfo bInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   bInfo.size  = imageSize;
   bInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;

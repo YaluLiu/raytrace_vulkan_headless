@@ -432,7 +432,7 @@ void HdGatlingRenderBuffer::check_format()
   }
 }
 
-void HdGatlingRenderBuffer::WriteIntData(unsigned int* data, size_t count)
+void HdGatlingRenderBuffer::WriteIntData(int* data, size_t count)
 {
   if(_buffer == nullptr || count == 0)
     return;

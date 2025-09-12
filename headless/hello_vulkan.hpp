@@ -123,7 +123,7 @@ public:
 
   // 屏幕点选object
   nvvk::Texture m_offscreenObjectId;  // R32_UINT 存每像素 objectId
-  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_UINT};
+  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
 
   // #VKRay
   void initRayTracing();
@@ -170,14 +170,18 @@ public:
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
-  void   saveOffscreenColorToFile(const char* filename);
-  GLuint getOpenGLFrame() { return m_rtOutputGL.oglId; }
+  void saveOffscreenColorToFile(const char* filename);
+
   //读取cpu的object buffer
-  std::vector<uint32_t> readObjectIdImage();
+  std::vector<int> readObjectIdImage();
 #if ENABLE_GL_VK_CONVERSION
   void                                createOutputImage();
+  void                                createObjectIdImage();
   void                                dumpInteropTexture(const char* filename);
   interop::Texture2DVkGL              m_rtOutputGL;
+  interop::Texture2DVkGL              m_rtObjectIdGL;
+  GLuint                              getOpenGLFrame() { return m_rtOutputGL.oglId; }
+  GLuint                              getOpenGLObjectIdFrame() { return m_rtObjectIdGL.oglId; }
   interop::ResourceAllocatorGLInterop m_allocGL;
 #endif
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);

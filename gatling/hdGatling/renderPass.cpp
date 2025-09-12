@@ -95,14 +95,14 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     }
     else if(name == HdAovTokens->primId)
     {
-      //HdFormatInt32
-      // renderBuffer->check_format();
-      // renderBuffer->clear(1);
+#if 0 && USE_RAY_TRACE
+      renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
+#else
       // 从 Vulkan 读取 objectId buffer
       auto objectIds = _renderApp.getVulkan().readObjectIdImage();
       renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
       renderBuffer->ConvertToHgiTexture();
-      // renderBuffer->print();
+#endif
     }
   }
   _frame_idx++;
