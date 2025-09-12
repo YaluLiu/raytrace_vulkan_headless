@@ -57,7 +57,6 @@ message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 #--------------------------------------------------------------------------------------------------
 # Sub examples
 add_subdirectory(headless)
-add_subdirectory(ray_tracing_animation)
 add_subdirectory(demo)
 add_subdirectory(gatling)
 #--------------------------------------------------------------------------------------------------
