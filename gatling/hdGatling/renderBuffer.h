@@ -63,11 +63,11 @@ public:
 
   void Unmap() override;
 
-  void Resolve() override;
-  void read_color_texture(GLuint textureId);
-  // VtValue GetResource(bool multiSampled) const override;
-  void ConvertToHgiTexture();
-  void MakeHgiTexture(GLuint textureId);
+  void    Resolve() override;
+  void    read_color_texture(GLuint textureId);
+  VtValue GetResource(bool multiSampled) const override;
+  void    ConvertToHgiTexture();
+  void    MakeHgiTexture(GLuint textureId);
 
   void change_show_image();
   Hgi* _GetHgi();

@@ -408,10 +408,10 @@ void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
   memcpy(_buffer, pixels.data(), sizeof(float) * _width * _height * 4);
 }
 
-// VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
-// {
-//   return VtValue(_texture);
-// }
+VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
+{
+  return VtValue(_texture);
+}
 
 void HdGatlingRenderBuffer::check_format()
 {

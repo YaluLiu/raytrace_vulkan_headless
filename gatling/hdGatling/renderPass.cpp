@@ -85,7 +85,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     if(name == HdAovTokens->color)
     {
       //HdFormatFloat32Vec4
-#if 0 && USE_RAY_TRACE
+#if USE_RAY_TRACE
       renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLFrame());
 #else
       // renderBuffer->change_show_image();
@@ -101,6 +101,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
       // 从 Vulkan 读取 objectId buffer
       auto objectIds = _renderApp.getVulkan().readObjectIdImage();
       renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
+      renderBuffer->ConvertToHgiTexture();
       // renderBuffer->print();
     }
   }
