@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2014-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #include <sstream>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -38,74 +19,6 @@
 
 extern std::vector<std::string> defaultSearchPaths;
 
-
-// USE_EGL_CONTEXT always be false,never use it unless you can load opengl funtion under EGL
-// keep it because EGL is real headless, may fix it on future
-#if USE_EGL_CONTEXT
-
-// EGL context
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <glad/glad.h>
-
-void createEGLContext()
-{
-  // 1. 获取默认显示
-  EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  if(egl_display == EGL_NO_DISPLAY)
-  {
-    // 错误处理
-    return;
-  }
-
-  // 2. 初始化 EGL
-  EGLint major, minor;
-  if(!eglInitialize(egl_display, &major, &minor))
-  {
-    // 错误处理
-    return;
-  }
-
-  // 3. 配置属性
-  EGLint    attribs[] = {EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,  // 使用OpenGL（不是OpenGL ES）
-                         EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,    // 离屏surface，最小配置
-                         EGL_NONE};
-  EGLConfig egl_config;
-  EGLint    num_configs;
-  if(!eglChooseConfig(egl_display, attribs, &egl_config, 1, &num_configs))
-  {
-    // 错误处理
-    return;
-  }
-
-  // 4. 创建一个最小的 pbuffer surface
-  EGLint pbuffer_attribs[] = {
-      EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE,
-  };
-  EGLSurface egl_surface = eglCreatePbufferSurface(egl_display, egl_config, pbuffer_attribs);
-  if(egl_surface == EGL_NO_SURFACE)
-  {
-    // 错误处理
-    return;
-  }
-
-  // 5. 创建OpenGL上下文
-  EGLint     context_attribs[] = {EGL_CONTEXT_MAJOR_VERSION, 4, EGL_CONTEXT_MINOR_VERSION, 5, EGL_NONE};
-  EGLContext egl_context       = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
-  if(egl_context == EGL_NO_CONTEXT)
-  {
-    // 错误处理
-    return;
-  }
-
-  // 6. 使 context 当前
-  if(!eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context))
-  {
-    // 错误处理
-    return;
-  }
-}
-#else
 // opengl context with windows
 #include "nvgl/contextwindow_gl.hpp"
 void createOpenGLContext()
@@ -122,14 +35,7 @@ void createOpenGLContext()
   // 加载OpenGL函数
   load_GL(nvgl::ContextWindow::sysGetProcAddress);
 }
-#endif
 //--------------------------------------------------------------------------------------------------
-// 初始化 HelloVulkan 示例的各项成员，包括分配器、调试工具和离屏深度格式
-// instance         : Vulkan实例
-// device           : Vulkan逻辑设备
-// physicalDevice   : Vulkan物理设备
-// queueFamily      : 图形队列族索引
-// 改动建议: 保持不变，但要保证传入的 Vulkan 对象是 headless 环境下初始化的（比如没有 window/surface）。
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
   // 调用基类的setup，初始化Vulkan低层对象
@@ -248,11 +154,6 @@ void HelloVulkan::updateDescriptorSet()
 
 // --------------------------------------------------------------------------------------------------
 // 创建图形管线Layout及管线本体
-// 包含push constant和描述符集layout
-// 说明：
-// 创建图形管线，需要 renderPass。
-// 如果完全 headless，可能没有 swapchain 的 renderPass，需自己创建离屏 renderPass。
-// headless:用自定义的 “离屏” renderPass，不依赖 swapchain。
 void HelloVulkan::createGraphicsPipeline()
 {
   // 配置push constant范围（支持vertex/fragment shader访问）
@@ -501,41 +402,6 @@ void HelloVulkan::destroyResources()
   vkDestroyDescriptorSetLayout(m_device, m_compDescSetLayout, nullptr);
 
   m_alloc.deinit();
-}
-
-//--------------------------------------------------------------------------------------------------
-// 光栅化渲染主函数：将所有实例绘制到离屏framebuffer
-// cmdBuf: 当前帧的命令缓冲
-void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
-{
-  VkDeviceSize offset{0};
-
-  // 在GPU调试工具中插入调试标签
-  m_debug.beginLabel(cmdBuf, "Rasterize");
-
-  // 绑定图形管线
-  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
-  // 绑定描述符集（UBO/SSBO/纹理等）
-  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descSet, 0, nullptr);
-
-  // 遍历所有实例，分别绘制
-  for(const HelloVulkan::ObjInstance& inst : m_instances)
-  {
-    auto& model            = m_objModel[inst.objIndex];
-    m_pcRaster.objIndex    = inst.objIndex;   // 当前物体索引，传给shader
-    m_pcRaster.modelMatrix = inst.transform;  // 当前实例变换矩阵
-
-    // 推送常量（变换矩阵/物体索引/光源等）给shader
-    vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                       sizeof(PushConstantRaster), &m_pcRaster);
-    // 绑定顶点缓冲
-    vkCmdBindVertexBuffers(cmdBuf, 0, 1, &model.vertexBuffer.buffer, &offset);
-    // 绑定索引缓冲
-    vkCmdBindIndexBuffer(cmdBuf, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    // 发起绘制
-    vkCmdDrawIndexed(cmdBuf, model.nbIndices, 1, 0, 0, 0);
-  }
-  m_debug.endLabel(cmdBuf);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -796,17 +662,6 @@ void HelloVulkan::updateRtDescriptorSet()
 
 //--------------------------------------------------------------------------------------------------
 // 创建光线追踪管线（Ray Tracing Pipeline）
-// - 加载raygen, miss, chit等着色器模块
-// - 配置shader group（每种类型分组）
-// - 创建pipeline layout和管线本体
-// - 配置SBT（Shader Binding Table）
-// 详细注释：
-//   1. 加载各类光追shader（raygen主射线、miss未命中、shadow miss、closest hit）
-//   2. 为每个shader创建VkPipelineShaderStageCreateInfo
-//   3. 配置Shader Group（每组可包含general/hit/anyhit/intersection）
-//   4. 创建Pipeline Layout（包含描述符集和push constant）
-//   5. 创建Ray Tracing Pipeline对象
-//   6. 创建SBT，方便后续vkCmdTraceRays调用
 void HelloVulkan::createRtPipeline()
 {
   // 枚举每种shader在组中的索引
@@ -912,13 +767,6 @@ void HelloVulkan::createRtPipeline()
 
 //--------------------------------------------------------------------------------------------------
 // 执行光线追踪渲染主流程（生成光追图像到offscreen image）
-// cmdBuf: 当前帧命令缓冲
-// clearColor: 作为背景色传递给shader
-// 详细注释：
-//   1. 填充push constant（包含光源、清屏色等参数），传递给所有shader
-//   2. 绑定Ray Tracing管线和描述符集
-//   3. 配置并绑定SBT（Shader Binding Table）
-//   4. 调用vkCmdTraceRaysKHR发射光线，实现全屏光线追踪
 void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf, const glm::vec4& clearColor)
 {
   m_debug.beginLabel(cmdBuf, "Ray trace");
@@ -947,114 +795,6 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf, const glm::vec4& clear
   m_debug.endLabel(cmdBuf);
 }
 
-//-----------------------------------------------------------------------------------------------------
-// for demo local test
-//
-//--------------------------------------------------------------------------------------------------
-// 让Wuson模型实例围绕场景圆形运动
-// time: 当前时间（秒），用于动画偏移
-void HelloVulkan::animationInstances(float time)
-{
-  const auto  nbWuson     = static_cast<int32_t>(m_instances.size() - 2);  // 除去plane和sphere的实例数
-  const float deltaAngle  = 6.28318530718f / static_cast<float>(nbWuson);  // 平均分配角度
-  const float wusonLength = 3.f;
-  const float radius      = wusonLength / (2.f * sin(deltaAngle / 2.0f));
-  const float offset      = time * 0.5f;  // 时间偏移，实现流畅转动效果
-
-  for(int i = 0; i < nbWuson; i++)
-  {
-    int       wusonIdx  = i + 1;
-    glm::mat4 transform = m_instances[wusonIdx].transform;
-    transform           = glm::rotate(transform, i * deltaAngle + offset, glm::vec3(0.f, 1.f, 0.f));
-    transform           = glm::translate(transform, glm::vec3(radius, 0.f, 0.f));
-
-    VkAccelerationStructureInstanceKHR& tinst = m_tlas[wusonIdx];
-    tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
-  }
-
-  // 动画后更新TLAS，使光追实例变换生效
-  m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
-}
-
-//--------------------------------------------------------------------------------------------------
-// 用计算着色器动画地修改球体顶点
-// 每帧调用，推动球体模型实现变形动画
-void HelloVulkan::animationObject(float time)
-{
-  const uint32_t sphereId = 2;
-  ObjModel&      model    = m_objModel[sphereId];
-
-  // 更新计算用的描述符集，使其指向球的顶点buffer
-  updateCompDescriptors(model.vertexBuffer);
-
-  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-  VkCommandBuffer   cmdBuf = genCmdBuf.createCommandBuffer();
-
-  // 绑定计算管线和描述符集，推送当前时间作为push constant
-  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_compPipeline);
-  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_compPipelineLayout, 0, 1, &m_compDescSet, 0, nullptr);
-  vkCmdPushConstants(cmdBuf, m_compPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &time);
-  vkCmdDispatch(cmdBuf, model.nbVertices, 1, 1);  // 每个顶点一个线程
-
-  genCmdBuf.submitAndWait(cmdBuf);
-
-  // 动画后更新该球的BLAS，使光追结构与顶点位置同步
-  m_rtBuilder.updateBlas(sphereId, m_blas[sphereId],
-                         VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
-}
-
-//--------------------------------------------------------------------------------------------------
-// 创建计算着色器的描述符集布局和描述符集
-// 主要用于动画球体顶点（storage buffer）
-void HelloVulkan::createCompDescriptors()
-{
-  m_compDescSetLayoutBind.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT);
-
-  m_compDescSetLayout = m_compDescSetLayoutBind.createLayout(m_device);
-  m_compDescPool      = m_compDescSetLayoutBind.createPool(m_device, 1);
-  m_compDescSet       = nvvk::allocateDescriptorSet(m_device, m_compDescPool, m_compDescSetLayout);
-}
-
-//--------------------------------------------------------------------------------------------------
-// 更新计算描述符集指向的顶点buffer
-// vertex: 球体顶点buffer
-void HelloVulkan::updateCompDescriptors(nvvk::Buffer& vertex)
-{
-  std::vector<VkWriteDescriptorSet> writes;
-  VkDescriptorBufferInfo            dbiUnif{vertex.buffer, 0, VK_WHOLE_SIZE};
-  writes.emplace_back(m_compDescSetLayoutBind.makeWrite(m_compDescSet, 0, &dbiUnif));
-  vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-}
-
-//--------------------------------------------------------------------------------------------------
-// 创建计算着色器管线
-// 包括管线layout（含push constant）、计算管线对象
-void HelloVulkan::createCompPipelines()
-{
-  // push constant: 传递动画时间
-  VkPushConstantRange push_constants = {VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float)};
-
-  VkPipelineLayoutCreateInfo createInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-  createInfo.setLayoutCount         = 1;
-  createInfo.pSetLayouts            = &m_compDescSetLayout;
-  createInfo.pushConstantRangeCount = 1;
-  createInfo.pPushConstantRanges    = &push_constants;
-  vkCreatePipelineLayout(m_device, &createInfo, nullptr, &m_compPipelineLayout);
-
-  VkComputePipelineCreateInfo computePipelineCreateInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
-  computePipelineCreateInfo.layout = m_compPipelineLayout;
-
-  // 加载编译好的计算着色器SPIR-V
-  computePipelineCreateInfo.stage =
-      nvvk::createShaderStageInfo(m_device, nvh::loadFile("spv/anim.comp.spv", true, defaultSearchPaths, true),
-                                  VK_SHADER_STAGE_COMPUTE_BIT);
-
-  vkCreateComputePipelines(m_device, {}, 1, &computePipelineCreateInfo, nullptr, &m_compPipeline);
-
-  vkDestroyShaderModule(m_device, computePipelineCreateInfo.stage.module, nullptr);
-}
-
-
 //--------------------------------------------------------------------------------------------------
 // update blas & tlas
 //--------------------------------------------------------------------------------------------------
@@ -1074,11 +814,6 @@ void HelloVulkan::updateTlasEnd()
 // 动画处理球体对象的顶点，在 C++ 端进行缩放
 void HelloVulkan::updateBlas(uint32_t mesh_Id)
 {
-  // std::cout << "[ANIM]  points[1]:" <<
-  //   now_vertices[1].pos.x << "," <<
-  //   now_vertices[1].pos.y << "," <<
-  //   now_vertices[1].pos.z <<std::endl;
-
   //更新了loader的对应顶点数据
   std::vector<VertexObj>& now_vertices = m_Loader[mesh_Id].m_vertices;
   ObjModel&               model        = m_objModel[mesh_Id];
@@ -1201,114 +936,7 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
   // 4. 提交命令
   cmdGen.submitAndWait(cmdBuf);
 }
-//-------------------------------------------------------------------------------------------------------------------
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
 
-// 保存 m_offscreenColor 到本地 PNG 文件
-void HelloVulkan::saveOffscreenColorToFile(const char* filename)
-{
-  VkDevice device = m_device;
-  VkQueue  queue  = m_queue;
-
-  // 1. 获取 image 信息
-  // VkFormat     format    = m_offscreenColor.imageFormat;
-  VkExtent2D extent    = m_size;
-  VkImage    srcImage  = m_offscreenColor.image;
-  uint32_t   w         = extent.width;
-  uint32_t   h         = extent.height;
-  size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT
-
-  // 2. 创建主机可见buffer
-  VkDeviceSize imageSize = w * h * pixelSize;
-
-  VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-  bufferInfo.size        = imageSize;
-  bufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-  VkBuffer       stagingBuffer;
-  VkDeviceMemory stagingMemory;
-  vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer);
-
-  VkMemoryRequirements memReqs;
-  vkGetBufferMemoryRequirements(device, stagingBuffer, &memReqs);
-
-  VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-  allocInfo.allocationSize = memReqs.size;
-  // 主机可见
-  allocInfo.memoryTypeIndex =
-      getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  vkAllocateMemory(device, &allocInfo, nullptr, &stagingMemory);
-  vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
-
-  // 3. 拷贝 image 到 buffer
-  VkCommandBuffer cmd = createTempCmdBuffer();
-
-  // 转换 image layout: GENERAL -> TRANSFER_SRC_OPTIMAL
-  VkImageMemoryBarrier imgBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-  imgBarrier.oldLayout        = VK_IMAGE_LAYOUT_GENERAL;
-  imgBarrier.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  imgBarrier.image            = srcImage;
-  imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  imgBarrier.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-  imgBarrier.dstAccessMask    = VK_ACCESS_TRANSFER_READ_BIT;
-
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                       nullptr, 1, &imgBarrier);
-
-  VkBufferImageCopy region               = {};
-  region.bufferOffset                    = 0;
-  region.bufferRowLength                 = 0;  // tightly packed
-  region.bufferImageHeight               = 0;
-  region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-  region.imageSubresource.mipLevel       = 0;
-  region.imageSubresource.baseArrayLayer = 0;
-  region.imageSubresource.layerCount     = 1;
-  region.imageOffset                     = {0, 0, 0};
-  region.imageExtent                     = {w, h, 1};
-
-  vkCmdCopyImageToBuffer(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer, 1, &region);
-
-  // 恢复 image layout: TRANSFER_SRC_OPTIMAL -> GENERAL
-  std::swap(imgBarrier.oldLayout, imgBarrier.newLayout);
-  imgBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-  imgBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
-                       nullptr, 1, &imgBarrier);
-
-  submitTempCmdBuffer(cmd);
-
-  // 4. 映射内存，保存为 PNG
-  void* data = nullptr;
-  vkMapMemory(device, stagingMemory, 0, imageSize, 0, &data);
-
-  // 数据格式: float RGBA，需转为 uint8 RGBA
-  std::vector<uint8_t> imageData(w * h * 4);
-  float*               src = reinterpret_cast<float*>(data);
-
-  for(uint32_t i = 0; i < w * h; ++i)
-  {
-    float r              = src[i * 4 + 0];
-    float g              = src[i * 4 + 1];
-    float b              = src[i * 4 + 2];
-    float a              = src[i * 4 + 3];
-    imageData[i * 4 + 0] = uint8_t(glm::clamp(r, 0.0f, 1.0f) * 255.0f);
-    imageData[i * 4 + 1] = uint8_t(glm::clamp(g, 0.0f, 1.0f) * 255.0f);
-    imageData[i * 4 + 2] = uint8_t(glm::clamp(b, 0.0f, 1.0f) * 255.0f);
-    imageData[i * 4 + 3] = uint8_t(glm::clamp(a, 0.0f, 1.0f) * 255.0f);
-  }
-
-  vkUnmapMemory(device, stagingMemory);
-
-  // 由于 Vulkan 坐标原点左上，PNG 原点左上，通常无需翻转
-  stbi_write_png(filename, w, h, 4, imageData.data(), w * 4);
-
-  // 5. 释放资源
-  vkFreeMemory(device, stagingMemory, nullptr);
-  vkDestroyBuffer(device, stagingBuffer, nullptr);
-  printf("Saved %s (%ux%u)\n", filename, w, h);
-}
 #if ENABLE_GL_VK_CONVERSION
 // VK_FORMAT_R32_SFLOAT 对应 GL_R32F
 // VK_FORMAT_R32G32B32A32_SFLOAT  对应 GL_RGBA32F
@@ -1363,85 +991,4 @@ void HelloVulkan::createObjectIdImage()
   m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
-void HelloVulkan::dumpInteropTexture(const char* filename)
-{
-  int width  = m_rtOutputGL.imgSize.width;
-  int height = m_rtOutputGL.imgSize.height;
-  glBindTexture(GL_TEXTURE_2D, m_rtOutputGL.oglId);
-  std::vector<float> pixels(width * height * 4);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-
-  std::vector<unsigned char> out_pixels(width * height * 4);
-  for(size_t i = 0; i < pixels.size(); ++i)
-  {
-    float v       = pixels[i];
-    v             = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
-    out_pixels[i] = static_cast<unsigned char>(v * 255.0f);
-  }
-  stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
-  printf("Saved %s (%ux%u)\n", filename, width, height);
-}
 #endif
-
-// 读取 objectId 图像到 CPU 向量 (uint32 per pixel)
-std::vector<uint32_t> HelloVulkan::readObjectIdImage()
-{
-  std::vector<uint32_t> result(m_size.width * m_size.height, 0);
-
-  // 创建 staging buffer
-  VkDeviceSize       imageSize = m_size.width * m_size.height * sizeof(uint32_t);
-  VkBufferCreateInfo bInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-  bInfo.size  = imageSize;
-  bInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  VkBuffer staging;
-  vkCreateBuffer(m_device, &bInfo, nullptr, &staging);
-
-  VkMemoryRequirements memReq;
-  vkGetBufferMemoryRequirements(m_device, staging, &memReq);
-
-  VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-  allocInfo.allocationSize = memReq.size;
-  allocInfo.memoryTypeIndex =
-      getMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  VkDeviceMemory mem;
-  vkAllocateMemory(m_device, &allocInfo, nullptr, &mem);
-  vkBindBufferMemory(m_device, staging, mem, 0);
-
-  // 拷贝
-  VkCommandBuffer cmd = createTempCmdBuffer();
-
-  VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-  barrier.oldLayout        = VK_IMAGE_LAYOUT_GENERAL;
-  barrier.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  barrier.image            = m_offscreenObjectId.image;
-  barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  barrier.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT;
-  barrier.dstAccessMask    = VK_ACCESS_TRANSFER_READ_BIT;
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                       nullptr, 1, &barrier);
-
-  VkBufferImageCopy region{};
-  region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-  region.imageExtent      = {m_size.width, m_size.height, 1};
-
-  vkCmdCopyImageToBuffer(cmd, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging, 1, &region);
-
-  // 还原
-  std::swap(barrier.oldLayout, barrier.newLayout);
-  barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
-                       nullptr, 1, &barrier);
-
-  submitTempCmdBuffer(cmd);
-
-  void* mapped = nullptr;
-  vkMapMemory(m_device, mem, 0, imageSize, 0, &mapped);
-  memcpy(result.data(), mapped, imageSize);
-  vkUnmapMemory(m_device, mem);
-
-  vkDestroyBuffer(m_device, staging, nullptr);
-  vkFreeMemory(m_device, mem, nullptr);
-
-  return result;
-}

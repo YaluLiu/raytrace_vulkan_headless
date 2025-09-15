@@ -57,7 +57,6 @@ public:
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
-  void rasterize(const VkCommandBuffer& cmdBuff);
 
   // The OBJ model
   struct ObjModel
