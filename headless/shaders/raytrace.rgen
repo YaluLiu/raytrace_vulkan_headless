@@ -51,7 +51,6 @@ void main()
   float tMin     = 0.001;
   float tMax     = 10000.0;
 
-  // 在光追之前初始化
   prd.objId = -1;
 
   traceRayEXT(topLevelAS,     // acceleration structure
@@ -67,6 +66,6 @@ void main()
               0               // payload (location = 0)
   );
 
-  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId));  // 写 objectId
-  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));   // 初始化
+  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId));
+  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));
 }

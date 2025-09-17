@@ -114,6 +114,10 @@ void* HdGatlingRenderBuffer::Map()
 {
   // return _renderBuffer ? giGetRenderBufferMem(_renderBuffer) : nullptr;
   _isMaped = true;
+  if(_isIdAov)
+  {
+    read_object_texture(get_OpenGL_Texture_id());
+  }
   return _buffer;
 }
 
@@ -150,6 +154,7 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
 #endif
                        false;
 
+
   switch(format)
   {
     case HdFormatFloat32Vec4:
@@ -173,10 +178,10 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
       // object/prim/instance id 之类整数 AOV
       // 当前是 CPU 写 -> 上传，只需要 ShaderRead 让上层采样/拷贝
       usage |= HgiTextureUsageBitsShaderRead;
-      // 如果以后 GPU（RT 或 compute）直接写入，可再加：
+      // // 如果以后 GPU（RT 或 compute）直接写入，可再加：
       // usage |= HgiTextureUsageBitsStorage;
       // 若想用作颜色 attachment（少见，一般不需要）可以：
-      // usage |= HgiTextureUsageBitsColorTarget;
+      usage |= HgiTextureUsageBitsColorTarget;
       break;
 
     default:
@@ -221,7 +226,8 @@ void HdGatlingRenderBuffer::createDesc()
   _texDesc.sampleCount = HgiSampleCount1;
 
   // 关键：根据格式 + AOV 名称计算 usage
-  _texDesc.usage = _getTextureUsage(GetFormat(), GetId().GetNameToken());
+  TfToken nameToken = GetId().GetNameToken();
+  _texDesc.usage    = _getTextureUsage(GetFormat(), nameToken);
 
   // 初始数据（CPU -> GPU 一次性上传）
   _texDesc.initialData    = _buffer;

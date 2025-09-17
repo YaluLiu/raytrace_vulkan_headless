@@ -82,13 +82,15 @@ public:
     return srcTexture->GetTextureId();
   }
 
+  bool _isIdAov = false;
 
 protected:
   void _Deallocate() override;
 
 private:
   HdFormat _format;
-  size_t   _buffer_size;
+
+  size_t _buffer_size;
 
   uint32_t         _width;
   uint32_t         _height;

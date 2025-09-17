@@ -86,6 +86,11 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
       {
         _renderApp.getVulkan().m_rtOutputGL.oglId = renderBuffer->get_OpenGL_Texture_id();
       }
+      else if(name == HdAovTokens->primId)
+      {
+        _renderApp.getVulkan().m_rtObjectIdGL.oglId = renderBuffer->get_OpenGL_Texture_id();
+        renderBuffer->_isIdAov                      = true;
+      }
     }
   }
   app_init();
@@ -97,16 +102,6 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
 #endif
   _renderApp.render();
 #endif
-  for(const HdRenderPassAovBinding& binding : hdAovBindings)
-  {
-    const TfToken& name = binding.aovName;
-    renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-    //todo:delete the gpu->cpu->gpu, make performance better
-    if(name == HdAovTokens->primId)
-    {
-      renderBuffer->read_object_texture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
-    }
-  }
   _frame_idx++;
 }
 

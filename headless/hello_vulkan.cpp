@@ -456,8 +456,7 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepth.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-                                VK_IMAGE_ASPECT_COLOR_BIT);
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     genCmdBuf.submitAndWait(cmdBuf);
   }
@@ -591,7 +590,8 @@ void HelloVulkan::createRtDescriptorSet()
   // 添加输出图像绑定（只在raygen可见）
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eOutImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   // NEW: objectId image
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eObjIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+  m_rtDescSetLayoutBind.addBinding(RtxBindings::eObjIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
+                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
   // 创建描述符池和布局
   m_rtDescPool      = m_rtDescSetLayoutBind.createPool(m_device);
