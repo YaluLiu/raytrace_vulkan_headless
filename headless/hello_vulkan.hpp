@@ -117,7 +117,7 @@ public:
   VkFormat      m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
 
   // 屏幕点选object
-  nvvk::Texture m_offscreenObjectId;  // R32_SINT 存每像素 objectId
+  nvvk::Texture m_offscreenObjectId;  // VK_FORMAT_R32_SINT GL_R32I
   VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
 
   // depth buffer
@@ -176,12 +176,16 @@ public:
 #if ENABLE_GL_VK_CONVERSION
   void                                createOutputImage();
   void                                createObjectIdImage();
+  void                                createDepthImage();
   void                                dumpInteropTexture(const char* filename);
   interop::Texture2DVkGL              m_rtOutputGL;
   interop::Texture2DVkGL              m_rtObjectIdGL;
+  interop::Texture2DVkGL              m_rtDepthGL;
   GLuint                              getOpenGLFrame() { return m_rtOutputGL.oglId; }
   GLuint                              getOpenGLObjectIdFrame() { return m_rtObjectIdGL.oglId; }
+  GLuint                              getOpenGLDepthFrame() { return m_rtDepthGL.oglId; }
   interop::ResourceAllocatorGLInterop m_allocGL;
+  interop::ResourceAllocatorGLInterop m_allocObjectId;
 #endif
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);
   void updateTlasEnd();
@@ -189,4 +193,15 @@ public:
   void updateBlas(uint32_t mesh_Id);
   void updateMaterialAtRuntime(int modelIndex, int materialIndex, const MaterialObj& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
+
+  //vulkan-opengl 共享同步
+  struct Semaphore
+  {
+    VkSemaphore vkReady;
+    VkSemaphore vkComplete;
+    GLuint      glReady    = 0;
+    GLuint      glComplete = 0;
+  } m_semaphores;
+  void createSemaphores();
+  void submitFrame();
 };

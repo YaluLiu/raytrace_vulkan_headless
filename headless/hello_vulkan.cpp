@@ -377,13 +377,15 @@ void HelloVulkan::destroyResources()
 #if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
   m_rtObjectIdGL.destroy(m_allocGL);
-  m_allocGL.deinit();
+  vkDestroySemaphore(m_device, m_semaphores.vkComplete, nullptr);
+  vkDestroySemaphore(m_device, m_semaphores.vkReady, nullptr);
 #else
   //#Post处理相关
-  m_alloc.destroy(m_offscreenColor);
+  m_allocGL.destroy(m_offscreenColor);
+  m_allocGL.destroy(m_offscreenDepth);
 #endif
-  m_alloc.destroy(m_offscreenDepth);
-  m_alloc.destroy(m_offscreenObjectId);
+  m_allocGL.deinit();
+
   vkDestroyRenderPass(m_device, m_offscreenRenderPass, nullptr);
   vkDestroyFramebuffer(m_device, m_offscreenFramebuffer, nullptr);
 
@@ -428,38 +430,9 @@ void HelloVulkan::onResize(int w, int h)
 void HelloVulkan::createOffscreenRender()
 {
   // 释放旧的离屏color和depth资源
-#if ENABLE_GL_VK_CONVERSION
+
   createOutputImage();
   createObjectIdImage();
-#else
-  m_alloc.destroy(m_offscreenColor);
-  // 创建color image和image view（格式通常为float32 RGBA）
-  {
-    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenColorFormat,
-                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
-
-    nvvk::Image           image  = m_alloc.createImage(CreateInfo);
-    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
-    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    m_offscreenColor                        = m_alloc.createTexture(image, ivInfo, sampler);
-    m_offscreenColor.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-  }
-
-  // ---- 创建 objectId image (R32_UINT) ----
-  m_alloc.destroy(m_offscreenObjectId);
-  {
-    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
-                                                  VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                                                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
-    nvvk::Image           image  = m_alloc.createImage(CreateInfo);
-    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
-    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    m_offscreenObjectId                        = m_alloc.createTexture(image, ivInfo, sampler);
-    m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-  }
-#endif
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -937,58 +910,116 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
   cmdGen.submitAndWait(cmdBuf);
 }
 
-#if ENABLE_GL_VK_CONVERSION
-// VK_FORMAT_R32_SFLOAT 对应 GL_R32F
-// VK_FORMAT_R32G32B32A32_SFLOAT  对应 GL_RGBA32F
-// VK_FORMAT_R8G8B8A8_UNORM 对应 GL_RGBA
 void HelloVulkan::createOutputImage()
 {
+#if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
-  auto          usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-  VkFormat      format = m_offscreenColorFormat;
-  VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
+#else
+  m_allocGL.destroy(m_offscreenColor);
+#endif
 
-  VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};  // default values
-  VkImageCreateInfo   imageCreateInfo = nvvk::makeImage2DCreateInfo(m_size, format, usage);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenColorFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
 
-  // Creating the image and the descriptor
-  nvvk::Image           image  = m_allocGL.createImage(imageCreateInfo);
-  VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(VkImage(image.image), imageCreateInfo);
-  m_rtOutputGL.texVk           = m_allocGL.createTexture(image, ivInfo, samplerCreateInfo);
-  m_rtOutputGL.imgSize         = m_size;
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenColor                        = m_allocGL.createTexture(image, ivInfo, sampler);
+    m_offscreenColor.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  }
 
-  // Making the OpenGL version of texture
+#if ENABLE_GL_VK_CONVERSION
+  m_rtOutputGL.imgSize = m_size;
+  m_rtOutputGL.texVk   = m_offscreenColor;
   createTextureGL(m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
-
-  //设置结果图片
-  m_offscreenColor                        = m_rtOutputGL.texVk;
-  m_offscreenColor.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+#endif
 }
 
 void HelloVulkan::createObjectIdImage()
 {
-  // ---- 创建 objectId image (R32_SINT) ----
+#if ENABLE_GL_VK_CONVERSION
   m_rtObjectIdGL.destroy(m_allocGL);
-  auto usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  //auto          usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-  VkFormat      format = m_offscreenObjectIdFormat;
-  VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL;
+#else
+  m_allocGL.destroy(m_offscreenObjectId);
+#endif
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
+                                                  VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                                                      | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-  VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};  // default values
-  VkImageCreateInfo   imageCreateInfo = nvvk::makeImage2DCreateInfo(m_size, format, usage);
-
-  // Creating the image and the descriptor
-  nvvk::Image           image  = m_allocGL.createImage(imageCreateInfo);
-  VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(VkImage(image.image), imageCreateInfo);
-  m_rtObjectIdGL.texVk         = m_allocGL.createTexture(image, ivInfo, samplerCreateInfo);
-  m_rtObjectIdGL.imgSize       = m_size;
-
-  // Making the OpenGL version of texture
-  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
-
-  //设置结果图片
-  m_offscreenObjectId                        = m_rtObjectIdGL.texVk;
-  m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenObjectId                        = m_allocGL.createTexture(image, ivInfo, sampler);
+    m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  }
+#if ENABLE_GL_VK_CONVERSION
+  m_rtObjectIdGL.imgSize   = m_size;
+  m_rtObjectIdGL.texVk     = m_offscreenObjectId;
+  m_rtObjectIdGL.mipLevels = 1;
+  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+#endif
 }
 
-#endif
+void HelloVulkan::submitFrame()
+{
+  const VkCommandBuffer& cmdBuf = m_commandBuffers[m_imageIndex];
+
+  VkSubmitInfo         submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+  VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+  submitInfo.pWaitDstStageMask    = &stageFlags;
+  submitInfo.waitSemaphoreCount   = 1;
+  submitInfo.pWaitSemaphores      = &m_semaphores.vkComplete;
+  submitInfo.signalSemaphoreCount = 1;
+  submitInfo.pSignalSemaphores    = &m_semaphores.vkReady;
+  submitInfo.commandBufferCount   = 1;
+  submitInfo.pCommandBuffers      = &cmdBuf;
+
+  vkQueueSubmit(m_queue, 1, &submitInfo, VK_NULL_HANDLE);
+
+  // 等待队列完成（保证输出image可读取）
+  vkQueueWaitIdle(m_queue);
+}
+
+void HelloVulkan::createSemaphores()
+{
+  int glReadyHandle{-1};
+  int glCompleteHandle{-1};
+
+  // Vulkan
+  {
+    auto handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+    {
+      VkSemaphoreCreateInfo       sci{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+      VkExportSemaphoreCreateInfo esci{VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO};
+      sci.pNext        = &esci;
+      esci.handleTypes = handleType;
+      vkCreateSemaphore(m_device, &sci, nullptr, &m_semaphores.vkReady);
+      vkCreateSemaphore(m_device, &sci, nullptr, &m_semaphores.vkComplete);
+    }
+    {
+      VkSemaphoreGetFdInfoKHR getFdInfo{VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR};
+      getFdInfo.handleType = handleType;
+      getFdInfo.semaphore  = m_semaphores.vkReady;
+      vkGetSemaphoreFdKHR(m_device, &getFdInfo, &glReadyHandle);
+    }
+    {
+      VkSemaphoreGetFdInfoKHR getFdInfo{VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR};
+      getFdInfo.handleType = handleType;
+      getFdInfo.semaphore  = m_semaphores.vkComplete;
+      vkGetSemaphoreFdKHR(m_device, &getFdInfo, &glCompleteHandle);
+    }
+  }
+
+  // OpenGL
+  {
+    // Import semaphores
+    glGenSemaphoresEXT(1, &m_semaphores.glReady);
+    glGenSemaphoresEXT(1, &m_semaphores.glComplete);
+    glImportSemaphoreFdEXT(m_semaphores.glReady, GL_HANDLE_TYPE_OPAQUE_FD_EXT, glReadyHandle);
+    glImportSemaphoreFdEXT(m_semaphores.glComplete, GL_HANDLE_TYPE_OPAQUE_FD_EXT, glCompleteHandle);
+  }
+}
