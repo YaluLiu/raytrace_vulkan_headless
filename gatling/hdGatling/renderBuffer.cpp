@@ -31,13 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-static std::map<HdFormat, GiRenderBufferFormat> s_supportedRenderBufferFormats = {
-    {HdFormatInt32, GiRenderBufferFormat::Int32},
-    {HdFormatFloat32, GiRenderBufferFormat::Float32},
-    {HdFormatFloat32Vec4, GiRenderBufferFormat::Float32Vec4}};
-}
-
 HdGatlingRenderBuffer::HdGatlingRenderBuffer(const SdfPath& id, HdGatlingRenderDelegate* renderDelegate)
     : HdRenderBuffer(id)
     , _owner(renderDelegate)
@@ -50,13 +43,6 @@ HdGatlingRenderBuffer::~HdGatlingRenderBuffer() {}
 bool HdGatlingRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSampled)
 {
   _Deallocate();
-
-  auto it = s_supportedRenderBufferFormats.find(format);
-  if(it == s_supportedRenderBufferFormats.end())
-  {
-    TF_RUNTIME_ERROR("Unsupported render buffer format!");
-    return false;
-  }
 
   if(dimensions[2] != 1)
   {
@@ -86,7 +72,6 @@ void HdGatlingRenderBuffer::clear(int num)
 }
 size_t HdGatlingRenderBuffer::_GetBufferSize(GfVec2i const& dims, HdFormat format)
 {
-  // std::cout << "format:" << format << ",size:" << HdDataSizeOfFormat(format) << std::endl;
   return dims[0] * dims[1] * HdDataSizeOfFormat(format);
 }
 
@@ -148,35 +133,6 @@ void HdGatlingRenderBuffer::_Deallocate()
   _format = HdFormatInvalid;
 }
 
-void HdGatlingRenderBuffer::change_show_image()
-{
-  _frame_idx     = (_frame_idx + 1) % 400;
-  float* rgbaImg = (float*)_buffer;
-
-  // 清空缓冲区（填充透明黑色）
-  const size_t pixelCount = _width * _height * 4;
-  memset(rgbaImg, 0, pixelCount * sizeof(float));
-
-  int width_rect  = 100;
-  int height_rect = 100;
-  int left, top, right, bottom;
-  left   = _frame_idx * 2;
-  right  = left + width_rect;
-  top    = _frame_idx * 2;
-  bottom = top + height_rect;
-
-  for(int w = left; w < right; ++w)
-  {
-    for(int h = top; h < bottom; ++h)
-    {
-      int i          = (h * _width + w) * 4;
-      rgbaImg[i + 0] = (float)255;
-      rgbaImg[i + 1] = (float)0;
-      rgbaImg[i + 2] = (float)0;
-      rgbaImg[i + 3] = 255;
-    }
-  }
-}
 
 Hgi* HdGatlingRenderBuffer::_GetHgi()
 {
@@ -243,7 +199,6 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
   return usage;
 }
 
-// 在 createDesc 中（保留你原来的函数开头），替换/补充 usage 相关段落
 void HdGatlingRenderBuffer::createDesc()
 {
   const GfVec3i dim(GetWidth(), GetHeight(), 1);
@@ -272,7 +227,6 @@ void HdGatlingRenderBuffer::createDesc()
   _texDesc.initialData    = _buffer;
   _texDesc.pixelsByteSize = _buffer_size;
 
-  // 如果之前已有纹理，先销毁
   if(_texture)
   {
     _GetHgi()->DestroyTexture(&_texture);
@@ -351,13 +305,25 @@ void HdGatlingRenderBuffer::ConvertToHgiTexture()
     {
       _GetHgi()->DestroyTexture(&_texture);
     }
-    // _texDesc.initialData    = pixelData;
-    // _texDesc.pixelsByteSize = dataByteSize;
-    _texture = _GetHgi()->CreateTexture(_texDesc);
+    // _buffer will changed when resize
+    _texDesc.initialData    = _buffer;
+    _texDesc.pixelsByteSize = _buffer_size;
+    _texture                = _GetHgi()->CreateTexture(_texDesc);
   }
 }
 
-HgiTextureHandle CreateHgiTextureHandle(GLuint textureId, const HgiTextureDesc& desc)
+VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
+{
+  return VtValue(_texture);
+}
+
+//----------------------------------------------------------------------------------------------------------
+// test function,for test and learn how hgi works
+//----------------------------------------------------------------------------------------------------------
+#include <vector>
+#include <cstdint>
+
+HgiTextureHandle CreateHgiTextureHandle(GLuint textureId, int unique_id, const HgiTextureDesc& desc)
 {
   HgiGLTexture* texture = HgiGLTexture::CreateTextureFromId(textureId, desc);
   if(!texture)
@@ -365,40 +331,23 @@ HgiTextureHandle CreateHgiTextureHandle(GLuint textureId, const HgiTextureDesc& 
     TF_CODING_ERROR("Failed to create HgiGLTexture");
     return HgiTextureHandle();
   }
-  return HgiTextureHandle(texture, 122222);
+  return HgiTextureHandle(texture, unique_id);
 }
 
-#include <vector>
-#include <cstdint>
-
-void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId)
+void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId, int unique_id)
 {
-  GLint realFormat;
-  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
-
-  GLint memoryBound;
-  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
 #if 0
   glBindTexture(GL_TEXTURE_2D, textureId);
   std::vector<float> pixels(_width * _height * 4);
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-
-  _texDesc.initialData = pixels.data();
   _texture = _GetHgi()->CreateTexture(_texDesc);
 #else
-  _texture = CreateHgiTextureHandle(textureId, _texDesc);
+  _texture = CreateHgiTextureHandle(textureId, unique_id, _texDesc);
 #endif
 }
 
 void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
 {
-  GLint realFormat;
-  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
-  assert(realFormat == GL_RGBA32F);
-
-  GLint memoryBound;
-  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
-  assert(memoryBound == GL_TRUE);
   glBindTexture(GL_TEXTURE_2D, textureId);
   std::vector<float> pixels(_width * _height * 4);
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
@@ -407,79 +356,73 @@ void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
 
 void HdGatlingRenderBuffer::read_object_texture(GLuint textureId)
 {
-  GLint realFormat;
-  glGetTextureLevelParameteriv(textureId, 0, GL_TEXTURE_INTERNAL_FORMAT, &realFormat);
-  assert(realFormat == GL_R32UI);
-
-  GLint memoryBound;
-  glGetTextureParameteriv(textureId, GL_TEXTURE_TILING_EXT, &memoryBound);
-  assert(memoryBound == GL_TRUE);
-
   glBindTexture(GL_TEXTURE_2D, textureId);
-
   std::vector<int> pixels(_width * _height);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, pixels.data());
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_INT, pixels.data());
 
   memcpy(_buffer, pixels.data(), sizeof(int) * _width * _height);
 }
 
 
-VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
+void HdGatlingRenderBuffer::make_test_color()
 {
-  return VtValue(_texture);
-}
+  _frame_idx     = (_frame_idx + 1) % 400;
+  float* rgbaImg = (float*)_buffer;
 
-void HdGatlingRenderBuffer::check_format()
-{
-  switch(_format)
+  // 清空缓冲区（填充透明黑色）
+  const size_t pixelCount = _width * _height * 4;
+  memset(rgbaImg, 0, pixelCount * sizeof(float));
+
+  int width_rect  = 100;
+  int height_rect = 100;
+  int left, top, right, bottom;
+  left   = _frame_idx * 2;
+  right  = left + width_rect;
+  top    = _frame_idx * 2;
+  bottom = top + height_rect;
+
+  for(int w = left; w < right; ++w)
   {
-    case HdFormatInt32:
-      std::cout << "[renderBuffer] HdFormatInt32" << std::endl;
-      break;
-    case HdFormatFloat32:
-      std::cout << "[renderBuffer] HdFormatFloat32" << std::endl;
-      break;
-    case HdFormatFloat32Vec4:
-      std::cout << "[renderBuffer] HdFormatFloat32Vec4" << std::endl;
-      break;
-    default:
-      TF_WARN("WriteIntData: unsupported format %d", int(_format));
-      break;
+    for(int h = top; h < bottom; ++h)
+    {
+      int i          = (h * _width + w) * 4;
+      rgbaImg[i + 0] = (float)255;
+      rgbaImg[i + 1] = (float)0;
+      rgbaImg[i + 2] = (float)0;
+      rgbaImg[i + 3] = 255;
+    }
   }
 }
 
-void HdGatlingRenderBuffer::WriteIntData(unsigned int* data, size_t count)
+void HdGatlingRenderBuffer::make_test_object_id()
 {
-  if(_buffer == nullptr || count == 0)
-    return;
+  std::vector<int> pixels(_width * _height, -1);
 
-  switch(_format)
+  int left, top, right, bottom;
+  left   = 0;
+  right  = _width;
+  top    = 0;
+  bottom = top + _height / 2;
+
+  for(int h = 0; h < _height; ++h)
   {
-    case HdFormatInt32:
-      assert(sizeof(int) * count == _buffer_size);
-      memcpy(_buffer, data, _buffer_size);
-      break;
-    case HdFormatFloat32: {
-      float* buf = (float*)_buffer;
-      for(size_t i = 0; i < count; ++i)
-        buf[i] = static_cast<float>(data[i]);
-    }
-    break;
-    case HdFormatFloat32Vec4: {
-      float* buf = (float*)_buffer;
-      for(size_t i = 0; i < count; ++i)
+    for(int w = 0; w < _width; ++w)
+    {
+      int index = h * _width + w;
+      int value = -1;
+      if(h * 2 > _height)
       {
-        buf[i * 4 + 0] = static_cast<float>(data[i]);
-        buf[i * 4 + 1] = 0.0f;
-        buf[i * 4 + 2] = 0.0f;
-        buf[i * 4 + 3] = 1.0f;
+        value += 2;
       }
+      if(w * 2 > _width)
+      {
+        value += 1;
+      }
+      pixels[index] = value;
     }
-    break;
-    default:
-      TF_WARN("WriteIntData: unsupported format %d", int(_format));
-      break;
   }
+
+  memcpy(_buffer, pixels.data(), sizeof(int) * _width * _height);
 }
 
 void HdGatlingRenderBuffer::print()
@@ -497,31 +440,25 @@ void HdGatlingRenderBuffer::print()
     out.close();
     return;
   }
-  for(int h = 0; h < _height; ++h)
+  for(int h = 0; h < _height; h += 25)
   {
-    int first_w = -1;
-    int last_w  = -1;
-    for(int w = 0; w < _width; ++w)
+    for(int w = 0; w < _width; w += 25)
     {
       int step  = h * _width + w;
       int value = cur_buffer[step];
       if(value != -1)
       {
-        if(first_w == -1)
-          first_w = w;
-        last_w = w;
+        out << "*";
+      }
+      else
+      {
+        out << ".";
       }
     }
-    if(first_w != -1 && last_w != -1)
-    {
-      out << "row " << h << ": first=(" << h << "," << first_w << ") last=(" << h << "," << last_w << ")" << std::endl;
-    }
-    else
-    {
-      out << "row " << h << ": no valid value" << std::endl;
-    }
+    out << std::endl;
   }
   out.close();
   std::cout << "finish to write!" << std::endl;
 }
+
 PXR_NAMESPACE_CLOSE_SCOPE

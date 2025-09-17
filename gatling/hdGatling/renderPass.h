@@ -63,32 +63,30 @@ private:
   const HdRenderSettingsMap& _settings;
   bool                       _isConverged;
   int                        _frame_idx = 0;
-  // 资源场景指针
-  HdGatlingScene& _scene;
+  HdGatlingScene&            _scene;
 
   // ----------------------------------------------------------------------------------
   // for headless ray trace app
 private:
   void app_updateCamera(const HdCamera& camera);
-  void app_init(const HdRenderPassAovBinding& binding);
+  void app_init();
 
-  // 真正的openusd的mesh更新动画
   void app_anim_real();
   void app_update_blas();
   void app_update_tlas();
   void app_update_material();
-  // 使用headless的基础渲染模式，五头牛+一个圆球
+  // base mode, egg+five cow
   void app_anim_base();
 
-  // 是否初始化了mesh和材质
-  bool _isAppInited = false;
-  // 渲染框架
+  bool _isAppInited        = false;
+  bool _reset_renderbuffer = false;
+
   RayTraceApp                           _renderApp;
   GiCameraDesc                          _camera;
   std::chrono::system_clock::time_point m_startTime;
 
-  int _width;
-  int _height;
+  int _width  = -1;
+  int _height = -1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

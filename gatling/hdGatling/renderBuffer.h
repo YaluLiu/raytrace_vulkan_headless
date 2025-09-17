@@ -19,16 +19,10 @@
 
 #include <pxr/imaging/hd/renderBuffer.h>
 #include <pxr/imaging/hgi/texture.h>
-
+#include "pxr/imaging/hgiGL/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum class GiRenderBufferFormat
-{
-  Int32,
-  Float32,
-  Float32Vec4
-};
 class HdGatlingRenderDelegate;
 class Hgi;
 
@@ -63,26 +57,31 @@ public:
 
   void Unmap() override;
 
-  void    Resolve() override;
-  void    read_color_texture(GLuint textureId);
-  void    read_object_texture(GLuint textureId);
+  void Resolve() override;
+
   VtValue GetResource(bool multiSampled) const override;
-  void    ConvertToHgiTexture();
-  void    MakeHgiTexture(GLuint textureId);
 
-  void change_show_image();
-  Hgi* _GetHgi();
-  // The resolved output buffer.
-  //std::vector<float> _buffer;
+
+  //just for test
+  int  _frame_idx = 0;
+  void make_test_color();
+  void make_test_object_id();
+  void read_color_texture(GLuint textureId);
+  void read_object_texture(GLuint textureId);
+  void print();
+  void ConvertToHgiTexture();
+  void MakeHgiTexture(GLuint textureId, int unique_id);
+
+
+  Hgi*  _GetHgi();
   void* _buffer;
-  void  print();
 
-  uint32_t _width;
-  uint32_t _height;
+  GLuint get_OpenGL_Texture_id()
+  {
+    HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(_texture.Get());
+    return srcTexture->GetTextureId();
+  }
 
-public:
-  void WriteIntData(unsigned int* data, size_t count);
-  void check_format();
 
 protected:
   void _Deallocate() override;
@@ -91,8 +90,10 @@ private:
   HdFormat _format;
   size_t   _buffer_size;
 
-  // 测试而已
-  int  _frame_idx   = 0;
+  uint32_t         _width;
+  uint32_t         _height;
+  HgiTextureHandle _texture;
+
   bool _isMaped     = false;
   bool _isConverged = false;
   // Calculate the needed buffer size, given the allocation parameters.
@@ -100,11 +101,10 @@ private:
 
   HdGatlingRenderDelegate* _owner;
   Hgi*                     _hgi;
-  HgiTextureHandle         _texture;
+
 
   // 测试用，测试handlek的拷贝能否成功
   HgiTextureDesc _texDesc;
-  void           CopyTextureHandle();
   void           createDesc();
 };
 

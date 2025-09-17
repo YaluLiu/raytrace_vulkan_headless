@@ -29,11 +29,14 @@
 #include <pxr/imaging/hd/camera.h>
 #include <pxr/base/gf/matrix3d.h>
 #include <pxr/base/gf/camera.h>
+#include "pxr/imaging/hgiGL/texture.h"
 #include <iostream>
 #include "perf_test/scope_timer.hpp"
 #include "nvh/fileoperations.hpp"
 #include "nvh/cameramanipulator.hpp"
 
+#include <chrono>
+#include <thread>
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex*             index,
@@ -69,7 +72,23 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   }
   const auto& hdAovBindings = renderPassState->GetAovBindings();
 #if USE_RAY_TRACE
-  app_init(hdAovBindings[0]);
+  HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(hdAovBindings[0].renderBuffer);
+  if(_width != renderBuffer->GetWidth() || _height != renderBuffer->GetHeight())
+  {
+    _width              = renderBuffer->GetWidth();
+    _height             = renderBuffer->GetHeight();
+    _reset_renderbuffer = true;
+    for(const HdRenderPassAovBinding& binding : hdAovBindings)
+    {
+      const TfToken& name = binding.aovName;
+      renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+      if(name == HdAovTokens->color)
+      {
+        _renderApp.getVulkan().m_rtOutputGL.oglId = renderBuffer->get_OpenGL_Texture_id();
+      }
+    }
+  }
+  app_init();
   app_updateCamera(*hdcamera);
 #if USE_BASE_RENDER
   app_anim_base();
@@ -78,50 +97,21 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
 #endif
   _renderApp.render();
 #endif
-
   for(const HdRenderPassAovBinding& binding : hdAovBindings)
   {
-    const TfToken&         name         = binding.aovName;
-    HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-    if(name == HdAovTokens->color)
+    const TfToken& name = binding.aovName;
+    renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+    if(name == HdAovTokens->primId)
     {
-      //HdFormatFloat32Vec4
-      renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLFrame());
-      // 单独测试用
-      // renderBuffer->change_show_image();
-      // 先从opengl texture中读取出来buffer，然后再转换成opengl texture，测试用
-      // renderBuffer->read_color_texture(_renderApp.getVulkan().getOpenGLFrame());
-      // renderBuffer->ConvertToHgiTexture();
-    }
-    else if(name == HdAovTokens->primId)
-    {
-#if 1
-      // renderBuffer->read_object_texture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
-      // renderBuffer->ConvertToHgiTexture();
-      renderBuffer->MakeHgiTexture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
-#else
-      // 从 Vulkan 读取 objectId buffer
-      // auto objectIds = _renderApp.getVulkan().readObjectIdImage();
-      // renderBuffer->WriteIntData(objectIds.data(), objectIds.size());
       renderBuffer->read_object_texture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
-      renderBuffer->ConvertToHgiTexture();
-#endif
     }
   }
   _frame_idx++;
 }
 
 #if USE_RAY_TRACE
-void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
+void HdGatlingRenderPass::app_init()
 {
-  HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-  _width                              = renderBuffer->GetWidth();
-  _height                             = renderBuffer->GetHeight();
-
-  // const GfVec4d &viewport = renderPassState->GetViewport();
-  // int width = static_cast<int>(viewport[2]);
-  // int height = static_cast<int>(viewport[3]);
-  // std::cout << "[HydraInfo]" << width << "," << height << std::endl;
   if(!_isAppInited)
   {
     _isAppInited = true;
@@ -160,7 +150,7 @@ void HdGatlingRenderPass::app_init(const HdRenderPassAovBinding& binding)
 #endif
     _renderApp.createBVH();
   }
-  else
+  else if(_reset_renderbuffer)
   {
     _renderApp.resize(_width, _height);
   }
@@ -170,31 +160,23 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {
   const GfMatrix4d& transform = camera.GetTransform();
 
-  // 摄像机位置
   GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
-  // 摄像机前向
-  GfVec3d forward = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
-  // 摄像机up
-  GfVec3d up = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
+  GfVec3d forward  = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
+  GfVec3d up       = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
 
-  // 保证归一化
   forward.Normalize();
   up.Normalize();
 
-  // 构造glm向量
   glm::vec3 camPos(position[0], position[1], position[2]);
   glm::vec3 camForward(forward[0], forward[1], forward[2]);
   glm::vec3 camUp(up[0], up[1], up[2]);
   glm::vec3 target = camPos + camForward;  // 目标点
 
-  // 检查up和forward是否接近共线，避免view矩阵异常
   if(glm::length(glm::cross(camForward, camUp)) < 1e-6)
   {
-    // up和forward共线，强制修正up向量
-    camUp = glm::vec3(0, 1, 0);  // 或者根据实际场景选择
+    camUp = glm::vec3(0, 1, 0);
   }
 
-  // 计算FOV（垂直方向）
   float aperture    = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
   float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
   float vfov        = 2.0f * std::atan(aperture / (2.0f * focalLength));  // 单位：弧度
@@ -203,19 +185,7 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
   float clipStart = camera.GetClippingRange().GetMin();
   float clipEnd   = camera.GetClippingRange().GetMax();
 
-  // 防止FOV异常
   vfov_deg = std::clamp(vfov_deg, 1.0f, 179.0f);
-
-  // 直接设置矩阵和设置cameraManip是一个效果
-  // _renderApp.getVulkan().hydra_viewMatrix = glm::lookAtRH(camPos, target, camUp);
-  // float aspectRatio = float(_width)/(float)_height; // 假设宽高比为1.0，需根据实际渲染上下文设置
-  // _renderApp.getVulkan().hydra_projMatrix = glm::perspectiveRH_ZO(
-  //     vfov,           // 垂直视场角（弧度）
-  //     aspectRatio,             // 宽高比
-  //     clipStart,      // 近裁剪面
-  //     clipEnd         // 远裁剪面
-  // );
-  // 设置CameraManipulator
   CameraManip.setCamera({camPos, target, camUp, vfov_deg});
 }
 
