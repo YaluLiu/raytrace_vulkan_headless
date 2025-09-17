@@ -101,6 +101,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   {
     const TfToken& name = binding.aovName;
     renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+    //todo:delete the gpu->cpu->gpu, make performance better
     if(name == HdAovTokens->primId)
     {
       renderBuffer->read_object_texture(_renderApp.getVulkan().getOpenGLObjectIdFrame());
