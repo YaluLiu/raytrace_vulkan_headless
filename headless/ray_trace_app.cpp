@@ -132,17 +132,12 @@ void RayTraceApp::render()
 
   m_helloVk.updateUniformBuffer(cmdBuf);
 
-  std::array<VkClearValue, 2> clearValues{};
-  glm::vec4                   clearColor = glm::vec4(1, 1, 1, 1.00f);
-  clearValues[0].color                   = {{clearColor[0], clearColor[1], clearColor[2], clearColor[3]}};
-  clearValues[1].depthStencil            = {1.0f, 0};
-
   const GLuint outRayID = m_helloVk.getOpenGLObjectIdFrame();
   // Once render is complete, signal the Vulkan semaphore indicating it can start render
   const GLenum dstLayout = GL_LAYOUT_SHADER_READ_ONLY_EXT;
   const GLenum srcLayout = GL_LAYOUT_COLOR_ATTACHMENT_EXT;
   glSignalSemaphoreEXT(m_helloVk.m_semaphores.glComplete, 0, nullptr, 1, &outRayID, &dstLayout);
-  m_helloVk.raytrace(cmdBuf, clearColor);
+  m_helloVk.raytrace(cmdBuf);
   // And wait (on the GPU) for the raytraced image
   glWaitSemaphoreEXT(m_helloVk.m_semaphores.glReady, 0, nullptr, 1, &outRayID, &srcLayout);
 

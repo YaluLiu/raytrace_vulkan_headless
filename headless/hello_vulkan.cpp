@@ -680,14 +680,9 @@ void HelloVulkan::createRtPipeline()
 
 //--------------------------------------------------------------------------------------------------
 // 执行光线追踪渲染主流程（生成光追图像到offscreen image）
-void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf, const glm::vec4& clearColor)
+void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 {
   m_debug.beginLabel(cmdBuf, "Ray trace");
-  // 1. 初始化push constant内容
-  m_pcRay.clearColor     = clearColor;
-  m_pcRay.lightPosition  = m_pcRaster.lightPosition;
-  m_pcRay.lightIntensity = m_pcRaster.lightIntensity;
-  m_pcRay.lightType      = m_pcRaster.lightType;
 
   // 2. 绑定管线与描述符集
   std::vector<VkDescriptorSet> descSets{m_rtDescSet, m_descSet};

@@ -74,15 +74,6 @@ public:
     uint32_t  objIndex{0};  // Model index reference
   };
 
-  // Information pushed at each draw call
-  PushConstantRaster m_pcRaster{
-      {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},  // Identity matrix
-      {5.f, 10.f, 5.f},                                  // light position
-      0,                                                 // instance Id
-      100.f,                                             // light intensity
-      0                                                  // light type
-  };
-
   // Array of objects and instances in the scene
   std::vector<ModelLoader> m_Loader;     // Model on host
   std::vector<ObjModel>    m_objModel;   // Model on host
@@ -126,7 +117,7 @@ public:
   void createRtDescriptorSet();
   void updateRtDescriptorSet();
   void createRtPipeline();
-  void raytrace(const VkCommandBuffer& cmdBuf, const glm::vec4& clearColor);
+  void raytrace(const VkCommandBuffer& cmdBuf);
 
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
   nvvk::RaytracingBuilderKHR                        m_rtBuilder;
@@ -143,7 +134,12 @@ public:
   std::vector<nvvk::RaytracingBuilderKHR::BlasInput> m_blas;
 
   // Push constant for ray tracer
-  PushConstantRay m_pcRay{};
+  PushConstantRay m_pcRay{
+      {1, 1, 1, 1.00f},  // clear color
+      {5.f, 10.f, 5.f},  // light position
+      100.f,             // light intensity
+      0                  // light type
+  };
 
   // #VK_animation
   void animationInstances(float time);
