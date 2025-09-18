@@ -152,41 +152,6 @@ void HelloVulkan::updateDescriptorSet()
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 
-// --------------------------------------------------------------------------------------------------
-// 创建图形管线Layout及管线本体
-void HelloVulkan::createGraphicsPipeline()
-{
-  // 配置push constant范围（支持vertex/fragment shader访问）
-  VkPushConstantRange pushConstantRanges = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantRaster)};
-
-  // 管线布局（包括描述符集和push constant）
-  VkPipelineLayoutCreateInfo createInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-  createInfo.setLayoutCount         = 1;
-  createInfo.pSetLayouts            = &m_descSetLayout;
-  createInfo.pushConstantRangeCount = 1;
-  createInfo.pPushConstantRanges    = &pushConstantRanges;
-  vkCreatePipelineLayout(m_device, &createInfo, nullptr, &m_pipelineLayout);
-
-  // 构造图形管线
-  std::vector<std::string>                paths = defaultSearchPaths;
-  nvvk::GraphicsPipelineGeneratorCombined gpb(m_device, m_pipelineLayout, m_offscreenRenderPass);
-  gpb.depthStencilState.depthTestEnable = true;
-  // 加载SPIR-V shader
-  gpb.addShader(nvh::loadFile("spv/vert_shader.vert.spv", true, paths, true), VK_SHADER_STAGE_VERTEX_BIT);
-  gpb.addShader(nvh::loadFile("spv/frag_shader.frag.spv", true, paths, true), VK_SHADER_STAGE_FRAGMENT_BIT);
-  // 顶点输入描述
-  gpb.addBindingDescription({0, sizeof(VertexObj)});
-  gpb.addAttributeDescriptions({
-      {0, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<uint32_t>(offsetof(VertexObj, pos))},
-      {1, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<uint32_t>(offsetof(VertexObj, nrm))},
-      {2, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<uint32_t>(offsetof(VertexObj, color))},
-      {3, 0, VK_FORMAT_R32G32_SFLOAT, static_cast<uint32_t>(offsetof(VertexObj, texCoord))},
-  });
-
-  m_graphicsPipeline = gpb.createPipeline();
-  m_debug.setObjectName(m_graphicsPipeline, "Graphics");
-}
-
 //--------------------------------------------------------------------------------------------------
 // 加载OBJ模型，并构建顶点、索引、材质等buffer
 // filename: obj文件路径
@@ -353,8 +318,6 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
 void HelloVulkan::destroyResources()
 {
   // 图形管线相关
-  vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
-  vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
 
@@ -385,9 +348,6 @@ void HelloVulkan::destroyResources()
   m_allocGL.destroy(m_offscreenDepth);
 #endif
   m_allocGL.deinit();
-
-  vkDestroyRenderPass(m_device, m_offscreenRenderPass, nullptr);
-  vkDestroyFramebuffer(m_device, m_offscreenFramebuffer, nullptr);
 
   // #VKRay 光线追踪相关
   m_rtBuilder.destroy();
@@ -460,26 +420,6 @@ void HelloVulkan::createOffscreenRender()
 
     genCmdBuf.submitAndWait(cmdBuf);
   }
-
-  // 创建离屏renderpass（只创建一次，除非首次调用）
-  if(!m_offscreenRenderPass)
-  {
-    m_offscreenRenderPass = nvvk::createRenderPass(m_device, {m_offscreenColorFormat}, m_offscreenDepthFormat, 1, true,
-                                                   true, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL);
-  }
-
-  // 创建离屏framebuffer，绑定color/depth两个attachment
-  std::vector<VkImageView> attachments = {m_offscreenColor.descriptor.imageView, m_offscreenDepth.descriptor.imageView};
-
-  vkDestroyFramebuffer(m_device, m_offscreenFramebuffer, nullptr);
-  VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
-  info.renderPass      = m_offscreenRenderPass;
-  info.attachmentCount = 2;
-  info.pAttachments    = attachments.data();
-  info.width           = m_size.width;
-  info.height          = m_size.height;
-  info.layers          = 1;
-  vkCreateFramebuffer(m_device, &info, nullptr, &m_offscreenFramebuffer);
 }
 
 //--------------------------------------------------------------------------------------------------

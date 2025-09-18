@@ -104,7 +104,6 @@ void RayTraceApp::createBVH()
   // 后续初始化
   m_helloVk.createOffscreenRender();
   m_helloVk.createDescriptorSetLayout();
-  m_helloVk.createGraphicsPipeline();
   m_helloVk.createUniformBuffer();
   m_helloVk.createObjDescriptionBuffer();
   m_helloVk.updateDescriptorSet();
