@@ -70,16 +70,6 @@ struct GlobalUniforms
   mat4 projInverse;  // Camera inverse projection matrix
 };
 
-// Push constant structure for the raster
-struct PushConstantRaster
-{
-  mat4  modelMatrix;  // matrix of the instance
-  vec3  lightPosition;
-  uint  objIndex;
-  float lightIntensity;
-  int   lightType;
-};
-
 // Push constant structure for the ray tracer
 struct PushConstantRay
 {

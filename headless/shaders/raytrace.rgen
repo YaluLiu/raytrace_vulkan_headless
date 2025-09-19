@@ -33,7 +33,6 @@ layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = eOutImage, rgba32f) uniform image2D image;
 layout(set = 0, binding = eObjIdImage, r32i) uniform iimage2D objectIdImage;   // NEW: object id
 layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
-layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
 
 
