@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #ifndef COMMON_HOST_DEVICE
 #define COMMON_HOST_DEVICE
 
@@ -42,7 +23,8 @@ using uint = unsigned int;
 START_BINDING(SceneBindings)
   eGlobals  = 0,  // Global uniform containing camera matrices
   eObjDescs = 1,  // Access to the object descriptions
-  eTextures = 2   // Access to textures
+  eTextures = 2,   // Access to textures
+  eLights   = 3       // 新增：灯光缓冲区
 END_BINDING();
 
 START_BINDING(RtxBindings)
@@ -70,13 +52,23 @@ struct GlobalUniforms
   mat4 projInverse;  // Camera inverse projection matrix
 };
 
-// Push constant structure for the ray tracer
+struct Light
+{
+  vec3  positionOrDirection;  // xyz = position for point, direction for directional
+  float intensity;
+  int   type;     // 0 = point, 1 = directional
+  vec3  padding;  // 对齐到16字节
+};
+
+// 修改 PushConstantRay 结构体：
 struct PushConstantRay
 {
   vec4  clearColor;
   vec3  lightPosition;
   float lightIntensity;
   int   lightType;
+  int   numLights;   // 新增：灯光数量
+  int   padding[2];  // 对齐
 };
 
 struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for device

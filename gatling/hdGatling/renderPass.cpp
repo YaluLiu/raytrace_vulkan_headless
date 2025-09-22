@@ -155,9 +155,18 @@ void HdGatlingRenderPass::app_init()
 
 void HdGatlingRenderPass::app_updateLight()
 {
-  _renderApp.getVulkan().m_pcRay.lightPosition  = _scene.light.lightPosition;
-  _renderApp.getVulkan().m_pcRay.lightIntensity = _scene.light.lightIntensity;
-  _renderApp.getVulkan().m_pcRay.lightType      = _scene.light.lightType;
+  // 在加载场景后，渲染前设置灯光
+  _renderApp.getVulkan().clearLights();
+
+  for(auto& cur_light : _scene.v_light)
+  {
+    // 添加第一个点光源
+    Light light;
+    light.positionOrDirection = cur_light.lightPosition;
+    light.intensity           = cur_light.lightIntensity;
+    light.type                = cur_light.lightType;
+    _renderApp.getVulkan().addLight(light);
+  }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {

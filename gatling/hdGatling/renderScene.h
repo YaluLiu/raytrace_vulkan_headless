@@ -55,7 +55,7 @@ struct HdGatlingScene
   // 转化成raytrace可用的mesh格式
   std::vector<_VertexStreams> v_mesh;
   std::vector<MaterialObj>    v_mat;  //对应的材质
-  PushLight                   light;
+  std::vector<PushLight>      v_light;
 };
 
 

@@ -48,6 +48,9 @@ HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& scene)
     : HdLight(id)
     , _scene(scene)
 {
+  std::lock_guard guard(_scene.mutex);
+  _light_id = _scene.v_light.size();
+  _scene.v_light.emplace_back(PushLight());
 }
 
 // We strive to conform to following UsdLux-enhancing specification:
@@ -56,9 +59,9 @@ GfVec3f HdGatlingLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float 
 {
   const SdfPath& id = GetId();
 
-  VtValue boxedIntensity      = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
-  float   intensity           = boxedIntensity.GetWithDefault<float>(1.0f);
-  _scene.light.lightIntensity = intensity;
+  VtValue boxedIntensity                   = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
+  float   intensity                        = boxedIntensity.GetWithDefault<float>(1.0f);
+  _scene.v_light[_light_id].lightIntensity = intensity;
 
   VtValue boxedColor = sceneDelegate->GetLightParamValue(id, HdLightTokens->color);
   GfVec3f color      = boxedColor.GetWithDefault<GfVec3f>({1.0f, 1.0f, 1.0f});
@@ -101,7 +104,7 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
 {
   const SdfPath& id = GetId();
 
-  _scene.light.lightType = 1;
+  _scene.v_light[_light_id].lightType = 1;
   if(*dirtyBits & DirtyBits::DirtyTransform)
   {
     const GfMatrix4f transform(sceneDelegate->GetTransform(id));
@@ -109,7 +112,7 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
 
     GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
     // dir.Normalize();
-    _scene.light.lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
+    _scene.v_light[_light_id].lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
   }
 
   if(*dirtyBits & DirtyBits::DirtyParams)
@@ -145,12 +148,12 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
 {
   const SdfPath&   id = GetId();
   const GfMatrix4f transform(sceneDelegate->GetTransform(id));
-  _scene.light.lightType = 0;
+  _scene.v_light[_light_id].lightType = 0;
 
   if(*dirtyBits & DirtyBits::DirtyTransform)
   {
-    GfVec3f pos                = transform.Transform(GfVec3f(0.0f, 0.0f, 0.0f));
-    _scene.light.lightPosition = glm::vec3(pos[0], pos[1], pos[2]);
+    GfVec3f pos                             = transform.Transform(GfVec3f(0.0f, 0.0f, 0.0f));
+    _scene.v_light[_light_id].lightPosition = glm::vec3(pos[0], pos[1], pos[2]);
   }
 
   if(*dirtyBits & DirtyBits::DirtyParams)

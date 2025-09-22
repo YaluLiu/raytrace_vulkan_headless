@@ -149,7 +149,7 @@ void HelloVulkan::createRtPipeline()
 void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 {
   m_debug.beginLabel(cmdBuf, "Ray trace");
-
+  m_pcRay.numLights = static_cast<int>(m_lights.size());  // 新增
   std::vector<VkDescriptorSet> descSets{m_rtDescSet, m_descSet};
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipeline);
   vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipelineLayout, 0,
@@ -162,4 +162,37 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
   vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_size.width, m_size.height, 1);
 
   m_debug.endLabel(cmdBuf);
+}
+
+//--------------------------------------------------------------------------------------------------
+// 灯光管理函数
+//
+void HelloVulkan::addLight(const Light& light)
+{
+  m_lights.push_back(light);
+}
+
+void HelloVulkan::clearLights()
+{
+  m_lights.clear();
+}
+
+void HelloVulkan::createLightBuffer()
+{
+  // 创建灯光缓冲区（初始支持100个灯光）
+  size_t maxLights  = 100;
+  size_t bufferSize = sizeof(Light) * maxLights;
+
+  m_bLights = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  m_debug.setObjectName(m_bLights.buffer, "Lights");
+}
+
+void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
+{
+  if(!m_lights.empty())
+  {
+    vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, sizeof(Light) * m_lights.size(), m_lights.data());
+  }
 }

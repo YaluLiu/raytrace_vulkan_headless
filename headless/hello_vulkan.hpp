@@ -194,4 +194,14 @@ public:
   } m_semaphores;
   void createSemaphores();
   void submitFrame();
+
+  // 在这里添加灯光相关成员
+  std::vector<Light> m_lights;   // CPU端灯光数组
+  nvvk::Buffer       m_bLights;  // GPU灯光缓冲区
+
+  // 新增灯光管理方法
+  void addLight(const Light& light);
+  void clearLights();
+  void createLightBuffer();
+  void updateLightBuffer(const VkCommandBuffer& cmdBuf);
 };

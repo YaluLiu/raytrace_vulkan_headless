@@ -34,6 +34,7 @@ protected:
 
 protected:
   HdGatlingScene& _scene;
+  int             _light_id;
 };
 
 class HdGatlingDistantLight final : public HdGatlingLight

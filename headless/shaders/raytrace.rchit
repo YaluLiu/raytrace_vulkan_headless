@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #version 460
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
@@ -42,6 +23,9 @@ layout(buffer_reference, scalar) buffer MatIndices {int i[]; }; // Material ID f
 layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 1, binding = eObjDescs, scalar) buffer ObjDesc_ { ObjDesc i[]; } objDesc;
 layout(set = 1, binding = eTextures) uniform sampler2D textureSamplers[];
+
+// 添加灯光缓冲区
+layout(set = 1, binding = eLights, scalar) buffer LightBuf { Light lights[]; } lightBuf;
 
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
@@ -74,73 +58,125 @@ void main()
   const vec3 nrm      = v0.nrm * barycentrics.x + v1.nrm * barycentrics.y + v2.nrm * barycentrics.z;
   const vec3 worldNrm = normalize(vec3(nrm * gl_WorldToObjectEXT));  // Transforming the normal to world space
 
-  // Vector toward the light
-  vec3  L;
-  float lightIntensity = pcRay.lightIntensity;
-  float lightDistance  = 100000.0;
-  // Point light
-  if(pcRay.lightType == 0)
-  {
-    vec3 lDir      = pcRay.lightPosition - worldPos;
-    lightDistance  = length(lDir);
-    lightIntensity = pcRay.lightIntensity / (lightDistance * lightDistance);
-    L              = normalize(lDir);
-  }
-  else  // Directional light
-  {
-    L = normalize(pcRay.lightPosition);
-  }
-
   // Material of the object
   int               matIdx = matIndices.i[gl_PrimitiveID];
   WaveFrontMaterial mat    = materials.m[matIdx];
 
-
-  // Diffuse
-  vec3 diffuse = computeDiffuse(mat, L, worldNrm);
+  // 计算纹理颜色（如果有的话）
+  vec3 textureColor = vec3(1.0);
   if(mat.textureId >= 0)
   {
     uint txtId    = mat.textureId + objDesc.i[gl_InstanceCustomIndexEXT].txtOffset;
     vec2 texCoord = v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z;
-    diffuse *= texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
+    textureColor  = texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
   }
 
-  vec3  specular    = vec3(0);
-  float attenuation = 1;
+  // 累加所有灯光的贡献
+  vec3 totalLight = vec3(0);
 
-  // Tracing shadow ray only if the light is visible from the surface
-  if(dot(worldNrm, L) > 0)
+  // 如果没有灯光，使用默认的单灯光（向后兼容）
+  int numLights = pcRay.numLights;
+  if(numLights == 0)
   {
-    float tMin   = 0.001;
-    float tMax   = lightDistance;
-    vec3  origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-    vec3  rayDir = L;
-    uint  flags  = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-    isShadowed   = true;
-    traceRayEXT(topLevelAS,  // acceleration structure
-                flags,       // rayFlags
-                0xFF,        // cullMask
-                0,           // sbtRecordOffset
-                0,           // sbtRecordStride
-                1,           // missIndex
-                origin,      // ray origin
-                tMin,        // ray min range
-                rayDir,      // ray direction
-                tMax,        // ray max range
-                1            // payload (location = 1)
-    );
+    // 使用原来的单灯光代码作为后备
+    vec3  L;
+    float lightIntensity = pcRay.lightIntensity;
+    float lightDistance  = 100000.0;
 
-    if(isShadowed)
+    // Point light
+    if(pcRay.lightType == 0)
     {
-      attenuation = 0.3;
+      vec3 lDir      = pcRay.lightPosition - worldPos;
+      lightDistance  = length(lDir);
+      lightIntensity = pcRay.lightIntensity / (lightDistance * lightDistance);
+      L              = normalize(lDir);
     }
-    else
+    else  // Directional light
     {
-      // Specular
-      specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
+      L = normalize(pcRay.lightPosition);
+    }
+
+    vec3 diffuse = computeDiffuse(mat, L, worldNrm);
+    diffuse *= textureColor;
+    vec3  specular    = vec3(0);
+    float attenuation = 1;
+
+    // Tracing shadow ray only if the light is visible from the surface
+    if(dot(worldNrm, L) > 0)
+    {
+      float tMin   = 0.001;
+      float tMax   = lightDistance;
+      vec3  origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+      vec3  rayDir = L;
+      uint  flags  = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+      isShadowed   = true;
+      traceRayEXT(topLevelAS, flags, 0xFF, 0, 0, 1, origin, tMin, rayDir, tMax, 1);
+
+      if(isShadowed)
+      {
+        attenuation = 0.3;
+      }
+      else
+      {
+        specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
+      }
+    }
+
+    totalLight = lightIntensity * attenuation * (diffuse + specular);
+  }
+  else
+  {
+    // 多灯光循环
+    for(int i = 0; i < numLights; i++)
+    {
+      vec3  L;
+      float lightIntensity = lightBuf.lights[i].intensity;
+      float lightDistance  = 100000.0;
+
+      // Point light
+      if(lightBuf.lights[i].type == 0)
+      {
+        vec3 lDir      = lightBuf.lights[i].positionOrDirection.xyz - worldPos;
+        lightDistance  = length(lDir);
+        lightIntensity = lightIntensity / (lightDistance * lightDistance);
+        L              = normalize(lDir);
+      }
+      else  // Directional light
+      {
+        L = normalize(lightBuf.lights[i].positionOrDirection.xyz);
+      }
+
+      vec3 diffuse = computeDiffuse(mat, L, worldNrm);
+      diffuse *= textureColor;
+      vec3  specular    = vec3(0);
+      float attenuation = 1;
+
+      // Tracing shadow ray only if the light is visible from the surface
+      if(dot(worldNrm, L) > 0)
+      {
+        float tMin   = 0.001;
+        float tMax   = lightDistance;
+        vec3  origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+        vec3  rayDir = L;
+        uint  flags  = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+        isShadowed   = true;
+        traceRayEXT(topLevelAS, flags, 0xFF, 0, 0, 1, origin, tMin, rayDir, tMax, 1);
+
+        if(isShadowed)
+        {
+          attenuation = 0.3;
+        }
+        else
+        {
+          specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
+        }
+      }
+
+      // 累加这个灯光的贡献
+      totalLight += lightIntensity * attenuation * (diffuse + specular);
     }
   }
 
-  prd.hitValue = vec3(lightIntensity * attenuation * (diffuse + specular));
+  prd.hitValue = totalLight;
   prd.objId    = int(gl_InstanceCustomIndexEXT);
 }

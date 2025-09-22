@@ -101,8 +101,9 @@ void RayTraceApp::setupHelloVulkan()
 
 void RayTraceApp::createBVH()
 {
-  // 后续初始化
   m_helloVk.createOffscreenRender();
+  m_helloVk.createLightBuffer();
+
   m_helloVk.createDescriptorSetLayout();
   m_helloVk.createUniformBuffer();
   m_helloVk.createObjDescriptionBuffer();
@@ -137,6 +138,7 @@ void RayTraceApp::render()
   const GLenum dstLayout = GL_LAYOUT_SHADER_READ_ONLY_EXT;
   const GLenum srcLayout = GL_LAYOUT_COLOR_ATTACHMENT_EXT;
   glSignalSemaphoreEXT(m_helloVk.m_semaphores.glComplete, 0, nullptr, 1, &outRayID, &dstLayout);
+  m_helloVk.updateLightBuffer(cmdBuf);
   m_helloVk.raytrace(cmdBuf);
   // And wait (on the GPU) for the raytraced image
   glWaitSemaphoreEXT(m_helloVk.m_semaphores.glReady, 0, nullptr, 1, &outRayID, &srcLayout);
