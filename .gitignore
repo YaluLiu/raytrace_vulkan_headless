@@ -58,6 +58,8 @@ chatgpt.cpp
 *.png
 imgui.ini
 
+chatgpt/
+
 
 
 
