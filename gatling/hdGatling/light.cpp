@@ -44,9 +44,9 @@ float _AreaEllipsoid(float radiusX, float radiusY, float radiusZ)
 // Base Light
 //
 
-HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& _scene)
+HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& scene)
     : HdLight(id)
-    , _scene(_scene)
+    , _scene(scene)
 {
 }
 
@@ -56,8 +56,9 @@ GfVec3f HdGatlingLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float 
 {
   const SdfPath& id = GetId();
 
-  VtValue boxedIntensity = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
-  float   intensity      = boxedIntensity.GetWithDefault<float>(1.0f);
+  VtValue boxedIntensity      = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
+  float   intensity           = boxedIntensity.GetWithDefault<float>(1.0f);
+  _scene.light.lightIntensity = intensity;
 
   VtValue boxedColor = sceneDelegate->GetLightParamValue(id, HdLightTokens->color);
   GfVec3f color      = boxedColor.GetWithDefault<GfVec3f>({1.0f, 1.0f, 1.0f});
@@ -90,18 +91,15 @@ HdDirtyBits HdGatlingLight::GetInitialDirtyBitsMask() const
   return DirtyBits::DirtyParams | DirtyBits::DirtyTransform;
 }
 
-//
-// Distant Light
-//
-HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& _scene)
-    : HdGatlingLight(id, _scene)
+// --------Distant Light-------------------------
+HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene)
+    : HdGatlingLight(id, scene)
 {
 }
 
 void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   const SdfPath& id = GetId();
-  std::cout << "HdGatlingDistantLight:" << id.GetString() << std::endl;
 
   _scene.light.lightType = 1;
   if(*dirtyBits & DirtyBits::DirtyTransform)
@@ -110,9 +108,7 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
     GfMatrix4f       normalMatrix(transform.GetInverse().GetTranspose());
 
     GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
-    dir.Normalize();
-
-    // std::cout << "dir:" << dir[0] << "," << dir[1] << "," << dir[2] << std::endl;
+    // dir.Normalize();
     _scene.light.lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
   }
 
@@ -131,16 +127,59 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
     float   diffuse       = boxedDiffuse.GetWithDefault<float>(1.0f);
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
-
-    // std::cout << "baseEmission:" << baseEmission[0] << "," << baseEmission[1] << "," << baseEmission[2] << std::endl;
-    // std::cout << "diffuse:" << diffuse << std::endl;
-    // std::cout << "angle:" << angle << std::endl;
-    _scene.light.lightIntensity = baseEmission[0];
   }
 
   *dirtyBits = HdChangeTracker::Clean;
 }
 
 void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
+
+
+// --------Sphere Light-------------------------
+HdGatlingSphereLight::HdGatlingSphereLight(const SdfPath& id, HdGatlingScene& scene)
+    : HdGatlingLight(id, scene)
+{
+}
+
+void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+{
+  const SdfPath&   id = GetId();
+  const GfMatrix4f transform(sceneDelegate->GetTransform(id));
+  _scene.light.lightType = 0;
+
+  if(*dirtyBits & DirtyBits::DirtyTransform)
+  {
+    GfVec3f pos                = transform.Transform(GfVec3f(0.0f, 0.0f, 0.0f));
+    _scene.light.lightPosition = glm::vec3(pos[0], pos[1], pos[2]);
+  }
+
+  if(*dirtyBits & DirtyBits::DirtyParams)
+  {
+    VtValue boxedRadius = sceneDelegate->GetLightParamValue(id, HdLightTokens->radius);
+    float   radius      = boxedRadius.GetWithDefault<float>(0.5f);
+    float   radiusX     = transform.TransformDir(GfVec3f{radius, 0.0f, 0.0f})[0];
+    float   radiusY     = transform.TransformDir(GfVec3f{0.0f, radius, 0.0f})[1];
+    float   radiusZ     = transform.TransformDir(GfVec3f{0.0f, 0.0f, radius})[2];
+
+    VtValue boxedNormalize  = sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize);
+    bool    normalize       = boxedNormalize.GetWithDefault<bool>(false);
+    float   area            = _AreaEllipsoid(radiusX, radiusY, radiusZ);
+    float   normalizeFactor = (normalize && area > 0.0f) ? area : 1.0f;
+    GfVec3f baseEmission    = _CalcBaseEmission(sceneDelegate, normalizeFactor);
+
+    VtValue boxedDiffuse  = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse);
+    float   diffuse       = boxedDiffuse.GetWithDefault<float>(1.0f);
+    VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
+    float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
+
+    // giSetSphereLightRadius(_giSphereLight, radiusX, radiusY, radiusZ);
+    // giSetSphereLightBaseEmission(_giSphereLight, baseEmission.data());
+    // giSetSphereLightDiffuseSpecular(_giSphereLight, diffuse, specular);
+  }
+
+  *dirtyBits = HdChangeTracker::Clean;
+}
+
+void HdGatlingSphereLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
 
 PXR_NAMESPACE_CLOSE_SCOPE

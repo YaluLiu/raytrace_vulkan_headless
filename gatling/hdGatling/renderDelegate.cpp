@@ -270,6 +270,10 @@ HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPa
   {
     return new HdGatlingDistantLight(sprimId, _scene);
   }
+  else if(typeId == HdPrimTypeTokens->sphereLight)
+  {
+    return new HdGatlingSphereLight(sprimId, _scene);
+  }
 
   return nullptr;
 }

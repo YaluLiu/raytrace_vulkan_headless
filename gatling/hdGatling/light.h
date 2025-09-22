@@ -25,7 +25,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdGatlingLight : public HdLight
 {
 public:
-  HdGatlingLight(const SdfPath& id, HdGatlingScene& _scene);
+  HdGatlingLight(const SdfPath& id, HdGatlingScene& scene);
 
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -39,7 +39,7 @@ protected:
 class HdGatlingDistantLight final : public HdGatlingLight
 {
 public:
-  HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& _scene);
+  HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -47,5 +47,15 @@ public:
   void Finalize(HdRenderParam* renderParam) override;
 };
 
+class HdGatlingSphereLight final : public HdGatlingLight
+{
+public:
+  HdGatlingSphereLight(const SdfPath& id, HdGatlingScene& scene);
+
+public:
+  void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
+
+  void Finalize(HdRenderParam* renderParam) override;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
