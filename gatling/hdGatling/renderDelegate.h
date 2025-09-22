@@ -22,6 +22,7 @@
 #include "renderScene.h"
 #include "mesh.h"
 #include "material.h"
+#include "light.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

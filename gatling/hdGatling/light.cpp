@@ -1,0 +1,146 @@
+//
+// Copyright (C) 2023 Pablo Delgado Krämer
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+
+#include "light.h"
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/matrix3d.h>
+#include <pxr/base/gf/matrix3f.h>
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/gf/quatf.h>
+#include <pxr/imaging/hd/changeTracker.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/usdLux/blackbody.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+float _AreaEllipsoid(float radiusX, float radiusY, float radiusZ)
+{
+  float ab = powf(radiusX * radiusY, 1.6f);
+  float ac = powf(radiusX * radiusZ, 1.6f);
+  float bc = powf(radiusY * radiusZ, 1.6f);
+  return powf((ab + ac + bc) / 3.0f, 1.0f / 1.6f) * 4.0f * M_PI;
+}
+}  // namespace
+
+//
+// Base Light
+//
+
+HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& _scene)
+    : HdLight(id)
+    , _scene(_scene)
+{
+}
+
+// We strive to conform to following UsdLux-enhancing specification:
+// https://github.com/anderslanglands/light_comparison/blob/777ccc7afd1c174a5dcbbde964ced950eb3af11b/specification/specification.md
+GfVec3f HdGatlingLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float normalizeFactor = 1.0f)
+{
+  const SdfPath& id = GetId();
+
+  VtValue boxedIntensity = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
+  float   intensity      = boxedIntensity.GetWithDefault<float>(1.0f);
+
+  VtValue boxedColor = sceneDelegate->GetLightParamValue(id, HdLightTokens->color);
+  GfVec3f color      = boxedColor.GetWithDefault<GfVec3f>({1.0f, 1.0f, 1.0f});
+
+  VtValue boxedEnableColorTemperature = sceneDelegate->GetLightParamValue(id, HdLightTokens->enableColorTemperature);
+  bool    enableColorTemperature      = boxedEnableColorTemperature.GetWithDefault<bool>(false);
+
+  VtValue boxedColorTemperature = sceneDelegate->GetLightParamValue(id, HdLightTokens->colorTemperature);
+  float   colorTemperature      = boxedColorTemperature.GetWithDefault<float>(6500.0f);
+
+  VtValue boxedExposureAttr = sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure);
+  float   exposure          = boxedExposureAttr.GetWithDefault<float>(0.0f);
+
+  TF_AXIOM(normalizeFactor > 0.0f);
+
+  float normalizedIntensity = intensity * powf(2.0f, exposure) / normalizeFactor;
+
+  GfVec3f baseEmission = color * normalizedIntensity;
+
+  if(enableColorTemperature)
+  {
+    baseEmission = GfCompMult(baseEmission, UsdLuxBlackbodyTemperatureAsRgb(colorTemperature));
+  }
+
+  return baseEmission;
+}
+
+HdDirtyBits HdGatlingLight::GetInitialDirtyBitsMask() const
+{
+  return DirtyBits::DirtyParams | DirtyBits::DirtyTransform;
+}
+
+//
+// Distant Light
+//
+HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& _scene)
+    : HdGatlingLight(id, _scene)
+{
+}
+
+void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+{
+  const SdfPath& id = GetId();
+  std::cout << "HdGatlingDistantLight:" << id.GetString() << std::endl;
+
+  _scene.light.lightType = 1;
+  if(*dirtyBits & DirtyBits::DirtyTransform)
+  {
+    const GfMatrix4f transform(sceneDelegate->GetTransform(id));
+    GfMatrix4f       normalMatrix(transform.GetInverse().GetTranspose());
+
+    GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
+    dir.Normalize();
+
+    // std::cout << "dir:" << dir[0] << "," << dir[1] << "," << dir[2] << std::endl;
+    _scene.light.lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
+  }
+
+  if(*dirtyBits & DirtyBits::DirtyParams)
+  {
+    VtValue boxedAngle = sceneDelegate->GetLightParamValue(id, HdLightTokens->angle);
+    float   angle      = GfDegreesToRadians(boxedAngle.GetWithDefault<float>(0.53f));
+
+    VtValue boxedNormalize  = sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize);
+    bool    normalize       = boxedNormalize.GetWithDefault<bool>(false);
+    float   sinHalfAngle    = sinf(angle * 0.5f);
+    float   normalizeFactor = (sinHalfAngle > 1.0e-6f && normalize) ? (GfSqr(sinHalfAngle) * M_PI) : 1.0f;
+    GfVec3f baseEmission    = _CalcBaseEmission(sceneDelegate, normalizeFactor);
+
+    VtValue boxedDiffuse  = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse);
+    float   diffuse       = boxedDiffuse.GetWithDefault<float>(1.0f);
+    VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
+    float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
+
+    // std::cout << "baseEmission:" << baseEmission[0] << "," << baseEmission[1] << "," << baseEmission[2] << std::endl;
+    // std::cout << "diffuse:" << diffuse << std::endl;
+    // std::cout << "angle:" << angle << std::endl;
+    _scene.light.lightIntensity = baseEmission[0];
+  }
+
+  *dirtyBits = HdChangeTracker::Clean;
+}
+
+void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
+
+PXR_NAMESPACE_CLOSE_SCOPE

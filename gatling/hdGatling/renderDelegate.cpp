@@ -45,16 +45,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
 
-const static TfTokenVector _supportedSprimTypes = {
-    HdPrimTypeTokens->camera, HdPrimTypeTokens->material,
-    // HdPrimTypeTokens->sphereLight,
-    // HdPrimTypeTokens->distantLight,
-    // HdPrimTypeTokens->rectLight,
-    // HdPrimTypeTokens->diskLight,
-    // HdPrimTypeTokens->domeLight,
-    // HdPrimTypeTokens->simpleLight, // Required for usdview domeLight creation
-    // HdPrimTypeTokens->extComputation
-};
+const static TfTokenVector _supportedSprimTypes = {HdPrimTypeTokens->camera,        HdPrimTypeTokens->material,
+                                                   HdPrimTypeTokens->sphereLight,   HdPrimTypeTokens->distantLight,
+                                                   HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
+                                                   HdPrimTypeTokens->domeLight,
+                                                   HdPrimTypeTokens->simpleLight,  // Required for usdview domeLight creation
+                                                   HdPrimTypeTokens->extComputation};
 
 const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
 
@@ -270,43 +266,10 @@ HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPa
   {
     return new HdGatlingMaterial(sprimId, _scene);
   }
-  // else if (typeId == HdPrimTypeTokens->domeLight ||
-  //             typeId == HdPrimTypeTokens->simpleLight ||
-  //             typeId == HdPrimTypeTokens->sphereLight ||
-  //             typeId == HdPrimTypeTokens->diskLight ||
-  //             typeId == HdPrimTypeTokens->distantLight ||
-  //             typeId == HdPrimTypeTokens->cylinderLight ||
-  //             typeId == HdPrimTypeTokens->rectLight) {
-  //     return new HdStLight(sprimId, typeId);
-  // }
-  // else if (typeId == HdPrimTypeTokens->sphereLight)
-  // {
-  //   return new HdGatlingSphereLight(sprimId, _giScene);
-  // }
-  // else if (typeId == HdPrimTypeTokens->distantLight)
-  // {
-  //   return new HdGatlingDistantLight(sprimId, _giScene);
-  // }
-  // else if (typeId == HdPrimTypeTokens->rectLight)
-  // {
-  //   return new HdGatlingRectLight(sprimId, _giScene);
-  // }
-  // else if (typeId == HdPrimTypeTokens->diskLight)
-  // {
-  //   return new HdGatlingDiskLight(sprimId, _giScene);
-  // }
-  // else if (typeId == HdPrimTypeTokens->domeLight)
-  // {
-  //   return new HdGatlingDomeLight(sprimId, _giScene);
-  // }
-  // else if (typeId == HdPrimTypeTokens->simpleLight)
-  // {
-  //   return new HdGatlingSimpleLight(sprimId, _giScene);
-  // }
-  // else if (typeId == HdPrimTypeTokens->extComputation)
-  // {
-  //   return new HdExtComputation(sprimId);
-  // }
+  else if(typeId == HdPrimTypeTokens->distantLight)
+  {
+    return new HdGatlingDistantLight(sprimId, _scene);
+  }
 
   return nullptr;
 }

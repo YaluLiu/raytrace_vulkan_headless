@@ -19,6 +19,8 @@ add_library(
   renderScene.h
   material.cpp
   material.h
+  light.cpp
+  light.h
   mesh.cpp
   mesh.h
   tokens.cpp

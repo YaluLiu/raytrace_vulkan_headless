@@ -17,9 +17,18 @@
 #include <optional>
 #include <mutex>
 #include <assert.h>
+#include <glm/glm.hpp>
 #include <ModelLoader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+struct PushLight
+{
+  glm::vec4 clearColor;
+  glm::vec3 lightPosition;
+  float     lightIntensity;
+  int       lightType;
+};
 
 struct _VertexStreams
 {
@@ -27,15 +36,12 @@ struct _VertexStreams
   VtVec3fArray points;
   VtVec3fArray normals;
   VtVec2fArray texCoords;
-  VtIntArray   materialIds;     // 新增：每个面的材质 ID
-  bool         visible = true;  // 当前mesh是否可见
+  VtIntArray   materialIds;     // material ids, in gpu buffer, [0*100,1*100], as two boot
+  bool         visible = true;  // if mesh is visible
 
-  bool blas_changed = false;  //blas是否被更新，基础顶点和mesh结构
-  bool tlas_changed = false;  //tlas是否被更新，变换矩阵
+  bool blas_changed = false;
+  bool tlas_changed = false;
   //--------------------------------------------------------
-  // mesh网格点更新时，以下需要更新
-  //--------------------------------------------------------
-  // 对应材质相关
   int                    material_id        = -1;  //对应的材质在scene队列的id
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1}};
   glm::mat4              transform          = glm::mat4{1};
@@ -44,11 +50,12 @@ struct _VertexStreams
 
 struct HdGatlingScene
 {
-  //互斥锁，防止多线程mesh抢夺资源崩溃
+  //multi thread mutex
   std::mutex mutex;
   // 转化成raytrace可用的mesh格式
   std::vector<_VertexStreams> v_mesh;
   std::vector<MaterialObj>    v_mat;  //对应的材质
+  PushLight                   light;
 };
 
 

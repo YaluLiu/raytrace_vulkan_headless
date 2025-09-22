@@ -95,6 +95,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   }
   app_init();
   app_updateCamera(*hdcamera);
+  app_updateLight();
 #if USE_BASE_RENDER
   app_anim_base();
 #else
@@ -152,6 +153,12 @@ void HdGatlingRenderPass::app_init()
   }
 }
 
+void HdGatlingRenderPass::app_updateLight()
+{
+  _renderApp.getVulkan().m_pcRay.lightPosition  = _scene.light.lightPosition;
+  _renderApp.getVulkan().m_pcRay.lightIntensity = _scene.light.lightIntensity;
+  _renderApp.getVulkan().m_pcRay.lightType      = _scene.light.lightType;
+}
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {
   const GfMatrix4d& transform = camera.GetTransform();

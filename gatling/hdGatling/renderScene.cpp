@@ -60,9 +60,7 @@ void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader)
     new_texCoords.resize(points.size());
     for(size_t i = 0; i < points.size(); ++i)
     {
-      // 简单映射：使用顶点x和z坐标归一化后的值
-      new_texCoords[i].Set((points[i][0] + 1.0f) * 0.5f,  // 将[-1,1]映射到[0,1]
-                           (points[i][2] + 1.0f) * 0.5f);
+      new_texCoords[i].Set((points[i][0] + 1.0f) * 0.5f, (points[i][2] + 1.0f) * 0.5f);
     }
   }
 
