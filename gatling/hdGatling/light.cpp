@@ -50,7 +50,7 @@ HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& scene)
 {
   std::lock_guard guard(_scene.mutex);
   _light_id = _scene.v_light.size();
-  _scene.v_light.emplace_back(PushLight());
+  _scene.v_light.emplace_back(Light());
 }
 
 // We strive to conform to following UsdLux-enhancing specification:
@@ -98,7 +98,7 @@ HdDirtyBits HdGatlingLight::GetInitialDirtyBitsMask() const
 HdGatlingSphereLight::HdGatlingSphereLight(const SdfPath& id, HdGatlingScene& scene)
     : HdGatlingLight(id, scene)
 {
-  _scene.v_light[_light_id].lightType = 0;
+  _scene.v_light[_light_id].type = 0;
 }
 
 void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
@@ -109,8 +109,8 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
 
   if(*dirtyBits & DirtyBits::DirtyTransform)
   {
-    GfVec3f pos                             = transform.Transform(GfVec3f(0.0f, 0.0f, 0.0f));
-    _scene.v_light[_light_id].lightPosition = glm::vec3(pos[0], pos[1], pos[2]);
+    GfVec3f pos                        = transform.Transform(GfVec3f(0.0f, 0.0f, 0.0f));
+    _scene.v_light[_light_id].position = glm::vec3(pos[0], pos[1], pos[2]);
   }
 
   if(*dirtyBits & DirtyBits::DirtyParams)
@@ -147,7 +147,7 @@ void HdGatlingSphereLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
 HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene)
     : HdGatlingLight(id, scene)
 {
-  _scene.v_light[_light_id].lightType = 1;
+  _scene.v_light[_light_id].type = 1;
 }
 
 void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
@@ -161,7 +161,7 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
 
     GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
     // dir.Normalize();
-    _scene.v_light[_light_id].lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
+    _scene.v_light[_light_id].direction = glm::vec3(dir[0], dir[1], dir[2]);
   }
 
   if(*dirtyBits & DirtyBits::DirtyParams)

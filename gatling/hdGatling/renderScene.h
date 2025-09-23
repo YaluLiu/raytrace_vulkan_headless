@@ -19,24 +19,9 @@
 #include <assert.h>
 #include <glm/glm.hpp>
 #include <ModelLoader.h>
+#include "shaders/host_device.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-struct PushLight
-{
-  glm::vec3 lightPosition;
-
-
-  glm::vec3 baseEmission;  // intensity * color * colorTemp * exposure
-  float     diffuseScale;
-  float     specularScale;
-
-  float angleScale;  // for distant light
-  float radius;      // for sphere light
-  int   lightType;
-
-  int type;
-};
 
 struct _VertexStreams
 {
@@ -63,7 +48,7 @@ struct HdGatlingScene
   // 转化成raytrace可用的mesh格式
   std::vector<_VertexStreams> v_mesh;
   std::vector<MaterialObj>    v_mat;  //对应的材质
-  std::vector<PushLight>      v_light;
+  std::vector<Light>          v_light;
 };
 
 

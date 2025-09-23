@@ -119,7 +119,7 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         for(const auto& conn : connections)
         {
           // HdMaterialConnection2 通常包含 .upstreamNode（SdfPath）和 .upstreamOutputName（TfToken）
-          std::cout << paramName.GetString() << " <- " << conn.upstreamNode.GetString() << "."
+          std::cout << "[material]" << paramName.GetString() << " <- " << conn.upstreamNode.GetString() << "."
                     << conn.upstreamOutputName.GetString() << std::endl;
         }
       }

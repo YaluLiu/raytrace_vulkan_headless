@@ -54,17 +54,18 @@ struct GlobalUniforms
 
 struct Light
 {
-  vec3 positionOrDirection;
-
-
+  // common
+  int   type;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
   float diffuseScale;
   float specularScale;
-  float angleScale;  // for distant light
-  float radius;      // for sphere light
-
-  int  type;
-  vec3 padding;  // 对齐
+  // distant light
+  vec3  direction;
+  float angleScale;
+  // sphere light
+  vec3  position;
+  float radius;
+  vec3  padding;
 };
 
 

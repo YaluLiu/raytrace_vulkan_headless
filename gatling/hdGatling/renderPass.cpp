@@ -160,16 +160,7 @@ void HdGatlingRenderPass::app_updateLight()
 
   for(auto& cur_light : _scene.v_light)
   {
-    // 添加第一个点光源
-    Light light;
-    light.positionOrDirection = cur_light.lightPosition;
-    light.baseEmission        = cur_light.baseEmission;
-    light.diffuseScale        = cur_light.diffuseScale;
-    light.specularScale       = cur_light.specularScale;
-    light.angleScale          = cur_light.angleScale;
-    light.radius              = cur_light.radius;
-    light.type                = cur_light.lightType;
-    _renderApp.getVulkan().addLight(light);
+    _renderApp.getVulkan().addLight(cur_light);
   }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)

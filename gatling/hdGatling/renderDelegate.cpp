@@ -53,23 +53,6 @@ const static TfTokenVector _supportedSprimTypes = {HdPrimTypeTokens->camera,    
                                                    HdPrimTypeTokens->extComputation};
 
 const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
-
-// By default, we visualize the display color if it exists (otherwise grey).
-static const char* _defaultMaterialXMaterial = R"(
-    <?xml version="1.0"?>
-    <materialx version="1.38">
-      <geompropvalue name="gatling_GP_default" type="color3">
-        <input name="geomprop" type="string" value="displayColor" />
-        <input name="default" type="color3" value="0.18, 0.18, 0.18" />
-      </geompropvalue>
-      <UsdPreviewSurface name="gatling_SR_default" type="surfaceshader">
-        <input name="diffuseColor" type="color3" nodename="gatling_GP_default" />
-      </UsdPreviewSurface>
-      <surfacematerial name="gatling_MAT_default" type="material">
-        <input name="surfaceshader" type="surfaceshader" nodename="gatling_SR_default" />
-      </surfacematerial>
-    </materialx>
-  )";
 }  // namespace
 
 HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
@@ -77,52 +60,6 @@ HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& sett
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
     , _renderParam(std::make_unique<HdGatlingRenderParam>())
 {
-#if PXR_VERSION < 2408
-  TF_WARN("Outdated USD version (below v24.08); material updates may not propagate to meshes");
-#endif
-
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Samples per pixel", HdGatlingSettingsTokens->spp, VtValue{1}});
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Max bounces", HdGatlingSettingsTokens->maxBounces, VtValue{13}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Russian roulette bounce offset", HdGatlingSettingsTokens->rrBounceOffset, VtValue{3}});
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Russian roulette inverse minimum terminate probability",
-                                                          HdGatlingSettingsTokens->rrInvMinTermProb, VtValue{0.95f}});
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Filter Importance Sampling",
-                                                          HdGatlingSettingsTokens->filterImportanceSampling, VtValue{true}});
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Depth of field", HdGatlingSettingsTokens->depthOfField, VtValue{false}});
-  _settingDescriptors.push_back(HdRenderSettingDescriptor{"Light intensity multiplier",
-                                                          HdGatlingSettingsTokens->lightIntensityMultiplier, VtValue{1.0f}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Next event estimation", HdGatlingSettingsTokens->nextEventEstimation, VtValue{false}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Clipping planes", HdGatlingSettingsTokens->clippingPlanes, VtValue{false}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Medium stack size", HdGatlingSettingsTokens->mediumStackSize, VtValue{0}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Max volume walk length", HdGatlingSettingsTokens->maxVolumeWalkLength, VtValue{7}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Jittered sampling", HdGatlingSettingsTokens->jitteredSampling, VtValue{true}});
-  _settingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Meters per scene unit", HdGatlingSettingsTokens->metersPerSceneUnit, VtValue{1.0f}});
-
-  _debugSettingDescriptors.push_back(
-      HdRenderSettingDescriptor{"Progressive accumulation", HdGatlingSettingsTokens->progressiveAccumulation, VtValue{true}});
-
-#ifndef NDEBUG
-  _settingDescriptors.insert(_settingDescriptors.end(), _debugSettingDescriptors.begin(), _debugSettingDescriptors.end());
-#endif
-  _PopulateDefaultSettings(_settingDescriptors);
-#ifdef NDEBUG
-  _PopulateDefaultSettings(_debugSettingDescriptors);
-#endif
-
-  for(const auto& setting : settingsMap)
-  {
-    const TfToken& key   = setting.first;
-    const VtValue& value = setting.second;
-
-    _settingsMap[key] = value;
-  }
 }
 
 HdGatlingRenderDelegate::~HdGatlingRenderDelegate() {}

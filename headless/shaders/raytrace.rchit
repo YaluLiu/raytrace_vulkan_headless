@@ -82,7 +82,7 @@ void main()
 
     if(light.type == 0)  // Sphere light
     {
-      vec3 lDir     = light.positionOrDirection.xyz - worldPos;
+      vec3 lDir     = light.position.xyz - worldPos;
       lightDistance = length(lDir);
 
       // 考虑光源半径的软阴影（简化版）
@@ -93,7 +93,7 @@ void main()
     }
     else  // Distant light
     {
-      L = normalize(light.positionOrDirection.xyz);
+      L = normalize(light.direction.xyz);
       // Distant light 可以有角度缩放来模拟太阳
       distanceAttenuation = light.angleScale;
     }
