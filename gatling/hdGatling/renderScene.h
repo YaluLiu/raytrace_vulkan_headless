@@ -41,6 +41,7 @@ struct _VertexStreams
   std::vector<int>       tlasIds;  // 当前mesh的实例在tlas队列中对应的id
 };
 
+
 struct HdGatlingScene
 {
   //multi thread mutex

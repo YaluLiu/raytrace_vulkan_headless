@@ -155,12 +155,14 @@ void HdGatlingRenderPass::app_init()
 
 void HdGatlingRenderPass::app_updateLight()
 {
-  // 在加载场景后，渲染前设置灯光
   _renderApp.getVulkan().clearLights();
 
   for(auto& cur_light : _scene.v_light)
   {
-    _renderApp.getVulkan().addLight(cur_light);
+    if(cur_light.valid)
+    {
+      _renderApp.getVulkan().addLight(cur_light);
+    }
   }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)

@@ -105,7 +105,7 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
 {
   const SdfPath&   id = GetId();
   const GfMatrix4f transform(sceneDelegate->GetTransform(id));
-
+  _scene.v_light[_light_id].valid = 1;
 
   if(*dirtyBits & DirtyBits::DirtyTransform)
   {
@@ -141,7 +141,10 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
   *dirtyBits = HdChangeTracker::Clean;
 }
 
-void HdGatlingSphereLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
+void HdGatlingSphereLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
+{
+  _scene.v_light[_light_id].valid = 0;
+}
 
 // --------Distant Light-------------------------
 HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene)
@@ -152,8 +155,8 @@ HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& 
 
 void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
-  const SdfPath& id = GetId();
-
+  const SdfPath& id               = GetId();
+  _scene.v_light[_light_id].valid = 1;
   if(*dirtyBits & DirtyBits::DirtyTransform)
   {
     const GfMatrix4f transform(sceneDelegate->GetTransform(id));
@@ -189,7 +192,10 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
   *dirtyBits = HdChangeTracker::Clean;
 }
 
-void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
+void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
+{
+  _scene.v_light[_light_id].valid = 0;
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

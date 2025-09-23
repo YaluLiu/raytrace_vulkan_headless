@@ -65,8 +65,9 @@ struct Light
   // sphere light
   vec3  position;
   float radius;
+  int   valid;
   // todo:it's very important,i'm confused on it now
-  vec3 padding;
+  vec2 padding;
 };
 
 
