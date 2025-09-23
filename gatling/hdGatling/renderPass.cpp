@@ -153,6 +153,24 @@ void HdGatlingRenderPass::app_init()
   }
 }
 
+struct Light
+{
+  // common
+  int   type;
+  vec3  baseEmission;  // intensity * color * colorTemp * exposure
+  float diffuseScale;
+  float specularScale;
+  // distant light
+  vec3  direction;
+  float angleScale;
+  // sphere light
+  vec3  position;
+  float radius;
+  int   valid;
+  // todo:it's very important,i'm confused on it now
+  vec2 padding;
+};
+
 void HdGatlingRenderPass::app_updateLight()
 {
   _renderApp.getVulkan().clearLights();
@@ -179,7 +197,7 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
   glm::vec3 camPos(position[0], position[1], position[2]);
   glm::vec3 camForward(forward[0], forward[1], forward[2]);
   glm::vec3 camUp(up[0], up[1], up[2]);
-  glm::vec3 target = camPos + camForward;  // 目标点
+  glm::vec3 target = camPos + camForward;
 
   if(glm::length(glm::cross(camForward, camUp)) < 1e-6)
   {

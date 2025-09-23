@@ -45,12 +45,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
 
-const static TfTokenVector _supportedSprimTypes = {HdPrimTypeTokens->camera,        HdPrimTypeTokens->material,
-                                                   HdPrimTypeTokens->sphereLight,   HdPrimTypeTokens->distantLight,
-                                                   HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
-                                                   HdPrimTypeTokens->domeLight,
-                                                   HdPrimTypeTokens->simpleLight,  // Required for usdview domeLight creation
-                                                   HdPrimTypeTokens->extComputation};
+const static TfTokenVector _supportedSprimTypes = {
+    HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
+    //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
+    //  HdPrimTypeTokens->domeLight,
+    //  HdPrimTypeTokens->simpleLight,  // Required for usdview domeLight creation
+    //  HdPrimTypeTokens->extComputation
+};
 
 const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
 }  // namespace
