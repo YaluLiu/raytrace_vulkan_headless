@@ -169,7 +169,7 @@ void UsdLoader::loadTexCoords(UsdGeomMesh& mesh)
   VtArray<GfVec2f> texCoords;
   if(!stPrimvar.Get(&texCoords))
   {
-    std::cout << "Failed to read texture coordinates data.\n";
+    std::cout << "[UsdLoader] Failed to read texture coordinates data.\n";
     return;
   }
   for(size_t i = 0; i < m_vertices.size(); ++i)
@@ -334,7 +334,6 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
           if(fileInput.Get(&textureAsset))
           {
             std::string texturePath = textureAsset.GetAssetPath();
-            std::cout << texturePath << std::endl;
             if(!texturePath.empty())
             {
               // 检查纹理是否已加载

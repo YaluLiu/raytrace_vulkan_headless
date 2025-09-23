@@ -464,7 +464,6 @@ void HdGatlingRenderBuffer::print()
     out << std::endl;
   }
   out.close();
-  std::cout << "finish to write!" << std::endl;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -76,13 +76,6 @@ void ObjLoader::loadModel(const std::string& filename)
     // 添加该shape的材质索引到m_matIndx
     m_matIndx.insert(m_matIndx.end(), shape.mesh.material_ids.begin(), shape.mesh.material_ids.end());
 
-    // std::cout << "mesh_ids:";
-    // for(auto id : shape.mesh.material_ids){
-    //   std::cout << id << ",";
-    // }
-    // std::cout << std::endl;
-    // std::cout << m_matIndx.size() << std::endl;
-
     // 遍历所有索引（三角形的顶点）
     for(const auto& index : shape.mesh.indices)
     {
