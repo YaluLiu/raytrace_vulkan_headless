@@ -54,11 +54,19 @@ struct GlobalUniforms
 
 struct Light
 {
-  vec3  positionOrDirection;  // xyz = position for point, direction for directional
-  float intensity;
-  int   type;     // 0 = point, 1 = directional
-  vec3  padding;  // 对齐到16字节
+  vec3 positionOrDirection;
+
+
+  vec3  baseEmission;  // intensity * color * colorTemp * exposure
+  float diffuseScale;
+  float specularScale;
+  float angleScale;  // for distant light
+  float radius;      // for sphere light
+
+  int  type;
+  vec3 padding;  // 对齐
 };
+
 
 // 修改 PushConstantRay 结构体：
 struct PushConstantRay

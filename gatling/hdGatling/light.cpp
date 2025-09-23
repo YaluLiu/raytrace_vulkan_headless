@@ -59,9 +59,8 @@ GfVec3f HdGatlingLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float 
 {
   const SdfPath& id = GetId();
 
-  VtValue boxedIntensity                   = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
-  float   intensity                        = boxedIntensity.GetWithDefault<float>(1.0f);
-  _scene.v_light[_light_id].lightIntensity = intensity;
+  VtValue boxedIntensity = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
+  float   intensity      = boxedIntensity.GetWithDefault<float>(1.0f);
 
   VtValue boxedColor = sceneDelegate->GetLightParamValue(id, HdLightTokens->color);
   GfVec3f color      = boxedColor.GetWithDefault<GfVec3f>({1.0f, 1.0f, 1.0f});
@@ -94,61 +93,19 @@ HdDirtyBits HdGatlingLight::GetInitialDirtyBitsMask() const
   return DirtyBits::DirtyParams | DirtyBits::DirtyTransform;
 }
 
-// --------Distant Light-------------------------
-HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene)
-    : HdGatlingLight(id, scene)
-{
-}
-
-void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
-{
-  const SdfPath& id = GetId();
-
-  _scene.v_light[_light_id].lightType = 1;
-  if(*dirtyBits & DirtyBits::DirtyTransform)
-  {
-    const GfMatrix4f transform(sceneDelegate->GetTransform(id));
-    GfMatrix4f       normalMatrix(transform.GetInverse().GetTranspose());
-
-    GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
-    // dir.Normalize();
-    _scene.v_light[_light_id].lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
-  }
-
-  if(*dirtyBits & DirtyBits::DirtyParams)
-  {
-    VtValue boxedAngle = sceneDelegate->GetLightParamValue(id, HdLightTokens->angle);
-    float   angle      = GfDegreesToRadians(boxedAngle.GetWithDefault<float>(0.53f));
-
-    VtValue boxedNormalize  = sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize);
-    bool    normalize       = boxedNormalize.GetWithDefault<bool>(false);
-    float   sinHalfAngle    = sinf(angle * 0.5f);
-    float   normalizeFactor = (sinHalfAngle > 1.0e-6f && normalize) ? (GfSqr(sinHalfAngle) * M_PI) : 1.0f;
-    GfVec3f baseEmission    = _CalcBaseEmission(sceneDelegate, normalizeFactor);
-
-    VtValue boxedDiffuse  = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse);
-    float   diffuse       = boxedDiffuse.GetWithDefault<float>(1.0f);
-    VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
-    float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
-  }
-
-  *dirtyBits = HdChangeTracker::Clean;
-}
-
-void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
-
 
 // --------Sphere Light-------------------------
 HdGatlingSphereLight::HdGatlingSphereLight(const SdfPath& id, HdGatlingScene& scene)
     : HdGatlingLight(id, scene)
 {
+  _scene.v_light[_light_id].lightType = 0;
 }
 
 void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   const SdfPath&   id = GetId();
   const GfMatrix4f transform(sceneDelegate->GetTransform(id));
-  _scene.v_light[_light_id].lightType = 0;
+
 
   if(*dirtyBits & DirtyBits::DirtyTransform)
   {
@@ -175,14 +132,64 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    // giSetSphereLightRadius(_giSphereLight, radiusX, radiusY, radiusZ);
-    // giSetSphereLightBaseEmission(_giSphereLight, baseEmission.data());
-    // giSetSphereLightDiffuseSpecular(_giSphereLight, diffuse, specular);
+    _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    _scene.v_light[_light_id].diffuseScale  = diffuse;
+    _scene.v_light[_light_id].specularScale = specular;
+    _scene.v_light[_light_id].radius        = radius;
   }
 
   *dirtyBits = HdChangeTracker::Clean;
 }
 
 void HdGatlingSphereLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
+
+// --------Distant Light-------------------------
+HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene)
+    : HdGatlingLight(id, scene)
+{
+  _scene.v_light[_light_id].lightType = 1;
+}
+
+void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+{
+  const SdfPath& id = GetId();
+
+  if(*dirtyBits & DirtyBits::DirtyTransform)
+  {
+    const GfMatrix4f transform(sceneDelegate->GetTransform(id));
+    GfMatrix4f       normalMatrix(transform.GetInverse().GetTranspose());
+
+    GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
+    // dir.Normalize();
+    _scene.v_light[_light_id].lightPosition = glm::vec3(dir[0], dir[1], dir[2]);
+  }
+
+  if(*dirtyBits & DirtyBits::DirtyParams)
+  {
+    VtValue boxedAngle = sceneDelegate->GetLightParamValue(id, HdLightTokens->angle);
+    float   angle      = GfDegreesToRadians(boxedAngle.GetWithDefault<float>(0.53f));
+
+    VtValue boxedNormalize  = sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize);
+    bool    normalize       = boxedNormalize.GetWithDefault<bool>(false);
+    float   sinHalfAngle    = sinf(angle * 0.5f);
+    float   normalizeFactor = (sinHalfAngle > 1.0e-6f && normalize) ? (GfSqr(sinHalfAngle) * M_PI) : 1.0f;
+    GfVec3f baseEmission    = _CalcBaseEmission(sceneDelegate, normalizeFactor);
+
+    VtValue boxedDiffuse  = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse);
+    float   diffuse       = boxedDiffuse.GetWithDefault<float>(1.0f);
+    VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
+    float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
+
+    _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    _scene.v_light[_light_id].diffuseScale  = diffuse;
+    _scene.v_light[_light_id].specularScale = specular;
+    _scene.v_light[_light_id].angleScale    = angle;
+  }
+
+  *dirtyBits = HdChangeTracker::Clean;
+}
+
+void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam) {}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

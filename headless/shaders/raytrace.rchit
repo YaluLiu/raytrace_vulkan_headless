@@ -72,30 +72,43 @@ void main()
 
   vec3 totalLight = vec3(0);
   int  numLights  = pcRay.numLights;
+
   for(int i = 0; i < numLights; i++)
   {
+    Light light = lightBuf.lights[i];
     vec3  L;
-    float lightIntensity = lightBuf.lights[i].intensity;
-    float lightDistance  = 100000.0;
+    float lightDistance       = 100000.0;
+    float distanceAttenuation = 1.0;
 
-    if(lightBuf.lights[i].type == 0)  //sphere light
+    if(light.type == 0)  // Sphere light
     {
-      vec3 lDir      = lightBuf.lights[i].positionOrDirection.xyz - worldPos;
-      lightDistance  = length(lDir);
-      lightIntensity = lightIntensity / (lightDistance * lightDistance);
-      L              = normalize(lDir);
+      vec3 lDir     = light.positionOrDirection.xyz - worldPos;
+      lightDistance = length(lDir);
+
+      // 考虑光源半径的软阴影（简化版）
+      float effectiveDistance = max(lightDistance - light.radius, 0.001);
+      distanceAttenuation     = 1.0 / (effectiveDistance * effectiveDistance);
+
+      L = normalize(lDir);
     }
-    else  // Directional light
+    else  // Distant light
     {
-      L = normalize(lightBuf.lights[i].positionOrDirection.xyz);
+      L = normalize(light.positionOrDirection.xyz);
+      // Distant light 可以有角度缩放来模拟太阳
+      distanceAttenuation = light.angleScale;
     }
 
+    // 使用预计算的baseEmission
+    vec3 lightEmission = light.baseEmission * distanceAttenuation;
+
+    // 计算漫反射
     vec3 diffuse = computeDiffuse(mat, L, worldNrm);
-    diffuse *= textureColor;
-    vec3  specular    = vec3(0);
-    float attenuation = 1;
+    diffuse *= textureColor * light.diffuseScale;
 
-    // Tracing shadow ray only if the light is visible from the surface
+    vec3  specular          = vec3(0);
+    float shadowAttenuation = 1.0;
+
+    // 阴影检测
     if(dot(worldNrm, L) > 0)
     {
       float tMin   = 0.001;
@@ -108,15 +121,16 @@ void main()
 
       if(isShadowed)
       {
-        attenuation = 0.3;
+        shadowAttenuation = 0.3;
       }
       else
       {
         specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
+        specular *= light.specularScale;
       }
     }
 
-    totalLight += lightIntensity * attenuation * (diffuse + specular);
+    totalLight += lightEmission * shadowAttenuation * (diffuse + specular);
   }
 
   prd.hitValue = totalLight;

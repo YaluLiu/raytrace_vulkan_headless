@@ -163,7 +163,11 @@ void HdGatlingRenderPass::app_updateLight()
     // 添加第一个点光源
     Light light;
     light.positionOrDirection = cur_light.lightPosition;
-    light.intensity           = cur_light.lightIntensity;
+    light.baseEmission        = cur_light.baseEmission;
+    light.diffuseScale        = cur_light.diffuseScale;
+    light.specularScale       = cur_light.specularScale;
+    light.angleScale          = cur_light.angleScale;
+    light.radius              = cur_light.radius;
     light.type                = cur_light.lightType;
     _renderApp.getVulkan().addLight(light);
   }

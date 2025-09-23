@@ -24,10 +24,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct PushLight
 {
-  glm::vec4 clearColor;
   glm::vec3 lightPosition;
-  float     lightIntensity;
-  int       lightType;
+
+
+  glm::vec3 baseEmission;  // intensity * color * colorTemp * exposure
+  float     diffuseScale;
+  float     specularScale;
+
+  float angleScale;  // for distant light
+  float radius;      // for sphere light
+  int   lightType;
+
+  int type;
 };
 
 struct _VertexStreams
