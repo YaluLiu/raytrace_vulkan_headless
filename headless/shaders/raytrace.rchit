@@ -62,7 +62,6 @@ void main()
   int               matIdx = matIndices.i[gl_PrimitiveID];
   WaveFrontMaterial mat    = materials.m[matIdx];
 
-  // 计算纹理颜色（如果有的话）
   vec3 textureColor = vec3(1.0);
   if(mat.textureId >= 0)
   {
@@ -71,29 +70,24 @@ void main()
     textureColor  = texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
   }
 
-  // 累加所有灯光的贡献
   vec3 totalLight = vec3(0);
-
-  // 如果没有灯光，使用默认的单灯光（向后兼容）
-  int numLights = pcRay.numLights;
-  if(numLights == 0)
+  int  numLights  = pcRay.numLights;
+  for(int i = 0; i < numLights; i++)
   {
-    // 使用原来的单灯光代码作为后备
     vec3  L;
-    float lightIntensity = pcRay.lightIntensity;
+    float lightIntensity = lightBuf.lights[i].intensity;
     float lightDistance  = 100000.0;
 
-    // Point light
-    if(pcRay.lightType == 0)
+    if(lightBuf.lights[i].type == 0)  //sphere light
     {
-      vec3 lDir      = pcRay.lightPosition - worldPos;
+      vec3 lDir      = lightBuf.lights[i].positionOrDirection.xyz - worldPos;
       lightDistance  = length(lDir);
-      lightIntensity = pcRay.lightIntensity / (lightDistance * lightDistance);
+      lightIntensity = lightIntensity / (lightDistance * lightDistance);
       L              = normalize(lDir);
     }
     else  // Directional light
     {
-      L = normalize(pcRay.lightPosition);
+      L = normalize(lightBuf.lights[i].positionOrDirection.xyz);
     }
 
     vec3 diffuse = computeDiffuse(mat, L, worldNrm);
@@ -122,59 +116,7 @@ void main()
       }
     }
 
-    totalLight = lightIntensity * attenuation * (diffuse + specular);
-  }
-  else
-  {
-    // 多灯光循环
-    for(int i = 0; i < numLights; i++)
-    {
-      vec3  L;
-      float lightIntensity = lightBuf.lights[i].intensity;
-      float lightDistance  = 100000.0;
-
-      // Point light
-      if(lightBuf.lights[i].type == 0)
-      {
-        vec3 lDir      = lightBuf.lights[i].positionOrDirection.xyz - worldPos;
-        lightDistance  = length(lDir);
-        lightIntensity = lightIntensity / (lightDistance * lightDistance);
-        L              = normalize(lDir);
-      }
-      else  // Directional light
-      {
-        L = normalize(lightBuf.lights[i].positionOrDirection.xyz);
-      }
-
-      vec3 diffuse = computeDiffuse(mat, L, worldNrm);
-      diffuse *= textureColor;
-      vec3  specular    = vec3(0);
-      float attenuation = 1;
-
-      // Tracing shadow ray only if the light is visible from the surface
-      if(dot(worldNrm, L) > 0)
-      {
-        float tMin   = 0.001;
-        float tMax   = lightDistance;
-        vec3  origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-        vec3  rayDir = L;
-        uint  flags  = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-        isShadowed   = true;
-        traceRayEXT(topLevelAS, flags, 0xFF, 0, 0, 1, origin, tMin, rayDir, tMax, 1);
-
-        if(isShadowed)
-        {
-          attenuation = 0.3;
-        }
-        else
-        {
-          specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
-        }
-      }
-
-      // 累加这个灯光的贡献
-      totalLight += lightIntensity * attenuation * (diffuse + specular);
-    }
+    totalLight += lightIntensity * attenuation * (diffuse + specular);
   }
 
   prd.hitValue = totalLight;
