@@ -198,4 +198,44 @@ void HdGatlingDistantLight::Finalize([[maybe_unused]] HdRenderParam* renderParam
 }
 
 
+// --------Dome Light-------------------------
+HdGatlingDomeLight::HdGatlingDomeLight(const SdfPath& id, HdGatlingScene& scene)
+    : HdGatlingLight(id, scene)
+{
+  _scene.v_light[_light_id].type = 2;
+}
+
+void HdGatlingDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+{
+  const SdfPath& id               = GetId();
+  _scene.v_light[_light_id].valid = 1;
+  if(*dirtyBits & DirtyBits::DirtyTransform)
+  {
+    const GfMatrix4d& transform          = sceneDelegate->GetTransform(id);
+    auto              rotateQuat         = GfMatrix4f(transform.GetOrthonormalized()).ExtractRotationQuat();
+    _scene.v_light[_light_id].rotateQuat = glm::vec4(rotateQuat.GetImaginary()[0], rotateQuat.GetImaginary()[1],
+                                                     rotateQuat.GetImaginary()[2], rotateQuat.GetImaginary()[3]);
+  }
+
+  if(*dirtyBits & DirtyBits::DirtyParams)
+  {
+    GfVec3f baseEmission  = _CalcBaseEmission(sceneDelegate);
+    VtValue boxedDiffuse  = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse);
+    float   diffuse       = boxedDiffuse.GetWithDefault<float>(1.0f);
+    VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
+    float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
+
+    _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    _scene.v_light[_light_id].diffuseScale  = diffuse;
+    _scene.v_light[_light_id].specularScale = specular;
+  }
+
+  *dirtyBits = HdChangeTracker::Clean;
+}
+
+void HdGatlingDomeLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
+{
+  _scene.v_light[_light_id].valid = 0;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

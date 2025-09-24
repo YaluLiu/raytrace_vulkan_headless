@@ -59,4 +59,15 @@ public:
   void Finalize(HdRenderParam* renderParam) override;
 };
 
+class HdGatlingDomeLight final : public HdGatlingLight
+{
+public:
+  HdGatlingDomeLight(const SdfPath& id, HdGatlingScene& scene);
+
+public:
+  void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
+
+  void Finalize(HdRenderParam* renderParam) override;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE

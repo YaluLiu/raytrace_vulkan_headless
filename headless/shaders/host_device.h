@@ -56,6 +56,7 @@ struct Light
 {
   // common
   int   type;
+  int   valid;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
   float diffuseScale;
   float specularScale;
@@ -65,9 +66,10 @@ struct Light
   // sphere light
   vec3  position;
   float radius;
-  int   valid;
-  // todo:it's very important,i'm confused on it now
-  vec2 padding;
+  // dome light
+  vec4 rotateQuat;
+  // padding for alignment
+  vec3 padding;
 };
 
 

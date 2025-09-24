@@ -48,7 +48,7 @@ const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
     //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
-    //  HdPrimTypeTokens->domeLight,
+    HdPrimTypeTokens->domeLight,
     //  HdPrimTypeTokens->simpleLight,  // Required for usdview domeLight creation
     //  HdPrimTypeTokens->extComputation
 };
@@ -212,7 +212,10 @@ HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPa
   {
     return new HdGatlingSphereLight(sprimId, _scene);
   }
-
+  else if(typeId == HdPrimTypeTokens->domeLight)
+  {
+    return new HdGatlingDomeLight(sprimId, _scene);
+  }
   return nullptr;
 }
 
