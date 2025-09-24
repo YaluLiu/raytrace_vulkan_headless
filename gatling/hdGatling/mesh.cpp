@@ -382,13 +382,18 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
   _scene.v_mesh.emplace_back(_VertexStreams());
 }
 
-void HdGatlingMesh::Finalize(HdRenderParam* renderParam)
+void HdGatlingMesh::setValid(bool value)
 {
-  if(_scene.v_mesh[_mesh_id].valid == true)
+  if(_scene.v_mesh[_mesh_id].valid != value)
   {
-    _scene.v_mesh[_mesh_id].valid        = false;
+    _scene.v_mesh[_mesh_id].valid        = value;
     _scene.v_mesh[_mesh_id].tlas_changed = true;
   }
+}
+
+void HdGatlingMesh::Finalize(HdRenderParam* renderParam)
+{
+  setValid(false);
 }
 
 
@@ -456,11 +461,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   {
     return;
   }
-  if(_scene.v_mesh[_mesh_id].valid == false)
-  {
-    _scene.v_mesh[_mesh_id].valid        = true;
-    _scene.v_mesh[_mesh_id].tlas_changed = true;
-  }
+  setValid(true);
 
   auto& _mesh = _scene.v_mesh[_mesh_id];
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)

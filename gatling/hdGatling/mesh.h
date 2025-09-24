@@ -30,6 +30,7 @@ public:
   HdGatlingMesh(const SdfPath& id, HdGatlingScene& _scene);
 
   void Finalize(HdRenderParam* renderParam) override;
+  void setValid(bool value);
 
 public:
   void Sync(HdSceneDelegate* delegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, const TfToken& reprToken) override;
