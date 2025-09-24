@@ -382,7 +382,14 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
   _scene.v_mesh.emplace_back(_VertexStreams());
 }
 
-void HdGatlingMesh::Finalize(HdRenderParam* renderParam) {}
+void HdGatlingMesh::Finalize(HdRenderParam* renderParam)
+{
+  if(_scene.v_mesh[_mesh_id].valid == true)
+  {
+    _scene.v_mesh[_mesh_id].valid        = false;
+    _scene.v_mesh[_mesh_id].tlas_changed = true;
+  }
+}
 
 
 void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
@@ -440,18 +447,19 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
   bool updateGeometry = (*dirtyBits & HdChangeTracker::DirtyPoints) | (*dirtyBits & HdChangeTracker::DirtyNormals)
                         | (*dirtyBits & HdChangeTracker::DirtyPrimvar) | (*dirtyBits & HdChangeTracker::DirtyTopology);
-
   if(updateGeometry)
   {
     _CreateGiMeshes(sceneDelegate);
-
-    // // force sync properties
-    // (*dirtyBits) |= HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyTransform;
   }
   //如果没有对应的mesh数据，不必再干活
   if(_mesh_id == -1)
   {
     return;
+  }
+  if(_scene.v_mesh[_mesh_id].valid == false)
+  {
+    _scene.v_mesh[_mesh_id].valid        = true;
+    _scene.v_mesh[_mesh_id].tlas_changed = true;
   }
 
   auto& _mesh = _scene.v_mesh[_mesh_id];

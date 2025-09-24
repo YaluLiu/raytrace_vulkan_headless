@@ -31,6 +31,7 @@ struct _VertexStreams
   VtVec2fArray texCoords;
   VtIntArray   materialIds;     // material ids, in gpu buffer, [0*100,1*100], as two boot
   bool         visible = true;  // if mesh is visible
+  bool         valid   = true;
 
   bool blas_changed = false;
   bool tlas_changed = false;

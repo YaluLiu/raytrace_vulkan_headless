@@ -249,8 +249,9 @@ void HdGatlingRenderPass::app_update_tlas()
       cur_mesh.tlas_changed = false;
       for(int ins_id = 0; ins_id < cur_mesh.instanceTransforms.size(); ins_id++)
       {
-        auto tlas_id = cur_mesh.tlasIds[ins_id];
-        _renderApp.getVulkan().updateTlas(tlas_id, cur_mesh.transform * cur_mesh.instanceTransforms[ins_id], cur_mesh.visible);
+        auto tlas_id   = cur_mesh.tlasIds[ins_id];
+        bool flag_show = cur_mesh.visible & cur_mesh.valid;
+        _renderApp.getVulkan().updateTlas(tlas_id, cur_mesh.transform * cur_mesh.instanceTransforms[ins_id], flag_show);
       }
     }
   }
