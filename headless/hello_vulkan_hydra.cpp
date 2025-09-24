@@ -69,13 +69,13 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
 // update material
 //--------------------------------------------------------------------------------------------------
 // 在渲染循环中修改材质
-void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, const MaterialObj& newMaterial)
+void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial)
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
   VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
 
   // 计算偏移量
-  VkDeviceSize offset = materialIndex * sizeof(MaterialObj);
+  VkDeviceSize offset = materialIndex * sizeof(WaveFrontMaterial);
 
   // 确保缓冲区可见性
   VkBufferMemoryBarrier barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
@@ -83,13 +83,13 @@ void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, con
   barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier.buffer        = m_objModel[modelIndex].matColorBuffer.buffer;
   barrier.offset        = offset;
-  barrier.size          = sizeof(MaterialObj);
+  barrier.size          = sizeof(WaveFrontMaterial);
 
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
 
   // 更新材质数据
-  vkCmdUpdateBuffer(cmdBuf, m_objModel[modelIndex].matColorBuffer.buffer, offset, sizeof(MaterialObj), &newMaterial);
+  vkCmdUpdateBuffer(cmdBuf, m_objModel[modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial), &newMaterial);
 
   // 确保更新后的数据对着色器可见
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -113,14 +113,14 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
   // 1. 先加所有Barrier，保证并行性
   for(const auto& upd : updates)
   {
-    VkDeviceSize offset = upd.materialIndex * sizeof(MaterialObj);
+    VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
 
     VkBufferMemoryBarrier preBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     preBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
     preBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     preBarrier.buffer        = m_objModel[upd.modelIndex].matColorBuffer.buffer;
     preBarrier.offset        = offset;
-    preBarrier.size          = sizeof(MaterialObj);
+    preBarrier.size          = sizeof(WaveFrontMaterial);
 
     preBarriers.push_back(preBarrier);
   }
@@ -131,21 +131,21 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
   // 2. 更新所有材质
   for(const auto& upd : updates)
   {
-    VkDeviceSize offset = upd.materialIndex * sizeof(MaterialObj);
-    vkCmdUpdateBuffer(cmdBuf, m_objModel[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(MaterialObj), &upd.newMaterial);
+    VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
+    vkCmdUpdateBuffer(cmdBuf, m_objModel[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial), &upd.newMaterial);
   }
 
   // 3. 再加所有postBarrier，保证对shader可见
   for(const auto& upd : updates)
   {
-    VkDeviceSize offset = upd.materialIndex * sizeof(MaterialObj);
+    VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
 
     VkBufferMemoryBarrier postBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     postBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     postBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     postBarrier.buffer        = m_objModel[upd.modelIndex].matColorBuffer.buffer;
     postBarrier.offset        = offset;
-    postBarrier.size          = sizeof(MaterialObj);
+    postBarrier.size          = sizeof(WaveFrontMaterial);
 
     postBarriers.push_back(postBarrier);
   }

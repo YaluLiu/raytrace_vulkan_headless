@@ -36,6 +36,13 @@
 
 #include "ModelLoader.h"
 
+struct MaterialUpdate
+{
+  int               modelIndex;
+  int               materialIndex;
+  WaveFrontMaterial newMaterial;
+};
+
 //--------------------------------------------------------------------------------------------------
 // Simple rasterizer of OBJ objects
 // - Each OBJ loaded are stored in an `ObjModel` and referenced by a `ObjInstance`
@@ -181,7 +188,7 @@ public:
   void updateTlasEnd();
   // 动画处理球体对象的顶点，在 C++ 端进行缩放
   void updateBlas(uint32_t mesh_Id);
-  void updateMaterialAtRuntime(int modelIndex, int materialIndex, const MaterialObj& newMaterial);
+  void updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 
   //vulkan-opengl 共享同步

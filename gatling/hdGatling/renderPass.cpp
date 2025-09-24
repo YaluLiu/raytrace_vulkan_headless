@@ -271,7 +271,18 @@ void HdGatlingRenderPass::app_update_material()
     auto& materialObj = _scene.v_mat[mat_id];
     if(materialObj.material_changed)
     {
-      new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), materialObj});
+      WaveFrontMaterial new_material;
+      new_material.ambient       = materialObj.ambient;
+      new_material.diffuse       = materialObj.diffuse;
+      new_material.specular      = materialObj.specular;
+      new_material.transmittance = materialObj.transmittance;
+      new_material.emission      = materialObj.emission;
+      new_material.shininess     = materialObj.shininess;
+      new_material.ior           = materialObj.ior;
+      new_material.dissolve      = materialObj.dissolve;
+      new_material.illum         = materialObj.illum;
+      new_material.textureId     = materialObj.textureID;
+      new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), new_material});
     }
   }
   if(!new_materials.empty())

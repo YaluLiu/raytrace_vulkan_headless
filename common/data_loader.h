@@ -51,11 +51,3 @@ struct shapeObj
   // 材质索引
   uint32_t matIndex;
 };
-
-
-struct MaterialUpdate
-{
-  int         modelIndex;
-  int         materialIndex;
-  MaterialObj newMaterial;
-};
