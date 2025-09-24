@@ -31,6 +31,7 @@ public:
 
 protected:
   GfVec3f _CalcBaseEmission(HdSceneDelegate* sceneDelegate, float normalizeFactor);
+  void    Finalize(HdRenderParam* renderParam) override;
 
 protected:
   HdGatlingScene& _scene;
@@ -44,8 +45,6 @@ public:
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
-
-  void Finalize(HdRenderParam* renderParam) override;
 };
 
 class HdGatlingSphereLight final : public HdGatlingLight
@@ -55,8 +54,6 @@ public:
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
-
-  void Finalize(HdRenderParam* renderParam) override;
 };
 
 class HdGatlingDomeLight final : public HdGatlingLight
@@ -66,8 +63,6 @@ public:
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
-
-  void Finalize(HdRenderParam* renderParam) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
