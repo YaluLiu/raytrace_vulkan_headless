@@ -25,6 +25,7 @@ struct MaterialObj
   // 贴图ID（如果没有贴图则为-1）
   int  textureID        = -1;
   bool material_changed = false;
+  void set_default() { diffuse = glm::vec3(0.18f, 0.18f, 0.18f); }
 };
 
 // OBJ模型的顶点结构体

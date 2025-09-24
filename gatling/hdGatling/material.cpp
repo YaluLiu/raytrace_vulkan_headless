@@ -31,7 +31,10 @@ HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id, HdGatlingScene& scene)
   _scene.v_mat.emplace_back(MaterialObj());
 }
 
-void HdGatlingMaterial::Finalize(HdRenderParam* renderParam) {}
+void HdGatlingMaterial::Finalize(HdRenderParam* renderParam)
+{
+  _scene.v_mat[_mat_id].set_default();
+}
 
 HdDirtyBits HdGatlingMaterial::GetInitialDirtyBitsMask() const
 {
@@ -50,7 +53,7 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
   {
     return;  // 材质不需要更新
   }
-
+  _scene.v_mat[_mat_id].set_default();
   const SdfPath& id       = GetId();
   const VtValue& resource = sceneDelegate->GetMaterialResource(id);
 
