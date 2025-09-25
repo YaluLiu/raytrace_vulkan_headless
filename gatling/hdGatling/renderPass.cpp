@@ -138,6 +138,7 @@ void HdGatlingRenderPass::app_init()
       {
         instance.transform = cur_mesh.transform * cur_mesh.instanceTransforms[i];
         _renderApp.getVulkan().m_instances.push_back(instance);
+        _renderApp.getVulkan().m_instanceIds.push_back(i);
       }
       for(int i = 0; i < cur_mesh.instanceTransforms.size(); i++)
       {

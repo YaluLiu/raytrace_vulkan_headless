@@ -82,10 +82,11 @@ public:
   };
 
   // Array of objects and instances in the scene
-  std::vector<ModelLoader> m_Loader;     // Model on host
-  std::vector<ObjModel>    m_objModel;   // Model on host
-  std::vector<ObjDesc>     m_objDesc;    // Model description for device access
-  std::vector<ObjInstance> m_instances;  // Scene model instances
+  std::vector<ModelLoader> m_Loader;       // Model on host
+  std::vector<ObjModel>    m_objModel;     // Model on host
+  std::vector<ObjDesc>     m_objDesc;      // Model description for device access
+  std::vector<ObjInstance> m_instances;    // Scene model instances
+  std::vector<int>         m_instanceIds;  // for hydra instance ids
 
   // Graphic pipeline
   nvvk::DescriptorSetBindings m_descSetLayoutBind;

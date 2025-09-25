@@ -201,6 +201,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   instance.transform = transform;
   instance.objIndex  = static_cast<uint32_t>(m_objModel.size());
   m_instances.push_back(instance);
+  m_instanceIds.push_back(0);
 
   ObjDesc desc;
   desc.txtOffset            = txtOffset;
