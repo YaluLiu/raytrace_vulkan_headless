@@ -56,26 +56,20 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
 
 //--------------------------------------------------------------------------------------------------
 // 每帧更新摄像机矩阵（view/proj/inverse等）到uniform buffer
-// cmdBuf: 当前帧的命令缓冲
 void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 {
-  // 计算当前窗口的宽高比
   const float    aspectRatio = m_size.width / static_cast<float>(m_size.height);
   GlobalUniforms hostUBO     = {};
-  // 获取摄像机view矩阵
-  const auto& view = CameraManip.getMatrix();
-  // 构造右手坐标系的投影矩阵，并调整Y轴（Vulkan标准）
-  glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
+  const auto&    view        = CameraManip.getMatrix();
+  glm::mat4      proj        = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
 #if !ENABLE_HYDRA
   proj[1][1] *= -1;  // Vulkan坐标系Y反转
 #endif
 
-  // 填充UBO内容
   hostUBO.viewProj    = proj * view;
   hostUBO.viewInverse = glm::inverse(view);
   hostUBO.projInverse = glm::inverse(proj);
 
-  // 设备端的UBO和所需的访问阶段
   VkBuffer deviceUBO      = m_bGlobals.buffer;
   auto     uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
 
@@ -121,7 +115,7 @@ void HelloVulkan::createDescriptorSetLayout()
                                  VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
   // 添加灯光缓冲区绑定
-  m_descSetLayoutBind.addBinding(eLights, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+  m_descSetLayoutBind.addBinding(SceneBindings::eLights, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
                                  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
   // 创建layout和pool
   m_descSetLayout = m_descSetLayoutBind.createLayout(m_device);
@@ -195,7 +189,6 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   createTextureImages(cmdBuf, loader.m_textures);
   cmdBufGet.submitAndWait(cmdBuf);
 
-  // 分配mesh和texture完毕
   m_alloc.finalizeAndReleaseStaging();
 
   std::string objNb = std::to_string(m_objModel.size());
@@ -204,13 +197,11 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   m_debug.setObjectName(model.matColorBuffer.buffer, (std::string("mat_" + objNb)));
   m_debug.setObjectName(model.matIndexBuffer.buffer, (std::string("matIdx_" + objNb)));
 
-  // 生成实例信息
   ObjInstance instance;
   instance.transform = transform;
   instance.objIndex  = static_cast<uint32_t>(m_objModel.size());
   m_instances.push_back(instance);
 
-  // 构造设备可访问的物体描述
   ObjDesc desc;
   desc.txtOffset            = txtOffset;
   desc.vertexAddress        = nvvk::getBufferDeviceAddress(m_device, model.vertexBuffer.buffer);
@@ -218,7 +209,6 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   desc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, model.matColorBuffer.buffer);
   desc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, model.matIndexBuffer.buffer);
 
-  // 存储模型与描述
   m_objModel.emplace_back(model);
   m_objDesc.emplace_back(desc);
   m_Loader.emplace_back(loader);

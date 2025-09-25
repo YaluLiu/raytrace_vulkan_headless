@@ -26,12 +26,14 @@ layout(set = 1, binding = eTextures) uniform sampler2D textureSamplers[];
 layout(set = 1, binding = eLights, scalar) buffer LightBuf { Light lights[]; } lightBuf;
 
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
+
 vec3 rotateByQuaternion(vec3 v, vec4 q) 
 {
   vec3 u = q.xyz;
   float s = q.w;
   return 2.0 * dot(u, v) * u + (s * s - dot(u, u)) * v + 2.0 * s * cross(u, v);
 }
+
 void main()
 {
   // Object data
