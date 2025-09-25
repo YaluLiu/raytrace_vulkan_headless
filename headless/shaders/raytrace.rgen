@@ -46,6 +46,6 @@ void main()
               0               // payload (location = 0)
   );
 
-  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId));
+  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId, 1.0, 1.0, 1.0));
   imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));
 }

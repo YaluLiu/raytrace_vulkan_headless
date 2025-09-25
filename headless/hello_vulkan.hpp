@@ -191,17 +191,6 @@ public:
   void updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 
-  //vulkan-opengl 共享同步
-  struct Semaphore
-  {
-    VkSemaphore vkReady;
-    VkSemaphore vkComplete;
-    GLuint      glReady    = 0;
-    GLuint      glComplete = 0;
-  } m_semaphores;
-  void createSemaphores();
-  void submitFrame();
-
   // 在这里添加灯光相关成员
   std::vector<Light> m_lights;   // CPU端灯光数组
   nvvk::Buffer       m_bLights;  // GPU灯光缓冲区

@@ -347,8 +347,6 @@ void HelloVulkan::destroyResources()
 #if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
   m_rtObjectIdGL.destroy(m_allocGL);
-  vkDestroySemaphore(m_device, m_semaphores.vkComplete, nullptr);
-  vkDestroySemaphore(m_device, m_semaphores.vkReady, nullptr);
 #else
   //#Post处理相关
   m_allocGL.destroy(m_offscreenColor);

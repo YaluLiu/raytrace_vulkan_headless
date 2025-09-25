@@ -193,9 +193,8 @@ void HelloVulkan::createObjectIdImage()
 #endif
   {
     auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
-                                                  VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-                                                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                                                      | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
 
     nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
     VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
@@ -204,69 +203,8 @@ void HelloVulkan::createObjectIdImage()
     m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   }
 #if ENABLE_GL_VK_CONVERSION
-  m_rtObjectIdGL.imgSize   = m_size;
-  m_rtObjectIdGL.texVk     = m_offscreenObjectId;
-  m_rtObjectIdGL.mipLevels = 1;
+  m_rtObjectIdGL.imgSize = m_size;
+  m_rtObjectIdGL.texVk   = m_offscreenObjectId;
   createTextureGL(m_rtObjectIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 #endif
-}
-
-void HelloVulkan::submitFrame()
-{
-  const VkCommandBuffer& cmdBuf = m_commandBuffers[m_imageIndex];
-
-  VkSubmitInfo         submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-  VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
-  submitInfo.pWaitDstStageMask    = &stageFlags;
-  submitInfo.waitSemaphoreCount   = 1;
-  submitInfo.pWaitSemaphores      = &m_semaphores.vkComplete;
-  submitInfo.signalSemaphoreCount = 1;
-  submitInfo.pSignalSemaphores    = &m_semaphores.vkReady;
-  submitInfo.commandBufferCount   = 1;
-  submitInfo.pCommandBuffers      = &cmdBuf;
-
-  vkQueueSubmit(m_queue, 1, &submitInfo, VK_NULL_HANDLE);
-
-  // 等待队列完成（保证输出image可读取）
-  vkQueueWaitIdle(m_queue);
-}
-
-void HelloVulkan::createSemaphores()
-{
-  int glReadyHandle{-1};
-  int glCompleteHandle{-1};
-
-  // Vulkan
-  {
-    auto handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
-    {
-      VkSemaphoreCreateInfo       sci{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-      VkExportSemaphoreCreateInfo esci{VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO};
-      sci.pNext        = &esci;
-      esci.handleTypes = handleType;
-      vkCreateSemaphore(m_device, &sci, nullptr, &m_semaphores.vkReady);
-      vkCreateSemaphore(m_device, &sci, nullptr, &m_semaphores.vkComplete);
-    }
-    {
-      VkSemaphoreGetFdInfoKHR getFdInfo{VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR};
-      getFdInfo.handleType = handleType;
-      getFdInfo.semaphore  = m_semaphores.vkReady;
-      vkGetSemaphoreFdKHR(m_device, &getFdInfo, &glReadyHandle);
-    }
-    {
-      VkSemaphoreGetFdInfoKHR getFdInfo{VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR};
-      getFdInfo.handleType = handleType;
-      getFdInfo.semaphore  = m_semaphores.vkComplete;
-      vkGetSemaphoreFdKHR(m_device, &getFdInfo, &glCompleteHandle);
-    }
-  }
-
-  // OpenGL
-  {
-    // Import semaphores
-    glGenSemaphoresEXT(1, &m_semaphores.glReady);
-    glGenSemaphoresEXT(1, &m_semaphores.glComplete);
-    glImportSemaphoreFdEXT(m_semaphores.glReady, GL_HANDLE_TYPE_OPAQUE_FD_EXT, glReadyHandle);
-    glImportSemaphoreFdEXT(m_semaphores.glComplete, GL_HANDLE_TYPE_OPAQUE_FD_EXT, glCompleteHandle);
-  }
 }

@@ -119,7 +119,6 @@ void RayTraceApp::createBVH()
   // 计算着色器相关
   m_helloVk.createCompDescriptors();
   m_helloVk.createCompPipelines();
-  m_helloVk.createSemaphores();
 }
 
 void RayTraceApp::render()
@@ -132,16 +131,8 @@ void RayTraceApp::render()
   vkBeginCommandBuffer(cmdBuf, &beginInfo);
 
   m_helloVk.updateUniformBuffer(cmdBuf);
-
-  const GLuint outRayID = m_helloVk.getOpenGLObjectIdFrame();
-  // Once render is complete, signal the Vulkan semaphore indicating it can start render
-  const GLenum dstLayout = GL_LAYOUT_SHADER_READ_ONLY_EXT;
-  const GLenum srcLayout = GL_LAYOUT_COLOR_ATTACHMENT_EXT;
-  glSignalSemaphoreEXT(m_helloVk.m_semaphores.glComplete, 0, nullptr, 1, &outRayID, &dstLayout);
   m_helloVk.updateLightBuffer(cmdBuf);
   m_helloVk.raytrace(cmdBuf);
-  // And wait (on the GPU) for the raytraced image
-  glWaitSemaphoreEXT(m_helloVk.m_semaphores.glReady, 0, nullptr, 1, &outRayID, &srcLayout);
 
   vkEndCommandBuffer(cmdBuf);
   m_helloVk.submitFrame();
