@@ -539,8 +539,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     if(materialPrim)
     {
-      _mesh.material_id                                = materialPrim->_mat_id;
-      _scene.v_mat[_mesh.material_id].material_changed = true;
+      _mesh.material_id = materialPrim->_mat_id;
     }
     else
     {
