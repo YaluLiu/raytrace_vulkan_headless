@@ -164,6 +164,62 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 }
 
 //--------------------------------------------------------------------------------------------------
+// 创建图形渲染用的描述符集布局
+// 包括：全局UBO，物体描述buffer，所有纹理采样器
+void HelloVulkan::createDescriptorSetLayout()
+{
+  auto nbTxt = static_cast<uint32_t>(m_textures.size());
+
+  // 摄像机矩阵 UBO
+  m_descSetLayoutBind.addBinding(SceneBindings::eGlobals, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+  // 物体描述 SSBO
+  m_descSetLayoutBind.addBinding(SceneBindings::eObjDescs, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+  // 所有纹理采样器
+  m_descSetLayoutBind.addBinding(SceneBindings::eTextures, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nbTxt,
+                                 VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+  // 添加灯光缓冲区绑定
+  m_descSetLayoutBind.addBinding(SceneBindings::eLights, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                                 VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+  // 创建layout和pool
+  m_descSetLayout = m_descSetLayoutBind.createLayout(m_device);
+  m_descPool      = m_descSetLayoutBind.createPool(m_device, 1);
+  m_descSet       = nvvk::allocateDescriptorSet(m_device, m_descPool, m_descSetLayout);
+}
+
+//--------------------------------------------------------------------------------------------------
+// 用实际的buffer/image填充描述符集
+void HelloVulkan::updateDescriptorSet()
+{
+  std::vector<VkWriteDescriptorSet> writes;
+
+  // 摄像机矩阵 UBO
+  VkDescriptorBufferInfo dbiUnif{m_bGlobals.buffer, 0, VK_WHOLE_SIZE};
+  writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, SceneBindings::eGlobals, &dbiUnif));
+
+  // 物体描述 SSBO
+  VkDescriptorBufferInfo dbiSceneDesc{m_bObjDesc.buffer, 0, VK_WHOLE_SIZE};
+  writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, SceneBindings::eObjDescs, &dbiSceneDesc));
+
+  // 纹理数组
+  std::vector<VkDescriptorImageInfo> diit;
+  for(auto& texture : m_textures)
+  {
+    diit.emplace_back(texture.descriptor);
+  }
+  writes.emplace_back(m_descSetLayoutBind.makeWriteArray(m_descSet, SceneBindings::eTextures, diit.data()));
+
+  // 添加灯光缓冲区描述符更新
+  VkDescriptorBufferInfo dbiLights{m_bLights.buffer, 0, VK_WHOLE_SIZE};
+  writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, eLights, &dbiLights));
+
+  // 写入描述符集
+  vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+}
+
+//--------------------------------------------------------------------------------------------------
 // 灯光管理函数
 //
 void HelloVulkan::addLight(const Light& light)
