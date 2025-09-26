@@ -21,11 +21,13 @@ using uint = unsigned int;
 #endif
 
 START_BINDING(SceneBindings)
-  eGlobals  = 0,  // Global uniform containing camera matrices
-  eObjDescs = 1,  // Access to the object descriptions
-  eTextures = 2,   // Access to textures
-  eLights   = 3       // 新增：灯光缓冲区
+  eGlobals     = 0,  // Global uniform containing camera matrices
+  eObjDescs    = 1,  // Access to the object descriptions
+  eTextures    = 2,  // Access to textures
+  eLights      = 3,  // 灯光缓冲区
+  eInstanceIds = 4   // 新增：实例ID缓冲区
 END_BINDING();
+
 
 START_BINDING(RtxBindings)
   eTlas       = 0,  // Top-level acceleration structure

@@ -103,6 +103,7 @@ void RayTraceApp::createBVH()
 {
   m_helloVk.createOffscreenRender();
   m_helloVk.createLightBuffer();
+  m_helloVk.createInstanceIdBuffer();
 
   m_helloVk.createDescriptorSetLayout();
   m_helloVk.createUniformBuffer();
@@ -132,6 +133,7 @@ void RayTraceApp::render()
 
   m_helloVk.updateUniformBuffer(cmdBuf);
   m_helloVk.updateLightBuffer(cmdBuf);
+  m_helloVk.updateInstanceIdBuffer(cmdBuf);
   m_helloVk.raytrace(cmdBuf);
 
   vkEndCommandBuffer(cmdBuf);

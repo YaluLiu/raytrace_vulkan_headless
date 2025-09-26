@@ -31,8 +31,6 @@ void main()
   float tMin     = 0.001;
   float tMax     = 10000.0;
 
-  prd.objId = -1;
-
   traceRayEXT(topLevelAS,     // acceleration structure
               rayFlags,       // rayFlags
               0xFF,           // cullMask

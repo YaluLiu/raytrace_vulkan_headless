@@ -203,4 +203,9 @@ public:
 
   // for make hydra instance ids
   std::vector<int> m_instanceIds;
+  nvvk::Buffer     m_bInstanceIds;  // GPU实例ID缓冲区
+
+  // 添加相关方法声明
+  void createInstanceIdBuffer();
+  void updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf);
 };

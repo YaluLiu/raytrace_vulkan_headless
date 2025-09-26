@@ -24,7 +24,7 @@ layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 1, binding = eObjDescs, scalar) buffer ObjDesc_ { ObjDesc i[]; } objDesc;
 layout(set = 1, binding = eTextures) uniform sampler2D textureSamplers[];
 layout(set = 1, binding = eLights, scalar) buffer LightBuf { Light lights[]; } lightBuf;
-
+layout(set = 1, binding = eInstanceIds, scalar) buffer InstanceIdBuf { int instanceIds[]; } instanceIdBuf; // 新增
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 
 vec3 rotateByQuaternion(vec3 v, vec4 q) 
@@ -181,4 +181,5 @@ void main()
 
   prd.hitValue = totalLight;
   prd.objId    = int(gl_InstanceCustomIndexEXT);
+  prd.instanceId = instanceIdBuf.instanceIds[gl_InstanceID];
 }

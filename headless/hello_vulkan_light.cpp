@@ -179,10 +179,11 @@ void HelloVulkan::createDescriptorSetLayout()
   // 所有纹理采样器
   m_descSetLayoutBind.addBinding(SceneBindings::eTextures, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nbTxt,
                                  VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-
   // 添加灯光缓冲区绑定
   m_descSetLayoutBind.addBinding(SceneBindings::eLights, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
                                  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+  // 新增：实例ID缓冲区绑定
+  m_descSetLayoutBind.addBinding(SceneBindings::eInstanceIds, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
   // 创建layout和pool
   m_descSetLayout = m_descSetLayoutBind.createLayout(m_device);
   m_descPool      = m_descSetLayoutBind.createPool(m_device, 1);
@@ -210,11 +211,12 @@ void HelloVulkan::updateDescriptorSet()
     diit.emplace_back(texture.descriptor);
   }
   writes.emplace_back(m_descSetLayoutBind.makeWriteArray(m_descSet, SceneBindings::eTextures, diit.data()));
-
   // 添加灯光缓冲区描述符更新
   VkDescriptorBufferInfo dbiLights{m_bLights.buffer, 0, VK_WHOLE_SIZE};
   writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, eLights, &dbiLights));
-
+  // 实例ID缓冲区描述符更新
+  VkDescriptorBufferInfo dbiInstanceIds{m_bInstanceIds.buffer, 0, VK_WHOLE_SIZE};
+  writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, SceneBindings::eInstanceIds, &dbiInstanceIds));
   // 写入描述符集
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
@@ -249,5 +251,24 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
   if(!m_lights.empty())
   {
     vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, sizeof(Light) * m_lights.size(), m_lights.data());
+  }
+}
+
+void HelloVulkan::createInstanceIdBuffer()
+{
+  size_t maxInstances = std::max(size_t(1000), m_instanceIds.size() * 2);  // 预留空间
+  size_t bufferSize   = sizeof(int) * maxInstances;
+
+  m_bInstanceIds = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  m_debug.setObjectName(m_bInstanceIds.buffer, "InstanceIds");
+}
+
+void HelloVulkan::updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf)
+{
+  if(!m_instanceIds.empty())
+  {
+    vkCmdUpdateBuffer(cmdBuf, m_bInstanceIds.buffer, 0, sizeof(int) * m_instanceIds.size(), m_instanceIds.data());
   }
 }
