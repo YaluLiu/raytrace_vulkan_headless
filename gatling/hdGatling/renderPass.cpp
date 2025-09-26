@@ -91,6 +91,11 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
         _renderApp.getVulkan().m_rtObjectIdGL.oglId = renderBuffer->get_OpenGL_Texture_id();
         renderBuffer->_isIdAov                      = true;
       }
+      else if(name == HdAovTokens->instanceId)
+      {
+        _renderApp.getVulkan().m_rtInstanceIdGL.oglId = renderBuffer->get_OpenGL_Texture_id();
+        renderBuffer->_isIdAov                        = true;
+      }
     }
   }
   app_init();

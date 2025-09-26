@@ -13,6 +13,7 @@ layout(location = 0) rayPayloadEXT hitPayload prd;
 layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = eOutImage, rgba32f) uniform image2D image;
 layout(set = 0, binding = eObjIdImage, r32i) uniform iimage2D objectIdImage;   // NEW: object id
+layout(set = 0, binding = eInsIdImage, r32i) uniform iimage2D instanceIdImage;   // NEW: object id
 layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
 // clang-format on
 
@@ -44,6 +45,7 @@ void main()
               0               // payload (location = 0)
   );
 
-  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId, 1.0, 1.0, 1.0));
+  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId, 0.0, 0.0, 0.0));
+  imageStore(instanceIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.instanceId, 0.0, 0.0, 0.0));
   imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));
 }

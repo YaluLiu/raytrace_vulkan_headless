@@ -112,6 +112,10 @@ public:
   nvvk::Texture m_offscreenObjectId;  // VK_FORMAT_R32_SINT GL_R32I
   VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
 
+  // 屏幕点选object
+  nvvk::Texture m_offscreenInstanceId;
+  VkFormat      m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
+
   // depth buffer
   nvvk::Texture m_offscreenDepth;
   VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
@@ -171,16 +175,14 @@ public:
   //读取cpu的object buffer
   std::vector<uint32_t> readObjectIdImage();
 #if ENABLE_GL_VK_CONVERSION
-  void                                createOutputImage();
-  void                                createObjectIdImage();
-  void                                createDepthImage();
-  void                                dumpInteropTexture(const char* filename);
-  interop::Texture2DVkGL              m_rtOutputGL;
-  interop::Texture2DVkGL              m_rtObjectIdGL;
-  interop::Texture2DVkGL              m_rtDepthGL;
-  GLuint                              getOpenGLFrame() { return m_rtOutputGL.oglId; }
-  GLuint                              getOpenGLObjectIdFrame() { return m_rtObjectIdGL.oglId; }
-  GLuint                              getOpenGLDepthFrame() { return m_rtDepthGL.oglId; }
+  void                   createOutputImage();
+  void                   createObjectIdImage();
+  void                   createInstanceIdImage();
+  void                   dumpInteropTexture(const char* filename);
+  interop::Texture2DVkGL m_rtOutputGL;
+  interop::Texture2DVkGL m_rtObjectIdGL;
+  interop::Texture2DVkGL m_rtInstanceIdGL;
+
   interop::ResourceAllocatorGLInterop m_allocGL;
   interop::ResourceAllocatorGLInterop m_allocObjectId;
 #endif

@@ -208,3 +208,28 @@ void HelloVulkan::createObjectIdImage()
   createTextureGL(m_rtObjectIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 #endif
 }
+
+void HelloVulkan::createInstanceIdImage()
+{
+#if ENABLE_GL_VK_CONVERSION
+  m_rtInstanceIdGL.destroy(m_allocGL);
+#else
+  m_allocGL.destroy(m_offscreenInstanceId);
+#endif
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenInstanceIdFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenInstanceId                        = m_allocGL.createTexture(image, ivInfo, sampler);
+    m_offscreenInstanceId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  }
+#if ENABLE_GL_VK_CONVERSION
+  m_rtInstanceIdGL.imgSize = m_size;
+  m_rtInstanceIdGL.texVk   = m_offscreenInstanceId;
+  createTextureGL(m_rtInstanceIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+#endif
+}

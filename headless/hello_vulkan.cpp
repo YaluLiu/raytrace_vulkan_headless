@@ -282,6 +282,7 @@ void HelloVulkan::destroyResources()
 #if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
   m_rtObjectIdGL.destroy(m_allocGL);
+  m_rtInstanceIdGL.destroy(m_allocGL);
 #else
   //#Post处理相关
   m_allocGL.destroy(m_offscreenColor);
@@ -333,6 +334,7 @@ void HelloVulkan::createOffscreenRender()
 
   createOutputImage();
   createObjectIdImage();
+  createInstanceIdImage();
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -357,7 +359,7 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepth.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenInstanceId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     genCmdBuf.submitAndWait(cmdBuf);
   }
 }

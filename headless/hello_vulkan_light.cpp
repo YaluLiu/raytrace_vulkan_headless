@@ -20,6 +20,7 @@ void HelloVulkan::createRtDescriptorSet()
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eOutImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   // NEW: objectId image
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eObjIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+  m_rtDescSetLayoutBind.addBinding(RtxBindings::eInsIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
   m_rtDescPool      = m_rtDescSetLayoutBind.createPool(m_device);
   m_rtDescSetLayout = m_rtDescSetLayoutBind.createLayout(m_device);
@@ -36,11 +37,13 @@ void HelloVulkan::createRtDescriptorSet()
   descASInfo.pAccelerationStructures    = &tlas;
   VkDescriptorImageInfo imageInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo idInfo{{}, m_offscreenObjectId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo InstanceIdInfo{{}, m_offscreenInstanceId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   std::vector<VkWriteDescriptorSet> writes;
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eTlas, &descASInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &imageInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eObjIdImage, &idInfo));
+  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eInsIdImage, &InstanceIdInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 
@@ -48,11 +51,13 @@ void HelloVulkan::updateRtDescriptorSet()
 {
   VkDescriptorImageInfo colorInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo idInfo{{}, m_offscreenObjectId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo InsIdInfo{{}, m_offscreenInstanceId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   VkWriteDescriptorSet wColor = m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &colorInfo);
   VkWriteDescriptorSet wId    = m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eObjIdImage, &idInfo);
-  VkWriteDescriptorSet ws[2]  = {wColor, wId};
-  vkUpdateDescriptorSets(m_device, 2, ws, 0, nullptr);
+  VkWriteDescriptorSet wInsId = m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eInsIdImage, &InsIdInfo);
+  VkWriteDescriptorSet ws[3]  = {wColor, wId, wInsId};
+  vkUpdateDescriptorSets(m_device, 3, ws, 0, nullptr);
 }
 
 void HelloVulkan::createRtPipeline()

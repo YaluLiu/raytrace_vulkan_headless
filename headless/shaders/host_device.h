@@ -32,7 +32,8 @@ END_BINDING();
 START_BINDING(RtxBindings)
   eTlas       = 0,  // Top-level acceleration structure
   eOutImage   = 1,  // Ray tracer output image (color)
-  eObjIdImage = 2   // NEW: ObjectId output (r32ui)
+  eObjIdImage = 2,   // NEW: ObjectId output (r32ui)
+  eInsIdImage = 3   // NEW: ObjectId output (r32ui)
 END_BINDING();
 // clang-format on
 
