@@ -194,7 +194,7 @@ void HelloVulkan::createObjectIdImage()
   }
   m_rtObjectIdGL.imgSize = m_size;
   m_rtObjectIdGL.texVk   = m_offscreenObjectId;
-  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+  createTextureGL(m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
 void HelloVulkan::createInstanceIdImage()

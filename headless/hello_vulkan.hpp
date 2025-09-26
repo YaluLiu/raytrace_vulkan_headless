@@ -80,25 +80,6 @@ public:
   nvvk::ResourceAllocatorDma m_alloc;  // Allocator for buffer, images, acceleration structures
   nvvk::DebugUtil            m_debug;  // Utility to name objects
 
-  // #Post - Draw the rendered image on a quad using a tonemapper
-  void createOffscreenRender();
-
-  //屏幕渲染结果图
-  nvvk::Texture m_offscreenColor;
-  VkFormat      m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-
-  // 屏幕点选object
-  nvvk::Texture m_offscreenObjectId;  // VK_FORMAT_R32_SINT GL_R32I
-  VkFormat      m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
-
-  // 屏幕点选object
-  nvvk::Texture m_offscreenInstanceId;
-  VkFormat      m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
-
-  // depth buffer
-  nvvk::Texture m_offscreenDepth;
-  VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
-
   // #VKRay
   void initRayTracing();
   auto objectToVkGeometryKHR(const ObjModel& model);
@@ -151,41 +132,54 @@ public:
 
   void saveOffscreenColorToFile(const char* filename);
 
-  //读取cpu的object buffer
-  std::vector<uint32_t>  readObjectIdImage();
+
+  // #Post - Draw the rendered image on a quad using a tonemapper
+  void createOffscreenRender();
+
+  // color
+  nvvk::Texture          m_offscreenColor;
+  VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   void                   createOutputImage();
-  void                   createObjectIdImage();
-  void                   createInstanceIdImage();
-  void                   dumpInteropTexture(const char* filename);
   interop::Texture2DVkGL m_rtOutputGL;
+
+  // primId
+  nvvk::Texture          m_offscreenObjectId;  // VK_FORMAT_R32_SINT GL_R32I
+  VkFormat               m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
+  void                   createObjectIdImage();
   interop::Texture2DVkGL m_rtObjectIdGL;
+
+  // instanceId
+  nvvk::Texture          m_offscreenInstanceId;
+  VkFormat               m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
+  void                   createInstanceIdImage();
   interop::Texture2DVkGL m_rtInstanceIdGL;
 
   interop::ResourceAllocatorGLInterop m_allocGL;
-  interop::ResourceAllocatorGLInterop m_allocObjectId;
 
+  // depth buffer
+  nvvk::Texture m_offscreenDepth;
+  VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
+
+  std::vector<uint32_t> readObjectIdImage();
+  void                  dumpInteropTexture(const char* filename);
+
+  // RayTrace Stucture
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);
   void updateTlasEnd();
-  // 动画处理球体对象的顶点，在 C++ 端进行缩放
   void updateBlas(uint32_t mesh_Id);
   void updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 
-  // 在这里添加灯光相关成员
-  std::vector<Light> m_lights;   // CPU端灯光数组
-  nvvk::Buffer       m_bLights;  // GPU灯光缓冲区
+  // hydra plugin
+  std::vector<Light> m_lights;       // for hydra Light
+  std::vector<int>   m_instanceIds;  // for hydra store instance Ids
+  nvvk::Buffer       m_bInstanceIds;
+  nvvk::Buffer       m_bLights;
 
-  // 新增灯光管理方法
   void addLight(const Light& light);
   void clearLights();
   void createLightBuffer();
   void updateLightBuffer(const VkCommandBuffer& cmdBuf);
-
-  // for make hydra instance ids
-  std::vector<int> m_instanceIds;
-  nvvk::Buffer     m_bInstanceIds;  // GPU实例ID缓冲区
-
-  // 添加相关方法声明
   void createInstanceIdBuffer();
   void updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf);
 };
