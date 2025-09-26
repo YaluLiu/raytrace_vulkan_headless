@@ -46,12 +46,10 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_debug.setup(m_device);
   // 查找适合的离屏深度格式
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
-#if ENABLE_GL_VK_CONVERSION
 #if !ENABLE_HYDRA
   createOpenGLContext();
 #endif
   m_allocGL.init(device, physicalDevice);
-#endif
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -279,16 +277,12 @@ void HelloVulkan::destroyResources()
     m_alloc.destroy(t);
   }
 
-#if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
   m_rtObjectIdGL.destroy(m_allocGL);
   m_rtInstanceIdGL.destroy(m_allocGL);
-#else
-  //#Post处理相关
-  m_allocGL.destroy(m_offscreenColor);
-  m_allocGL.destroy(m_offscreenDepth);
-#endif
   m_allocGL.deinit();
+
+  m_alloc.destroy(m_offscreenDepth);
 
   // #VKRay 光线追踪相关
   m_rtBuilder.destroy();

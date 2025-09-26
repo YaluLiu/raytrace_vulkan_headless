@@ -159,11 +159,7 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
 
 void HelloVulkan::createOutputImage()
 {
-#if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.destroy(m_allocGL);
-#else
-  m_allocGL.destroy(m_offscreenColor);
-#endif
 
   {
     auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenColorFormat,
@@ -177,20 +173,14 @@ void HelloVulkan::createOutputImage()
     m_offscreenColor.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   }
 
-#if ENABLE_GL_VK_CONVERSION
   m_rtOutputGL.imgSize = m_size;
   m_rtOutputGL.texVk   = m_offscreenColor;
   createTextureGL(m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
-#endif
 }
 
 void HelloVulkan::createObjectIdImage()
 {
-#if ENABLE_GL_VK_CONVERSION
   m_rtObjectIdGL.destroy(m_allocGL);
-#else
-  m_allocGL.destroy(m_offscreenObjectId);
-#endif
   {
     auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenObjectIdFormat,
                                                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -202,20 +192,14 @@ void HelloVulkan::createObjectIdImage()
     m_offscreenObjectId                        = m_allocGL.createTexture(image, ivInfo, sampler);
     m_offscreenObjectId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   }
-#if ENABLE_GL_VK_CONVERSION
   m_rtObjectIdGL.imgSize = m_size;
   m_rtObjectIdGL.texVk   = m_offscreenObjectId;
   createTextureGL(m_rtObjectIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
-#endif
 }
 
 void HelloVulkan::createInstanceIdImage()
 {
-#if ENABLE_GL_VK_CONVERSION
   m_rtInstanceIdGL.destroy(m_allocGL);
-#else
-  m_allocGL.destroy(m_offscreenInstanceId);
-#endif
   {
     auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenInstanceIdFormat,
                                                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -227,9 +211,7 @@ void HelloVulkan::createInstanceIdImage()
     m_offscreenInstanceId                        = m_allocGL.createTexture(image, ivInfo, sampler);
     m_offscreenInstanceId.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   }
-#if ENABLE_GL_VK_CONVERSION
   m_rtInstanceIdGL.imgSize = m_size;
   m_rtInstanceIdGL.texVk   = m_offscreenInstanceId;
   createTextureGL(m_rtInstanceIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
-#endif
 }

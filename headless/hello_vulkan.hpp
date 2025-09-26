@@ -19,9 +19,7 @@
 
 #pragma once
 
-#if ENABLE_GL_VK_CONVERSION
 #include "gl_vkpp.hpp"
-#endif
 
 #include "headless_vk.hpp"
 #include "nvvk/debug_util_vk.hpp"
@@ -173,8 +171,7 @@ public:
   void saveOffscreenColorToFile(const char* filename);
 
   //读取cpu的object buffer
-  std::vector<uint32_t> readObjectIdImage();
-#if ENABLE_GL_VK_CONVERSION
+  std::vector<uint32_t>  readObjectIdImage();
   void                   createOutputImage();
   void                   createObjectIdImage();
   void                   createInstanceIdImage();
@@ -185,7 +182,7 @@ public:
 
   interop::ResourceAllocatorGLInterop m_allocGL;
   interop::ResourceAllocatorGLInterop m_allocObjectId;
-#endif
+
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);
   void updateTlasEnd();
   // 动画处理球体对象的顶点，在 C++ 端进行缩放

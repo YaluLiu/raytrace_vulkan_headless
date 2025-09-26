@@ -63,7 +63,7 @@ void RayTraceApp::setupContext()
   contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);
   contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
-#if ENABLE_GL_VK_CONVERSION
+  // for add vulkan->opengl ,memory_fd_extension
   contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
   contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
@@ -80,7 +80,6 @@ void RayTraceApp::setupContext()
 
   contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
-#endif
 
   m_vkctx.initInstance(contextInfo);
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
@@ -142,15 +141,9 @@ void RayTraceApp::render()
 
 void RayTraceApp::saveFrame(std::string outputImagePath)
 {
-#if ENABLE_GL_VK_CONVERSION
   std::string gl_pngname = outputImagePath;
   gl_pngname.replace(gl_pngname.find("/"), 1, "/gl_");
   m_helloVk.dumpInteropTexture(gl_pngname.c_str());
-#else
-  std::string vk_pngname = outputImagePath;
-  vk_pngname.replace(vk_pngname.find("/"), 1, "/vk_");
-  m_helloVk.saveOffscreenColorToFile(vk_pngname.c_str());
-#endif
 }
 
 void RayTraceApp::cleanup()

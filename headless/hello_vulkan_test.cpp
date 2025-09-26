@@ -194,7 +194,6 @@ void HelloVulkan::createCompPipelines()
 }
 
 
-#if ENABLE_GL_VK_CONVERSION
 void HelloVulkan::dumpInteropTexture(const char* filename)
 {
   int width  = m_rtOutputGL.imgSize.width;
@@ -213,7 +212,6 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
   stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
   printf("Saved %s (%ux%u)\n", filename, width, height);
 }
-#endif
 
 // 保存 m_offscreenColor 到本地 PNG 文件
 void HelloVulkan::saveOffscreenColorToFile(const char* filename)
