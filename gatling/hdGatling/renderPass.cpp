@@ -136,12 +136,11 @@ void HdGatlingRenderPass::app_init()
         loader.m_textures.push_back("PatrickStar.jpg");
         init_texture = false;
       }
-      _renderApp.getVulkan().loadModel(loader, cur_mesh.transform * cur_mesh.instanceTransforms[0]);
+      _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
       for(int i = 1; i < cur_mesh.instanceTransforms.size(); i++)
       {
-        instance.transform = cur_mesh.transform * cur_mesh.instanceTransforms[i];
         _renderApp.getVulkan().m_instances.push_back(instance);
         _renderApp.getVulkan().m_instanceIds.push_back(i);
       }
@@ -158,24 +157,6 @@ void HdGatlingRenderPass::app_init()
     _renderApp.resize(_width, _height);
   }
 }
-
-struct Light
-{
-  // common
-  int   type;
-  vec3  baseEmission;  // intensity * color * colorTemp * exposure
-  float diffuseScale;
-  float specularScale;
-  // distant light
-  vec3  direction;
-  float angleScale;
-  // sphere light
-  vec3  position;
-  float radius;
-  int   valid;
-  // todo:it's very important,i'm confused on it now
-  vec2 padding;
-};
 
 void HdGatlingRenderPass::app_updateLight()
 {
@@ -255,9 +236,10 @@ void HdGatlingRenderPass::app_update_tlas()
       cur_mesh.tlas_changed = false;
       for(int ins_id = 0; ins_id < cur_mesh.instanceTransforms.size(); ins_id++)
       {
-        auto tlas_id   = cur_mesh.tlasIds[ins_id];
-        bool flag_show = cur_mesh.visible & cur_mesh.valid;
-        _renderApp.getVulkan().updateTlas(tlas_id, cur_mesh.transform * cur_mesh.instanceTransforms[ins_id], flag_show);
+        auto      tlas_id   = cur_mesh.tlasIds[ins_id];
+        bool      flag_show = cur_mesh.visible & cur_mesh.valid;
+        glm::mat4 cur_trans = glm::transpose(cur_mesh.transform * cur_mesh.instanceTransforms[ins_id]);
+        _renderApp.getVulkan().updateTlas(tlas_id, cur_trans, flag_show);
       }
     }
   }

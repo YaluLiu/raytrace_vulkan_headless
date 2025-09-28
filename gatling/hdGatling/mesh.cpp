@@ -507,7 +507,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       {
         for(int j = 0; j < 4; ++j)
         {
-          _mesh.instanceTransforms[k][i][j] = transformsData[k][i][j];  // 按行复制
+          _mesh.instanceTransforms[k][i][j] = transformsData[k][j][i];  // 按行复制
         }
       }
     }
@@ -521,7 +521,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     {
       for(int j = 0; j < 4; ++j)
       {
-        _mesh.transform[i][j] = transform[i][j];  // 按行复制
+        _mesh.transform[i][j] = transform[j][i];  // 按行复制
       }
     }
     _mesh.tlas_changed = true;
