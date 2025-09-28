@@ -456,19 +456,13 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   {
     _CreateGiMeshes(sceneDelegate);
   }
-  //如果没有对应的mesh数据，不必再干活
-  if(_mesh_id == -1)
-  {
-    return;
-  }
   setValid(true);
 
   auto& _mesh = _scene.v_mesh[_mesh_id];
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)
   {
     _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
-    _mesh.visible = sceneDelegate->GetVisible(id);
-    //visible be updated on tlas-update-function
+    _mesh.visible      = sceneDelegate->GetVisible(id);
     _mesh.tlas_changed = true;
   }
 
@@ -480,8 +474,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     HdInstancer::_SyncInstancerAndParents(renderIndex, instancerId);
 
-    VtMatrix4fArray            transforms;
-    std::vector<GiPrimvarData> instancerPrimvars;
+    VtMatrix4fArray transforms;
 
     if(instancerId.IsEmpty())
     {
@@ -494,7 +487,6 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
       HdGatlingInstancer* instancer      = static_cast<HdGatlingInstancer*>(boxedInstancer);
 
       transforms = instancer->ComputeFlattenedTransforms(id);
-      // instancerPrimvars = instancer->ComputeFlattenedPrimvars(id);
     }
 
     int  num_instances  = uint32_t(transforms.size());

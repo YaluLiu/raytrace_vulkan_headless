@@ -45,7 +45,6 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
   // 更新模型的顶点数量
   model.nbVertices = static_cast<uint32_t>(now_vertices.size());
 
-
   // 定义缓冲区使用标志
   VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
   VkBufferUsageFlags rayTracingFlags =

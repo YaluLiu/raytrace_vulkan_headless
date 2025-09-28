@@ -126,7 +126,6 @@ void HdGatlingRenderPass::app_init()
     {
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
-      // add_default_material(loader);
       auto& materialObj = _scene.v_mat[cur_mesh.material_id];
       loader.m_materials.emplace_back(materialObj);
       loader.m_textures.clear();
