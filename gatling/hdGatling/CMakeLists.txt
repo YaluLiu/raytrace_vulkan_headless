@@ -23,6 +23,8 @@ add_library(
   light.h
   mesh.cpp
   mesh.h
+  points.h 
+  points.cpp
   tokens.cpp
   tokens.h
   utils.cpp

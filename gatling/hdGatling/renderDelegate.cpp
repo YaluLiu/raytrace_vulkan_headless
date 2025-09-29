@@ -21,6 +21,10 @@
 #include "instancer.h"
 
 //gatling or hdstorm
+#include "mesh.h"
+#include "material.h"
+#include "light.h"
+#include "points.h"
 #include "renderBuffer.h"
 //#include "pxr/imaging/hdSt/renderBuffer.h"
 #include "tokens.h"
@@ -43,7 +47,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
+const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh, HdPrimTypeTokens->points};
 
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
@@ -180,7 +184,10 @@ HdRprim* HdGatlingRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPa
   {
     return new HdGatlingMesh(rprimId, _scene);
   }
-
+  else if(typeId == HdPrimTypeTokens->points)
+  {
+    return new HdGatlingPoints(rprimId);
+  }
   return nullptr;
 }
 
