@@ -22,13 +22,6 @@ struct MaterialUpdate
   WaveFrontMaterial newMaterial;
 };
 
-//--------------------------------------------------------------------------------------------------
-// Simple rasterizer of OBJ objects
-// - Each OBJ loaded are stored in an `ObjModel` and referenced by a `ObjInstance`
-// - It is possible to have many `ObjInstance` referencing the same `ObjModel`
-// - Rendering is done in an offscreen framebuffer
-// - The image of the framebuffer is displayed in post-process in a full-screen quad
-//
 class HelloVulkan : public nvvkhl::AppOffline
 {
 public:

@@ -12,62 +12,9 @@
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 
-
-extern std::vector<std::string> defaultSearchPaths;
-
-//--------------------------------------------------------------------------------------------------
-// update blas & tlas
-//--------------------------------------------------------------------------------------------------
-void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible)
-{
-  VkAccelerationStructureInstanceKHR& tinst = m_tlas[mesh_Id];
-  tinst.mask                                = visible ? 0xFF : 0x00;
-  tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
-}
-
-void HelloVulkan::updateTlasEnd()
-{
-  // Updating the top level acceleration structure
-  m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
-}
-
-// 动画处理球体对象的顶点，在 C++ 端进行缩放
-void HelloVulkan::updateBlas(uint32_t mesh_Id)
-{
-  //更新了loader的对应顶点数据
-  std::vector<VertexObj>& now_vertices = m_Loader[mesh_Id].m_vertices;
-  ObjModel&               model        = m_objModel[mesh_Id];
-
-  // 创建命令池和命令缓冲区
-  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-  VkCommandBuffer   cmdBuf = genCmdBuf.createCommandBuffer();
-
-  // 更新模型的顶点数量
-  model.nbVertices = static_cast<uint32_t>(now_vertices.size());
-
-  // 定义缓冲区使用标志
-  VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-  VkBufferUsageFlags rayTracingFlags =
-      flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-  // 销毁旧的顶点缓冲区，防止内存泄漏
-  m_alloc.destroy(model.vertexBuffer);
-
-  // 创建新的顶点缓冲区并上传修改后的顶点数据
-  model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
-
-  // 提交命令缓冲区并等待执行完成
-  genCmdBuf.submitAndWait(cmdBuf);
-
-  // 更新底层加速结构（BLAS），使用新的顶点缓冲区
-  m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
-                         VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
-}
-
 //--------------------------------------------------------------------------------------------------
 // update material
 //--------------------------------------------------------------------------------------------------
-// 在渲染循环中修改材质
 void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial)
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
@@ -213,4 +160,56 @@ void HelloVulkan::createInstanceIdImage()
   m_rtInstanceIdGL.imgSize = m_size;
   m_rtInstanceIdGL.texVk   = m_offscreenInstanceId;
   createTextureGL(m_rtInstanceIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+//--------------------------------------------------------------------------------------------------
+// 灯光管理函数
+//
+void HelloVulkan::addLight(const Light& light)
+{
+  m_lights.push_back(light);
+}
+
+void HelloVulkan::clearLights()
+{
+  m_lights.clear();
+}
+
+void HelloVulkan::createLightBuffer()
+{
+  // 创建灯光缓冲区（初始支持100个灯光）
+  size_t maxLights  = 100;
+  size_t bufferSize = sizeof(Light) * maxLights;
+
+  m_bLights = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  m_debug.setObjectName(m_bLights.buffer, "Lights");
+}
+
+void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
+{
+  if(!m_lights.empty())
+  {
+    vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, sizeof(Light) * m_lights.size(), m_lights.data());
+  }
+}
+
+void HelloVulkan::createInstanceIdBuffer()
+{
+  size_t maxInstances = std::max(size_t(1000), m_instanceIds.size() * 2);  // 预留空间
+  size_t bufferSize   = sizeof(int) * maxInstances;
+
+  m_bInstanceIds = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  m_debug.setObjectName(m_bInstanceIds.buffer, "InstanceIds");
+}
+
+void HelloVulkan::updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf)
+{
+  if(!m_instanceIds.empty())
+  {
+    vkCmdUpdateBuffer(cmdBuf, m_bInstanceIds.buffer, 0, sizeof(int) * m_instanceIds.size(), m_instanceIds.data());
+  }
 }
