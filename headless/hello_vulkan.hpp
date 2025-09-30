@@ -191,6 +191,7 @@ public:
   nvvk::Buffer        m_spheresMatIndexBuffer;  // Define which sphere uses which material
 
   void createSpheres(uint32_t nbSpheres);
+  void addSpheres(std::vector<Sphere> vector);
   auto sphereToVkGeometryKHR();
   void createRtShaderBindingTable();
 };

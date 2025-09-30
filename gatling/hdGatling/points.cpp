@@ -118,7 +118,8 @@ void HdGatlingPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBit
   // 打印点数据
   if(*dirtyBits & HdChangeTracker::DirtyPoints)
   {
-    _PrintPointsDetailed();
+    _UpdateRenderScene();
+    // _PrintPointsDetailed();
   }
 }
 
@@ -140,8 +141,13 @@ void HdGatlingPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyB
 
 void HdGatlingPoints::_UpdateRenderScene() const
 {
-  for(size_t i = 0; i < _points.size(); ++i)
+  int points_size = _points.size();
+  _scene.v_sphere.resize(points_size);
+  for(size_t i = 0; i < points_size; ++i)
   {
+    const GfVec3f& point      = _points[i];
+    _scene.v_sphere[i].center = glm::vec3(point[0], point[1], point[2]);
+    _scene.v_sphere[i].radius = _widths[i];
   }
 }
 

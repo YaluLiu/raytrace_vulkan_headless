@@ -173,6 +173,93 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
 //--------------------------------------------------------------------------------------------------
 // Creating all spheres
 //
+
+void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
+{
+  // All spheres
+  uint32_t nbSpheres = v_sphere.size();
+  m_spheres.resize(nbSpheres);
+
+  for(uint32_t i = 0; i < nbSpheres; i++)
+  {
+    Sphere s;
+    s.center     = v_sphere[i].center;
+    s.radius     = v_sphere[i].radius;
+    m_spheres[i] = std::move(s);
+  }
+
+  // std::random_device                    rd{};
+  // std::mt19937                          gen{rd()};
+  // std::normal_distribution<float>       xzd{0.f, 5.f};
+  // std::normal_distribution<float>       yd{6.f, 3.f};
+  // std::uniform_real_distribution<float> radd{.05f, .2f};
+
+  // for(uint32_t i = 0; i < nbSpheres; i++)
+  // {
+  //   Sphere s;
+  //   s.center     = glm::vec3(xzd(gen), yd(gen), xzd(gen));
+  //   s.radius     = radd(gen);
+  //   m_spheres[i] = std::move(s);
+  // }
+
+  // Axis aligned bounding box of each sphere
+  std::vector<Aabb> aabbs;
+  aabbs.reserve(nbSpheres);
+  for(const auto& s : m_spheres)
+  {
+    Aabb aabb;
+    aabb.minimum = s.center - glm::vec3(s.radius);
+    aabb.maximum = s.center + glm::vec3(s.radius);
+    aabbs.emplace_back(aabb);
+  }
+
+  // Creating two materials
+  MaterialObj mat;
+  mat.diffuse = glm::vec3(0, 1, 1);
+  std::vector<MaterialObj> materials;
+  std::vector<int>         matIdx(nbSpheres);
+  materials.emplace_back(mat);
+  mat.diffuse = glm::vec3(1, 1, 0);
+  materials.emplace_back(mat);
+
+  // Assign a material to each sphere
+  for(size_t i = 0; i < m_spheres.size(); i++)
+  {
+    matIdx[i] = i % 2;
+  }
+
+  // Creating all buffers
+  using vkBU = VkBufferUsageFlagBits;
+  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
+  auto              cmdBuf = genCmdBuf.createCommandBuffer();
+  m_spheresBuffer          = m_alloc.createBuffer(cmdBuf, m_spheres, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+  m_spheresAabbBuffer      = m_alloc.createBuffer(cmdBuf, aabbs,
+                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                                                      | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
+  m_spheresMatIndexBuffer =
+      m_alloc.createBuffer(cmdBuf, matIdx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+  m_spheresMatColorBuffer =
+      m_alloc.createBuffer(cmdBuf, materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+  genCmdBuf.submitAndWait(cmdBuf);
+
+  // Debug information
+  m_debug.setObjectName(m_spheresBuffer.buffer, "spheres");
+  m_debug.setObjectName(m_spheresAabbBuffer.buffer, "spheresAabb");
+  m_debug.setObjectName(m_spheresMatColorBuffer.buffer, "spheresMat");
+  m_debug.setObjectName(m_spheresMatIndexBuffer.buffer, "spheresMatIdx");
+
+
+  // Adding an extra instance to get access to the material buffers
+  ObjDesc objDesc{};
+  objDesc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, m_spheresMatColorBuffer.buffer);
+  objDesc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, m_spheresMatIndexBuffer.buffer);
+  m_objDesc.emplace_back(objDesc);
+
+  ObjInstance instance{};
+  instance.objIndex = static_cast<uint32_t>(m_objModel.size());
+  m_instances.emplace_back(instance);
+}
+
 void HelloVulkan::createSpheres(uint32_t nbSpheres)
 {
   std::random_device                    rd{};

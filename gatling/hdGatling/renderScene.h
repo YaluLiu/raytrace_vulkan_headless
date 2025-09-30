@@ -50,6 +50,7 @@ struct HdGatlingScene
   std::vector<_VertexStreams> v_mesh;
   std::vector<MaterialObj>    v_mat;  //对应的材质
   std::vector<Light>          v_light;
+  std::vector<Sphere>         v_sphere;
 };
 
 

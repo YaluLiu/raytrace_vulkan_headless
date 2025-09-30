@@ -149,6 +149,7 @@ void HdGatlingRenderPass::app_init()
       }
     }
 #endif
+    _renderApp.getVulkan().addSpheres(_scene.v_sphere);
     _renderApp.createBVH();
   }
   else if(_reset_renderbuffer)

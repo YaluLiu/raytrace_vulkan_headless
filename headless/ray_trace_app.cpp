@@ -100,8 +100,6 @@ void RayTraceApp::setupHelloVulkan()
 
 void RayTraceApp::createBVH()
 {
-  m_helloVk.createSpheres(1000);
-
   m_helloVk.createOffscreenRender();
   m_helloVk.createLightBuffer();
   m_helloVk.createInstanceIdBuffer();
