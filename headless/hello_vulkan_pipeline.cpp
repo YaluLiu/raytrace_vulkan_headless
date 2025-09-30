@@ -68,29 +68,39 @@ void HelloVulkan::createRtPipeline()
     eMiss,
     eMiss2,
     eClosestHit,
+    eClosestHit2,
+    eIntersection,
     eShaderGroupCount
   };
 
   std::array<VkPipelineShaderStageCreateInfo, eShaderGroupCount> stages{};
   VkPipelineShaderStageCreateInfo stage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
   stage.pName = "main";  // 所有shader入口均为main
-
+                         // Raygen
   stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytrace.rgen.spv", true, defaultSearchPaths, true));
   stage.stage     = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
   stages[eRaygen] = stage;
-
+  // Miss
   stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytrace.rmiss.spv", true, defaultSearchPaths, true));
   stage.stage   = VK_SHADER_STAGE_MISS_BIT_KHR;
   stages[eMiss] = stage;
-
+  // The second miss shader is invoked when a shadow ray misses the geometry. It simply indicates that no occlusion has been found
   stage.module =
       nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytraceShadow.rmiss.spv", true, defaultSearchPaths, true));
   stage.stage    = VK_SHADER_STAGE_MISS_BIT_KHR;
   stages[eMiss2] = stage;
-
+  // Hit Group - Closest Hit
   stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytrace.rchit.spv", true, defaultSearchPaths, true));
   stage.stage         = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
   stages[eClosestHit] = stage;
+  // Closest hit
+  stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytrace2.rchit.spv", true, defaultSearchPaths, true));
+  stage.stage          = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+  stages[eClosestHit2] = stage;
+  // Intersection
+  stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytrace.rint.spv", true, defaultSearchPaths, true));
+  stage.stage           = VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+  stages[eIntersection] = stage;
 
   VkRayTracingShaderGroupCreateInfoKHR group{VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
   group.anyHitShader       = VK_SHADER_UNUSED_KHR;
@@ -110,11 +120,17 @@ void HelloVulkan::createRtPipeline()
   group.generalShader = eMiss2;
   m_rtShaderGroups.push_back(group);
 
+  // closest hit shader
   group.type             = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
   group.generalShader    = VK_SHADER_UNUSED_KHR;
   group.closestHitShader = eClosestHit;
   m_rtShaderGroups.push_back(group);
 
+  // closest hit shader + Intersection
+  group.type               = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
+  group.closestHitShader   = eClosestHit2;
+  group.intersectionShader = eIntersection;
+  m_rtShaderGroups.push_back(group);
 
   VkPushConstantRange pushConstant{VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR,
                                    0, sizeof(PushConstantRay)};
@@ -148,6 +164,74 @@ void HelloVulkan::createRtPipeline()
     vkDestroyShaderModule(m_device, s.module, nullptr);
 }
 
+
+void HelloVulkan::createRtShaderBindingTable()
+{
+  uint32_t missCount{2};
+  uint32_t hitCount{2};
+  auto     handleCount = 1 + missCount + hitCount;
+  uint32_t handleSize  = m_rtProperties.shaderGroupHandleSize;
+
+  // The SBT (buffer) need to have starting groups to be aligned and handles in the group to be aligned.
+  uint32_t handleSizeAligned = nvh::align_up(handleSize, m_rtProperties.shaderGroupHandleAlignment);
+
+  m_rgenRegion.stride = nvh::align_up(handleSizeAligned, m_rtProperties.shaderGroupBaseAlignment);
+  m_rgenRegion.size = m_rgenRegion.stride;  // The size member of pRayGenShaderBindingTable must be equal to its stride member
+  m_missRegion.stride = handleSizeAligned;
+  m_missRegion.size   = nvh::align_up(missCount * handleSizeAligned, m_rtProperties.shaderGroupBaseAlignment);
+  m_hitRegion.stride  = handleSizeAligned;
+  m_hitRegion.size    = nvh::align_up(hitCount * handleSizeAligned, m_rtProperties.shaderGroupBaseAlignment);
+
+  // Get the shader group handles
+  uint32_t             dataSize = handleCount * handleSize;
+  std::vector<uint8_t> handles(dataSize);
+  auto result = vkGetRayTracingShaderGroupHandlesKHR(m_device, m_rtPipeline, 0, handleCount, dataSize, handles.data());
+  assert(result == VK_SUCCESS);
+
+  // Allocate a buffer for storing the SBT.
+  VkDeviceSize sbtSize = m_rgenRegion.size + m_missRegion.size + m_hitRegion.size + m_callRegion.size;
+  m_rtSBTBuffer        = m_alloc.createBuffer(sbtSize,
+                                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                                                  | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  m_debug.setObjectName(m_rtSBTBuffer.buffer, std::string("SBT"));  // Give it a debug name for NSight.
+
+  // Find the SBT addresses of each group
+  VkBufferDeviceAddressInfo info{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr, m_rtSBTBuffer.buffer};
+  VkDeviceAddress           sbtAddress = vkGetBufferDeviceAddress(m_device, &info);
+  m_rgenRegion.deviceAddress           = sbtAddress;
+  m_missRegion.deviceAddress           = sbtAddress + m_rgenRegion.size;
+  m_hitRegion.deviceAddress            = sbtAddress + m_rgenRegion.size + m_missRegion.size;
+
+  // Helper to retrieve the handle data
+  auto getHandle = [&](int i) { return handles.data() + i * handleSize; };
+
+  // Map the SBT buffer and write in the handles.
+  auto*    pSBTBuffer = reinterpret_cast<uint8_t*>(m_alloc.map(m_rtSBTBuffer));
+  uint8_t* pData{nullptr};
+  uint32_t handleIdx{0};
+  // Raygen
+  pData = pSBTBuffer;
+  memcpy(pData, getHandle(handleIdx++), handleSize);
+  // Miss
+  pData = pSBTBuffer + m_rgenRegion.size;
+  for(uint32_t c = 0; c < missCount; c++)
+  {
+    memcpy(pData, getHandle(handleIdx++), handleSize);
+    pData += m_missRegion.stride;
+  }
+  // Hit
+  pData = pSBTBuffer + m_rgenRegion.size + m_missRegion.size;
+  for(uint32_t c = 0; c < hitCount; c++)
+  {
+    memcpy(pData, getHandle(handleIdx++), handleSize);
+    pData += m_hitRegion.stride;
+  }
+
+  m_alloc.unmap(m_rtSBTBuffer);
+  m_alloc.finalizeAndReleaseStaging();
+}
+
 void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 {
   m_debug.beginLabel(cmdBuf, "Ray trace");
@@ -179,14 +263,15 @@ void HelloVulkan::createDescriptorSetLayout()
   m_descSetLayoutBind.addBinding(SceneBindings::eLights, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
                                  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
   m_descSetLayoutBind.addBinding(SceneBindings::eInstanceIds, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+  // Implicit geometries
+  m_descSetLayoutBind.addBinding(SceneBindings::eImplicit, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                                 VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
 
   m_descSetLayout = m_descSetLayoutBind.createLayout(m_device);
   m_descPool      = m_descSetLayoutBind.createPool(m_device, 1);
   m_descSet       = nvvk::allocateDescriptorSet(m_device, m_descPool, m_descSetLayout);
 }
 
-//--------------------------------------------------------------------------------------------------
-// 用实际的buffer/image填充描述符集
 void HelloVulkan::updateDescriptorSet()
 {
   std::vector<VkWriteDescriptorSet> writes;
@@ -209,6 +294,9 @@ void HelloVulkan::updateDescriptorSet()
 
   VkDescriptorBufferInfo dbiInstanceIds{m_bInstanceIds.buffer, 0, VK_WHOLE_SIZE};
   writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, SceneBindings::eInstanceIds, &dbiInstanceIds));
+
+  VkDescriptorBufferInfo dbiSpheres{m_spheresBuffer.buffer, 0, VK_WHOLE_SIZE};
+  writes.emplace_back(m_descSetLayoutBind.makeWrite(m_descSet, eImplicit, &dbiSpheres));
 
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }

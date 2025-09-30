@@ -100,6 +100,8 @@ void RayTraceApp::setupHelloVulkan()
 
 void RayTraceApp::createBVH()
 {
+  m_helloVk.createSpheres(1000);
+
   m_helloVk.createOffscreenRender();
   m_helloVk.createLightBuffer();
   m_helloVk.createInstanceIdBuffer();
@@ -115,6 +117,7 @@ void RayTraceApp::createBVH()
   m_helloVk.createTopLevelAS();
   m_helloVk.createRtDescriptorSet();
   m_helloVk.createRtPipeline();
+  m_helloVk.createRtShaderBindingTable();
 
   // 计算着色器相关
   m_helloVk.createCompDescriptors();

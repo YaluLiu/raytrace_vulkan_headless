@@ -298,6 +298,11 @@ void HelloVulkan::destroyResources()
   vkDestroyDescriptorPool(m_device, m_compDescPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_compDescSetLayout, nullptr);
 
+  m_alloc.destroy(m_spheresBuffer);
+  m_alloc.destroy(m_spheresAabbBuffer);
+  m_alloc.destroy(m_spheresMatColorBuffer);
+  m_alloc.destroy(m_spheresMatIndexBuffer);
+
   m_alloc.deinit();
 }
 

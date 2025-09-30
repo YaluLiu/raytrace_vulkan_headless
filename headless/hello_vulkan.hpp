@@ -92,7 +92,14 @@ public:
   std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_rtShaderGroups;
   VkPipelineLayout                                  m_rtPipelineLayout;
   VkPipeline                                        m_rtPipeline;
-  nvvk::SBTWrapper                                  m_sbtWrapper;
+
+  //for sbt
+  nvvk::SBTWrapper                m_sbtWrapper;
+  nvvk::Buffer                    m_rtSBTBuffer;
+  VkStridedDeviceAddressRegionKHR m_rgenRegion{};
+  VkStridedDeviceAddressRegionKHR m_missRegion{};
+  VkStridedDeviceAddressRegionKHR m_hitRegion{};
+  VkStridedDeviceAddressRegionKHR m_callRegion{};
 
   std::vector<VkAccelerationStructureInstanceKHR>    m_tlas;
   std::vector<nvvk::RaytracingBuilderKHR::BlasInput> m_blas;
@@ -101,7 +108,7 @@ public:
   PushConstantRay m_pcRay{
       {1, 1, 1, 1.00f},  // clear color
       {5.f, 10.f, 5.f},  // light position
-      100.f,             // light intensity
+      1000.f,            // light intensity
       0                  // light type
   };
 
@@ -175,4 +182,15 @@ public:
   void updateLightBuffer(const VkCommandBuffer& cmdBuf);
   void createInstanceIdBuffer();
   void updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf);
+
+  // for sphere cloud
+  std::vector<Sphere> m_spheres;                // All spheres
+  nvvk::Buffer        m_spheresBuffer;          // Buffer holding the spheres
+  nvvk::Buffer        m_spheresAabbBuffer;      // Buffer of all Aabb
+  nvvk::Buffer        m_spheresMatColorBuffer;  // Multiple materials
+  nvvk::Buffer        m_spheresMatIndexBuffer;  // Define which sphere uses which material
+
+  void createSpheres(uint32_t nbSpheres);
+  auto sphereToVkGeometryKHR();
+  void createRtShaderBindingTable();
 };

@@ -25,7 +25,8 @@ START_BINDING(SceneBindings)
   eObjDescs    = 1,  // Access to the object descriptions
   eTextures    = 2,  // Access to textures
   eLights      = 3,  // 灯光缓冲区
-  eInstanceIds = 4   // 新增：实例ID缓冲区
+  eInstanceIds = 4,   // 新增：实例ID缓冲区
+  eImplicit    = 5
 END_BINDING();
 
 
@@ -108,5 +109,21 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be compre
   int   illum;     // illumination model (see http://www.fileformat.info/format/material/)
   int   textureId;
 };
+
+struct Sphere
+{
+  vec3  center;
+  float radius;
+};
+
+struct Aabb
+{
+  vec3 minimum;
+  vec3 maximum;
+};
+
+#define KIND_SPHERE 0
+#define KIND_CUBE 1
+
 
 #endif
