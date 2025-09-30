@@ -8,8 +8,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdGatlingPoints::HdGatlingPoints(SdfPath const& id)
+HdGatlingPoints::HdGatlingPoints(const SdfPath& id, HdGatlingScene& scene)
     : HdPoints(id)
+    , _scene(scene)
     , _visible(true)
 {
 }
@@ -117,7 +118,7 @@ void HdGatlingPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBit
   // 打印点数据
   if(*dirtyBits & HdChangeTracker::DirtyPoints)
   {
-    _PrintPointsSummary();
+    _PrintPointsDetailed();
   }
 }
 
@@ -135,6 +136,13 @@ void HdGatlingPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyB
   _visible          = sceneDelegate->GetVisible(id);
 
   std::cout << "Visibility updated: " << (_visible ? "visible" : "hidden") << std::endl;
+}
+
+void HdGatlingPoints::_UpdateRenderScene() const
+{
+  for(size_t i = 0; i < _points.size(); ++i)
+  {
+  }
 }
 
 // 打印函数实现
@@ -159,7 +167,7 @@ void HdGatlingPoints::_PrintPointsDetailed() const
   std::cout << "Colors count: " << _colors.size() << std::endl;
   std::cout << std::fixed << std::setprecision(3);
 
-  for(size_t i = 0; i < _points.size(); ++i)
+  for(size_t i = 0; i < 20; ++i)
   {
     const GfVec3f& point = _points[i];
 

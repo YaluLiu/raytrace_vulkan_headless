@@ -186,7 +186,7 @@ HdRprim* HdGatlingRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPa
   }
   else if(typeId == HdPrimTypeTokens->points)
   {
-    return new HdGatlingPoints(rprimId);
+    return new HdGatlingPoints(rprimId, _scene);
   }
   return nullptr;
 }

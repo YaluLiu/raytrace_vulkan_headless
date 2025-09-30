@@ -6,13 +6,14 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/vt/array.h"
+#include "renderScene.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdGatlingPoints final : public HdPoints
 {
 public:
-  HdGatlingPoints(SdfPath const& id);
+  HdGatlingPoints(const SdfPath& id, HdGatlingScene& _scene);
   virtual ~HdGatlingPoints();
 
   // 同步数据从场景图到渲染器
@@ -20,6 +21,8 @@ public:
 
   // 获取初始脏位
   virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
+  void _UpdateRenderScene() const;
 
 protected:
   // 更新表示
@@ -53,6 +56,8 @@ private:
   void _PrintPoints() const;
   void _PrintPointsDetailed() const;
   void _PrintPointsSummary() const;
+
+  HdGatlingScene& _scene;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
