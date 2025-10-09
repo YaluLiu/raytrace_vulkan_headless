@@ -329,29 +329,6 @@ VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
 #include <vector>
 #include <cstdint>
 
-HgiTextureHandle CreateHgiTextureHandle(GLuint textureId, int unique_id, const HgiTextureDesc& desc)
-{
-  HgiGLTexture* texture = HgiGLTexture::CreateTextureFromId(textureId, desc);
-  if(!texture)
-  {
-    TF_CODING_ERROR("Failed to create HgiGLTexture");
-    return HgiTextureHandle();
-  }
-  return HgiTextureHandle(texture, unique_id);
-}
-
-void HdGatlingRenderBuffer::MakeHgiTexture(GLuint textureId, int unique_id)
-{
-#if 0
-  glBindTexture(GL_TEXTURE_2D, textureId);
-  std::vector<float> pixels(_width * _height * 4);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-  _texture = _GetHgi()->CreateTexture(_texDesc);
-#else
-  _texture = CreateHgiTextureHandle(textureId, unique_id, _texDesc);
-#endif
-}
-
 void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
 {
   glBindTexture(GL_TEXTURE_2D, textureId);

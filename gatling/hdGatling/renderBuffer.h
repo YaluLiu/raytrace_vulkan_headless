@@ -70,7 +70,6 @@ public:
   void read_object_texture(GLuint textureId);
   void print();
   void ConvertToHgiTexture();
-  void MakeHgiTexture(GLuint textureId, int unique_id);
 
 
   Hgi*  _GetHgi();
