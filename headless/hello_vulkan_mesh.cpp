@@ -178,6 +178,10 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
 {
   // All spheres
   uint32_t nbSpheres = v_sphere.size();
+  if(nbSpheres == 0)
+  {
+    return;
+  }
   m_spheres.resize(nbSpheres);
 
   for(uint32_t i = 0; i < nbSpheres; i++)
