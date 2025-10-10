@@ -121,7 +121,6 @@ void HdGatlingRenderPass::app_init()
 #if USE_BASE_RENDER
     _renderApp.loadScene();
 #else
-    bool init_texture = true;
     for(auto& cur_mesh : _scene.v_mesh)
     {
       ModelLoader loader;
@@ -129,12 +128,8 @@ void HdGatlingRenderPass::app_init()
       auto& materialObj = _scene.v_mat[cur_mesh.material_id];
       loader.m_materials.emplace_back(materialObj);
       loader.m_textures.clear();
-      if(init_texture)
-      {
-        loader.m_textures.push_back("aMedKitm_albedo.jpg");
-        loader.m_textures.push_back("PatrickStar.jpg");
-        init_texture = false;
-      }
+      //   loader.m_textures.push_back("aMedKitm_albedo.jpg");
+      //   loader.m_textures.push_back("PatrickStar.jpg");
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;

@@ -42,16 +42,51 @@ void RayTraceApp::setupCamera()
 
 void RayTraceApp::UpdateCamera() {}
 
+std::string getEnvironmentVariable(const std::string& varName)
+{
+  const char* env_value = std::getenv(varName.c_str());
+  if(env_value != nullptr)
+  {
+    return std::string(env_value);
+  }
+  return "";  // 返回空字符串表示未找到
+}
+
+std::string extractUSDPath(const std::string& pathString)
+{
+  std::stringstream ss(pathString);
+  std::string       path;
+
+  // 按冒号分割PATH
+  while(std::getline(ss, path, ':'))
+  {
+    if(!path.empty() && path.find("USD/bin") != std::string::npos)
+    {
+      // 找到USD路径，替换bin为plugin/usd
+      size_t binPos = path.find("/bin");
+      if(binPos != std::string::npos)
+      {
+        return path.substr(0, binPos) + "/plugin/usd";
+      }
+    }
+  }
+
+  return "";  // 未找到
+}
+
 #include <filesystem>
 namespace fs = std::filesystem;
 void RayTraceApp::setupContext()
 {
   NVPSystem   system("raytrace_vulkan_headless");
   std::string currentDir = fs::current_path().string();
+  std::string value_path = getEnvironmentVariable("PATH");
+  std::string usd_path   = extractUSDPath(value_path);
   defaultSearchPaths     = {
       NVPSystem::exePath() + PROJECT_RELDIRECTORY,
       NVPSystem::exePath() + PROJECT_RELDIRECTORY "/..",
       currentDir + "/headless",
+      usd_path + "/hdRobot",
   };
 
   nvvk::ContextCreateInfo contextInfo;

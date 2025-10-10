@@ -75,8 +75,8 @@ void HelloVulkan::createRtPipeline()
 
   std::array<VkPipelineShaderStageCreateInfo, eShaderGroupCount> stages{};
   VkPipelineShaderStageCreateInfo stage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-  stage.pName = "main";  // 所有shader入口均为main
-                         // Raygen
+  stage.pName = "main";
+  // Raygen
   stage.module = nvvk::createShaderModule(m_device, nvh::loadFile("spv/raytrace.rgen.spv", true, defaultSearchPaths, true));
   stage.stage     = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
   stages[eRaygen] = stage;
