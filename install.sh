@@ -36,6 +36,7 @@ function anim() {
 function gatling(){
     set -e
     usd_path="/home/${USER}/software/USD"
+    plugin_name="hdRobot"
     cd build
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -43,8 +44,8 @@ function gatling(){
         -DENABLE_HYDRA=ON \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
     
-    cmake --build . --target hdGatling --config Release -j20
-    cmake --install . --component hdGatling
+    cmake --build . --target ${plugin_name} --config Release -j20
+    cmake --install . --component ${plugin_name}
     cd ..
     /home/yalu/software/usdtweak/build/usdtweak
 }

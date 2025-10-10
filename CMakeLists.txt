@@ -58,7 +58,7 @@ message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 # Sub examples
 add_subdirectory(headless)
 add_subdirectory(demo)
-add_subdirectory(gatling)
+add_subdirectory(hdRobot)
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory
 install(DIRECTORY "media" 

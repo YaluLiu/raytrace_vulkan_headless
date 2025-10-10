@@ -1,4 +1,4 @@
-set(PROJNAME hdGatling)
+set(PROJNAME hdRobot)
 
 
 add_library(
@@ -90,7 +90,7 @@ endif()
 
 set(PLUGINFO_PATH "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json")
 set(PLUG_INFO_LIBRARY_PATH "${PLUGINFO_LIBPATH_PREFIX}/${PROJNAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-configure_file(plugInfo.json.in "${PLUGINFO_PATH}" @ONLY)
+configure_file(plugInfo.json "${PLUGINFO_PATH}" @ONLY)
 
 
 

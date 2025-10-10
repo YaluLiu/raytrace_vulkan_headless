@@ -23,12 +23,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingRendererPlugin final : public HdRendererPlugin
+class HdRobotRendererPlugin final : public HdRendererPlugin
 {
 public:
-  HdGatlingRendererPlugin();
+  HdRobotRendererPlugin();
 
-  ~HdGatlingRendererPlugin() override;
+  ~HdRobotRendererPlugin() override;
 
 public:
   HdRenderDelegate* CreateRenderDelegate() override;

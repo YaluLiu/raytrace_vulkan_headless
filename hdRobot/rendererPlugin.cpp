@@ -35,21 +35,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-  HdRendererPluginRegistry::Define<HdGatlingRendererPlugin>();
+  HdRendererPluginRegistry::Define<HdRobotRendererPlugin>();
 }
 
-HdGatlingRendererPlugin::HdGatlingRendererPlugin() {}
+HdRobotRendererPlugin::HdRobotRendererPlugin() {}
 
-HdGatlingRendererPlugin::~HdGatlingRendererPlugin() {}
+HdRobotRendererPlugin::~HdRobotRendererPlugin() {}
 
-HdRenderDelegate* HdGatlingRendererPlugin::CreateRenderDelegate()
+HdRenderDelegate* HdRobotRendererPlugin::CreateRenderDelegate()
 {
   HdRenderSettingsMap settingsMap;
 
   return CreateRenderDelegate(settingsMap);
 }
 
-HdRenderDelegate* HdGatlingRendererPlugin::CreateRenderDelegate(const HdRenderSettingsMap& settingsMap)
+HdRenderDelegate* HdRobotRendererPlugin::CreateRenderDelegate(const HdRenderSettingsMap& settingsMap)
 {
   PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
 
@@ -58,15 +58,15 @@ HdRenderDelegate* HdGatlingRendererPlugin::CreateRenderDelegate(const HdRenderSe
   return new HdGatlingRenderDelegate(settingsMap, resourcePath);
 }
 
-void HdGatlingRendererPlugin::DeleteRenderDelegate(HdRenderDelegate* renderDelegate)
+void HdRobotRendererPlugin::DeleteRenderDelegate(HdRenderDelegate* renderDelegate)
 {
   delete renderDelegate;
 }
 
 #if PXR_VERSION >= 2302
-bool HdGatlingRendererPlugin::IsSupported(bool gpuEnabled) const
+bool HdRobotRendererPlugin::IsSupported(bool gpuEnabled) const
 #else
-bool HdGatlingRendererPlugin::IsSupported() const
+bool HdRobotRendererPlugin::IsSupported() const
 #endif
 {
   // Note: we just assume that the renderer is supported on the system here because usdview
