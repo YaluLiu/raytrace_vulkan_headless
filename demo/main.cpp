@@ -36,13 +36,13 @@ public:
 
     for(int i = 0; i < 10; i++)
     {
-      // 测试窗口resize
-      if(i % 3 == 0)
-      {
-        width  = static_cast<int>(width * 1.1);
-        height = static_cast<int>(height * 1.1);
-      }
-      m_app.resize(width, height);
+      // // 测试窗口resize
+      // if(i % 3 == 0)
+      // {
+      //   width  = static_cast<int>(width * 1.1);
+      //   height = static_cast<int>(height * 1.1);
+      // }
+      // m_app.resize(width, height);
 
       if(!m_testOnUsd)
       {
@@ -61,12 +61,12 @@ public:
 
   void updatecamera()
   {
-    float     radius = 10.0f;  // 距离目标点的半径，可根据需要调整
+    float     radius = 5.0f;  // 距离目标点的半径，可根据需要调整
     glm::vec3 ctr    = CameraManip.getCenter();
     glm::vec3 up     = CameraManip.getUp();
 
     // 每次调用让角度递增
-    m_yaw += 0.2f;  // 控制转动速度
+    m_yaw += 0.4f;  // 控制转动速度
 
     // 假设 up 是 (0, 1, 0)，在水平面围绕 ctr 旋转
     float x = ctr.x + radius * cos(m_yaw);
@@ -135,9 +135,9 @@ private:
                                                 * glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.5f, 1.0f)));
 
     // 平面,只有obj的平面
-    ObjLoader planeLoader;
-    planeLoader.loadModel("media/scenes/plane.obj");
-    m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
+    // ObjLoader planeLoader;
+    // planeLoader.loadModel("media/scenes/plane.obj");
+    // m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
 
     m_app.createBVH();
   }
@@ -159,12 +159,12 @@ private:
   bool                                  m_testOnUsd;
   std::chrono::system_clock::time_point m_startTime;
   RayTraceApp                           m_app;
-  float                                 m_yaw = 0.0f;  // 在文件顶部或类成员变量中定义
+  float                                 m_yaw = 0.0f;
 };
 
 int main()
 {
-  RayTraceAppTest test(/*useUsd=*/true);  // 或 false
+  RayTraceAppTest test(/*useUsd=*/true);
   test.run();
   return 0;
 }

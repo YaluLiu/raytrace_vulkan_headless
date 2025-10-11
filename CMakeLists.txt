@@ -42,7 +42,6 @@ _add_nvpro_core_lib()
 message(STATUS "COPY ${CMAKE_CURRENT_SOURCE_DIR}/media  to  ${OUTPUT_PATH}")
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 
-
 #--------------------------------------------------------------------------------------------------
 # compile option
 # convert vulkan to opengl for hydra plugin
@@ -54,6 +53,8 @@ set(ENABLE_HYDRA ${ENABLE_HYDRA} CACHE BOOL "Enable OpenUsd hydra plugins")
 
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 #--------------------------------------------------------------------------------------------------
+# disable warning
+add_compile_options(-Wno-deprecated)
 #--------------------------------------------------------------------------------------------------
 # Sub examples
 add_subdirectory(headless)
