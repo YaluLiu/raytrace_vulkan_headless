@@ -317,3 +317,96 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   vkDestroyBuffer(device, stagingBuffer, nullptr);
   printf("Saved %s (%ux%u)\n", filename, w, h);
 }
+
+// 读取 m_offscreenColor 到 vector
+std::vector<float> HelloVulkan::readOffscreenColorToVector()
+{
+  VkDevice device = m_device;
+  VkQueue  queue  = m_queue;
+
+  // 1. 获取 image 信息
+  VkExtent2D extent    = m_size;
+  VkImage    srcImage  = m_offscreenColor.image;
+  uint32_t   w         = extent.width;
+  uint32_t   h         = extent.height;
+  size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT
+
+  // 2. 创建主机可见buffer
+  VkDeviceSize imageSize = w * h * pixelSize;
+
+  VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+  bufferInfo.size        = imageSize;
+  bufferInfo.usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  VkBuffer       stagingBuffer;
+  VkDeviceMemory stagingMemory;
+  vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer);
+
+  VkMemoryRequirements memReqs;
+  vkGetBufferMemoryRequirements(device, stagingBuffer, &memReqs);
+
+  VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+  allocInfo.allocationSize = memReqs.size;
+  // 主机可见
+  allocInfo.memoryTypeIndex =
+      getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  vkAllocateMemory(device, &allocInfo, nullptr, &stagingMemory);
+  vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
+
+  // 3. 拷贝 image 到 buffer
+  VkCommandBuffer cmd = createTempCmdBuffer();
+
+  // 转换 image layout: GENERAL -> TRANSFER_SRC_OPTIMAL
+  VkImageMemoryBarrier imgBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+  imgBarrier.oldLayout        = VK_IMAGE_LAYOUT_GENERAL;
+  imgBarrier.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  imgBarrier.image            = srcImage;
+  imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  imgBarrier.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+  imgBarrier.dstAccessMask    = VK_ACCESS_TRANSFER_READ_BIT;
+
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                       nullptr, 1, &imgBarrier);
+
+  VkBufferImageCopy region               = {};
+  region.bufferOffset                    = 0;
+  region.bufferRowLength                 = 0;  // tightly packed
+  region.bufferImageHeight               = 0;
+  region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+  region.imageSubresource.mipLevel       = 0;
+  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.layerCount     = 1;
+  region.imageOffset                     = {0, 0, 0};
+  region.imageExtent                     = {w, h, 1};
+
+  vkCmdCopyImageToBuffer(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer, 1, &region);
+
+  // 恢复 image layout: TRANSFER_SRC_OPTIMAL -> GENERAL
+  std::swap(imgBarrier.oldLayout, imgBarrier.newLayout);
+  imgBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+  imgBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
+                       nullptr, 1, &imgBarrier);
+
+  submitTempCmdBuffer(cmd);
+
+  // 4. 映射内存，读取到 vector
+  void* data = nullptr;
+  vkMapMemory(device, stagingMemory, 0, imageSize, 0, &data);
+
+  // 创建 vector 并复制数据
+  std::vector<float> imageData(w * h * 4);  // RGBA 4个通道
+  float*             src = reinterpret_cast<float*>(data);
+
+  // 直接复制 float 数据
+  std::memcpy(imageData.data(), src, imageSize);
+
+  vkUnmapMemory(device, stagingMemory);
+
+  // 5. 释放资源
+  vkFreeMemory(device, stagingMemory, nullptr);
+  vkDestroyBuffer(device, stagingBuffer, nullptr);
+
+  return imageData;
+}
