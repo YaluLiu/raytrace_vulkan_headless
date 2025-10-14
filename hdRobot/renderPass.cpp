@@ -58,9 +58,9 @@ bool HdGatlingRenderPass::IsConverged() const
   return _isConverged;
 }
 
-#define USE_RAY_TRACE 1
-#define USE_BASE_RENDER 0
-#define ENABLE_SHARE 1
+#define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
+#define USE_BASE_RENDER 0  // render the default vk_ray_trace image on screen, ignore the usd file
+#define ENABLE_SHARE ENABLE_GL_VK_CONVERSION  // disable vulkan->opengl interop
 
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
@@ -72,12 +72,14 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   }
   const auto& hdAovBindings = renderPassState->GetAovBindings();
 #if USE_RAY_TRACE
+
   HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(hdAovBindings[0].renderBuffer);
   if(_width != renderBuffer->GetWidth() || _height != renderBuffer->GetHeight())
   {
     _width              = renderBuffer->GetWidth();
     _height             = renderBuffer->GetHeight();
     _reset_renderbuffer = true;
+#if ENABLE_SHARE
     for(const HdRenderPassAovBinding& binding : hdAovBindings)
     {
       const TfToken& name = binding.aovName;
@@ -97,6 +99,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
         renderBuffer->_isIdAov                        = true;
       }
     }
+#endif
   }
   app_init();
   app_updateCamera(*hdcamera);
@@ -105,9 +108,29 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   app_anim_base();
 #else
   app_anim_real();
-#endif
+#endif  //USE_BASE_RENDER
   _renderApp.render();
-#endif
+#if !ENABLE_SHARE
+  for(const HdRenderPassAovBinding& binding : hdAovBindings)
+  {
+    const TfToken& name = binding.aovName;
+    renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+    if(name == HdAovTokens->color)
+    {
+      renderBuffer->read_color_texture(_renderApp.getVulkan().m_rtOutputGL.oglId);
+    }
+    else if(name == HdAovTokens->primId)
+    {
+      renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtObjectIdGL.oglId);
+    }
+    else if(name == HdAovTokens->instanceId)
+    {
+      renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtInstanceIdGL.oglId);
+    }
+    renderBuffer->ConvertToHgiTexture();
+  }
+#endif  //ENABLE_SHARE
+#endif  //USE_RAY_TRACE
   _frame_idx++;
 }
 

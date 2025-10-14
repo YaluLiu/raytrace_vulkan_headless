@@ -83,6 +83,14 @@ target_link_libraries(
     ${USD_LIBS_PRIVATE}
 )
 
+#--------------------------------------------------------------------------------------------------
+# option
+#
+target_compile_definitions(${PROJNAME} PUBLIC
+  $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
+  $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
+)
+#--------------------------------------------------------------------------------------------------
 # Allow custom prefix for houdini directory structure
 if(NOT DEFINED PLUGINFO_LIBPATH_PREFIX)
   set(PLUGINFO_LIBPATH_PREFIX "..")
