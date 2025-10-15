@@ -20,7 +20,20 @@ function demo() {
     # build/bin/${BUILD_TYPE}/libheadless_app
 }
 
-function hydra(){
+function anim() {
+    app_name="ray_tracing_animation"
+    set -e
+    cd build
+    cmake ..  \
+        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DENABLE_GL_VK_CONVERSION=ON \
+        -DENABLE_HYDRA=OFF
+    make -j20
+    cd ..
+    build/bin/${BUILD_TYPE}/vk_${app_name}_KHR_app
+}
+
+function gatling(){
     set -e
     usd_path="/home/${USER}/software/USD"
     plugin_name="hdRobot"

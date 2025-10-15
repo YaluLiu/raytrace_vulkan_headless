@@ -24,11 +24,15 @@ extern std::vector<std::string> defaultSearchPaths;
 void createOpenGLContext()
 {
   glfwInit();
+  // 设置 GLFW 窗口使用 OpenGL 4.5
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // 创建隐藏窗口
+  // 创建 GLFW 窗口
   GLFWwindow* gl_window = glfwCreateWindow(1, 1, PROJECT_NAME, NULL, NULL);
+  // 设置当前 OpenGL 上下文
   glfwMakeContextCurrent(gl_window);
+  // 加载OpenGL函数
   load_GL(nvgl::ContextWindow::sysGetProcAddress);
 }
 //--------------------------------------------------------------------------------------------------

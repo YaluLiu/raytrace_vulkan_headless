@@ -121,9 +121,7 @@ void HelloVulkan::createOutputImage()
 
   m_rtOutputGL.imgSize = m_size;
   m_rtOutputGL.texVk   = m_offscreenColor;
-#if ENABLE_GL_VK_CONVERSION
   createTextureGL(m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
-#endif
 }
 
 void HelloVulkan::createObjectIdImage()
@@ -142,9 +140,7 @@ void HelloVulkan::createObjectIdImage()
   }
   m_rtObjectIdGL.imgSize = m_size;
   m_rtObjectIdGL.texVk   = m_offscreenObjectId;
-#if ENABLE_GL_VK_CONVERSION
   createTextureGL(m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
-#endif
 }
 
 void HelloVulkan::createInstanceIdImage()
@@ -163,9 +159,7 @@ void HelloVulkan::createInstanceIdImage()
   }
   m_rtInstanceIdGL.imgSize = m_size;
   m_rtInstanceIdGL.texVk   = m_offscreenInstanceId;
-#if ENABLE_GL_VK_CONVERSION
   createTextureGL(m_rtInstanceIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
-#endif
 }
 
 //--------------------------------------------------------------------------------------------------

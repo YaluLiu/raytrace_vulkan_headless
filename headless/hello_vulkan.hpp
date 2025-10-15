@@ -130,6 +130,9 @@ public:
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
+  void saveOffscreenColorToFile(const char* filename);
+
+
   // #Post - Draw the rendered image on a quad using a tonemapper
   void createOffscreenRender();
 
@@ -157,11 +160,8 @@ public:
   nvvk::Texture m_offscreenDepth;
   VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
-  // test function, read vulkan texture
   std::vector<uint32_t> readObjectIdImage();
   void                  dumpInteropTexture(const char* filename);
-  void                  saveOffscreenColorToFile(const char* filename);
-  std::vector<float>    readOffscreenColorToVector();
 
   // RayTrace Stucture
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);

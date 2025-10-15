@@ -60,6 +60,7 @@ bool HdGatlingRenderPass::IsConverged() const
 
 #define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
 #define USE_BASE_RENDER 0  // render the default vk_ray_trace image on screen, ignore the usd file
+#define ENABLE_SHARE ENABLE_GL_VK_CONVERSION  // disable vulkan->opengl interop
 
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
@@ -78,7 +79,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     _width              = renderBuffer->GetWidth();
     _height             = renderBuffer->GetHeight();
     _reset_renderbuffer = true;
-#if ENABLE_GL_VK_CONVERSION
+#if ENABLE_SHARE
     for(const HdRenderPassAovBinding& binding : hdAovBindings)
     {
       const TfToken& name = binding.aovName;
@@ -109,27 +110,26 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   app_anim_real();
 #endif  //USE_BASE_RENDER
   _renderApp.render();
-#if !ENABLE_GL_VK_CONVERSION
+#if !ENABLE_SHARE
   for(const HdRenderPassAovBinding& binding : hdAovBindings)
   {
     const TfToken& name = binding.aovName;
     renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
     if(name == HdAovTokens->color)
     {
-      auto _vulkan_buffer = _renderApp.getVulkan().readOffscreenColorToVector();
-      memcpy(renderBuffer->_buffer, _vulkan_buffer.data(), sizeof(float) * _width * _height * 4);
+      renderBuffer->read_color_texture(_renderApp.getVulkan().m_rtOutputGL.oglId);
     }
-    // else if(name == HdAovTokens->primId)
-    // {
-    //   renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtObjectIdGL.oglId);
-    // }
-    // else if(name == HdAovTokens->instanceId)
-    // {
-    //   renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtInstanceIdGL.oglId);
-    // }
+    else if(name == HdAovTokens->primId)
+    {
+      renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtObjectIdGL.oglId);
+    }
+    else if(name == HdAovTokens->instanceId)
+    {
+      renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtInstanceIdGL.oglId);
+    }
     renderBuffer->ConvertToHgiTexture();
   }
-#endif  //ENABLE_GL_VK_CONVERSION
+#endif  //ENABLE_SHARE
 #endif  //USE_RAY_TRACE
   _frame_idx++;
 }
