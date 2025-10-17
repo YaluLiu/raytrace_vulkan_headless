@@ -45,7 +45,6 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
 {
   if(!TF_VERIFY(sceneDelegate))
     return;
-
   HdDirtyBits bits = *dirtyBits;
   *dirtyBits       = HdMaterial::Clean;
 
@@ -72,13 +71,23 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
     return;
   }
 
+  // 遍历材质网络中的所有节点
+  // network.nodes 是一个 map,存储了材质网络中所有的节点
+  // key: SdfPath (节点路径), value: HdMaterialNode2 (节点数据)
   for(const auto& nodePair : network.nodes)
   {
-    const SdfPath&         nodePath = nodePair.first;
-    const HdMaterialNode2& node     = nodePair.second;
-    std::cout << "-----Loop:" << nodePath << "---------" << std::endl;
+    // 获取当前节点的路径(唯一标识符)
+    const SdfPath& nodePath = nodePair.first;
+    // 获取当前节点的数据(包含节点类型、参数、连接等信息)
+    const HdMaterialNode2& node = nodePair.second;
+    std::cout << "-------------" << std::endl;
+    std::cout << "solve node:" << nodePath << std::endl;
+    // 遍历当前节点的所有输入连接
+    // inputConnections 描述了哪些输入是从其他节点连接过来的
+    // 例如: diffuseColor 可能连接到一个纹理节点
     for(const auto& connPair : node.inputConnections)
     {
+      // 输入端口的名称(如 "diffuseColor", "roughness" 等)
       const TfToken&                            inputName   = connPair.first;
       const std::vector<HdMaterialConnection2>& connections = connPair.second;
 
@@ -88,17 +97,19 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
 
         for(const auto& conn : connections)
         {
-          // 获取上游节点的路径
-          const SdfPath& upstreamNodePath   = conn.upstreamNode;
+          // 获取上游节点的路径(提供数据的节点,如/_materials/default_002/preview/Image_Texture)
+          const SdfPath& upstreamNodePath = conn.upstreamNode;
+          // 上游节点的输出端口名称(如 "rgb", "result" 等)
           const TfToken& upstreamOutputName = conn.upstreamOutputName;
 
           std::cout << "  Connected to node: " << upstreamNodePath << std::endl;
           std::cout << "  Output name: " << upstreamOutputName << std::endl;
 
-          // 查找上游节点
+          // 在 network.nodes 中查找上游节点
           auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
           if(upstreamNodeIt != network.nodes.end())
           {
+            // 获取上游节点的数据
             const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
 
             std::cout << "  Upstream node type: " << upstreamNode.nodeTypeId << std::endl;
@@ -119,6 +130,8 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
                 {
                   SdfAssetPath assetPath = paramValue.Get<SdfAssetPath>();
                   std::cout << "AssetPath = " << assetPath.GetAssetPath() << std::endl;
+                  _scene.v_mat[_mat_id].textureID   = 0;
+                  _scene.v_mat[_mat_id].texturePath = assetPath.GetAssetPath();
                 }
                 else if(paramValue.IsHolding<std::string>())
                 {
@@ -143,6 +156,8 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
       }
     }
 
+    // 遍历当前节点的所有参数
+    // parameters 存储了节点的属性值,比如颜色、粗糙度等
     for(const auto& paramPair : node.parameters)
     {
       const TfToken& paramName  = paramPair.first;
@@ -152,13 +167,13 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
       {
         if(paramValue.IsHolding<GfVec3f>())
         {
-          auto        diffuse_color = paramValue.Get<GfVec3f>();
-          MaterialObj mat;
-          mat.diffuse[0]        = diffuse_color[0];
-          mat.diffuse[1]        = diffuse_color[1];
-          mat.diffuse[2]        = diffuse_color[2];
-          mat.material_changed  = true;
-          _scene.v_mat[_mat_id] = mat;
+          auto diffuse_color                     = paramValue.Get<GfVec3f>();
+          _scene.v_mat[_mat_id].diffuse[0]       = diffuse_color[0];
+          _scene.v_mat[_mat_id].diffuse[1]       = diffuse_color[1];
+          _scene.v_mat[_mat_id].diffuse[2]       = diffuse_color[2];
+          _scene.v_mat[_mat_id].material_changed = true;
+          std::cout << "found diffuse Color:(" << diffuse_color[0] << "," << diffuse_color[1] << "," << diffuse_color[2]
+                    << std::endl;
         }
       }
     }

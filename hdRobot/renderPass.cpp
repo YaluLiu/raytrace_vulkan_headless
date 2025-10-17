@@ -35,6 +35,11 @@
 #include "nvh/fileoperations.hpp"
 #include "nvh/cameramanipulator.hpp"
 
+// open asset file
+#include <pxr/usd/ar/asset.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolvedPath.h>
+
 #include <chrono>
 #include <thread>
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,6 +61,30 @@ HdGatlingRenderPass::~HdGatlingRenderPass() {}
 bool HdGatlingRenderPass::IsConverged() const
 {
   return _isConverged;
+}
+
+void HdGatlingRenderPass::open_asset(std::string path)
+{
+  ArResolver& resolver = ArGetResolver();
+  std::cout << "[GiAsset Open]:" << path << std::endl;
+
+  ArResolvedPath resolvedPath = resolver.Resolve(path);
+  if(!resolvedPath)
+  {
+    return;
+  }
+  std::cout << "[GiAsset Open]:" << resolvedPath.GetPathString() << std::endl;
+
+  auto asset = resolver.OpenAsset(resolvedPath);
+  if(!asset)
+  {
+    return;
+  }
+
+  // auto iasset    = new _ArAsset;
+  // iasset->size   = asset->GetSize();
+  // iasset->buffer = asset->GetBuffer();
+  // return (GiAsset*)iasset;
 }
 
 #define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
@@ -151,8 +180,7 @@ void HdGatlingRenderPass::app_init()
       auto& materialObj = _scene.v_mat[cur_mesh.material_id];
       loader.m_materials.emplace_back(materialObj);
       loader.m_textures.clear();
-      //   loader.m_textures.push_back("aMedKitm_albedo.jpg");
-      //   loader.m_textures.push_back("PatrickStar.jpg");
+      loader.m_textures.push_back("PatrickStar.jpg");
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
@@ -176,6 +204,19 @@ void HdGatlingRenderPass::app_init()
   }
 }
 
+void printLightCompact(const Light& light)
+{
+  printf(
+      "Light { type=%d, valid=%d, baseEmission=(%.3f,%.3f,%.3f), "
+      "diffuse=%.3f, specular=%.3f, dir=(%.3f,%.3f,%.3f), "
+      "angleScale=%.3f, pos=(%.3f,%.3f,%.3f), radius=%.3f, "
+      "quat=(%.3f,%.3f,%.3f,%.3f) }\n",
+      light.type, light.valid, light.baseEmission.x, light.baseEmission.y, light.baseEmission.z, light.diffuseScale,
+      light.specularScale, light.direction.x, light.direction.y, light.direction.z, light.angleScale, light.position.x,
+      light.position.y, light.position.z, light.radius, light.rotateQuat.x, light.rotateQuat.y, light.rotateQuat.z,
+      light.rotateQuat.w);
+}
+
 void HdGatlingRenderPass::app_updateLight()
 {
   _renderApp.getVulkan().clearLights();
@@ -186,6 +227,21 @@ void HdGatlingRenderPass::app_updateLight()
     {
       _renderApp.getVulkan().addLight(cur_light);
     }
+  }
+  //todo:delete this test code
+  if(_renderApp.getVulkan().m_lights.size() <= 1)
+  {
+    Light default_light;
+    default_light.type          = 0;  //sphere
+    default_light.valid         = 1;
+    default_light.baseEmission  = {30.0f, 30.0f, 30.0f};
+    default_light.position      = {0, -5, 5};
+    default_light.diffuseScale  = 1.0;
+    default_light.specularScale = 1.0;
+    default_light.radius        = 1;
+    default_light.valid         = 1;
+    default_light.rotateQuat    = {0.725, -0.441, 0.087, 0.522};
+    _renderApp.getVulkan().addLight(default_light);
   }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)

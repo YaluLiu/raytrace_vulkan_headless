@@ -58,6 +58,7 @@ public:
 
 protected:
   void _Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags) override;
+  void open_asset(std::string asset_path);
 
 private:
   const HdRenderSettingsMap& _settings;
