@@ -76,77 +76,78 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
   {
     const SdfPath&         nodePath = nodePair.first;
     const HdMaterialNode2& node     = nodePair.second;
-    for(const auto& paramPair : node.parameters)
+    std::cout << "-----Loop:" << nodePath << "---------" << std::endl;
+    for(const auto& connPair : node.inputConnections)
     {
-      const TfToken& paramName  = paramPair.first;
-      const VtValue& paramValue = paramPair.second;
-      // 检查输入连接
-      std::cout << "-------------Loop-----------------------" << std::endl;
-      for(const auto& connPair : node.inputConnections)
+      const TfToken&                            inputName   = connPair.first;
+      const std::vector<HdMaterialConnection2>& connections = connPair.second;
+
+      if(inputName == "diffuseColor")
       {
-        const TfToken&                            inputName   = connPair.first;
-        const std::vector<HdMaterialConnection2>& connections = connPair.second;
+        std::cout << "Found diffuseColor connection!" << std::endl;
 
-        if(inputName == "diffuseColor")
+        for(const auto& conn : connections)
         {
-          std::cout << "Found diffuseColor connection!" << std::endl;
+          // 获取上游节点的路径
+          const SdfPath& upstreamNodePath   = conn.upstreamNode;
+          const TfToken& upstreamOutputName = conn.upstreamOutputName;
 
-          for(const auto& conn : connections)
+          std::cout << "  Connected to node: " << upstreamNodePath << std::endl;
+          std::cout << "  Output name: " << upstreamOutputName << std::endl;
+
+          // 查找上游节点
+          auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
+          if(upstreamNodeIt != network.nodes.end())
           {
-            // 获取上游节点的路径
-            const SdfPath& upstreamNodePath   = conn.upstreamNode;
-            const TfToken& upstreamOutputName = conn.upstreamOutputName;
+            const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
 
-            std::cout << "  Connected to node: " << upstreamNodePath << std::endl;
-            std::cout << "  Output name: " << upstreamOutputName << std::endl;
+            std::cout << "  Upstream node type: " << upstreamNode.nodeTypeId << std::endl;
 
-            // 查找上游节点
-            auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
-            if(upstreamNodeIt != network.nodes.end())
+            // 打印上游节点的所有参数
+            std::cout << "  Upstream node parameters:" << std::endl;
+            for(const auto& paramPair : upstreamNode.parameters)
             {
-              const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
+              const TfToken& paramName  = paramPair.first;
+              const VtValue& paramValue = paramPair.second;
 
-              std::cout << "  Upstream node type: " << upstreamNode.nodeTypeId << std::endl;
+              std::cout << "    " << paramName << ": ";
 
-              // 打印上游节点的所有参数
-              std::cout << "  Upstream node parameters:" << std::endl;
-              for(const auto& paramPair : upstreamNode.parameters)
+              // 检查是否是文件路径
+              if(paramName == "file" || paramName == "filename")
               {
-                const TfToken& paramName  = paramPair.first;
-                const VtValue& paramValue = paramPair.second;
-
-                std::cout << "    " << paramName << ": ";
-
-                // 检查是否是文件路径
-                if(paramName == "file" || paramName == "filename")
+                if(paramValue.IsHolding<SdfAssetPath>())
                 {
-                  if(paramValue.IsHolding<SdfAssetPath>())
-                  {
-                    SdfAssetPath assetPath = paramValue.Get<SdfAssetPath>();
-                    std::cout << "AssetPath = " << assetPath.GetAssetPath() << std::endl;
-                  }
-                  else if(paramValue.IsHolding<std::string>())
-                  {
-                    std::cout << "String = " << paramValue.Get<std::string>() << std::endl;
-                  }
-                  else
-                  {
-                    std::cout << paramValue.GetTypeName() << std::endl;
-                  }
+                  SdfAssetPath assetPath = paramValue.Get<SdfAssetPath>();
+                  std::cout << "AssetPath = " << assetPath.GetAssetPath() << std::endl;
+                }
+                else if(paramValue.IsHolding<std::string>())
+                {
+                  std::cout << "String = " << paramValue.Get<std::string>() << std::endl;
                 }
                 else
                 {
                   std::cout << paramValue.GetTypeName() << std::endl;
                 }
               }
+              else
+              {
+                std::cout << paramValue.GetTypeName() << std::endl;
+              }
             }
-            else
-            {
-              std::cout << "  Warning: Upstream node not found!" << std::endl;
-            }
+          }
+          else
+          {
+            std::cout << "  Warning: Upstream node not found!" << std::endl;
           }
         }
       }
+    }
+
+    for(const auto& paramPair : node.parameters)
+    {
+      const TfToken& paramName  = paramPair.first;
+      const VtValue& paramValue = paramPair.second;
+      // 检查输入连接
       if(paramName == "diffuseColor")
       {
         if(paramValue.IsHolding<GfVec3f>())
