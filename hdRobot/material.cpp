@@ -51,7 +51,7 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
 
   if(!(bits & HdMaterial::DirtyResource))
   {
-    return;  // 材质不需要更新
+    return;
   }
   _scene.v_mat[_mat_id].set_default();
   const SdfPath& id       = GetId();
@@ -72,21 +72,83 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
     return;
   }
 
-  // 修正遍历方式
   for(const auto& nodePair : network.nodes)
   {
     const SdfPath&         nodePath = nodePair.first;
     const HdMaterialNode2& node     = nodePair.second;
-
     for(const auto& paramPair : node.parameters)
     {
       const TfToken& paramName  = paramPair.first;
       const VtValue& paramValue = paramPair.second;
+      // 检查输入连接
+      std::cout << "-------------Loop-----------------------" << std::endl;
+      for(const auto& connPair : node.inputConnections)
+      {
+        const TfToken&                            inputName   = connPair.first;
+        const std::vector<HdMaterialConnection2>& connections = connPair.second;
 
-      // 专门处理 diffuseColor 参数
+        if(inputName == "diffuseColor")
+        {
+          std::cout << "Found diffuseColor connection!" << std::endl;
+
+          for(const auto& conn : connections)
+          {
+            // 获取上游节点的路径
+            const SdfPath& upstreamNodePath   = conn.upstreamNode;
+            const TfToken& upstreamOutputName = conn.upstreamOutputName;
+
+            std::cout << "  Connected to node: " << upstreamNodePath << std::endl;
+            std::cout << "  Output name: " << upstreamOutputName << std::endl;
+
+            // 查找上游节点
+            auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
+            if(upstreamNodeIt != network.nodes.end())
+            {
+              const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
+
+              std::cout << "  Upstream node type: " << upstreamNode.nodeTypeId << std::endl;
+
+              // 打印上游节点的所有参数
+              std::cout << "  Upstream node parameters:" << std::endl;
+              for(const auto& paramPair : upstreamNode.parameters)
+              {
+                const TfToken& paramName  = paramPair.first;
+                const VtValue& paramValue = paramPair.second;
+
+                std::cout << "    " << paramName << ": ";
+
+                // 检查是否是文件路径
+                if(paramName == "file" || paramName == "filename")
+                {
+                  if(paramValue.IsHolding<SdfAssetPath>())
+                  {
+                    SdfAssetPath assetPath = paramValue.Get<SdfAssetPath>();
+                    std::cout << "AssetPath = " << assetPath.GetAssetPath() << std::endl;
+                  }
+                  else if(paramValue.IsHolding<std::string>())
+                  {
+                    std::cout << "String = " << paramValue.Get<std::string>() << std::endl;
+                  }
+                  else
+                  {
+                    std::cout << paramValue.GetTypeName() << std::endl;
+                  }
+                }
+                else
+                {
+                  std::cout << paramValue.GetTypeName() << std::endl;
+                }
+              }
+            }
+            else
+            {
+              std::cout << "  Warning: Upstream node not found!" << std::endl;
+            }
+          }
+        }
+      }
       if(paramName == "diffuseColor")
       {
-        // 检查是否为 GfVec3f 类型
         if(paramValue.IsHolding<GfVec3f>())
         {
           auto        diffuse_color = paramValue.Get<GfVec3f>();
@@ -96,32 +158,6 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
           mat.diffuse[2]        = diffuse_color[2];
           mat.material_changed  = true;
           _scene.v_mat[_mat_id] = mat;
-        }
-        // 检查是否为 GfVec4f 类型 (带alpha通道)
-        else if(paramValue.IsHolding<GfVec4f>())
-        {
-          GfVec4f color = paramValue.Get<GfVec4f>();
-          std::cerr << "[material] diffuseColor (GfVec4f): R=" << color[0] << ", G=" << color[1] << ", B=" << color[2]
-                    << ", A=" << color[3] << std::endl;
-        }
-        // 检查其他可能的颜色类型
-        else
-        {
-          std::cerr << "diffuseColor has unexpected type: " << paramValue.GetTypeName() << std::endl;
-          std::cerr << "Raw value: " << paramValue << std::endl;
-        }
-      }
-
-      // 打印 inputConnections（参数与贴图的连接）
-      for(const auto& connPair : node.inputConnections)
-      {
-        const TfToken&                            paramName   = connPair.first;
-        const std::vector<HdMaterialConnection2>& connections = connPair.second;
-        for(const auto& conn : connections)
-        {
-          // HdMaterialConnection2 通常包含 .upstreamNode（SdfPath）和 .upstreamOutputName（TfToken）
-          // std::cout << "[material]" << paramName.GetString() << " <- " << conn.upstreamNode.GetString() << "."
-          //           << conn.upstreamOutputName.GetString() << std::endl;
         }
       }
     }
