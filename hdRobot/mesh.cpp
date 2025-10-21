@@ -412,13 +412,13 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
     const GfVec3f diffuse = colors[0];
 
     auto& _mesh = _scene.v_mesh[_mesh_id];
-    if(_mesh.material_id == -1)
+    if(_mesh.material_ids.size() == 0)
     {
       std::lock_guard guard(_scene.mutex);
+      _mesh.material_ids.emplace_back(_scene.v_mat.size());
       _scene.v_mat.emplace_back(MaterialObj());
-      _mesh.material_id = _scene.v_mat.size() - 1;
     }
-    auto& mat            = _scene.v_mat[_mesh.material_id];
+    auto& mat            = _scene.v_mat[_mesh.material_ids[0]];
     mat.diffuse[0]       = diffuse[0];
     mat.diffuse[1]       = diffuse[1];
     mat.diffuse[2]       = diffuse[2];
@@ -531,7 +531,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     if(materialPrim)
     {
-      _mesh.material_id = materialPrim->_mat_id;
+      _mesh.material_ids.emplace_back(materialPrim->_mat_id);
     }
     else
     {

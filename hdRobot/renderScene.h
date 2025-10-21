@@ -36,7 +36,7 @@ struct _VertexStreams
   bool blas_changed = false;
   bool tlas_changed = false;
   //--------------------------------------------------------
-  int                    material_id        = -1;  //对应的材质在scene队列的id
+  std::vector<int>       material_ids;  //对应的材质在scene队列的id
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1}};
   glm::mat4              transform          = glm::mat4{1};
   std::vector<int>       tlasIds;  // 当前mesh的实例在tlas队列中对应的id[0-n]

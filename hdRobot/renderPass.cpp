@@ -193,7 +193,7 @@ void HdGatlingRenderPass::app_init()
       // loader.m_textures.push_back("aMedKitm_albedo.jpg");
       // loader.m_textures.push_back("PatrickStar.jpg");
       // loader.m_textures.push_back("aa.png");
-      auto& materialObj = _scene.v_mat[cur_mesh.material_id];
+      auto& materialObj = _scene.v_mat[cur_mesh.material_ids[0]];
       loader.m_materials.emplace_back(materialObj);
       auto asset_path = materialObj.texturePath;
       std::cout << "[renderpass]: " << asset_path << std::endl;
@@ -347,7 +347,7 @@ void HdGatlingRenderPass::app_update_material()
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
     auto& cur_mesh    = _scene.v_mesh[mesh_id];
-    auto& mat_id      = cur_mesh.material_id;
+    auto& mat_id      = cur_mesh.material_ids[0];
     auto& materialObj = _scene.v_mat[mat_id];
     if(materialObj.material_changed)
     {
