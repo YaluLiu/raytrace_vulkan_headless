@@ -57,8 +57,8 @@ public:
   bool IsConverged() const override;
 
 protected:
-  void _Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags) override;
-  void open_asset(std::string asset_path);
+  void        _Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags) override;
+  std::string open_asset(std::string path, int idx);
 
 private:
   const HdRenderSettingsMap& _settings;
