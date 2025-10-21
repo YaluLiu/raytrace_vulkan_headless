@@ -1,8 +1,6 @@
 #include <sstream>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <glm/glm.hpp>
-#include "stb_image.h"
 
 #include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
@@ -96,68 +94,6 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 }
 
 //--------------------------------------------------------------------------------------------------
-// 加载OBJ模型，并构建顶点、索引、材质等buffer
-// filename: obj文件路径
-// transform: 模型实例变换矩阵
-void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
-{
-  // 将材质颜色从SRGB空间转换到线性空间
-  for(auto& m : loader.m_materials)
-  {
-    m.ambient  = glm::pow(m.ambient, glm::vec3(2.2f));
-    m.diffuse  = glm::pow(m.diffuse, glm::vec3(2.2f));
-    m.specular = glm::pow(m.specular, glm::vec3(2.2f));
-  }
-
-  ObjModel model;
-  model.nbIndices  = static_cast<uint32_t>(loader.m_indices.size());
-  model.nbVertices = static_cast<uint32_t>(loader.m_vertices.size());
-
-  // 在设备上创建并上传顶点、索引、材质等buffer
-  nvvk::CommandPool  cmdBufGet(m_device, m_graphicsQueueIndex);
-  VkCommandBuffer    cmdBuf          = cmdBufGet.createCommandBuffer();
-  VkBufferUsageFlags flag            = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-  VkBufferUsageFlags rayTracingFlags =  // 用于光追加速结构构建
-      flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  model.vertexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
-  model.indexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | rayTracingFlags);
-  model.matColorBuffer = m_alloc.createBuffer(cmdBuf, loader.m_materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
-  model.matIndexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_matIndx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
-
-  // 纹理贴图（若有），并记录偏移
-  // 不记录偏移，全部mesh复用第一个mesh的贴图，作为全局贴图
-  // todo: add global textures
-  auto txtOffset = static_cast<uint32_t>(m_textures.size());
-  createTextureImages(cmdBuf, loader.m_textures);
-  cmdBufGet.submitAndWait(cmdBuf);
-
-  m_alloc.finalizeAndReleaseStaging();
-
-  std::string objNb = std::to_string(m_objModel.size());
-  m_debug.setObjectName(model.vertexBuffer.buffer, (std::string("vertex_" + objNb)));
-  m_debug.setObjectName(model.indexBuffer.buffer, (std::string("index_" + objNb)));
-  m_debug.setObjectName(model.matColorBuffer.buffer, (std::string("mat_" + objNb)));
-  m_debug.setObjectName(model.matIndexBuffer.buffer, (std::string("matIdx_" + objNb)));
-
-  ObjInstance instance;
-  instance.transform = transform;
-  instance.objIndex  = static_cast<uint32_t>(m_objModel.size());
-  m_instances.push_back(instance);
-  m_instanceIds.push_back(0);
-
-  ObjDesc desc;
-  desc.txtOffset            = txtOffset;
-  desc.vertexAddress        = nvvk::getBufferDeviceAddress(m_device, model.vertexBuffer.buffer);
-  desc.indexAddress         = nvvk::getBufferDeviceAddress(m_device, model.indexBuffer.buffer);
-  desc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, model.matColorBuffer.buffer);
-  desc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, model.matIndexBuffer.buffer);
-
-  m_objModel.emplace_back(model);
-  m_objDesc.emplace_back(desc);
-  m_Loader.emplace_back(loader);
-}
-
-//--------------------------------------------------------------------------------------------------
 // 创建uniform buffer（摄像机矩阵等），显存可见
 void HelloVulkan::createUniformBuffer()
 {
@@ -178,78 +114,6 @@ void HelloVulkan::createObjDescriptionBuffer()
   cmdGen.submitAndWait(cmdBuf);
   m_alloc.finalizeAndReleaseStaging();
   m_debug.setObjectName(m_bObjDesc.buffer, "ObjDescs");
-}
-
-//--------------------------------------------------------------------------------------------------
-// 创建所有纹理贴图和采样器，并上传到GPU
-// cmdBuf: 用于资源上传的命令缓冲
-// textures: 纹理文件名数组
-void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures)
-{
-  VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-  samplerCreateInfo.minFilter  = VK_FILTER_LINEAR;
-  samplerCreateInfo.magFilter  = VK_FILTER_LINEAR;
-  samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-  samplerCreateInfo.maxLod     = FLT_MAX;
-
-  VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-
-  // 若没有任何纹理，为了兼容pipeline，创建一个dummy白色纹理
-  if(textures.empty() && m_textures.empty())
-  {
-    nvvk::Texture texture;
-
-    std::array<uint8_t, 4> color{255u, 255u, 255u, 255u};
-    VkDeviceSize           bufferSize      = sizeof(color);
-    auto                   imgSize         = VkExtent2D{1, 1};
-    auto                   imageCreateInfo = nvvk::makeImage2DCreateInfo(imgSize, format);
-
-    nvvk::Image           image  = m_alloc.createImage(cmdBuf, bufferSize, color.data(), imageCreateInfo);
-    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageCreateInfo);
-    texture                      = m_alloc.createTexture(image, ivInfo, samplerCreateInfo);
-
-    nvvk::cmdBarrierImageLayout(cmdBuf, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    m_textures.push_back(texture);
-  }
-  else
-  {
-    // 批量加载所有图片
-    for(const auto& texture : textures)
-    {
-      std::stringstream o;
-      int               texWidth, texHeight, texChannels;
-      o << "media/textures/" << texture;
-      std::string txtFile = nvh::findFile(o.str(), defaultSearchPaths, true);
-
-      stbi_uc* stbi_pixels = stbi_load(txtFile.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-      std::array<stbi_uc, 4> color{255u, 0u, 255u, 255u};
-
-      stbi_uc* pixels = stbi_pixels;
-      // 兜底：加载失败时用紫色
-      if(!stbi_pixels)
-      {
-        texWidth = texHeight = 1;
-        texChannels          = 4;
-        pixels               = reinterpret_cast<stbi_uc*>(color.data());
-      }
-
-      VkDeviceSize bufferSize      = static_cast<uint64_t>(texWidth) * texHeight * sizeof(uint8_t) * 4;
-      auto         imgSize         = VkExtent2D{(uint32_t)texWidth, (uint32_t)texHeight};
-      auto         imageCreateInfo = nvvk::makeImage2DCreateInfo(imgSize, format, VK_IMAGE_USAGE_SAMPLED_BIT, true);
-
-      {
-        nvvk::Image image = m_alloc.createImage(cmdBuf, bufferSize, pixels, imageCreateInfo);
-        nvvk::cmdGenerateMipmaps(cmdBuf, image.image, format, imgSize, imageCreateInfo.mipLevels);
-        VkImageViewCreateInfo ivInfo  = nvvk::makeImageViewCreateInfo(image.image, imageCreateInfo);
-        nvvk::Texture         texture = m_alloc.createTexture(image, ivInfo, samplerCreateInfo);
-
-        m_textures.push_back(texture);
-      }
-
-      stbi_image_free(stbi_pixels);
-    }
-  }
 }
 
 //--------------------------------------------------------------------------------------------------
