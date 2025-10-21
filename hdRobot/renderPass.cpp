@@ -42,6 +42,8 @@
 
 #include <chrono>
 #include <thread>
+#include <filesystem>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex*             index,
@@ -65,26 +67,35 @@ bool HdGatlingRenderPass::IsConverged() const
 
 void HdGatlingRenderPass::open_asset(std::string path)
 {
-  ArResolver& resolver = ArGetResolver();
-  std::cout << "[GiAsset Open]:" << path << std::endl;
-
+  ArResolver&    resolver     = ArGetResolver();
   ArResolvedPath resolvedPath = resolver.Resolve(path);
   if(!resolvedPath)
   {
+    std::cout << "[GiAsset Open]:" << path << "is not valid" << std::endl;
     return;
   }
-  std::cout << "[GiAsset Open]:" << resolvedPath.GetPathString() << std::endl;
+
 
   auto asset = resolver.OpenAsset(resolvedPath);
   if(!asset)
   {
+    std::cout << "[GiAsset Open]:" << resolvedPath.GetPathString() << "failed" << std::endl;
     return;
   }
 
-  // auto iasset    = new _ArAsset;
-  // iasset->size   = asset->GetSize();
-  // iasset->buffer = asset->GetBuffer();
-  // return (GiAsset*)iasset;
+  std::ofstream file("/home/yalu/RayTracing/raytrace_vulkan_headless/media/textures/test_asset.jpg", std::ios::binary);
+  file.write(static_cast<const char*>(asset->GetBuffer().get()), asset->GetSize());
+
+  if(!file.good())
+  {
+    std::cout << "write image file failed" << std::endl;
+  }
+  else
+  {
+    std::cout << "write image file success" << std::endl;
+  }
+
+  file.close();
 }
 
 #define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
@@ -177,10 +188,18 @@ void HdGatlingRenderPass::app_init()
     {
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
+      // add_default_material(loader);
+      // loader.m_textures.clear();
+      // loader.m_textures.push_back("aMedKitm_albedo.jpg");
+      // loader.m_textures.push_back("PatrickStar.jpg");
+      // loader.m_textures.push_back("aa.png");
       auto& materialObj = _scene.v_mat[cur_mesh.material_id];
       loader.m_materials.emplace_back(materialObj);
+      auto asset_path = materialObj.texturePath;
+      std::cout << "[renderpass]: " << asset_path << std::endl;
+      open_asset(asset_path);
       loader.m_textures.clear();
-      loader.m_textures.push_back("PatrickStar.jpg");
+      loader.m_textures.push_back("test_asset.jpg");
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
@@ -234,13 +253,12 @@ void HdGatlingRenderPass::app_updateLight()
     Light default_light;
     default_light.type          = 0;  //sphere
     default_light.valid         = 1;
-    default_light.baseEmission  = {30.0f, 30.0f, 30.0f};
+    default_light.baseEmission  = {60.0f, 60.0f, 60.0f};
     default_light.position      = {0, -5, 5};
     default_light.diffuseScale  = 1.0;
     default_light.specularScale = 1.0;
-    default_light.radius        = 1;
+    default_light.radius        = 5;
     default_light.valid         = 1;
-    default_light.rotateQuat    = {0.725, -0.441, 0.087, 0.522};
     _renderApp.getVulkan().addLight(default_light);
   }
 }
@@ -281,7 +299,7 @@ void HdGatlingRenderPass::app_anim_real()
 {
   app_update_blas();
   app_update_tlas();
-  app_update_material();
+  // app_update_material();
 }
 
 void HdGatlingRenderPass::app_update_blas()

@@ -43,15 +43,18 @@ HdDirtyBits HdGatlingMaterial::GetInitialDirtyBitsMask() const
 
 void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
+  std::cout << "[material] sync on " << _mat_id << std::endl;
   if(!TF_VERIFY(sceneDelegate))
     return;
-  HdDirtyBits bits = *dirtyBits;
-  *dirtyBits       = HdMaterial::Clean;
+  bool pullMaterial = (*dirtyBits & DirtyBits::DirtyParams);
 
-  if(!(bits & HdMaterial::DirtyResource))
+  *dirtyBits = DirtyBits::Clean;
+
+  if(!pullMaterial)
   {
     return;
   }
+
   _scene.v_mat[_mat_id].set_default();
   const SdfPath& id       = GetId();
   const VtValue& resource = sceneDelegate->GetMaterialResource(id);
@@ -80,8 +83,6 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
     const SdfPath& nodePath = nodePair.first;
     // 获取当前节点的数据(包含节点类型、参数、连接等信息)
     const HdMaterialNode2& node = nodePair.second;
-    std::cout << "-------------" << std::endl;
-    std::cout << "solve node:" << nodePath << std::endl;
     // 遍历当前节点的所有输入连接
     // inputConnections 描述了哪些输入是从其他节点连接过来的
     // 例如: diffuseColor 可能连接到一个纹理节点
@@ -93,8 +94,6 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
 
       if(inputName == "diffuseColor")
       {
-        std::cout << "Found diffuseColor connection!" << std::endl;
-
         for(const auto& conn : connections)
         {
           // 获取上游节点的路径(提供数据的节点,如/_materials/default_002/preview/Image_Texture)
@@ -102,49 +101,34 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
           // 上游节点的输出端口名称(如 "rgb", "result" 等)
           const TfToken& upstreamOutputName = conn.upstreamOutputName;
 
-          std::cout << "  Connected to node: " << upstreamNodePath << std::endl;
-          std::cout << "  Output name: " << upstreamOutputName << std::endl;
-
           // 在 network.nodes 中查找上游节点
           auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
           if(upstreamNodeIt != network.nodes.end())
           {
             // 获取上游节点的数据
             const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
-
-            std::cout << "  Upstream node type: " << upstreamNode.nodeTypeId << std::endl;
-
-            // 打印上游节点的所有参数
-            std::cout << "  Upstream node parameters:" << std::endl;
             for(const auto& paramPair : upstreamNode.parameters)
             {
+              // sourceColorSpace:sRGB
+              // file:./textures/texture_pbr_v128.png
               const TfToken& paramName  = paramPair.first;
               const VtValue& paramValue = paramPair.second;
 
-              std::cout << "    " << paramName << ": ";
-
-              // 检查是否是文件路径
               if(paramName == "file" || paramName == "filename")
               {
                 if(paramValue.IsHolding<SdfAssetPath>())
                 {
-                  SdfAssetPath assetPath = paramValue.Get<SdfAssetPath>();
-                  std::cout << "AssetPath = " << assetPath.GetAssetPath() << std::endl;
-                  _scene.v_mat[_mat_id].textureID   = 0;
-                  _scene.v_mat[_mat_id].texturePath = assetPath.GetAssetPath();
+                  SdfAssetPath assetPath            = paramValue.Get<SdfAssetPath>();
+                  _scene.v_mat[_mat_id].texturePath = assetPath.GetResolvedPath();  //GetResolvedPath
+
+                  std::lock_guard guard(_scene.mutex);
+                  _scene.v_mat[_mat_id].textureID = _scene.mat_count++;
+                  // std::cout << "[material] id:" << _mat_id - 1 << ", path:" << _scene.v_mat[_mat_id].texturePath << std::endl;
                 }
                 else if(paramValue.IsHolding<std::string>())
                 {
                   std::cout << "String = " << paramValue.Get<std::string>() << std::endl;
                 }
-                else
-                {
-                  std::cout << paramValue.GetTypeName() << std::endl;
-                }
-              }
-              else
-              {
-                std::cout << paramValue.GetTypeName() << std::endl;
               }
             }
           }
@@ -156,13 +140,11 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
       }
     }
 
-    // 遍历当前节点的所有参数
-    // parameters 存储了节点的属性值,比如颜色、粗糙度等
+    // 遍历当前节点的所有参数parameters 存储了节点的属性值,比如颜色、粗糙度等
     for(const auto& paramPair : node.parameters)
     {
       const TfToken& paramName  = paramPair.first;
       const VtValue& paramValue = paramPair.second;
-      // 检查输入连接
       if(paramName == "diffuseColor")
       {
         if(paramValue.IsHolding<GfVec3f>())
@@ -172,8 +154,6 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
           _scene.v_mat[_mat_id].diffuse[1]       = diffuse_color[1];
           _scene.v_mat[_mat_id].diffuse[2]       = diffuse_color[2];
           _scene.v_mat[_mat_id].material_changed = true;
-          std::cout << "found diffuse Color:(" << diffuse_color[0] << "," << diffuse_color[1] << "," << diffuse_color[2]
-                    << std::endl;
         }
       }
     }
