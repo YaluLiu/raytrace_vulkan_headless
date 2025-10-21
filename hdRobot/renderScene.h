@@ -51,6 +51,9 @@ struct HdGatlingScene
   std::vector<MaterialObj>    v_mat;  //对应的材质
   std::vector<Light>          v_light;
   std::vector<Sphere>         v_sphere;
+
+  // material count
+  int mat_count = 0;
 };
 
 

@@ -90,9 +90,15 @@ void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader)
     Loader.m_indices.push_back(static_cast<uint32_t>(face[2]) + vertexOffset);
   }
 
+  // int before = -1;
   for(const auto& mat_id : mat_idx)
   {
     Loader.m_matIndx.push_back(static_cast<uint32_t>(mat_id));
+    // if(mat_id != before)
+    // {
+    //   std::cout << "mesh_mat_id:" << mat_id << std::endl;
+    //   before = mat_id;
+    // }
   }
 
 
@@ -103,24 +109,19 @@ void add_default_material(ModelLoader& Loader)
 {
   // 2. 创建默认材质
   MaterialObj mat;
-  mat.ambient   = glm::vec3(0.1f, 0.1f, 0.1f);
-  mat.diffuse   = glm::vec3(0.7f, 0.7f, 0.7f);
-  mat.specular  = glm::vec3(1.0f, 1.0f, 1.0f);
-  mat.shininess = 50.0f;
-  mat.dissolve  = 1.0f;
-  mat.ior       = 1.5f;
-  mat.textureID = -1;
-  mat.illum     = 2;  // 默认使用Phong光照模型
 
-  mat.textureID = -1;
-  mat.diffuse   = glm::vec3(0.1f, 0.5f, 0.1f);
-  Loader.m_materials.emplace_back(mat);
+  //todo: why _scene.v_mat.size()&_mat_id start with 1?
+  // mat.textureID = -1;
+  // Loader.m_materials.emplace_back(mat);
 
   //测试代码
   mat.textureID = 0;
   Loader.m_materials.emplace_back(mat);
 
   mat.textureID = 1;
+  Loader.m_materials.emplace_back(mat);
+
+  mat.textureID = 2;
   Loader.m_materials.emplace_back(mat);
 
   // 如果没有材质，添加默认材质
