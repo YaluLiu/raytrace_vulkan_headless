@@ -416,7 +416,7 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
     {
       std::lock_guard guard(_scene.mutex);
       _mesh.material_ids.emplace_back(_scene.v_mat.size());
-      _scene.v_mat.emplace_back(MaterialObj());
+      _scene.v_mat.emplace_back(HydraMaterial());
     }
     auto& mat            = _scene.v_mat[_mesh.material_ids[0]];
     mat.diffuse[0]       = diffuse[0];
@@ -959,9 +959,26 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
       if(faceIdx < static_cast<int>(faceCount))
       {
         // 设置对应面的材质 ID（子集索引加 1，0 保留给基础网格）
-        materialIds[faceIdx] = static_cast<int>(i) + 1;
+        materialIds[faceIdx] = static_cast<int>(i);
       }
     }
+  }
+
+  HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+  // todo: why i =1 work well?
+  // it works well now, because bash mesh(i=0) is update on sync?
+  for(size_t i = 1; i < geomSubsets.size(); i++)
+  {
+    const HdGeomSubset& subset = geomSubsets[i];
+    auto* materialPrim = static_cast<HdGatlingMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, subset.materialId));
+    if(materialPrim)
+    {
+      _scene.v_mesh[_mesh_id].material_ids.emplace_back(materialPrim->_mat_id);
+    }
+    // else
+    // {
+    //   GetDisplayColor(sceneDelegate);
+    // }
   }
 
   // Collect vertices and indices

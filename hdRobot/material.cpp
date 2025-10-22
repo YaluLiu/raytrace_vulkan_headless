@@ -28,7 +28,7 @@ HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id, HdGatlingScene& scene)
 {
   std::lock_guard guard(_scene.mutex);
   _mat_id = _scene.v_mat.size();
-  _scene.v_mat.emplace_back(MaterialObj());
+  _scene.v_mat.emplace_back(HydraMaterial());
 }
 
 void HdGatlingMaterial::Finalize(HdRenderParam* renderParam)

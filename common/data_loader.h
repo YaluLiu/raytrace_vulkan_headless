@@ -24,14 +24,7 @@ struct MaterialObj
                          // 光照模型（参见MTL文件格式说明）
   int illum = 0;
   // 贴图ID（如果没有贴图则为-1）
-  int         textureID = -1;
-  std::string texturePath;
-  bool        material_changed = false;
-  void        set_default()
-  {
-    diffuse          = glm::vec3(0.18f, 0.18f, 0.18f);
-    material_changed = true;
-  }
+  int textureID = -1;
 };
 
 // OBJ模型的顶点结构体

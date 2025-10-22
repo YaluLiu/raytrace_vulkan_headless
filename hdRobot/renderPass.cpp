@@ -173,7 +173,6 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   _frame_idx++;
 }
 
-#define TEST_MAT 1
 #if USE_RAY_TRACE
 void HdGatlingRenderPass::app_init()
 {
@@ -189,23 +188,14 @@ void HdGatlingRenderPass::app_init()
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       loader.m_textures.clear();
-#if TEST_MAT
-      add_default_material(loader);
-      loader.m_textures.push_back("PatrickStar.jpg");
-      loader.m_textures.push_back("shoe_0.jpg");
-      loader.m_textures.push_back("shoe_1.jpg");
-      loader.m_textures.push_back("shoe_0.jpg");
-      loader.m_textures.push_back("shoe_1.jpg");
-#else
       for(auto& mat_id : cur_mesh.material_ids)
       {
-        auto& materialObj = _scene.v_mat[mat_id];
+        auto asset_path  = _scene.v_mat[mat_id].texturePath;
+        auto materialObj = _scene.v_mat[mat_id].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
-        auto asset_path = materialObj.texturePath;
-        auto file_name  = open_asset(asset_path, mat_id);
+        auto file_name = open_asset(asset_path, mat_id);
         loader.m_textures.push_back(file_name);
       }
-#endif
       PrintLoader(loader);
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();

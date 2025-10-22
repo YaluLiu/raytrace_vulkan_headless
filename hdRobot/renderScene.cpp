@@ -5,41 +5,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// void GeneratePlanarUV(const VtVec3fArray& points, VtVec2fArray& texCoords,
-//                      const GfVec3f& planeNormal = GfVec3f(0,1,0)) {
-//     texCoords.resize(points.size());
-//     GfVec3f uAxis, vAxis;
-
-//     // 计算UV轴
-//     if (fabs(planeNormal[0]) >= fabs(planeNormal[1]) &&
-//         fabs(planeNormal[0]) >= fabs(planeNormal[2])) {
-//         uAxis = GfVec3f(0,1,0).Cross(planeNormal);
-//     } else {
-//         uAxis = GfVec3f(1,0,0).Cross(planeNormal);
-//     }
-//     vAxis = planeNormal.Cross(uAxis);
-
-//     uAxis.Normalize();
-//     vAxis.Normalize();
-
-//     // 计算边界
-//     GfRange2f bounds;
-//     for (const auto& p : points) {
-//         bounds.UnionWith(GfVec2f(p.Dot(uAxis), p.Dot(vAxis)));
-//     }
-
-//     // 生成UV
-//     for (size_t i = 0; i < points.size(); ++i) {
-//         GfVec2f proj(points[i].Dot(uAxis), points[i].Dot(vAxis));
-//         texCoords[i].Set(
-//             (proj[0] - bounds.GetMin()[0]) / bounds.GetSize()[0],
-//             (proj[1] - bounds.GetMin()[1]) / bounds.GetSize()[1]
-//         );
-//     }
-// }
-
-// 转换函数
-// 辅助函数：将 v_mesh 转换为 UsdLoader
 void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader)
 {
   size_t vertexOffset = 0;
@@ -54,7 +19,6 @@ void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader)
   const auto& mat_idx   = mesh.materialIds;
 
   VtVec2fArray new_texCoords = texCoords;
-  // 在加载或处理网格数据的地方添加以下代码
   if(new_texCoords.empty() || new_texCoords.size() != points.size())
   {
     new_texCoords.resize(points.size());
@@ -90,15 +54,9 @@ void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader)
     Loader.m_indices.push_back(static_cast<uint32_t>(face[2]) + vertexOffset);
   }
 
-  // int before = -1;
   for(const auto& mat_id : mat_idx)
   {
     Loader.m_matIndx.push_back(static_cast<uint32_t>(mat_id));
-    // if(mat_id != before)
-    // {
-    //   std::cout << "mesh_mat_id:" << mat_id << std::endl;
-    //   before = mat_id;
-    // }
   }
 
 
@@ -214,8 +172,6 @@ void PrintLoader(const ModelLoader& loader, int n)
 // 主函数：比较 v_mesh 转换后的 loader 与输入的 loader
 void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader)
 {
-  // 步骤 2：比较 tempLoader 和 loader
-  // 比较 m_vertices
   if(tempLoader.m_vertices.size() != loader.m_vertices.size())
   {
     std::cout << "m_vertices 数量不一致: tempLoader 有 " << tempLoader.m_vertices.size() << ", loader 有 "

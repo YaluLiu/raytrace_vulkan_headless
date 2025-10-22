@@ -42,13 +42,59 @@ struct _VertexStreams
   std::vector<int>       tlasIds;  // 当前mesh的实例在tlas队列中对应的id[0-n]
 };
 
+struct HydraMaterial
+{
+  // 环境光成分
+  glm::vec3 ambient = glm::vec3(0.1f, 0.1f, 0.1f);
+  // 漫反射成分
+  glm::vec3 diffuse = glm::vec3(0.18f, 0.18f, 0.18f);
+  // 镜面反射成分
+  glm::vec3 specular = glm::vec3(1.0f, 1.0f, 1.0f);
+  // 透射成分
+  glm::vec3 transmittance = glm::vec3(0.0f, 0.0f, 0.0f);
+  // 自发光成分
+  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.10);
+  // 高光系数
+  float shininess = 0.f;
+  // 折射率
+  float ior = 1.0f;  // index of refraction
+  // 透明度（1为不透明，0为完全透明）
+  float dissolve = 1.f;  // 1 == opaque; 0 == fully transparent
+                         // 光照模型（参见MTL文件格式说明）
+  int illum = 0;
+  // 贴图ID（如果没有贴图则为-1）
+  int         textureID = -1;
+  std::string texturePath;
+  bool        material_changed = false;
+  void        set_default()
+  {
+    diffuse          = glm::vec3(0.18f, 0.18f, 0.18f);
+    material_changed = true;
+  }
+  MaterialObj toMaterialObj() const
+  {
+    MaterialObj mat;
+    mat.ambient       = this->ambient;
+    mat.diffuse       = this->diffuse;
+    mat.specular      = this->specular;
+    mat.transmittance = this->transmittance;
+    mat.emission      = this->emission;
+    mat.shininess     = this->shininess;
+    mat.ior           = this->ior;
+    mat.dissolve      = this->dissolve;
+    mat.illum         = this->illum;
+    mat.textureID     = this->textureID;
+    return mat;
+  }
+};
+
 struct HdGatlingScene
 {
   //multi thread mutex
   std::mutex mutex;
   // 转化成raytrace可用的mesh格式
   std::vector<_VertexStreams> v_mesh;
-  std::vector<MaterialObj>    v_mat;  //对应的材质
+  std::vector<HydraMaterial>  v_mat;  //对应的材质
   std::vector<Light>          v_light;
   std::vector<Sphere>         v_sphere;
 
