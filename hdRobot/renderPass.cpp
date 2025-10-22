@@ -257,8 +257,8 @@ void HdGatlingRenderPass::app_updateLight()
     Light default_light;
     default_light.type          = 0;  //sphere
     default_light.valid         = 1;
-    default_light.baseEmission  = {100.0f, 100.0f, 100.0f};
-    default_light.position      = {5, 5, 10};
+    default_light.baseEmission  = {50000.0f, 50000.0f, 50000.0f};
+    default_light.position      = {10, 10, 80};
     default_light.diffuseScale  = 1.0;
     default_light.specularScale = 1.0;
     default_light.radius        = 10;
