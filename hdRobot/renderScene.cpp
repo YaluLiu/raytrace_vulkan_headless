@@ -68,25 +68,11 @@ void add_default_material(ModelLoader& Loader)
   // 2. 创建默认材质
   MaterialObj mat;
 
-  //todo: why _scene.v_mat.size()&_mat_id start with 1?
-  // mat.textureID = -1;
-  // Loader.m_materials.emplace_back(mat);
-
-
   //测试代码
-  mat.textureID = -1;
+  mat.textureID = 0;
   Loader.m_materials.emplace_back(mat);
 
   mat.textureID = -1;
-  Loader.m_materials.emplace_back(mat);
-
-  mat.textureID = -1;
-  Loader.m_materials.emplace_back(mat);
-
-  mat.textureID = 1;
-  Loader.m_materials.emplace_back(mat);
-
-  mat.textureID = 2;
   Loader.m_materials.emplace_back(mat);
 
   // 如果没有材质，添加默认材质

@@ -5,26 +5,16 @@
 // 定义MaterialObj结构体，表示材质信息
 struct MaterialObj
 {
-  // 环境光成分
-  glm::vec3 ambient = glm::vec3(0.1f, 0.1f, 0.1f);
-  // 漫反射成分
-  glm::vec3 diffuse = glm::vec3(0.18f, 0.18f, 0.18f);
-  // 镜面反射成分
-  glm::vec3 specular = glm::vec3(1.0f, 1.0f, 1.0f);
-  // 透射成分
+  glm::vec3 ambient       = glm::vec3(0.1f, 0.1f, 0.1f);
+  glm::vec3 diffuse       = glm::vec3(0.18f, 0.18f, 0.18f);
+  glm::vec3 specular      = glm::vec3(1.0f, 1.0f, 1.0f);
   glm::vec3 transmittance = glm::vec3(0.0f, 0.0f, 0.0f);
-  // 自发光成分
-  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.10);
-  // 高光系数
-  float shininess = 0.f;
-  // 折射率
-  float ior = 1.0f;  // index of refraction
-  // 透明度（1为不透明，0为完全透明）
-  float dissolve = 1.f;  // 1 == opaque; 0 == fully transparent
-                         // 光照模型（参见MTL文件格式说明）
-  int illum = 0;
-  // 贴图ID（如果没有贴图则为-1）
-  int textureID = -1;
+  glm::vec3 emission      = glm::vec3(0.0f, 0.0f, 0.10);
+  float     shininess     = 0.f;
+  float     ior           = 1.0f;  // index of refraction
+  float     dissolve      = 1.f;   // 1 == opaque; 0 == fully transparent 光照模型（参见MTL文件格式说明）
+  int       illum         = 0;
+  int       textureID     = -1;
 };
 
 // OBJ模型的顶点结构体

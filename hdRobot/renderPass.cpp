@@ -100,6 +100,7 @@ std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
 #define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
 #define USE_BASE_RENDER 0  // render the default vk_ray_trace image on screen, ignore the usd file
 #define ENABLE_SHARE ENABLE_GL_VK_CONVERSION  // disable vulkan->opengl interop
+#define TEST_MATERIAL 0
 
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
@@ -173,6 +174,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   _frame_idx++;
 }
 
+
 #if USE_RAY_TRACE
 void HdGatlingRenderPass::app_init()
 {
@@ -188,6 +190,10 @@ void HdGatlingRenderPass::app_init()
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       loader.m_textures.clear();
+#if TEST_MATERIAL
+      add_default_material(loader);
+      loader.m_textures.push_back("aMedKitm_albedo.jpg");
+#else
       for(auto& mat_id : cur_mesh.material_ids)
       {
         auto asset_path  = _scene.v_mat[mat_id].texturePath;
@@ -196,7 +202,8 @@ void HdGatlingRenderPass::app_init()
         auto file_name = open_asset(asset_path, mat_id);
         loader.m_textures.push_back(file_name);
       }
-      PrintLoader(loader);
+#endif
+      //PrintLoader(loader);
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
