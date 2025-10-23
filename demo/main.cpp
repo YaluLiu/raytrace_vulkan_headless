@@ -33,16 +33,17 @@ public:
     {
       loadObjScene();
     }
+    add_light();
 
     for(int i = 0; i < 10; i++)
     {
-      // 测试窗口resize
-      if(i % 3 == 0)
-      {
-        width  = static_cast<int>(width * 1.1);
-        height = static_cast<int>(height * 1.1);
-      }
-      m_app.resize(width, height);
+      // // 测试窗口resize
+      // if(i % 3 == 0)
+      // {
+      //   width  = static_cast<int>(width * 1.1);
+      //   height = static_cast<int>(height * 1.1);
+      // }
+      // m_app.resize(width, height);
 
       if(!m_testOnUsd)
       {
@@ -78,6 +79,22 @@ public:
     CameraManip.setLookat(eye, ctr, up);
   }
 
+  void add_light()
+  {
+    m_app.getVulkan().clearLights();
+    Light default_light;
+    default_light.type          = 0;  //sphere
+    default_light.valid         = 1;
+    default_light.baseEmission  = {100.0f, 100.0f, 100.0f};
+    default_light.diffuseScale  = 1.0;
+    default_light.specularScale = 1.0;
+    default_light.radius        = 2;
+    default_light.valid         = 1;
+
+    default_light.position = {0, 0, 10};
+    m_app.getVulkan().addLight(default_light);
+  }
+
 private:
   void loadObjScene()
   {
@@ -103,7 +120,6 @@ private:
     ObjLoader sphereLoader;
     sphereLoader.loadModel(m_cwd / "media/scenes/sphere.obj");
     m_app.getVulkan().loadModel(sphereLoader);
-
     m_app.createBVH();
   }
 
@@ -117,8 +133,7 @@ private:
     catloader.m_textures.clear();
     catloader.m_textures.push_back("PatrickStar.jpg");      //yellow
     catloader.m_textures.push_back("aMedKitm_albedo.jpg");  //red
-    catloader.m_textures.push_back("aMedKitm_normal.jpg");  //blue
-    catloader.m_materials[0].textureID = 2;
+    catloader.m_materials[0].textureID = 0;
 
     m_app.getVulkan().loadModel(catloader, glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f))
                                                * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f)));
@@ -129,15 +144,15 @@ private:
 
     // todo: change usd texture file path
     ballloader.m_textures.clear();
-    ballloader.m_materials[0].textureID = 0;
+    ballloader.m_materials[0].textureID = 1;
 
     m_app.getVulkan().loadModel(ballloader, glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f))
                                                 * glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.5f, 1.0f)));
 
     // 平面,只有obj的平面
-    ObjLoader planeLoader;
-    planeLoader.loadModel("media/scenes/plane.obj");
-    m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
+    // ObjLoader planeLoader;
+    // planeLoader.loadModel("media/scenes/plane.obj");
+    // m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
 
     m_app.createBVH();
   }

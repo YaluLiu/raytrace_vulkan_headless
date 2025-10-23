@@ -303,7 +303,7 @@ void HdGatlingRenderPass::app_anim_real()
 {
   app_update_blas();
   app_update_tlas();
-  // app_update_material();
+  app_update_material();
 }
 
 void HdGatlingRenderPass::app_update_blas()
