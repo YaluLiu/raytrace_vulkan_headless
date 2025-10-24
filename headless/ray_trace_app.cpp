@@ -76,17 +76,21 @@ std::string extractUSDPath(const std::string& pathString)
 
 #include <filesystem>
 namespace fs = std::filesystem;
+
 void RayTraceApp::setupContext()
 {
   NVPSystem   system("raytrace_vulkan_headless");
   std::string currentDir = fs::current_path().string();
-  std::string value_path = getEnvironmentVariable("PATH");
-  std::string usd_path   = extractUSDPath(value_path);
-  defaultSearchPaths     = {
+  std::string usd_path   = getEnvironmentVariable("USD_ROOT");
+  if(usd_path == "")
+  {
+    throw std::runtime_error("USD_ROOT must set to usd install path!");
+  }
+  defaultSearchPaths = {
       NVPSystem::exePath() + PROJECT_RELDIRECTORY,
       NVPSystem::exePath() + PROJECT_RELDIRECTORY "/..",
       currentDir + "/headless",
-      usd_path + "/hdRobot",
+      usd_path + "/plugin/usd/hdRobot",
   };
 
   nvvk::ContextCreateInfo contextInfo;

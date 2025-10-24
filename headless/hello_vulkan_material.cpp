@@ -40,7 +40,8 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   model.matColorBuffer = m_alloc.createBuffer(cmdBuf, loader.m_materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
   model.matIndexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_matIndx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
 
-  auto txtOffset = static_cast<uint32_t>(m_textures.size());
+  // 如果每个model的mat_id都是0开始，必须设置txtOffset，否则不设置
+  auto txtOffset = 0;  //static_cast<uint32_t>(m_textures.size());
   createTextureImages(cmdBuf, loader.m_textures);
   cmdBufGet.submitAndWait(cmdBuf);
 

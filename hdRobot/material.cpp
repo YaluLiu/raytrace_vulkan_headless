@@ -43,7 +43,6 @@ HdDirtyBits HdGatlingMaterial::GetInitialDirtyBitsMask() const
 
 void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
-  std::cout << "[material] sync on " << _mat_id << std::endl;
   if(!TF_VERIFY(sceneDelegate))
     return;
   bool pullMaterial = (*dirtyBits & DirtyBits::DirtyParams);
@@ -118,12 +117,13 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
               {
                 if(paramValue.IsHolding<SdfAssetPath>())
                 {
-                  SdfAssetPath assetPath            = paramValue.Get<SdfAssetPath>();
-                  _scene.v_mat[_mat_id].texturePath = assetPath.GetResolvedPath();  //GetResolvedPath
-
                   std::lock_guard guard(_scene.mutex);
-                  _scene.v_mat[_mat_id].textureID = _scene.mat_count++;
-                  // std::cout << "[material] id:" << _mat_id - 1 << ", path:" << _scene.v_mat[_mat_id].texturePath << std::endl;
+                  SdfAssetPath    assetPath         = paramValue.Get<SdfAssetPath>();
+                  _scene.v_mat[_mat_id].texturePath = assetPath.GetResolvedPath();  //GetResolvedPath
+                  _scene.v_mat[_mat_id].textureID   = _scene.mat_count;
+                  _scene.mat_count++;
+                  // std::cout << "[material] _mat_id:" << _mat_id << "," << upstreamNodePath << ","
+                  //           << _scene.v_mat[_mat_id].texturePath << std::endl;
                 }
                 else if(paramValue.IsHolding<std::string>())
                 {

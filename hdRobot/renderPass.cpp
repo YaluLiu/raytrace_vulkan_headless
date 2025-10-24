@@ -44,6 +44,22 @@
 #include <thread>
 #include <filesystem>
 
+bool ensureDirectoryExists(const std::string& path)
+{
+  try
+  {
+    if(!std::filesystem::exists(path))
+    {
+      return std::filesystem::create_directories(path);
+    }
+    return true;
+  }
+  catch(const std::filesystem::filesystem_error&)
+  {
+    return false;
+  }
+}
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex*             index,
@@ -71,26 +87,26 @@ std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
   ArResolvedPath resolvedPath = resolver.Resolve(path);
   if(!resolvedPath)
   {
-    std::cout << "[GiAsset Open]:" << path << "is not valid" << std::endl;
-    return "Error";
+    std::cout << "[RenderPass]:" << path << "is not valid" << std::endl;
+    return "not valid";
   }
 
 
   auto asset = resolver.OpenAsset(resolvedPath);
   if(!asset)
   {
-    std::cout << "[GiAsset Open]:" << resolvedPath.GetPathString() << "failed" << std::endl;
-    return "Error";
+    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed" << std::endl;
+    return "open failed";
   }
 
   std::string   file_name = "asset_" + std::to_string(idx) + ".jpg";
-  std::string   file_path = "/home/yalu/RayTracing/raytrace_vulkan_headless/media/textures/" + file_name;
+  std::string   file_path = "media/textures/" + file_name;
   std::ofstream file(file_path, std::ios::binary);
   file.write(static_cast<const char*>(asset->GetBuffer().get()), asset->GetSize());
 
   if(!file.good())
   {
-    std::cout << "write image file failed" << std::endl;
+    std::cout << "[RenderPass] write image file failed" << std::endl;
   }
 
   file.close();
@@ -174,7 +190,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   _frame_idx++;
 }
 
-
+#include <utility>
 #if USE_RAY_TRACE
 void HdGatlingRenderPass::app_init()
 {
@@ -185,25 +201,47 @@ void HdGatlingRenderPass::app_init()
 #if USE_BASE_RENDER
     _renderApp.loadScene();
 #else
+    ensureDirectoryExists("media/textures");
+    std::map<int, std::string> allTexture;
+    for(auto& cur_mesh : _scene.v_mesh)
+    {
+      for(auto& mat_id : cur_mesh.material_ids)
+      {
+        if(_scene.v_mat[mat_id].textureID >= 0)
+        {
+          allTexture[_scene.v_mat[mat_id].textureID] = _scene.v_mat[mat_id].texturePath;
+        }
+      }
+    }
+    // std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
+    // std::cout << "mesh:" << _scene.v_mesh.size() << std::endl;
+    // for(const auto& [id, asset_path] : allTexture)
+    // {
+    //   std::cout << "allTexture " << id << ": " << asset_path << std::endl;
+    // }
+    // std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
+
+    bool is_first_model = true;
     for(auto& cur_mesh : _scene.v_mesh)
     {
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       loader.m_textures.clear();
-#if TEST_MATERIAL
-      add_default_material(loader);
-      loader.m_textures.push_back("aMedKitm_albedo.jpg");
-#else
+      if(is_first_model)
+      {
+        for(const auto& [id, asset_path] : allTexture)
+        {
+          auto file_name = open_asset(asset_path, id);
+          loader.m_textures.push_back(file_name);
+        }
+        is_first_model = false;
+      }
       for(auto& mat_id : cur_mesh.material_ids)
       {
-        auto asset_path  = _scene.v_mat[mat_id].texturePath;
         auto materialObj = _scene.v_mat[mat_id].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
-        auto file_name = open_asset(asset_path, mat_id);
-        loader.m_textures.push_back(file_name);
       }
-#endif
-      //PrintLoader(loader);
+      // PrintLoader(loader);
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
@@ -257,13 +295,20 @@ void HdGatlingRenderPass::app_updateLight()
     Light default_light;
     default_light.type          = 0;  //sphere
     default_light.valid         = 1;
-    default_light.baseEmission  = {50000.0f, 50000.0f, 50000.0f};
-    default_light.position      = {10, 10, 80};
+    default_light.baseEmission  = {5000.0f, 5000.0f, 5000.0f};
     default_light.diffuseScale  = 1.0;
     default_light.specularScale = 1.0;
     default_light.radius        = 10;
     default_light.valid         = 1;
+
+    default_light.position = {100, 0, 100};
     _renderApp.getVulkan().addLight(default_light);
+    // default_light.position = {0, 100, 100};
+    // _renderApp.getVulkan().addLight(default_light);
+    // default_light.position = {-100, 0, 100};
+    // _renderApp.getVulkan().addLight(default_light);
+    // default_light.position = {0, -100, 100};
+    // _renderApp.getVulkan().addLight(default_light);
   }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
