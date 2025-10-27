@@ -73,6 +73,7 @@ void main()
     textureColor  = texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
   }
 
+  vec3 emission = computeEmission(mat, textureColor);
   vec3 totalLight = vec3(0);
   int  numLights  = pcRay.numLights;
 
@@ -179,7 +180,8 @@ void main()
     totalLight += lightEmission * shadowAttenuation * (diffuse + specular);
   }
 
-  prd.hitValue = totalLight;
+  
+  prd.hitValue = totalLight + emission;
   prd.objId    = int(gl_InstanceCustomIndexEXT);
   prd.instanceId = instanceIdBuf.instanceIds[gl_InstanceID];
 }

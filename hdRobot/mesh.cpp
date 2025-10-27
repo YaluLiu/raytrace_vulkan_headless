@@ -380,6 +380,7 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
   std::lock_guard guard(_scene.mutex);
   _mesh_id = _scene.v_mesh.size();
   _scene.v_mesh.emplace_back(_VertexStreams());
+  _scene.v_mesh[_mesh_id].scene_mat_ids = {0};
 }
 
 void HdGatlingMesh::setValid(bool value)
@@ -411,18 +412,18 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
     assert(colors.size() == 1);
     const GfVec3f diffuse = colors[0];
 
-    auto& _mesh = _scene.v_mesh[_mesh_id];
-    if(_mesh.material_ids.size() == 0)
+    auto& _mesh      = _scene.v_mesh[_mesh_id];
+    auto  cur_mat_id = _scene.v_mat.size();
     {
       std::lock_guard guard(_scene.mutex);
-      _mesh.material_ids.emplace_back(_scene.v_mat.size());
       _scene.v_mat.emplace_back(HydraMaterial());
     }
-    auto& mat            = _scene.v_mat[_mesh.material_ids[0]];
-    mat.diffuse[0]       = diffuse[0];
-    mat.diffuse[1]       = diffuse[1];
-    mat.diffuse[2]       = diffuse[2];
-    mat.material_changed = true;
+    auto& mat              = _scene.v_mat[cur_mat_id];
+    mat.diffuse[0]         = diffuse[0];
+    mat.diffuse[1]         = diffuse[1];
+    mat.diffuse[2]         = diffuse[2];
+    mat.material_changed   = true;
+    _mesh.scene_mat_ids[0] = cur_mat_id;
   }
   else if(displayColorValue.IsHolding<VtVec4fArray>())
   {
@@ -531,7 +532,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
     if(materialPrim)
     {
-      _mesh.material_ids.emplace_back(materialPrim->_mat_id);
+      _mesh.scene_mat_ids[0] = materialPrim->_mat_id;
     }
     else
     {
@@ -942,43 +943,31 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
     }
   }
 
-  // 初始化 materialIds 数组，大小与 faces 一致，初始值为 0（默认材质）
-  VtIntArray materialIds(faceCount, 0);
-
-  // 获取几何子集（GeomSubsets，用于划分网格的子部分）
+  VtIntArray           materialIds(faceCount, 0);
   const HdGeomSubsets& geomSubsets = topology.GetGeomSubsets();
-  // 遍历几何子集，为每个面分配材质 ID
+  HdRenderIndex&       renderIndex = sceneDelegate->GetRenderIndex();
+
+  // 处理材质分配
   for(size_t i = 0; i < geomSubsets.size(); i++)
   {
-    // 获取当前子集
     const HdGeomSubset& subset = geomSubsets[i];
-    // 遍历子集中的面索引
-    for(int faceIdx : subset.indices)
-    {
-      // 如果面索引有效
-      if(faceIdx < static_cast<int>(faceCount))
-      {
-        // 设置对应面的材质 ID（子集索引加 1，0 保留给基础网格）
-        materialIds[faceIdx] = static_cast<int>(i);
-      }
-    }
-  }
 
-  HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
-  // todo: why i =1 work well?
-  // it works well now, because bash mesh(i=0) is update on sync?
-  for(size_t i = 1; i < geomSubsets.size(); i++)
-  {
-    const HdGeomSubset& subset = geomSubsets[i];
     auto* materialPrim = static_cast<HdGatlingMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, subset.materialId));
+
     if(materialPrim)
     {
-      _scene.v_mesh[_mesh_id].material_ids.emplace_back(materialPrim->_mat_id);
+      _scene.v_mesh[_mesh_id].scene_mat_ids.emplace_back(materialPrim->_mat_id);
+      int localMatIdx = static_cast<int>(_scene.v_mesh[_mesh_id].scene_mat_ids.size() - 1);
+
+      // 遍历该subset的所有面
+      for(int faceIdx : subset.indices)
+      {
+        if(faceIdx < static_cast<int>(faceCount))
+        {
+          materialIds[faceIdx] = localMatIdx;
+        }
+      }
     }
-    // else
-    // {
-    //   GetDisplayColor(sceneDelegate);
-    // }
   }
 
   // Collect vertices and indices

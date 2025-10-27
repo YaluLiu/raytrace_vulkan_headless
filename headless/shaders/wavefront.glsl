@@ -27,3 +27,12 @@ vec3 computeSpecular(WaveFrontMaterial mat, vec3 viewDir, vec3 lightDir, vec3 no
 
   return vec3(mat.specular * specular);
 }
+
+vec3 computeEmission(WaveFrontMaterial mat, vec3 textureColor)
+{
+  vec3 emission = mat.emission;
+  emission *= mat.dissolve;
+  emission *= textureColor;
+
+  return emission;
+}

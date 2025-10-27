@@ -205,7 +205,7 @@ void HdGatlingRenderPass::app_init()
     std::map<int, std::string> allTexture;
     for(auto& cur_mesh : _scene.v_mesh)
     {
-      for(auto& mat_id : cur_mesh.material_ids)
+      for(auto& mat_id : cur_mesh.scene_mat_ids)
       {
         if(_scene.v_mat[mat_id].textureID >= 0)
         {
@@ -213,13 +213,14 @@ void HdGatlingRenderPass::app_init()
         }
       }
     }
-    // std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
-    // std::cout << "mesh:" << _scene.v_mesh.size() << std::endl;
-    // for(const auto& [id, asset_path] : allTexture)
-    // {
-    //   std::cout << "allTexture " << id << ": " << asset_path << std::endl;
-    // }
-    // std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
+    std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
+    std::cout << "mesh:" << _scene.v_mesh.size() << std::endl;
+    for(const auto& [id, asset_path] : allTexture)
+    {
+      std::cout << "allTexture " << id << ": " << asset_path << std::endl;
+    }
+    std::cout << std::endl;
+    std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
 
     bool is_first_model = true;
     for(auto& cur_mesh : _scene.v_mesh)
@@ -236,12 +237,12 @@ void HdGatlingRenderPass::app_init()
         }
         is_first_model = false;
       }
-      for(auto& mat_id : cur_mesh.material_ids)
+      for(auto& mat_id : cur_mesh.scene_mat_ids)
       {
         auto materialObj = _scene.v_mat[mat_id].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
       }
-      // PrintLoader(loader);
+      PrintLoader(loader);
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;
@@ -396,9 +397,10 @@ void HdGatlingRenderPass::app_update_material()
   for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
     auto& cur_mesh = _scene.v_mesh[mesh_id];
-    for(auto& mat_id : cur_mesh.material_ids)
+    for(size_t local_mat_idx = 0; local_mat_idx < cur_mesh.scene_mat_ids.size(); ++local_mat_idx)
     {
-      auto& materialObj = _scene.v_mat[mat_id];
+      int   global_mat_id = cur_mesh.scene_mat_ids[local_mat_idx];
+      auto& materialObj   = _scene.v_mat[global_mat_id];
       if(materialObj.material_changed)
       {
         WaveFrontMaterial new_material;
@@ -412,7 +414,7 @@ void HdGatlingRenderPass::app_update_material()
         new_material.dissolve      = materialObj.dissolve;
         new_material.illum         = materialObj.illum;
         new_material.textureId     = materialObj.textureID;
-        new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(0), new_material});
+        new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(local_mat_idx), new_material});
       }
     }
   }
@@ -425,6 +427,7 @@ void HdGatlingRenderPass::app_update_material()
     materialObj.material_changed = false;
   }
 }
+
 void HdGatlingRenderPass::app_anim_base()
 {
   std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;

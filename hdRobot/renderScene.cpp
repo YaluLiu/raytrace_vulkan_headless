@@ -103,36 +103,36 @@ void PrintLoader(const ModelLoader& loader, int n)
   // }
 
   // // 打印 m_indices 信息
-  // std::cout << "m_indices 数量: " << loader.m_indices.size() << std::endl;
+  std::cout << "m_indices 数量: " << loader.m_indices.size() << std::endl;
   // std::cout << "前 " << std::min(n, static_cast<int>(loader.m_indices.size())) << " 个索引:" << std::endl;
   // for (int i = 0; i < n && i < loader.m_indices.size(); ++i) {
   //     std::cout << "  索引[" << i << "]: " << loader.m_indices[i] << std::endl;
   // }
 
-  std::cout << "m_materials 数量: " << loader.m_materials.size() << std::endl;
-  for(int i = 0; i < loader.m_materials.size(); ++i)
-  {
-    const auto& m = loader.m_materials[i];
-    std::cout << "  材质[" << i << "]:" << std::endl;
-    // std::cout << "    ambient: (" << m.ambient.x << ", " << m.ambient.y << ", " << m.ambient.z << ")" << std::endl;
-    // std::cout << "    specular: (" << m.specular.x << ", " << m.specular.y << ", " << m.specular.z << ")" << std::endl;
-    // std::cout << "    transmittance: (" << m.transmittance.x << ", " << m.transmittance.y << ", " << m.transmittance.z
-    //           << ")" << std::endl;
-    // std::cout << "    emission: (" << m.emission.x << ", " << m.emission.y << ", " << m.emission.z << ")" << std::endl;
-    // std::cout << "    shininess: " << m.shininess << std::endl;
-    // std::cout << "    ior: " << m.ior << std::endl;
-    // std::cout << "    dissolve: " << m.dissolve << std::endl;
-    // std::cout << "    illum: " << m.illum << std::endl;
-    std::cout << "    diffuse: (" << m.diffuse.x << ", " << m.diffuse.y << ", " << m.diffuse.z << ")" << std::endl;
-    std::cout << "    textureID: " << m.textureID << std::endl;
-  }
+  // std::cout << "m_materials 数量: " << loader.m_materials.size() << std::endl;
+  // for(int i = 0; i < loader.m_materials.size(); ++i)
+  // {
+  //   const auto& m = loader.m_materials[i];
+  //   std::cout << "  材质[" << i << "]:" << std::endl;
+  //   // std::cout << "    ambient: (" << m.ambient.x << ", " << m.ambient.y << ", " << m.ambient.z << ")" << std::endl;
+  //   // std::cout << "    specular: (" << m.specular.x << ", " << m.specular.y << ", " << m.specular.z << ")" << std::endl;
+  //   // std::cout << "    transmittance: (" << m.transmittance.x << ", " << m.transmittance.y << ", " << m.transmittance.z
+  //   //           << ")" << std::endl;
+  //   // std::cout << "    emission: (" << m.emission.x << ", " << m.emission.y << ", " << m.emission.z << ")" << std::endl;
+  //   // std::cout << "    shininess: " << m.shininess << std::endl;
+  //   // std::cout << "    ior: " << m.ior << std::endl;
+  //   // std::cout << "    dissolve: " << m.dissolve << std::endl;
+  //   // std::cout << "    illum: " << m.illum << std::endl;
+  //   std::cout << "    diffuse: (" << m.diffuse.x << ", " << m.diffuse.y << ", " << m.diffuse.z << ")" << std::endl;
+  //   std::cout << "    textureID: " << m.textureID << std::endl;
+  // }
 
-  std::cout << "m_textures 数量: " << loader.m_textures.size() << std::endl;
-  for(int i = 0; i < loader.m_textures.size(); ++i)
-  {
-    std::cout << loader.m_textures[i] << ", ";
-  }
-  std::cout << std::endl;
+  // std::cout << "m_textures 数量: " << loader.m_textures.size() << std::endl;
+  // for(int i = 0; i < loader.m_textures.size(); ++i)
+  // {
+  //   std::cout << loader.m_textures[i] << ", ";
+  // }
+  // std::cout << std::endl;
 
   // 打印 m_matIndx 信息,0-100为0,101-200为1，代表两种材质
   std::cout << "m_matIndx 数量: " << loader.m_matIndx.size() << std::endl;
@@ -143,7 +143,7 @@ void PrintLoader(const ModelLoader& loader, int n)
     // 当值变化或到达末尾时，打印当前段
     if(i == loader.m_matIndx.size() || loader.m_matIndx[i] != currentValue)
     {
-      std::cout << (start + 1) << "-" << i << ": " << currentValue;
+      std::cout << (start) << "-" << i - 1 << ": " << currentValue;
       if(i < loader.m_matIndx.size())
       {
         std::cout << ", ";

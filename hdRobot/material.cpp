@@ -156,6 +156,17 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
           _scene.v_mat[_mat_id].material_changed = true;
         }
       }
+      else if(paramName == "emissiveColor")
+      {
+        if(paramValue.IsHolding<GfVec3f>())
+        {
+          auto emission                          = paramValue.Get<GfVec3f>();
+          _scene.v_mat[_mat_id].emission[0]      = emission[0];
+          _scene.v_mat[_mat_id].emission[1]      = emission[1];
+          _scene.v_mat[_mat_id].emission[2]      = emission[2];
+          _scene.v_mat[_mat_id].material_changed = true;
+        }
+      }
     }
   }
 }
