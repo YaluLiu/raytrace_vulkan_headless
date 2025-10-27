@@ -213,14 +213,6 @@ void HdGatlingRenderPass::app_init()
         }
       }
     }
-    std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
-    std::cout << "mesh:" << _scene.v_mesh.size() << std::endl;
-    for(const auto& [id, asset_path] : allTexture)
-    {
-      std::cout << "allTexture " << id << ": " << asset_path << std::endl;
-    }
-    std::cout << std::endl;
-    std::cout << "-----------------[renderPass]-----------------------------" << std::endl;
 
     bool is_first_model = true;
     for(auto& cur_mesh : _scene.v_mesh)
@@ -242,7 +234,7 @@ void HdGatlingRenderPass::app_init()
         auto materialObj = _scene.v_mat[mat_id].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
       }
-      PrintLoader(loader);
+      // PrintLoader(loader);
       _renderApp.getVulkan().loadModel(loader);
       auto instance          = _renderApp.getVulkan().m_instances.back();
       auto first_instance_id = _renderApp.getVulkan().m_instances.size() - 1;

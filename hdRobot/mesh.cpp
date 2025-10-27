@@ -793,6 +793,18 @@ HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(HdSceneDelegate*    sc
   return map;
 }
 
+std::pair<int, int> GetTriangulatedFaceRange(const VtIntArray& faceVertexCounts, int originalFaceIdx)
+{
+  int startIdx = 0;
+  for(int i = 0; i < originalFaceIdx; i++)
+  {
+    startIdx += std::max(1, faceVertexCounts[i] - 2);
+  }
+
+  int numTriangles = std::max(1, faceVertexCounts[originalFaceIdx] - 2);
+  return {startIdx, startIdx + numTriangles};
+}
+
 void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
 {
   const SdfPath& id = GetId();
@@ -947,7 +959,20 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   const HdGeomSubsets& geomSubsets = topology.GetGeomSubsets();
   HdRenderIndex&       renderIndex = sceneDelegate->GetRenderIndex();
 
-  // 处理材质分配
+  bool isTriangulated =
+      topology.GetScheme() == PxOsdOpenSubdivTokens->none || topology.GetScheme() == PxOsdOpenSubdivTokens->bilinear;
+
+  const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
+  bool              allTriangles     = true;
+  for(int count : faceVertexCounts)
+  {
+    if(count != 3)
+    {
+      allTriangles = false;
+      break;
+    }
+  }
+
   for(size_t i = 0; i < geomSubsets.size(); i++)
   {
     const HdGeomSubset& subset = geomSubsets[i];
@@ -959,12 +984,19 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
       _scene.v_mesh[_mesh_id].scene_mat_ids.emplace_back(materialPrim->_mat_id);
       int localMatIdx = static_cast<int>(_scene.v_mesh[_mesh_id].scene_mat_ids.size() - 1);
 
-      // 遍历该subset的所有面
       for(int faceIdx : subset.indices)
       {
-        if(faceIdx < static_cast<int>(faceCount))
+        if(faceIdx >= static_cast<int>(faceVertexCounts.size()))
+          continue;
+
+        auto [startIdx, endIdx] = GetTriangulatedFaceRange(faceVertexCounts, faceIdx);
+
+        for(int triIdx = startIdx; triIdx < endIdx; triIdx++)
         {
-          materialIds[faceIdx] = localMatIdx;
+          if(triIdx < static_cast<int>(faceCount))
+          {
+            materialIds[triIdx] = localMatIdx;
+          }
         }
       }
     }
