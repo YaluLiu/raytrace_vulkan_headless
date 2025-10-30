@@ -50,7 +50,7 @@ HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& scene)
 {
   std::lock_guard guard(_scene.mutex);
   _light_id = _scene.v_light.size();
-  _scene.v_light.emplace_back(Light());
+  _scene.v_light.emplace_back(HydraLight());
 }
 
 // We strive to conform to following UsdLux-enhancing specification:
@@ -199,6 +199,34 @@ HdGatlingDomeLight::HdGatlingDomeLight(const SdfPath& id, HdGatlingScene& scene)
   _scene.v_light[_light_id].type = 2;
 }
 
+std::string HdGatlingDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
+{
+  const SdfPath& id               = GetId();
+  VtValue        boxedTextureFile = sceneDelegate->GetLightParamValue(id, HdLightTokens->textureFile);
+  if(boxedTextureFile.IsEmpty())
+  {
+    // Hydra runtime warns of empty path; we don't need to repeat it.
+    return "Error";
+  }
+
+  if(!boxedTextureFile.IsHolding<SdfAssetPath>())
+  {
+    TF_WARN("%s:%s does not hold SdfAssetPath - ignoring!", id.GetText(), HdLightTokens->textureFile.GetText());
+    return "Error";
+  }
+
+  const SdfAssetPath& assetPath = boxedTextureFile.UncheckedGet<SdfAssetPath>();
+
+  std::string path = assetPath.GetResolvedPath();
+  if(path.empty())
+  {
+    // Texture file is missing
+    TF_WARN("Unable to resolve asset path \"%s\"", assetPath.GetAssetPath().c_str());
+    return "Error";
+  }
+  return path;
+}
+
 void HdGatlingDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   const SdfPath& id               = GetId();
@@ -222,6 +250,14 @@ void HdGatlingDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
     _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
     _scene.v_light[_light_id].diffuseScale  = diffuse;
     _scene.v_light[_light_id].specularScale = specular;
+    std::string texturePath                 = GetTexturePath(sceneDelegate);
+    if(_scene.v_light[_light_id].texturePath != texturePath)
+    {
+      std::lock_guard guard(_scene.mutex);
+      _scene.v_light[_light_id].texturePath = texturePath;
+      _scene.v_light[_light_id].textureID   = _scene.mat_count;
+      _scene.mat_count++;
+    }
   }
 
   *dirtyBits = HdChangeTracker::Clean;

@@ -60,7 +60,6 @@ struct Light
 {
   // common
   int   type;
-  int   valid;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
   float diffuseScale;
   float specularScale;
@@ -72,6 +71,7 @@ struct Light
   float radius;
   // dome light
   vec4 rotateQuat;
+  int  textureID;
   // padding for alignment
   vec3 padding;
 };

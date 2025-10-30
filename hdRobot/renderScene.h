@@ -88,6 +88,41 @@ struct HydraMaterial
   }
 };
 
+struct HydraLight
+{
+  // common
+  int   type;
+  int   valid;
+  vec3  baseEmission;  // intensity * color * colorTemp * exposure
+  float diffuseScale;
+  float specularScale;
+  // distant light
+  vec3  direction;
+  float angleScale;
+  // sphere light
+  vec3  position;
+  float radius;
+  // dome light
+  vec4        rotateQuat;
+  int         textureID;
+  std::string texturePath;
+  Light       toLight() const
+  {
+    Light light;
+    light.type          = type;
+    light.baseEmission  = baseEmission;
+    light.diffuseScale  = diffuseScale;
+    light.specularScale = specularScale;
+    light.direction     = direction;
+    light.angleScale    = angleScale;
+    light.position      = position;
+    light.radius        = radius;
+    light.rotateQuat    = rotateQuat;
+    light.textureID     = textureID;
+    return light;
+  }
+};
+
 struct HdGatlingScene
 {
   //multi thread mutex
@@ -95,7 +130,7 @@ struct HdGatlingScene
   // 转化成raytrace可用的mesh格式
   std::vector<_VertexStreams> v_mesh;
   std::vector<HydraMaterial>  v_mat;  //对应的材质
-  std::vector<Light>          v_light;
+  std::vector<HydraLight>     v_light;
   std::vector<Sphere>         v_sphere;
 
   // material count

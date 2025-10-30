@@ -82,14 +82,12 @@ void main()
     Light light = lightBuf.lights[i];
     vec3  L;
     float lightDistance       = 100000.0;
-    float distanceAttenuation = 1.0;
+    float distanceAttenuation = 1.0; //距离衰减系数
 
     if(light.type == 0)  // Sphere light
     {
       vec3 lDir     = light.position.xyz - worldPos;
       lightDistance = length(lDir);
-
-      // 考虑光源半径的软阴影（简化版）
       float effectiveDistance = max(lightDistance - light.radius, 0.001);
       distanceAttenuation     = 1.0 / (effectiveDistance * effectiveDistance);
 
@@ -98,7 +96,6 @@ void main()
     else if(light.type == 1)  // Distant light
     {
       L = normalize(light.direction.xyz);
-      // Distant light 可以有角度缩放来模拟太阳
       distanceAttenuation = light.angleScale;
     }
     else if(light.type == 2)  // Dome light

@@ -62,7 +62,8 @@ public:
   HdGatlingDomeLight(const SdfPath& id, HdGatlingScene& scene);
 
 public:
-  void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
+  std::string GetTexturePath(HdSceneDelegate* sceneDelegate);
+  void        Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
