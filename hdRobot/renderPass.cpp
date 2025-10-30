@@ -202,17 +202,6 @@ void HdGatlingRenderPass::app_init()
     _renderApp.loadScene();
 #else
     ensureDirectoryExists("media/textures");
-    std::map<int, std::string> allTexture;
-    for(auto& cur_mesh : _scene.v_mesh)
-    {
-      for(auto& mat_id : cur_mesh.scene_mat_ids)
-      {
-        if(_scene.v_mat[mat_id].textureID >= 0)
-        {
-          allTexture[_scene.v_mat[mat_id].textureID] = _scene.v_mat[mat_id].texturePath;
-        }
-      }
-    }
 
     bool is_first_model = true;
     for(auto& cur_mesh : _scene.v_mesh)
@@ -222,9 +211,9 @@ void HdGatlingRenderPass::app_init()
       loader.m_textures.clear();
       if(is_first_model)
       {
-        for(const auto& [id, asset_path] : allTexture)
+        for(size_t id = 0; id < _scene.v_texturePath.size(); ++id)
         {
-          auto file_name = open_asset(asset_path, id);
+          auto file_name = open_asset(_scene.v_texturePath[id], id);
           loader.m_textures.push_back(file_name);
         }
         is_first_model = false;
@@ -282,20 +271,18 @@ void HdGatlingRenderPass::app_updateLight()
     }
   }
   // //todo:delete this test code
-  // if(_renderApp.getVulkan().m_lights.size() <= 1)
-  // {
-  //   Light default_light;
-  //   default_light.type          = 0;  //sphere
-  //   default_light.valid         = 1;
-  //   default_light.baseEmission  = {5000.0f, 5000.0f, 5000.0f};
-  //   default_light.diffuseScale  = 1.0;
-  //   default_light.specularScale = 1.0;
-  //   default_light.radius        = 10;
-  //   default_light.valid         = 1;
+  if(_renderApp.getVulkan().m_lights.size() <= 1)
+  {
+    Light default_light;
+    default_light.type          = 0;  //sphere
+    default_light.baseEmission  = {5000.0f, 5000.0f, 5000.0f};
+    default_light.diffuseScale  = 1.0;
+    default_light.specularScale = 1.0;
+    default_light.radius        = 10;
 
-  //   default_light.position = {100, 0, 100};
-  //   _renderApp.getVulkan().addLight(default_light);
-  // }
+    default_light.position = {100, 0, 100};
+    _renderApp.getVulkan().addLight(default_light);
+  }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {

@@ -253,10 +253,10 @@ void HdGatlingDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
     std::string texturePath                 = GetTexturePath(sceneDelegate);
     if(_scene.v_light[_light_id].texturePath != texturePath)
     {
-      std::lock_guard guard(_scene.mutex);
       _scene.v_light[_light_id].texturePath = texturePath;
-      _scene.v_light[_light_id].textureID   = _scene.mat_count;
-      _scene.mat_count++;
+      std::lock_guard guard(_scene.mutex);
+      _scene.v_light[_light_id].textureID = _scene.v_texturePath.size();
+      _scene.v_texturePath.emplace_back(texturePath);
     }
   }
 

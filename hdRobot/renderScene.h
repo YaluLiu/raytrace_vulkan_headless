@@ -23,7 +23,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct _VertexStreams
+struct HydraMesh
 {
   VtVec3iArray faces;
   VtVec3fArray points;
@@ -92,7 +92,7 @@ struct HydraLight
 {
   // common
   int   type;
-  int   valid;
+  int   valid = 1;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
   float diffuseScale;
   float specularScale;
@@ -104,7 +104,7 @@ struct HydraLight
   float radius;
   // dome light
   vec4        rotateQuat;
-  int         textureID;
+  int         textureID = -1;
   std::string texturePath;
   Light       toLight() const
   {
@@ -128,19 +128,17 @@ struct HdGatlingScene
   //multi thread mutex
   std::mutex mutex;
   // 转化成raytrace可用的mesh格式
-  std::vector<_VertexStreams> v_mesh;
-  std::vector<HydraMaterial>  v_mat;  //对应的材质
-  std::vector<HydraLight>     v_light;
-  std::vector<Sphere>         v_sphere;
-
-  // material count
-  int mat_count = 0;
+  std::vector<HydraMesh>     v_mesh;
+  std::vector<HydraMaterial> v_mat;
+  std::vector<HydraLight>    v_light;
+  std::vector<Sphere>        v_sphere;
+  std::vector<std::string>   v_texturePath;  //material&domelight, textures
 };
 
 
 //添加默认材质
 void add_default_material(ModelLoader& Loader);
-void ConvertVmeshToLoader(const _VertexStreams& v_mesh, ModelLoader& Loader);
+void ConvertVmeshToLoader(const HydraMesh& v_mesh, ModelLoader& Loader);
 void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader);
 
 //根据模型大小生成一个自定义的scale矩阵

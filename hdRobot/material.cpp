@@ -121,10 +121,10 @@ void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
                   auto         texturePath = assetPath.GetResolvedPath();
                   if(_scene.v_mat[_mat_id].texturePath != texturePath)
                   {
-                    std::lock_guard guard(_scene.mutex);
                     _scene.v_mat[_mat_id].texturePath = texturePath;  //GetResolvedPath
-                    _scene.v_mat[_mat_id].textureID   = _scene.mat_count;
-                    _scene.mat_count++;
+                    std::lock_guard guard(_scene.mutex);
+                    _scene.v_mat[_mat_id].textureID = _scene.v_texturePath.size();
+                    _scene.v_texturePath.emplace_back(texturePath);
                   }
                   // std::cout << "[material] _mat_id:" << _mat_id << "," << upstreamNodePath << ","
                   //           << _scene.v_mat[_mat_id].texturePath << std::endl;

@@ -379,7 +379,7 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
 {
   std::lock_guard guard(_scene.mutex);
   _mesh_id = _scene.v_mesh.size();
-  _scene.v_mesh.emplace_back(_VertexStreams());
+  _scene.v_mesh.emplace_back(HydraMesh());
   _scene.v_mesh[_mesh_id].scene_mat_ids = {0};
 }
 

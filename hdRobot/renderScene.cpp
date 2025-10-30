@@ -5,7 +5,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void ConvertVmeshToLoader(const _VertexStreams& mesh, ModelLoader& Loader)
+void ConvertVmeshToLoader(const HydraMesh& mesh, ModelLoader& Loader)
 {
   size_t vertexOffset = 0;
 
