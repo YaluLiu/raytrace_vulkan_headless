@@ -34,6 +34,18 @@ vec3 rotateByQuaternion(vec3 v, vec4 q)
   return 2.0 * dot(u, v) * u + (s * s - dot(u, u)) * v + 2.0 * s * cross(u, v);
 }
 
+// 将世界空间方向转换为球面坐标 UV
+vec2 directionToSphericalUV(vec3 dir)
+{
+  float phi = atan(dir.z, dir.x);
+  float theta = acos(clamp(dir.y, -1.0, 1.0));
+  
+  float u = phi / (2.0 * 3.14159265359) + 0.5;
+  float v = theta / 3.14159265359;
+  
+  return vec2(u, v);
+}
+
 void main()
 {
   ObjDesc    objResource = objDesc.i[gl_InstanceCustomIndexEXT];
@@ -54,7 +66,7 @@ void main()
   const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));  
 
   const vec3 nrm      = v0.nrm * barycentrics.x + v1.nrm * barycentrics.y + v2.nrm * barycentrics.z;
-  const vec3 worldNrm = normalize(vec3(nrm * gl_WorldToObjectEXT));  
+  const vec3 worldNrm = normalize(vec3(gl_ObjectToWorldEXT * vec4(nrm, 0.0))); 
 
   int               matIdx = matIndices.i[gl_PrimitiveID];
   WaveFrontMaterial mat    = materials.m[matIdx];
@@ -97,37 +109,51 @@ void main()
     }
     else if(light.type == 2)  // Dome light
     {
-      // 计算 dome 方向(在作用域开始就声明)
-      vec3 upVector = vec3(0, 1, 0);
-      vec3 domeUp = rotateByQuaternion(upVector, light.rotateQuat);
-      
-      // 采样 Dome light 贴图用于漫反射
-      vec3 DometextureColor = vec3(1.0);
-      if (light.textureID >= 0) {
-          uint txtId = light.textureID;
-          
-          // 使用法线方向采样
-          vec3 sampleDir = normalize(worldNrm);
-          vec3 rotatedDir = rotateByQuaternion(sampleDir, light.rotateQuat);
-          
-          float theta = acos(clamp(rotatedDir.y, -1.0, 1.0));
-          float phi = atan(rotatedDir.z, rotatedDir.x);
-          
-          vec2 texCoord = vec2(phi / (2.0 * 3.14159265359) + 0.5, theta / 3.14159265359);
-          DometextureColor = texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
-      }
-      
-      // 计算衰减
-      float alignment = dot(worldNrm, domeUp);
-      distanceAttenuation = max(alignment * 0.5 + 0.5, 0.1);
-      if(alignment < 0)
-      {
-          distanceAttenuation *= 0.3;
-      }
-      
-      L = normalize(mix(worldNrm, domeUp, 0.5));
-      lightEmission = light.baseEmission * distanceAttenuation * DometextureColor;
+        // 方案1: 使用反射方向（推荐用于 PBR）
+        vec3 V = normalize(-gl_WorldRayDirectionEXT);  // 视线方向
+        vec3 R = reflect(-V, worldNrm);  // 反射方向
+        vec3 sampleDir = R;
+        
+        // 或者方案2: 使用法线方向（用于漫反射环境光）
+        // vec3 sampleDir = worldNrm;
+        
+        // 应用旋转四元数
+        sampleDir = rotateByQuaternion(sampleDir, light.rotateQuat);
+        
+        // 转换为球面坐标UV
+        vec2 uv = directionToSphericalUV(sampleDir);
+        
+        // 采样环境贴图
+        vec3 envColor = vec3(1.0);
+        if(light.textureID >= 0)
+        {
+            envColor = texture(textureSamplers[nonuniformEXT(light.textureID)], uv).xyz;
+        }
+        
+        // Dome light 的贡献
+        lightEmission = light.baseEmission * envColor;
+        
+        // 漫反射贡献（使用法线采样）
+        vec3 diffuseSampleDir = rotateByQuaternion(worldNrm, light.rotateQuat);
+        vec2 diffuseUV = directionToSphericalUV(diffuseSampleDir);
+        vec3 diffuseEnv = vec3(1.0);
+        if(light.textureID >= 0)
+        {
+            diffuseEnv = texture(textureSamplers[nonuniformEXT(light.textureID)], diffuseUV).xyz;
+        }
+        
+        vec3 diffuse = textureColor * light.diffuseScale;
+        vec3 diffuseContribution = light.baseEmission * diffuseEnv * diffuse;
+        
+        // 镜面反射贡献（使用反射方向采样）
+        vec3 specular = computeSpecular(mat, gl_WorldRayDirectionEXT, worldNrm, worldNrm);
+        vec3 specularContribution = lightEmission * specular * light.specularScale;
+        
+        totalLight += diffuseContribution + specularContribution;
+        
+        continue;
     }
+
 
     vec3 diffuse = computeDiffuse(mat, L, worldNrm);
     diffuse *= textureColor * light.diffuseScale;
@@ -135,7 +161,7 @@ void main()
     vec3  specular          = vec3(0);
     float shadowAttenuation = 1.0;
 
-    if(light.type != 2 && dot(worldNrm, L) > 0)
+    if(dot(worldNrm, L) > 0)
     {
       float tMin   = 0.001;
       float tMax   = lightDistance;
@@ -153,28 +179,6 @@ void main()
       {
         specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
         specular *= light.specularScale;
-      }
-    }
-    else if(light.type == 2)
-    {
-      // 重新计算 domeUp (或者从上面的 if 块中移出来共享)
-      vec3 upVector = vec3(0, 1, 0);
-      vec3 domeUp = rotateByQuaternion(upVector, light.rotateQuat);
-      
-      vec3 reflectDir = reflect(-gl_WorldRayDirectionEXT, worldNrm);
-      vec3 rotatedReflect = rotateByQuaternion(reflectDir, light.rotateQuat);
-      
-      float specAlignment = max(dot(reflectDir, domeUp), 0.0);
-      if(specAlignment > 0.0 && light.textureID >= 0)
-      {
-        // 采样反射方向的环境贴图
-        float theta = acos(clamp(rotatedReflect.y, -1.0, 1.0));
-        float phi = atan(rotatedReflect.z, rotatedReflect.x);
-        vec2 texCoord = vec2(phi / (2.0 * 3.14159265359) + 0.5, theta / 3.14159265359);
-        vec3 reflectColor = texture(textureSamplers[nonuniformEXT(light.textureID)], texCoord).xyz;
-        
-        float specIntensity = pow(specAlignment, max(mat.shininess * 0.25, 0.001));
-        specular = mat.specular * specIntensity * light.specularScale * reflectColor;
       }
     }
 
