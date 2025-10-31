@@ -110,6 +110,7 @@ struct HydraLight
   {
     Light light;
     light.type          = type;
+    light.textureID     = textureID;
     light.baseEmission  = baseEmission;
     light.diffuseScale  = diffuseScale;
     light.specularScale = specularScale;
@@ -118,7 +119,6 @@ struct HydraLight
     light.position      = position;
     light.radius        = radius;
     light.rotateQuat    = rotateQuat;
-    light.textureID     = textureID;
     return light;
   }
 };

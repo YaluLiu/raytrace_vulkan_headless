@@ -251,12 +251,13 @@ void printLightCompact(const Light& light)
 {
   printf(
       "Light { type=%d, baseEmission=(%.3f,%.3f,%.3f), "
-      "diffuse=%.3f, specular=%.3f, dir=(%.3f,%.3f,%.3f), "
+      "textureId=%d,diffuse=%.3f, specular=%.3f, dir=(%.3f,%.3f,%.3f), "
       "angleScale=%.3f, pos=(%.3f,%.3f,%.3f), radius=%.3f, "
-      "quat=(%.3f,%.3f,%.3f,%.3f) }\n",
-      light.type, light.baseEmission.x, light.baseEmission.y, light.baseEmission.z, light.diffuseScale, light.specularScale,
-      light.direction.x, light.direction.y, light.direction.z, light.angleScale, light.position.x, light.position.y,
-      light.position.z, light.radius, light.rotateQuat.x, light.rotateQuat.y, light.rotateQuat.z, light.rotateQuat.w);
+      "quat=(%.3f,%.3f,%.3f,%.3f), }\n",
+      light.type, light.baseEmission.x, light.baseEmission.y, light.baseEmission.z, light.textureID, light.diffuseScale,
+      light.specularScale, light.direction.x, light.direction.y, light.direction.z, light.angleScale, light.position.x,
+      light.position.y, light.position.z, light.radius, light.rotateQuat.x, light.rotateQuat.y, light.rotateQuat.z,
+      light.rotateQuat.w);
 }
 
 void HdGatlingRenderPass::app_updateLight()
@@ -270,19 +271,10 @@ void HdGatlingRenderPass::app_updateLight()
       _renderApp.getVulkan().addLight(cur_light.toLight());
     }
   }
-  // //todo:delete this test code
-  if(_renderApp.getVulkan().m_lights.size() <= 1)
-  {
-    Light default_light;
-    default_light.type          = 0;  //sphere
-    default_light.baseEmission  = {5000.0f, 5000.0f, 5000.0f};
-    default_light.diffuseScale  = 1.0;
-    default_light.specularScale = 1.0;
-    default_light.radius        = 10;
-
-    default_light.position = {100, 0, 100};
-    _renderApp.getVulkan().addLight(default_light);
-  }
+  // for(auto light : _renderApp.getVulkan().m_lights)
+  // {
+  //   printLightCompact(light);
+  // }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {

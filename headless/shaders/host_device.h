@@ -60,6 +60,7 @@ struct Light
 {
   // common
   int   type;
+  int   textureID;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
   float diffuseScale;
   float specularScale;
@@ -70,9 +71,7 @@ struct Light
   vec3  position;
   float radius;
   // dome light
-  vec4 rotateQuat;
-  int  textureID;
-  // padding for alignment
+  vec4 rotateQuat;  // padding for alignment
   vec3 padding;
 };
 
@@ -121,6 +120,8 @@ struct Aabb
   vec3 minimum;
   vec3 maximum;
 };
+
+const float PI = 3.1415926535897932384626433832795;
 
 #define KIND_SPHERE 0
 #define KIND_CUBE 1
