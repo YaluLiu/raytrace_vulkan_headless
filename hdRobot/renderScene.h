@@ -92,7 +92,7 @@ struct HydraLight
 {
   // common
   int   type;
-  int   valid = 1;
+  int   valid = 0;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
   float diffuseScale;
   float specularScale;
