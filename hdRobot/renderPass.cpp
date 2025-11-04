@@ -271,16 +271,47 @@ void HdGatlingRenderPass::app_updateLight()
       _renderApp.getVulkan().addLight(cur_light.toLight());
     }
   }
-  if(_renderApp.getVulkan().m_lights.size() <= 1)
+  // {
+  //   Light default_light;
+  //   default_light.type          = 0;  //sphere
+  //   default_light.baseEmission  = {150000.0f, 150000.0f, 150000.0f};
+  //   default_light.position      = {0, 0, 5000};
+  //   default_light.diffuseScale  = 1.0;
+  //   default_light.specularScale = 1.0;
+  //   default_light.radius        = 100;
+  //   _renderApp.getVulkan().addLight(default_light);
+  // }
   {
     Light default_light;
-    default_light.type          = 0;  //sphere
-    default_light.baseEmission  = {5000.0f, 5000.0f, 5000.0f};
-    default_light.position      = {10, 10, 80};
+    default_light.type          = 0;  // sphere
+    default_light.baseEmission  = {15000.0f, 15000.0f, 15000.0f};
     default_light.diffuseScale  = 1.0;
     default_light.specularScale = 1.0;
     default_light.radius        = 1;
-    _renderApp.getVulkan().addLight(default_light);
+
+    // 球形分布参数
+    float sphere_radius = 200.0f;  // 大球半径
+    int   num_latitude  = 4;       // 纬度方向的数量
+    int   num_longitude = 4;       // 经度方向的数量
+
+    // 在球面上均匀分布灯光
+    for(int i = 0; i < num_latitude; i++)
+    {
+      // 纬度角度 (从上到下: 0 到 π)
+      float theta = M_PI * (i + 0.5f) / num_latitude;
+
+      for(int j = 0; j < num_longitude; j++)
+      {
+        // 经度角度 (绕一圈: 0 到 2π)
+        float phi = 2.0f * M_PI * j / num_longitude;
+
+        // 球坐标转笛卡尔坐标
+        default_light.position = {sphere_radius * sin(theta) * cos(phi), sphere_radius * sin(theta) * sin(phi),
+                                  sphere_radius * cos(theta)};
+
+        _renderApp.getVulkan().addLight(default_light);
+      }
+    }
   }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
