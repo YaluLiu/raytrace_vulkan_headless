@@ -271,10 +271,17 @@ void HdGatlingRenderPass::app_updateLight()
       _renderApp.getVulkan().addLight(cur_light.toLight());
     }
   }
-  // for(auto light : _renderApp.getVulkan().m_lights)
-  // {
-  //   printLightCompact(light);
-  // }
+  if(_renderApp.getVulkan().m_lights.size() <= 1)
+  {
+    Light default_light;
+    default_light.type          = 0;  //sphere
+    default_light.baseEmission  = {5000.0f, 5000.0f, 5000.0f};
+    default_light.position      = {10, 10, 80};
+    default_light.diffuseScale  = 1.0;
+    default_light.specularScale = 1.0;
+    default_light.radius        = 1;
+    _renderApp.getVulkan().addLight(default_light);
+  }
 }
 void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 {

@@ -57,6 +57,7 @@ media
 chatgpt.cpp
 *.png
 imgui.ini
+test.rchit
 
 chatgpt/
 

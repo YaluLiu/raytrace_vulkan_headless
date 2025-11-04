@@ -66,7 +66,7 @@ void main()
   const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));  
 
   const vec3 nrm      = v0.nrm * barycentrics.x + v1.nrm * barycentrics.y + v2.nrm * barycentrics.z;
-  const vec3 worldNrm = normalize(vec3(gl_ObjectToWorldEXT * vec4(nrm, 0.0))); 
+  const vec3 worldNrm = normalize(vec3(nrm * gl_WorldToObjectEXT));  // Transforming the normal to world space
 
   int               matIdx = matIndices.i[gl_PrimitiveID];
   WaveFrontMaterial mat    = materials.m[matIdx];
@@ -106,52 +106,6 @@ void main()
       L = normalize(light.direction.xyz);
       distanceAttenuation = light.angleScale;
       lightEmission = light.baseEmission * distanceAttenuation;
-    }
-    else if(light.type == 2)  // Dome light
-    {
-        // 方案1: 使用反射方向（推荐用于 PBR）
-        vec3 V = normalize(-gl_WorldRayDirectionEXT);  // 视线方向
-        vec3 R = reflect(-V, worldNrm);  // 反射方向
-        vec3 sampleDir = R;
-        
-        // 或者方案2: 使用法线方向（用于漫反射环境光）
-        // vec3 sampleDir = worldNrm;
-        
-        // 应用旋转四元数
-        sampleDir = rotateByQuaternion(sampleDir, light.rotateQuat);
-        
-        // 转换为球面坐标UV
-        vec2 uv = directionToSphericalUV(sampleDir);
-        
-        // 采样环境贴图
-        vec3 envColor = vec3(1.0);
-        if(light.textureID >= 0)
-        {
-            envColor = texture(textureSamplers[nonuniformEXT(light.textureID)], uv).xyz;
-        }
-        
-        // Dome light 的贡献
-        lightEmission = light.baseEmission * envColor;
-        
-        // 漫反射贡献（使用法线采样）
-        vec3 diffuseSampleDir = rotateByQuaternion(worldNrm, light.rotateQuat);
-        vec2 diffuseUV = directionToSphericalUV(diffuseSampleDir);
-        vec3 diffuseEnv = vec3(1.0);
-        if(light.textureID >= 0)
-        {
-            diffuseEnv = texture(textureSamplers[nonuniformEXT(light.textureID)], diffuseUV).xyz;
-        }
-        
-        vec3 diffuse = textureColor * light.diffuseScale;
-        vec3 diffuseContribution = light.baseEmission * diffuseEnv * diffuse;
-        
-        // 镜面反射贡献（使用反射方向采样）
-        vec3 specular = computeSpecular(mat, gl_WorldRayDirectionEXT, worldNrm, worldNrm);
-        vec3 specularContribution = lightEmission * specular * light.specularScale;
-        
-        totalLight += diffuseContribution + specularContribution;
-        
-        continue;
     }
 
 

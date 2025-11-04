@@ -67,7 +67,7 @@ void main()
 
   if(envColor == vec3(0.0))
   {
-    envColor = vec3(0.1, 0.1, 0.15);  // 深蓝色背景
+    envColor = vec3(0.18, 0.18, 0.18);
   }
 
   prd.hitValue   = envColor;
