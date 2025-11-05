@@ -281,6 +281,7 @@ void HdGatlingRenderPass::app_updateLight()
   //   default_light.radius        = 100;
   //   _renderApp.getVulkan().addLight(default_light);
   // }
+  if(false)
   {
     Light default_light;
     default_light.type          = 0;  // sphere

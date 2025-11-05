@@ -53,7 +53,7 @@ struct HydraMaterial
   // 透射成分
   glm::vec3 transmittance = glm::vec3(0.0f, 0.0f, 0.0f);
   // 自发光成分
-  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.10);
+  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.0f);
   // 高光系数
   float shininess = 0.f;
   // 折射率
