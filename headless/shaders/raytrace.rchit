@@ -27,23 +27,19 @@ layout(set = 1, binding = eLights, scalar) buffer LightBuf { Light lights[];} li
 layout(set = 1, binding = eInstanceIds, scalar) buffer InstanceIdBuf { int instanceIds[]; } instanceIdBuf;
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 
-vec3 rotateByQuaternion(vec3 v, vec4 q) 
+// 辅助函数：通过四元数旋转向量
+vec3 quat_rotate(vec4 q, vec3 v)
 {
-  vec3 u = q.xyz;
-  float s = q.w;
-  return 2.0 * dot(u, v) * u + (s * s - dot(u, u)) * v + 2.0 * s * cross(u, v);
+  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
-// 将世界空间方向转换为球面坐标 UV
-vec2 directionToSphericalUV(vec3 dir)
+// 辅助函数：将方向向量转换为经纬球形贴图（equirectangular）的UV坐标
+vec2 dir_to_uv(vec3 dir)
 {
-  float phi = atan(dir.z, dir.x);
-  float theta = acos(clamp(dir.y, -1.0, 1.0));
-  
-  float u = phi / (2.0 * 3.14159265359) + 0.5;
-  float v = theta / 3.14159265359;
-  
-  return vec2(u, v);
+  const float PI = 3.14159265359;
+  // atan(y, x) 是GLSL的atan2, 返回范围 [-PI, PI]
+  // asin(y) 返回范围 [-PI/2, PI/2]
+  return vec2(0.5 + atan(dir.z, dir.x) / (2.0 * PI), 0.5 - asin(dir.y) / PI);
 }
 
 void main()
@@ -86,6 +82,13 @@ void main()
   for(int i = 0; i < numLights; i++)
   {
     Light light = lightBuf.lights[i];
+
+    if(light.type == 2)  // Dome light
+    {
+      totalLight += light.baseEmission * textureColor * light.diffuseScale;
+      continue; // 处理下一个光源
+    }
+
     vec3  L;
     float lightDistance       = 100000.0;
     float distanceAttenuation = 1.0;
