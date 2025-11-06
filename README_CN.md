@@ -32,6 +32,12 @@ Headless Vulkan ray tracing demo
 
    > 可以将 nvpro_core 放在 raytrace_vulkan_headless 同级目录。
 
+2. 修改 nvpro_core 的 cmakelists，屏蔽掉下面的 code,启用 C++11
+
+   ```
+   add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
+   ```
+
 ## 运行方式
 
 编译完成后，直接运行：

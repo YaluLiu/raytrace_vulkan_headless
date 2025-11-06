@@ -33,6 +33,12 @@ The build process is identical to [nvpro-samples/vk_raytracing_tutorial_KHR](htt
 
    > You can place `nvpro_core` inside `raytrace_vulkan_headless` or at the same level.
 
+2. delete/comment the code in cmakelists of nvpro_core
+
+   ```
+   add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
+   ```
+
 ## Run
 
 After building, you can use the following commands to run demos or plugins:
