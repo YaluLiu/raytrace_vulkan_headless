@@ -85,7 +85,7 @@ void main()
 
     if(light.type == 2)  // Dome light
     {
-      totalLight += light.baseEmission * textureColor * light.diffuseScale;
+      totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuseScale;
       continue; // 处理下一个光源
     }
 
