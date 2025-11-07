@@ -94,6 +94,9 @@ void RayTraceApp::setupContext()
   };
 
   nvvk::ContextCreateInfo contextInfo;
+  contextInfo.verboseUsed              = false;
+  contextInfo.verboseCompatibleDevices = false;
+  contextInfo.verboseAvailable         = false;
   contextInfo.setVersion(1, 2);
 
   VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
