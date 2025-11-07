@@ -16,11 +16,10 @@ vec3 computeSpecular(WaveFrontMaterial mat, vec3 viewDir, vec3 lightDir, vec3 no
     return vec3(0);
 
   // Compute specular only if not in shadow
-  const float kPi        = 3.14159265;
   const float kShininess = max(mat.shininess, 4.0);
 
   // Specular
-  const float kEnergyConservation = (2.0 + kShininess) / (2.0 * kPi);
+  const float kEnergyConservation = (2.0 + kShininess) / (2.0 * PI);
   vec3        V                   = normalize(-viewDir);
   vec3        R                   = reflect(-lightDir, normal);
   float       specular            = kEnergyConservation * pow(max(dot(V, R), 0.0), kShininess);
