@@ -62,11 +62,11 @@ struct Light
   int   type;
   int   textureID;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
-  float diffuseScale;
-  float specularScale;
+  float diffuse;
+  float specular;
   // distant light
   vec3  direction;
-  float angleScale;
+  float angle;
   // sphere light
   vec3  position;
   float radius;

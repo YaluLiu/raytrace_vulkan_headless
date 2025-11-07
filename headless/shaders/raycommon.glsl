@@ -1,6 +1,4 @@
-#extension GL_EXT_scalar_block_layout : enable
-
-layout(scalar) struct hitPayload
+struct hitPayload
 {
   vec3 hitValue;    // 12字节
   int  objId;       // 4字节

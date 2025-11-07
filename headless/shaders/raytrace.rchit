@@ -85,8 +85,8 @@ void main()
 
     if(light.type == 2)  // Dome light
     {
-      totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuseScale;
-      continue; // 处理下一个光源
+      totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuse;
+      continue;
     }
 
     vec3  L;
@@ -107,13 +107,13 @@ void main()
     else if(light.type == 1)  // Distant light
     {
       L = normalize(light.direction.xyz);
-      distanceAttenuation = light.angleScale;
+      distanceAttenuation = light.angle;
       lightEmission = light.baseEmission * distanceAttenuation;
     }
 
 
     vec3 diffuse = computeDiffuse(mat, L, worldNrm);
-    diffuse *= textureColor * light.diffuseScale;
+    diffuse *= textureColor * light.diffuse;
 
     vec3  specular          = vec3(0);
     float shadowAttenuation = 1.0;
@@ -135,7 +135,7 @@ void main()
       else
       {
         specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
-        specular *= light.specularScale;
+        specular *= light.specular;
       }
     }
 

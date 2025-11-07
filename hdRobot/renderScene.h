@@ -94,11 +94,11 @@ struct HydraLight
   int   type;
   int   valid = 0;
   vec3  baseEmission;  // intensity * color * colorTemp * exposure
-  float diffuseScale;
-  float specularScale;
+  float diffuse;
+  float specular;
   // distant light
   vec3  direction;
-  float angleScale;
+  float angle;
   // sphere light
   vec3  position;
   float radius;
@@ -109,16 +109,16 @@ struct HydraLight
   Light       toLight() const
   {
     Light light;
-    light.type          = type;
-    light.textureID     = textureID;
-    light.baseEmission  = baseEmission;
-    light.diffuseScale  = diffuseScale;
-    light.specularScale = specularScale;
-    light.direction     = direction;
-    light.angleScale    = angleScale;
-    light.position      = position;
-    light.radius        = radius;
-    light.rotateQuat    = rotateQuat;
+    light.type         = type;
+    light.textureID    = textureID;
+    light.baseEmission = baseEmission;
+    light.diffuse      = diffuse;
+    light.specular     = specular;
+    light.direction    = direction;
+    light.angle        = angle;
+    light.position     = position;
+    light.radius       = radius;
+    light.rotateQuat   = rotateQuat;
     return light;
   }
 };

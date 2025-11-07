@@ -252,10 +252,10 @@ void printLightCompact(const Light& light)
   printf(
       "Light { type=%d, baseEmission=(%.3f,%.3f,%.3f), "
       "textureId=%d,diffuse=%.3f, specular=%.3f, dir=(%.3f,%.3f,%.3f), "
-      "angleScale=%.3f, pos=(%.3f,%.3f,%.3f), radius=%.3f, "
+      "angle=%.3f, pos=(%.3f,%.3f,%.3f), radius=%.3f, "
       "quat=(%.3f,%.3f,%.3f,%.3f), }\n",
-      light.type, light.baseEmission.x, light.baseEmission.y, light.baseEmission.z, light.textureID, light.diffuseScale,
-      light.specularScale, light.direction.x, light.direction.y, light.direction.z, light.angleScale, light.position.x,
+      light.type, light.baseEmission.x, light.baseEmission.y, light.baseEmission.z, light.textureID, light.diffuse,
+      light.specular, light.direction.x, light.direction.y, light.direction.z, light.angle, light.position.x,
       light.position.y, light.position.z, light.radius, light.rotateQuat.x, light.rotateQuat.y, light.rotateQuat.z,
       light.rotateQuat.w);
 }
@@ -276,19 +276,19 @@ void HdGatlingRenderPass::app_updateLight()
   //   default_light.type          = 0;  //sphere
   //   default_light.baseEmission  = {150000.0f, 150000.0f, 150000.0f};
   //   default_light.position      = {0, 0, 5000};
-  //   default_light.diffuseScale  = 1.0;
-  //   default_light.specularScale = 1.0;
+  //   default_light.diffuse  = 1.0;
+  //   default_light.specular = 1.0;
   //   default_light.radius        = 100;
   //   _renderApp.getVulkan().addLight(default_light);
   // }
   if(false)
   {
     Light default_light;
-    default_light.type          = 0;  // sphere
-    default_light.baseEmission  = {15000.0f, 15000.0f, 15000.0f};
-    default_light.diffuseScale  = 1.0;
-    default_light.specularScale = 1.0;
-    default_light.radius        = 1;
+    default_light.type         = 0;  // sphere
+    default_light.baseEmission = {15000.0f, 15000.0f, 15000.0f};
+    default_light.diffuse      = 1.0;
+    default_light.specular     = 1.0;
+    default_light.radius       = 1;
 
     // 球形分布参数
     float sphere_radius = 200.0f;  // 大球半径

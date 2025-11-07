@@ -136,10 +136,10 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
-    _scene.v_light[_light_id].diffuseScale  = diffuse;
-    _scene.v_light[_light_id].specularScale = specular;
-    _scene.v_light[_light_id].radius        = radius;
+    _scene.v_light[_light_id].baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    _scene.v_light[_light_id].diffuse      = diffuse;
+    _scene.v_light[_light_id].specular     = specular;
+    _scene.v_light[_light_id].radius       = radius;
   }
 
   *dirtyBits = HdChangeTracker::Clean;
@@ -182,10 +182,10 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
-    _scene.v_light[_light_id].diffuseScale  = diffuse;
-    _scene.v_light[_light_id].specularScale = specular;
-    _scene.v_light[_light_id].angleScale    = angle;
+    _scene.v_light[_light_id].baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    _scene.v_light[_light_id].diffuse      = diffuse;
+    _scene.v_light[_light_id].specular     = specular;
+    _scene.v_light[_light_id].angle        = angle;
   }
 
   *dirtyBits = HdChangeTracker::Clean;
@@ -247,10 +247,10 @@ void HdGatlingDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float   specular      = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    _scene.v_light[_light_id].baseEmission  = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
-    _scene.v_light[_light_id].diffuseScale  = diffuse;
-    _scene.v_light[_light_id].specularScale = specular;
-    std::string texturePath                 = GetTexturePath(sceneDelegate);
+    _scene.v_light[_light_id].baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    _scene.v_light[_light_id].diffuse      = diffuse;
+    _scene.v_light[_light_id].specular     = specular;
+    std::string texturePath                = GetTexturePath(sceneDelegate);
     if(_scene.v_light[_light_id].texturePath != texturePath)
     {
       _scene.v_light[_light_id].texturePath = texturePath;
