@@ -49,7 +49,7 @@ bash install.sh demo
 可以运行 headless 的测试 demo
 
 ```bash
-bash install.sh gatling
+bash install.sh hydra
 ```
 
 可以运行基于 headless 编译的 hydra 插件

@@ -50,7 +50,7 @@ bash install.sh demo
 Runs the headless test demo.
 
 ```bash
-bash install.sh gatling
+bash install.sh hydra
 ```
 
 Runs the Hydra plugin based on headless mode.
