@@ -42,8 +42,7 @@ function vulkan(){
     echo "source \"${SETUP_ENV_SCRIPT}\""
     echo ""
     echo "然后运行: source ~/.bashrc (或 source ~/.zshrc)"
-    
-    # echo "source \"${SETUP_ENV_SCRIPT}\"" >> ~/.bashrc
+    echo "然后运行: vulkaninfo,验证是否安装成功"
 }
 
 function format(){
