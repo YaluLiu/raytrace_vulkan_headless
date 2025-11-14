@@ -3,6 +3,49 @@
 BUILD_TYPE="Release"
 app_name="headless"
 
+function vulkan(){
+    # 设置版本和目录
+    VULKAN_VERSION="1.4.328.1"
+    VULKAN_SDK_DIR="$HOME/test/vulkan-sdk"
+    VULKAN_ARCHIVE="vulkansdk-linux-x86_64-${VULKAN_VERSION}.tar.xz"
+    
+    echo "开始安装 Vulkan SDK ${VULKAN_VERSION}..."
+    
+    # 创建安装目录
+    mkdir -p "$VULKAN_SDK_DIR"
+    cd "$VULKAN_SDK_DIR" || exit 1
+    
+    # 下载 Vulkan SDK
+    echo "正在下载 Vulkan SDK..."
+    wget https://sdk.lunarg.com/sdk/download/${VULKAN_VERSION}/linux/${VULKAN_ARCHIVE}
+    
+    # 检查下载是否成功
+    if [ $? -ne 0 ]; then
+        echo "下载失败！"
+        return 1
+    fi
+    
+    # 解压文件
+    echo "正在解压..."
+    tar -xf ${VULKAN_ARCHIVE}
+    
+    # 删除压缩包
+    rm ${VULKAN_ARCHIVE}
+
+    # 设置环境变量脚本路径
+    SETUP_ENV_SCRIPT="${VULKAN_SDK_DIR}/${VULKAN_VERSION}/setup-env.sh"
+
+    echo ""
+    echo "Vulkan SDK 安装完成！"
+    echo "请将以下内容添加到你的 ~/.bashrc 或 ~/.zshrc 文件中："
+    echo ""
+    echo "source \"${SETUP_ENV_SCRIPT}\""
+    echo ""
+    echo "然后运行: source ~/.bashrc (或 source ~/.zshrc)"
+    
+    # echo "source \"${SETUP_ENV_SCRIPT}\"" >> ~/.bashrc
+}
+
 function format(){
     find headless -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
 }
