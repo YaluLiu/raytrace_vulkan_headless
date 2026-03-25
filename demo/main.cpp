@@ -84,12 +84,10 @@ public:
     m_app.getVulkan().clearLights();
     Light default_light;
     default_light.type         = 0;  //sphere
-    default_light.valid        = 1;
     default_light.baseEmission = {100.0f, 100.0f, 100.0f};
     default_light.diffuse      = 1.0;
     default_light.specular     = 1.0;
     default_light.radius       = 2;
-    default_light.valid        = 1;
 
     default_light.position = {0, 0, 10};
     m_app.getVulkan().addLight(default_light);

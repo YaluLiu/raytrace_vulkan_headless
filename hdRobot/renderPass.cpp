@@ -31,7 +31,6 @@
 #include <pxr/base/gf/camera.h>
 #include "pxr/imaging/hgiGL/texture.h"
 #include <iostream>
-#include "perf_test/scope_timer.hpp"
 #include "nvh/fileoperations.hpp"
 #include "nvh/cameramanipulator.hpp"
 
