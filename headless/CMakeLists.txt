@@ -100,3 +100,11 @@ _finalize_target( ${PROJNAME} )
 
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Release DESTINATION "bin_${ARCH}/${PROJNAME}/spv")
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Debug DESTINATION "bin_${ARCH}_debug/${PROJNAME}/spv")
+
+if(ENABLE_HYDRA)
+  install(
+    FILES ${SPV_OUTPUT}
+    DESTINATION "./hdRobot/spv"
+    COMPONENT hdRobot
+  )
+endif()
