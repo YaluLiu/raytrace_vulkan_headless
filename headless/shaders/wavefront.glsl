@@ -15,16 +15,26 @@ vec3 computeSpecular(WaveFrontMaterial mat, vec3 viewDir, vec3 lightDir, vec3 no
   if(mat.illum < 2)
     return vec3(0);
 
-  // Compute specular only if not in shadow
-  const float kShininess = max(mat.shininess, 4.0);
+  vec3 V = normalize(-viewDir);
+  vec3 L = normalize(lightDir);
+  vec3 H = normalize(V + L);
 
-  // Specular
-  const float kEnergyConservation = (2.0 + kShininess) / (2.0 * PI);
-  vec3        V                   = normalize(-viewDir);
-  vec3        R                   = reflect(-lightDir, normal);
-  float       specular            = kEnergyConservation * pow(max(dot(V, R), 0.0), kShininess);
+  float dotNL = max(dot(normal, L), 0.0);
+  float dotNV = max(dot(normal, V), 0.0);
+  float dotNH = max(dot(normal, H), 0.0);
+  float dotVH = max(dot(V, H), 0.0);
+  if(dotNL <= 0.0 || dotNV <= 0.0)
+    return vec3(0);
 
-  return vec3(mat.specular * specular);
+  // Normalized Blinn-Phong gives a softer, more stable highlight than reflect-based Phong.
+  const float kShininess = clamp(mat.shininess, 8.0, 256.0);
+  const float kNorm      = (kShininess + 8.0) / (8.0 * PI);
+  float       specular   = kNorm * pow(dotNH, kShininess) * dotNL;
+
+  vec3 specularColor = clamp(mat.specular, vec3(0.0), vec3(0.98));
+  vec3 fresnel       = specularColor + (vec3(1.0) - specularColor) * pow(1.0 - dotVH, 5.0);
+
+  return fresnel * specular;
 }
 
 vec3 computeEmission(WaveFrontMaterial mat, vec3 textureColor)

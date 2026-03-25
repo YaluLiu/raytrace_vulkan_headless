@@ -27,6 +27,12 @@ layout(set = 1, binding = eLights, scalar) buffer LightBuf { Light lights[];} li
 layout(set = 1, binding = eInstanceIds, scalar) buffer InstanceIdBuf { int instanceIds[]; } instanceIdBuf;
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 
+float computeShadowBias(vec3 worldPos)
+{
+  float sceneScale = max(max(abs(worldPos.x), abs(worldPos.y)), abs(worldPos.z));
+  return max(0.001, sceneScale * 0.0001);
+}
+
 void main()
 {
   ObjDesc    objResource = objDesc.i[gl_InstanceCustomIndexEXT];
@@ -44,10 +50,20 @@ void main()
   const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
 
   const vec3 pos      = v0.pos * barycentrics.x + v1.pos * barycentrics.y + v2.pos * barycentrics.z;
-  const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));  
+  const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
 
-  const vec3 nrm      = v0.nrm * barycentrics.x + v1.nrm * barycentrics.y + v2.nrm * barycentrics.z;
-  const vec3 worldNrm = normalize(vec3(nrm * gl_WorldToObjectEXT));  // Transforming the normal to world space
+  const mat3 normalMatrix   = transpose(mat3(gl_WorldToObjectEXT));
+  const vec3 geometricNrm   = cross(v1.pos - v0.pos, v2.pos - v0.pos);
+  const vec3 interpolatedNrm = v0.nrm * barycentrics.x + v1.nrm * barycentrics.y + v2.nrm * barycentrics.z;
+  vec3       worldGeoNrm    = normalize(normalMatrix * geometricNrm);
+  vec3       worldShadeNrm  = normalize(normalMatrix * interpolatedNrm);
+  if(length(worldShadeNrm) < 1e-5)
+  {
+    worldShadeNrm = worldGeoNrm;
+  }
+
+  worldGeoNrm   = faceforward(worldGeoNrm, gl_WorldRayDirectionEXT, worldGeoNrm);
+  vec3 worldNrm = faceforward(worldShadeNrm, gl_WorldRayDirectionEXT, worldGeoNrm);
 
   int               matIdx = matIndices.i[gl_PrimitiveID];
   WaveFrontMaterial mat    = materials.m[matIdx];
@@ -83,7 +99,7 @@ void main()
     {
       vec3 lDir     = light.position.xyz - worldPos;
       lightDistance = length(lDir);
-      float effectiveDistance = max(lightDistance - light.radius, 0.001);
+      float effectiveDistance = max(lightDistance - light.radius, max(light.radius * 0.25, 0.05));
       distanceAttenuation     = 1.0 / (effectiveDistance * effectiveDistance);
 
       L = normalize(lDir);
@@ -105,9 +121,10 @@ void main()
 
     if(dot(worldNrm, L) > 0)
     {
+      float shadowBias = computeShadowBias(worldPos);
       float tMin   = 0.001;
-      float tMax   = lightDistance;
-      vec3  origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+      float tMax   = max(lightDistance - shadowBias, tMin);
+      vec3  origin = worldPos + worldGeoNrm * shadowBias;
       vec3  rayDir = L;
       uint  flags  = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
       isShadowed   = true;
