@@ -8,10 +8,36 @@
 // opengl上下文
 #include "nvgl/contextwindow_gl.hpp"
 #include <algorithm>
+#include <filesystem>
+#include <utility>
 
 #include "obj_loader.h"
 
 std::vector<std::string> defaultSearchPaths;
+
+namespace fs = std::filesystem;
+
+namespace {
+void addSearchPathIfExists(std::vector<std::string>& paths, const fs::path& path)
+{
+  if(path.empty() || !fs::exists(path))
+  {
+    return;
+  }
+
+  const std::string normalized = path.lexically_normal().string();
+  if(std::find(paths.begin(), paths.end(), normalized) == paths.end())
+  {
+    paths.push_back(normalized);
+  }
+}
+
+std::string getUsdRootFromEnvironment()
+{
+  const char* envValue = std::getenv("USD_ROOT");
+  return envValue != nullptr ? std::string(envValue) : std::string();
+}
+}  // namespace
 
 RayTraceApp::RayTraceApp() {}
 
@@ -42,56 +68,31 @@ void RayTraceApp::setupCamera()
 
 void RayTraceApp::UpdateCamera() {}
 
-std::string getEnvironmentVariable(const std::string& varName)
+void RayTraceApp::setPluginSearchRoot(std::string pluginSearchRoot)
 {
-  const char* env_value = std::getenv(varName.c_str());
-  if(env_value != nullptr)
-  {
-    return std::string(env_value);
-  }
-  return "";  // 返回空字符串表示未找到
+  m_pluginSearchRoot = std::move(pluginSearchRoot);
 }
-
-std::string extractUSDPath(const std::string& pathString)
-{
-  std::stringstream ss(pathString);
-  std::string       path;
-
-  // 按冒号分割PATH
-  while(std::getline(ss, path, ':'))
-  {
-    if(!path.empty() && path.find("USD/bin") != std::string::npos)
-    {
-      // 找到USD路径，替换bin为plugin/usd
-      size_t binPos = path.find("/bin");
-      if(binPos != std::string::npos)
-      {
-        return path.substr(0, binPos) + "/plugin/usd";
-      }
-    }
-  }
-
-  return "";  // 未找到
-}
-
-#include <filesystem>
-namespace fs = std::filesystem;
 
 void RayTraceApp::setupContext()
 {
-  NVPSystem   system("raytrace_vulkan_headless");
-  std::string currentDir = fs::current_path().string();
-  std::string usd_path   = getEnvironmentVariable("USD_ROOT");
-  if(usd_path == "")
+  NVPSystem system("raytrace_vulkan_headless");
+
+  defaultSearchPaths.clear();
+  addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY);
+  addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY / "..");
+
+  if(!m_pluginSearchRoot.empty())
   {
-    throw std::runtime_error("USD_ROOT must set to usd install path!");
+    addSearchPathIfExists(defaultSearchPaths, m_pluginSearchRoot);
   }
-  defaultSearchPaths = {
-      NVPSystem::exePath() + PROJECT_RELDIRECTORY,
-      NVPSystem::exePath() + PROJECT_RELDIRECTORY "/..",
-      currentDir + "/headless",
-      usd_path + "/plugin/usd/hdRobot",
-  };
+  else
+  {
+    const std::string usdRoot = getUsdRootFromEnvironment();
+    if(!usdRoot.empty())
+    {
+      addSearchPathIfExists(defaultSearchPaths, fs::path(usdRoot) / "plugin/usd/hdRobot");
+    }
+  }
 
   nvvk::ContextCreateInfo contextInfo;
   contextInfo.verboseUsed              = false;

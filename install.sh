@@ -89,9 +89,13 @@ function hydra(){
     cmake --build . --target ${plugin_name} --config Release -j20
     cmake --install . --component ${plugin_name}
     cd ..
+    export USD_ROOT=${usd_path}
     /home/yalu/software/usdtweak/build/usdtweak
 }
 
+# function nsight{
+#     sudo /opt/nvidia/nsight-graphics-for-linux/nsight-graphics-for-linux-2025.5.0.0/host/linux-desktop-nomad-x64/ngfx-ui
+# }
 
 # 动态函数调用
 if declare -f "$1" > /dev/null; then

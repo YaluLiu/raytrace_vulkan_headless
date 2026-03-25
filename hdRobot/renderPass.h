@@ -19,6 +19,7 @@
 
 #include <pxr/imaging/hd/renderPass.h>
 #include <pxr/imaging/hd/renderDelegate.h>
+#include <string>
 #include <ray_trace_app.hpp>
 #include <renderScene.h>
 
@@ -49,7 +50,11 @@ glm::mat4 computeProjectionMatrix(const GiCameraDesc& cameraDesc, float aspectRa
 class HdGatlingRenderPass final : public HdRenderPass
 {
 public:
-  HdGatlingRenderPass(HdRenderIndex* index, const HdRprimCollection& collection, const HdRenderSettingsMap& settings, HdGatlingScene& _scene);
+  HdGatlingRenderPass(HdRenderIndex*             index,
+                      const HdRprimCollection&   collection,
+                      const HdRenderSettingsMap& settings,
+                      HdGatlingScene&            scene,
+                      std::string                resourcePath);
 
   ~HdGatlingRenderPass() override;
 
@@ -65,6 +70,7 @@ private:
   bool                       _isConverged;
   int                        _frame_idx = 0;
   HdGatlingScene&            _scene;
+  std::string                _resourcePath;
 
   // ----------------------------------------------------------------------------------
   // for headless ray trace app

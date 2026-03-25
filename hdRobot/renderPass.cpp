@@ -43,6 +43,7 @@
 #include <thread>
 #include <filesystem>
 #include <sstream>
+#include <utility>
 
 bool ensureDirectoryExists(const std::string& path)
 {
@@ -95,11 +96,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex*             index,
                                          const HdRprimCollection&   collection,
                                          const HdRenderSettingsMap& settings,
-                                         HdGatlingScene&            scene)
+                                         HdGatlingScene&            scene,
+                                         std::string                resourcePath)
     : HdRenderPass(index, collection)
     , _settings(settings)
     , _isConverged(false)
     , _scene(scene)
+    , _resourcePath(std::move(resourcePath))
 {
   m_startTime = std::chrono::system_clock::now();
 }
@@ -220,13 +223,16 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   _frame_idx++;
 }
 
-#include <utility>
 #if USE_RAY_TRACE
 void HdGatlingRenderPass::app_init()
 {
   if(!_isAppInited)
   {
     _isAppInited = true;
+    if(!_resourcePath.empty())
+    {
+      _renderApp.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
+    }
     _renderApp.setup(_width, _height);
 #if USE_BASE_RENDER
     _renderApp.loadScene();

@@ -17,6 +17,7 @@ public:
 
   // init vulkan and hello-vulkan
   void setup(int width = 1280, int height = 720);
+  void setPluginSearchRoot(std::string pluginSearchRoot);
 
   // 渲染
   void resize(int w, int h);
@@ -62,4 +63,5 @@ private:
   std::chrono::system_clock::time_point m_startTime;
 
   bool _cleaned = false;
+  std::string m_pluginSearchRoot;
 };

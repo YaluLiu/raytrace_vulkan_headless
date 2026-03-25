@@ -126,7 +126,7 @@ bool HdGatlingRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unus
 
 HdRenderPassSharedPtr HdGatlingRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
 {
-  return HdRenderPassSharedPtr(new HdGatlingRenderPass(index, collection, _settingsMap, _scene));
+  return HdRenderPassSharedPtr(new HdGatlingRenderPass(index, collection, _settingsMap, _scene, _resourcePath));
 }
 
 HdResourceRegistrySharedPtr HdGatlingRenderDelegate::GetResourceRegistry() const
