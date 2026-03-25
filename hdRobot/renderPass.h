@@ -74,6 +74,7 @@ private:
   void app_init();
 
   void app_anim_real();
+  void app_print_update_info();
   void app_update_blas();
   void app_update_tlas();
   void app_update_material();

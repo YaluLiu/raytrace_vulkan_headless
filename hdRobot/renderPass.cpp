@@ -43,6 +43,7 @@
 #include <chrono>
 #include <thread>
 #include <filesystem>
+#include <sstream>
 
 bool ensureDirectoryExists(const std::string& path)
 {
@@ -59,6 +60,36 @@ bool ensureDirectoryExists(const std::string& path)
     return false;
   }
 }
+
+namespace
+{
+std::string FormatUpdatedIds(const std::vector<int>& ids)
+{
+  std::ostringstream oss;
+  size_t             limit = std::min<size_t>(ids.size(), 10);
+
+  if(ids.size() > 10)
+  {
+    oss << "count=" << ids.size() << ", first10=[";
+  }
+  else
+  {
+    oss << "ids=[";
+  }
+
+  for(size_t i = 0; i < limit; ++i)
+  {
+    if(i > 0)
+    {
+      oss << ", ";
+    }
+    oss << ids[i];
+  }
+
+  oss << "]";
+  return oss.str();
+}
+}  // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -350,9 +381,46 @@ void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
 
 void HdGatlingRenderPass::app_anim_real()
 {
+  app_print_update_info();
   app_update_blas();
   app_update_tlas();
   app_update_material();
+}
+
+void HdGatlingRenderPass::app_print_update_info()
+{
+  std::vector<int> updated_blas_ids;
+  std::vector<int> updated_tlas_ids;
+
+  for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+  {
+    auto& cur_mesh = _scene.v_mesh[mesh_id];
+    if(cur_mesh.blas_changed)
+    {
+      updated_blas_ids.push_back(static_cast<int>(mesh_id));
+    }
+    if(cur_mesh.tlas_changed)
+    {
+      for(size_t ins_id = 0; ins_id < cur_mesh.instanceTransforms.size() && ins_id < cur_mesh.tlasIds.size(); ++ins_id)
+      {
+        updated_tlas_ids.push_back(cur_mesh.tlasIds[ins_id]);
+      }
+    }
+  }
+
+  if(updated_blas_ids.empty() && updated_tlas_ids.empty())
+  {
+    return;
+  }
+
+  if(!updated_blas_ids.empty())
+  {
+    std::cout << "[RenderPass][Update] BLAS " << FormatUpdatedIds(updated_blas_ids) << std::endl;
+  }
+  if(!updated_tlas_ids.empty())
+  {
+    std::cout << "[RenderPass][Update] TLAS " << FormatUpdatedIds(updated_tlas_ids) << std::endl;
+  }
 }
 
 void HdGatlingRenderPass::app_update_blas()
