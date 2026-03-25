@@ -27,21 +27,6 @@ layout(set = 1, binding = eLights, scalar) buffer LightBuf { Light lights[];} li
 layout(set = 1, binding = eInstanceIds, scalar) buffer InstanceIdBuf { int instanceIds[]; } instanceIdBuf;
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 
-// 辅助函数：通过四元数旋转向量
-vec3 quat_rotate(vec4 q, vec3 v)
-{
-  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
-}
-
-// 辅助函数：将方向向量转换为经纬球形贴图（equirectangular）的UV坐标
-vec2 dir_to_uv(vec3 dir)
-{
-  const float PI = 3.14159265359;
-  // atan(y, x) 是GLSL的atan2, 返回范围 [-PI, PI]
-  // asin(y) 返回范围 [-PI/2, PI/2]
-  return vec2(0.5 + atan(dir.z, dir.x) / (2.0 * PI), 0.5 - asin(dir.y) / PI);
-}
-
 void main()
 {
   ObjDesc    objResource = objDesc.i[gl_InstanceCustomIndexEXT];
@@ -76,8 +61,8 @@ void main()
   }
 
   vec3 emission = computeEmission(mat, textureColor);
-  vec3 totalLight = vec3(0);
   int  numLights  = pcRay.numLights;
+  vec3 totalLight = vec3(0);
 
   for(int i = 0; i < numLights; i++)
   {
