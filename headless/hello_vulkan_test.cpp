@@ -120,6 +120,11 @@ void HelloVulkan::animationInstances(float time)
 // 每帧调用，推动球体模型实现变形动画
 void HelloVulkan::animationObject(float time)
 {
+  if(m_compPipeline == VK_NULL_HANDLE || m_compPipelineLayout == VK_NULL_HANDLE || m_compDescSet == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
   const uint32_t sphereId = 2;
   ObjModel&      model    = m_objModel[sphereId];
 

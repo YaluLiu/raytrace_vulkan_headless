@@ -1,4 +1,5 @@
 #include <sstream>
+#include <cmath>
 
 #include <glm/glm.hpp>
 
@@ -16,6 +17,23 @@
 
 
 extern std::vector<std::string> defaultSearchPaths;
+
+namespace {
+bool matrixNearlyEqual(const glm::mat4& a, const glm::mat4& b, float eps = 1e-5f)
+{
+  for(int c = 0; c < 4; ++c)
+  {
+    for(int r = 0; r < 4; ++r)
+    {
+      if(std::fabs(a[c][r] - b[c][r]) > eps)
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
 
 // opengl context with windows
 #include "nvgl/contextwindow_gl.hpp"
@@ -48,6 +66,13 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   createOpenGLContext();
 #endif
   m_allocGL.init(device, physicalDevice);
+  resetAccumulation();
+  m_hasLastCamera = false;
+}
+
+void HelloVulkan::resetAccumulation()
+{
+  m_accumulatedFrames = 0;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -61,6 +86,14 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 #if !ENABLE_HYDRA
   proj[1][1] *= -1;  // Vulkan坐标系Y反转
 #endif
+
+  if(!m_hasLastCamera || !matrixNearlyEqual(view, m_lastView) || !matrixNearlyEqual(proj, m_lastProj))
+  {
+    resetAccumulation();
+    m_lastView      = view;
+    m_lastProj      = proj;
+    m_hasLastCamera = true;
+  }
 
   hostUBO.viewProj    = proj * view;
   hostUBO.viewInverse = glm::inverse(view);
@@ -157,10 +190,14 @@ void HelloVulkan::destroyResources()
   vkDestroyDescriptorSetLayout(m_device, m_rtDescSetLayout, nullptr);
 
   // #VK_compute 计算着色器相关
-  vkDestroyPipeline(m_device, m_compPipeline, nullptr);
-  vkDestroyPipelineLayout(m_device, m_compPipelineLayout, nullptr);
-  vkDestroyDescriptorPool(m_device, m_compDescPool, nullptr);
-  vkDestroyDescriptorSetLayout(m_device, m_compDescSetLayout, nullptr);
+  if(m_compPipeline != VK_NULL_HANDLE)
+    vkDestroyPipeline(m_device, m_compPipeline, nullptr);
+  if(m_compPipelineLayout != VK_NULL_HANDLE)
+    vkDestroyPipelineLayout(m_device, m_compPipelineLayout, nullptr);
+  if(m_compDescPool != VK_NULL_HANDLE)
+    vkDestroyDescriptorPool(m_device, m_compDescPool, nullptr);
+  if(m_compDescSetLayout != VK_NULL_HANDLE)
+    vkDestroyDescriptorSetLayout(m_device, m_compDescSetLayout, nullptr);
 
   m_alloc.destroy(m_spheresBuffer);
   m_alloc.destroy(m_spheresAabbBuffer);
@@ -186,6 +223,8 @@ void HelloVulkan::onResize(int w, int h)
   // updatePostDescriptorSet();
   // 更新光线追踪输出描述符集（采样新的offscreen image）
   updateRtDescriptorSet();
+  resetAccumulation();
+  m_hasLastCamera = false;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -225,4 +264,6 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenInstanceId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     genCmdBuf.submitAndWait(cmdBuf);
   }
+
+  resetAccumulation();
 }

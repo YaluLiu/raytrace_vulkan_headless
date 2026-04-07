@@ -1,4 +1,5 @@
 #include <sstream>
+#include <algorithm>
 #include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/cameramanipulator.hpp"
@@ -108,6 +109,8 @@ void HelloVulkan::createRtPipeline()
   group.generalShader      = VK_SHADER_UNUSED_KHR;
   group.intersectionShader = VK_SHADER_UNUSED_KHR;
 
+  m_rtShaderGroups.clear();
+
   group.type          = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
   group.generalShader = eRaygen;
   m_rtShaderGroups.push_back(group);
@@ -153,7 +156,8 @@ void HelloVulkan::createRtPipeline()
   rayPipelineInfo.groupCount = static_cast<uint32_t>(m_rtShaderGroups.size());
   rayPipelineInfo.pGroups    = m_rtShaderGroups.data();
 
-  rayPipelineInfo.maxPipelineRayRecursionDepth = 2;
+  uint32_t desiredRecursionDepth               = 8;
+  rayPipelineInfo.maxPipelineRayRecursionDepth = std::min(desiredRecursionDepth, m_rtProperties.maxRayRecursionDepth);
   rayPipelineInfo.layout                       = m_rtPipelineLayout;
 
   vkCreateRayTracingPipelinesKHR(m_device, {}, {}, 1, &rayPipelineInfo, nullptr, &m_rtPipeline);
@@ -235,7 +239,10 @@ void HelloVulkan::createRtShaderBindingTable()
 void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 {
   m_debug.beginLabel(cmdBuf, "Ray trace");
-  m_pcRay.numLights = static_cast<int>(m_lights.size());  // 新增
+  m_pcRay.numLights       = static_cast<int>(m_lights.size());
+  m_pcRay.frameIndex      = m_accumulatedFrames;
+  m_pcRay.maxDepth        = std::max(m_pcRay.maxDepth, 1);
+  m_pcRay.samplesPerFrame = std::max(m_pcRay.samplesPerFrame, 1);
   std::vector<VkDescriptorSet> descSets{m_rtDescSet, m_descSet};
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipeline);
   vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipelineLayout, 0,
@@ -246,6 +253,8 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 
   auto& regions = m_sbtWrapper.getRegions();
   vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_size.width, m_size.height, 1);
+
+  m_accumulatedFrames++;
 
   m_debug.endLabel(cmdBuf);
 }

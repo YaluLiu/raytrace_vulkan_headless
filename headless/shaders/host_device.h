@@ -83,8 +83,10 @@ struct PushConstantRay
   vec3  lightPosition;
   float lightIntensity;
   int   lightType;
-  int   numLights;   // 新增：灯光数量
-  int   padding[2];  // 对齐
+  int   numLights;
+  uint  frameIndex;
+  int   maxDepth;
+  int   samplesPerFrame;
 };
 
 struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for device

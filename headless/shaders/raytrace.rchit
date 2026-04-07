@@ -33,6 +33,76 @@ float computeShadowBias(vec3 worldPos)
   return max(0.001, sceneScale * 0.0001);
 }
 
+vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, WaveFrontMaterial mat, vec3 textureColor)
+{
+  vec3 totalLight = vec3(0.0);
+  int  numLights  = pcRay.numLights;
+
+  for(int i = 0; i < numLights; i++)
+  {
+    Light light = lightBuf.lights[i];
+
+    if(light.type == 2)  // Dome light
+    {
+      totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuse;
+      continue;
+    }
+
+    vec3  L;
+    float lightDistance       = 100000.0;
+    float distanceAttenuation = 1.0;
+    vec3  lightEmission       = vec3(0.0);
+
+    if(light.type == 0)  // Sphere light
+    {
+      vec3 lDir     = light.position.xyz - worldPos;
+      lightDistance = length(lDir);
+      float effectiveDistance = max(lightDistance - light.radius, max(light.radius * 0.25, 0.05));
+      distanceAttenuation     = 1.0 / (effectiveDistance * effectiveDistance);
+
+      L             = normalize(lDir);
+      lightEmission = light.baseEmission * distanceAttenuation;
+    }
+    else if(light.type == 1)  // Distant light
+    {
+      L                   = normalize(light.direction.xyz);
+      distanceAttenuation = light.angle;
+      lightEmission       = light.baseEmission * distanceAttenuation;
+    }
+    else
+    {
+      continue;
+    }
+
+    if(dot(worldNrm, L) <= 0.0)
+    {
+      continue;
+    }
+
+    vec3 diffuse = computeDiffuse(mat, L, worldNrm);
+    diffuse *= textureColor * light.diffuse;
+
+    vec3 specular = vec3(0.0);
+
+    float shadowBias = computeShadowBias(worldPos);
+    float tMin       = 0.001;
+    float tMax       = max(lightDistance - shadowBias, tMin);
+    vec3  origin     = worldPos + worldGeoNrm * shadowBias;
+    uint  flags      = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+    isShadowed       = true;
+    traceRayEXT(topLevelAS, flags, 0xFF, 0, 0, 1, origin, tMin, L, tMax, 1);
+
+    if(!isShadowed)
+    {
+      specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
+      specular *= light.specular;
+      totalLight += lightEmission * (diffuse + specular);
+    }
+  }
+
+  return totalLight;
+}
+
 void main()
 {
   ObjDesc    objResource = objDesc.i[gl_InstanceCustomIndexEXT];
@@ -52,11 +122,11 @@ void main()
   const vec3 pos      = v0.pos * barycentrics.x + v1.pos * barycentrics.y + v2.pos * barycentrics.z;
   const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
 
-  const mat3 normalMatrix   = transpose(mat3(gl_WorldToObjectEXT));
-  const vec3 geometricNrm   = cross(v1.pos - v0.pos, v2.pos - v0.pos);
+  const mat3 normalMatrix    = transpose(mat3(gl_WorldToObjectEXT));
+  const vec3 geometricNrm    = cross(v1.pos - v0.pos, v2.pos - v0.pos);
   const vec3 interpolatedNrm = v0.nrm * barycentrics.x + v1.nrm * barycentrics.y + v2.nrm * barycentrics.z;
-  vec3       worldGeoNrm    = normalize(normalMatrix * geometricNrm);
-  vec3       worldShadeNrm  = normalize(normalMatrix * interpolatedNrm);
+  vec3       worldGeoNrm     = normalize(normalMatrix * geometricNrm);
+  vec3       worldShadeNrm   = normalize(normalMatrix * interpolatedNrm);
   if(length(worldShadeNrm) < 1e-5)
   {
     worldShadeNrm = worldGeoNrm;
@@ -76,75 +146,63 @@ void main()
     textureColor  = texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
   }
 
-  vec3 emission = computeEmission(mat, textureColor);
-  int  numLights  = pcRay.numLights;
-  vec3 totalLight = vec3(0);
-
-  for(int i = 0; i < numLights; i++)
+  if(prd.depth == 0)
   {
-    Light light = lightBuf.lights[i];
-
-    if(light.type == 2)  // Dome light
-    {
-      totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuse;
-      continue;
-    }
-
-    vec3  L;
-    float lightDistance       = 100000.0;
-    float distanceAttenuation = 1.0;
-    vec3 lightEmission;
-
-    if(light.type == 0)  // Sphere light
-    {
-      vec3 lDir     = light.position.xyz - worldPos;
-      lightDistance = length(lDir);
-      float effectiveDistance = max(lightDistance - light.radius, max(light.radius * 0.25, 0.05));
-      distanceAttenuation     = 1.0 / (effectiveDistance * effectiveDistance);
-
-      L = normalize(lDir);
-      lightEmission = light.baseEmission * distanceAttenuation;
-    }
-    else if(light.type == 1)  // Distant light
-    {
-      L = normalize(light.direction.xyz);
-      distanceAttenuation = light.angle;
-      lightEmission = light.baseEmission * distanceAttenuation;
-    }
-
-
-    vec3 diffuse = computeDiffuse(mat, L, worldNrm);
-    diffuse *= textureColor * light.diffuse;
-
-    vec3  specular          = vec3(0);
-    float shadowAttenuation = 1.0;
-
-    if(dot(worldNrm, L) > 0)
-    {
-      float shadowBias = computeShadowBias(worldPos);
-      float tMin   = 0.001;
-      float tMax   = max(lightDistance - shadowBias, tMin);
-      vec3  origin = worldPos + worldGeoNrm * shadowBias;
-      vec3  rayDir = L;
-      uint  flags  = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-      isShadowed   = true;
-      traceRayEXT(topLevelAS, flags, 0xFF, 0, 0, 1, origin, tMin, rayDir, tMax, 1);
-
-      if(isShadowed)
-      {
-        shadowAttenuation = 0.3;
-      }
-      else
-      {
-        specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
-        specular *= light.specular;
-      }
-    }
-
-    totalLight += lightEmission * shadowAttenuation * (diffuse + specular);
+    prd.objId      = int(gl_InstanceCustomIndexEXT);
+    prd.instanceId = instanceIdBuf.instanceIds[gl_InstanceID];
   }
 
-  prd.hitValue = totalLight + emission;
-  prd.objId    = int(gl_InstanceCustomIndexEXT);
-  prd.instanceId = instanceIdBuf.instanceIds[gl_InstanceID];
+  vec3 emission = computeEmission(mat, textureColor);
+  vec3 direct   = computeDirectLighting(worldPos, worldNrm, worldGeoNrm, mat, textureColor);
+  prd.radiance += prd.throughput * (emission + direct);
+
+  int maxDepth  = max(pcRay.maxDepth, 1);
+  int nextDepth = prd.depth + 1;
+  if(nextDepth >= maxDepth)
+  {
+    prd.done = 1;
+    return;
+  }
+
+  vec3 albedo = clamp(mat.diffuse * textureColor, vec3(0.0), vec3(0.95));
+  if(max(albedo.x, max(albedo.y, albedo.z)) <= 1e-4)
+  {
+    prd.done = 1;
+    return;
+  }
+
+  vec3 tangent;
+  vec3 bitangent;
+  orthonormalBasis(worldNrm, tangent, bitangent);
+
+  float u1 = rand01(prd.seed);
+  float u2 = rand01(prd.seed);
+  vec3  localDir  = cosineSampleHemisphere(u1, u2);
+  vec3  bounceDir = normalize(localDir.x * tangent + localDir.y * bitangent + localDir.z * worldNrm);
+
+  float cosTheta = max(dot(worldNrm, bounceDir), 0.0);
+  if(cosTheta <= 0.0)
+  {
+    prd.done = 1;
+    return;
+  }
+
+  prd.throughput *= albedo;
+
+  if(nextDepth >= 2)
+  {
+    float rrProb = clamp(max(prd.throughput.x, max(prd.throughput.y, prd.throughput.z)), 0.05, 0.95);
+    if(rand01(prd.seed) > rrProb)
+    {
+      prd.done = 1;
+      return;
+    }
+    prd.throughput /= rrProb;
+  }
+
+  prd.depth = nextDepth;
+
+  float shadowBias = computeShadowBias(worldPos);
+  vec3  origin     = worldPos + worldGeoNrm * shadowBias;
+  traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, origin, 0.001, bounceDir, 10000.0, 0);
 }

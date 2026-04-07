@@ -82,16 +82,18 @@ public:
   void updateRtDescriptorSet();
   void createRtPipeline();
   void raytrace(const VkCommandBuffer& cmdBuf);
+  void resetAccumulation();
+  uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
 
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
   nvvk::RaytracingBuilderKHR                        m_rtBuilder;
   nvvk::DescriptorSetBindings                       m_rtDescSetLayoutBind;
-  VkDescriptorPool                                  m_rtDescPool;
-  VkDescriptorSetLayout                             m_rtDescSetLayout;
-  VkDescriptorSet                                   m_rtDescSet;
+  VkDescriptorPool                                  m_rtDescPool{VK_NULL_HANDLE};
+  VkDescriptorSetLayout                             m_rtDescSetLayout{VK_NULL_HANDLE};
+  VkDescriptorSet                                   m_rtDescSet{VK_NULL_HANDLE};
   std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_rtShaderGroups;
-  VkPipelineLayout                                  m_rtPipelineLayout;
-  VkPipeline                                        m_rtPipeline;
+  VkPipelineLayout                                  m_rtPipelineLayout{VK_NULL_HANDLE};
+  VkPipeline                                        m_rtPipeline{VK_NULL_HANDLE};
 
   //for sbt
   nvvk::SBTWrapper                m_sbtWrapper;
@@ -109,7 +111,11 @@ public:
       {1, 1, 1, 1.00f},  // clear color
       {5.f, 10.f, 5.f},  // light position
       1000.f,            // light intensity
-      0                  // light type
+      0,                 // light type
+      0,                 // num lights
+      0,                 // frame index
+      6,                 // max depth
+      1                  // samples per frame
   };
 
   // #VK_animation
@@ -122,11 +128,11 @@ public:
   void createCompPipelines();
 
   nvvk::DescriptorSetBindings m_compDescSetLayoutBind;
-  VkDescriptorPool            m_compDescPool;
-  VkDescriptorSetLayout       m_compDescSetLayout;
-  VkDescriptorSet             m_compDescSet;
-  VkPipeline                  m_compPipeline;
-  VkPipelineLayout            m_compPipelineLayout;
+  VkDescriptorPool            m_compDescPool{VK_NULL_HANDLE};
+  VkDescriptorSetLayout       m_compDescSetLayout{VK_NULL_HANDLE};
+  VkDescriptorSet             m_compDescSet{VK_NULL_HANDLE};
+  VkPipeline                  m_compPipeline{VK_NULL_HANDLE};
+  VkPipelineLayout            m_compPipelineLayout{VK_NULL_HANDLE};
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
@@ -173,6 +179,7 @@ public:
   // hydra plugin
   std::vector<Light> m_lights;       // for hydra Light
   std::vector<int>   m_instanceIds;  // for hydra store instance Ids
+  std::vector<Light> m_uploadedLights;
   nvvk::Buffer       m_bInstanceIds;
   nvvk::Buffer       m_bLights;
 
@@ -194,4 +201,10 @@ public:
   void addSpheres(std::vector<Sphere> vector);
   auto sphereToVkGeometryKHR();
   void createRtShaderBindingTable();
+
+private:
+  uint32_t m_accumulatedFrames{0};
+  glm::mat4 m_lastView{1.0f};
+  glm::mat4 m_lastProj{1.0f};
+  bool      m_hasLastCamera{false};
 };

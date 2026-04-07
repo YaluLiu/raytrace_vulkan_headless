@@ -15,37 +15,61 @@ layout(set = 0, binding = eOutImage, rgba32f) uniform image2D image;
 layout(set = 0, binding = eObjIdImage, r32i) uniform iimage2D objectIdImage;   // NEW: object id
 layout(set = 0, binding = eInsIdImage, r32i) uniform iimage2D instanceIdImage;   // NEW: object id
 layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
+layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
 
 
 void main()
 {
-  const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
-  const vec2 inUV        = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
-  vec2       d           = inUV * 2.0 - 1.0;
+  ivec2 pixel       = ivec2(gl_LaunchIDEXT.xy);
+  vec2  pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
+  int   spp         = max(pcRay.samplesPerFrame, 1);
 
-  vec4 origin    = uni.viewInverse * vec4(0, 0, 0, 1);
-  vec4 target    = uni.projInverse * vec4(d.x, d.y, 1, 1);
-  vec4 direction = uni.viewInverse * vec4(normalize(target.xyz), 0);
+  vec3 sampleColor = vec3(0.0);
+  int  sampleObjId = -1;
+  int  sampleInsId = -1;
 
-  uint  rayFlags = gl_RayFlagsOpaqueEXT;
-  float tMin     = 0.001;
-  float tMax     = 10000.0;
+  for(int sampleIdx = 0; sampleIdx < spp; ++sampleIdx)
+  {
+    uint seed = initRng(gl_LaunchIDEXT.xy, pcRay.frameIndex, uint(sampleIdx));
+    vec2 jitter = vec2(rand01(seed), rand01(seed)) - vec2(0.5);
+    vec2 inUV   = (pixelCenter + jitter) / vec2(gl_LaunchSizeEXT.xy);
+    vec2 d      = inUV * 2.0 - 1.0;
 
-  traceRayEXT(topLevelAS,     // acceleration structure
-              rayFlags,       // rayFlags
-              0xFF,           // cullMask
-              0,              // sbtRecordOffset
-              0,              // sbtRecordStride
-              0,              // missIndex
-              origin.xyz,     // ray origin
-              tMin,           // ray min range
-              direction.xyz,  // ray direction
-              tMax,           // ray max range
-              0               // payload (location = 0)
-  );
+    vec4 origin    = uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 target    = uni.projInverse * vec4(d.x, d.y, 1.0, 1.0);
+    vec4 direction = uni.viewInverse * vec4(normalize(target.xyz), 0.0);
 
-  imageStore(objectIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.objId, 0.0, 0.0, 0.0));
-  imageStore(instanceIdImage, ivec2(gl_LaunchIDEXT.xy), ivec4(prd.instanceId, 0.0, 0.0, 0.0));
-  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.0));
+    prd.radiance   = vec3(0.0);
+    prd.objId      = -1;
+    prd.instanceId = -1;
+    prd.throughput = vec3(1.0);
+    prd.seed       = seed;
+    prd.depth      = 0;
+    prd.done       = 0;
+
+    traceRayEXT(topLevelAS,  // acceleration structure
+                gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, origin.xyz, 0.001, direction.xyz, 10000.0, 0);
+
+    sampleColor += prd.radiance;
+    if(sampleIdx == 0)
+    {
+      sampleObjId = prd.objId;
+      sampleInsId = prd.instanceId;
+    }
+  }
+
+  sampleColor /= float(spp);
+
+  vec3 outColor = sampleColor;
+  if(pcRay.frameIndex > 0u)
+  {
+    vec3 prevColor = imageLoad(image, pixel).xyz;
+    float a        = 1.0 / float(pcRay.frameIndex + 1u);
+    outColor       = mix(prevColor, sampleColor, a);
+  }
+
+  imageStore(objectIdImage, pixel, ivec4(sampleObjId, 0, 0, 0));
+  imageStore(instanceIdImage, pixel, ivec4(sampleInsId, 0, 0, 0));
+  imageStore(image, pixel, vec4(outColor, 1.0));
 }

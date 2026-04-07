@@ -11,6 +11,27 @@
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
+#include <cmath>
+
+namespace {
+bool nearlyEqual(float a, float b, float eps = 1e-5f)
+{
+  return std::fabs(a - b) <= eps;
+}
+
+bool lightEqual(const Light& lhs, const Light& rhs)
+{
+  return lhs.type == rhs.type && lhs.textureID == rhs.textureID && nearlyEqual(lhs.baseEmission.x, rhs.baseEmission.x)
+         && nearlyEqual(lhs.baseEmission.y, rhs.baseEmission.y) && nearlyEqual(lhs.baseEmission.z, rhs.baseEmission.z)
+         && nearlyEqual(lhs.diffuse, rhs.diffuse) && nearlyEqual(lhs.specular, rhs.specular)
+         && nearlyEqual(lhs.direction.x, rhs.direction.x) && nearlyEqual(lhs.direction.y, rhs.direction.y)
+         && nearlyEqual(lhs.direction.z, rhs.direction.z) && nearlyEqual(lhs.angle, rhs.angle)
+         && nearlyEqual(lhs.position.x, rhs.position.x) && nearlyEqual(lhs.position.y, rhs.position.y)
+         && nearlyEqual(lhs.position.z, rhs.position.z) && nearlyEqual(lhs.radius, rhs.radius)
+         && nearlyEqual(lhs.rotateQuat.x, rhs.rotateQuat.x) && nearlyEqual(lhs.rotateQuat.y, rhs.rotateQuat.y)
+         && nearlyEqual(lhs.rotateQuat.z, rhs.rotateQuat.z) && nearlyEqual(lhs.rotateQuat.w, rhs.rotateQuat.w);
+}
+}  // namespace
 
 //--------------------------------------------------------------------------------------------------
 // update material
@@ -45,6 +66,7 @@ void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, con
                        nullptr, 1, &barrier, 0, nullptr);
 
   cmdGen.submitAndWait(cmdBuf);
+  resetAccumulation();
 }
 
 void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
@@ -101,6 +123,7 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
 
   // 4. 提交命令
   cmdGen.submitAndWait(cmdBuf);
+  resetAccumulation();
 }
 
 void HelloVulkan::createOutputImage()
@@ -189,6 +212,25 @@ void HelloVulkan::createLightBuffer()
 
 void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
 {
+  bool changed = m_lights.size() != m_uploadedLights.size();
+  if(!changed)
+  {
+    for(size_t i = 0; i < m_lights.size(); ++i)
+    {
+      if(!lightEqual(m_lights[i], m_uploadedLights[i]))
+      {
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  if(changed)
+  {
+    resetAccumulation();
+    m_uploadedLights = m_lights;
+  }
+
   if(!m_lights.empty())
   {
     vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, sizeof(Light) * m_lights.size(), m_lights.data());

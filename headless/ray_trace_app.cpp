@@ -159,10 +159,6 @@ void RayTraceApp::createBVH()
   m_helloVk.createRtDescriptorSet();
   m_helloVk.createRtPipeline();
   m_helloVk.createRtShaderBindingTable();
-
-  // 计算着色器相关
-  m_helloVk.createCompDescriptors();
-  m_helloVk.createCompPipelines();
 }
 
 void RayTraceApp::render()

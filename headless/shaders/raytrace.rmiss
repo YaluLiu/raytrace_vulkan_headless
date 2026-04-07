@@ -71,7 +71,11 @@ void main()
     envColor = vec3(0.18, 0.18, 0.18);
   }
 
-  prd.hitValue   = envColor;
-  prd.objId      = -1;
-  prd.instanceId = -1;
+  prd.radiance += prd.throughput * envColor;
+  if(prd.depth == 0)
+  {
+    prd.objId      = -1;
+    prd.instanceId = -1;
+  }
+  prd.done = 1;
 }

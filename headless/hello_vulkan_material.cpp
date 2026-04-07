@@ -69,6 +69,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   m_objModel.emplace_back(model);
   m_objDesc.emplace_back(desc);
   m_Loader.emplace_back(loader);
+  resetAccumulation();
 }
 
 void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures)
