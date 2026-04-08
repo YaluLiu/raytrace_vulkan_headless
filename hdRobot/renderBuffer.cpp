@@ -114,9 +114,9 @@ void* HdGatlingRenderBuffer::Map()
 {
   // return _renderBuffer ? giGetRenderBufferMem(_renderBuffer) : nullptr;
   _isMaped = true;
-  if(_isIdAov)
+  if(_texture)
   {
-    read_object_texture(get_OpenGL_Texture_id());
+    read_texture(get_OpenGL_Texture_id());
   }
   return _buffer;
 }
@@ -159,28 +159,21 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
   {
     case HdFormatFloat32Vec4:
     case HdFormatFloat32Vec3:
+    case HdFormatFloat32Vec2:
     case HdFormatUNorm8Vec4:
     case HdFormatUNorm8Vec3:
-      // 典型颜色 AOV：可以作为渲染目标（如果以后想直接写进去），也允许被读取
       usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
       break;
 
     case HdFormatFloat32:
-      // depth / depthStencil 场景；这里只在名称匹配时加 DepthTarget
       if(nameToken == HdAovTokens->depth || nameToken == HdAovTokens->depthStencil)
       {
         usage |= HgiTextureUsageBitsDepthTarget;
       }
-      // 如果你需要在着色器里采样（少见），可再加 ShaderRead
       break;
 
     case HdFormatInt32:
-      // object/prim/instance id 之类整数 AOV
-      // 当前是 CPU 写 -> 上传，只需要 ShaderRead 让上层采样/拷贝
       usage |= HgiTextureUsageBitsShaderRead;
-      // // 如果以后 GPU（RT 或 compute）直接写入，可再加：
-      // usage |= HgiTextureUsageBitsStorage;
-      // 若想用作颜色 attachment（少见，一般不需要）可以：
       usage |= HgiTextureUsageBitsColorTarget;
       break;
 
@@ -189,15 +182,12 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
       break;
   }
 
-  // 补充：某些自定义 AOV（normal、color）我们已经在上面加了 ShaderRead，
-  // 这里如果需要对特定 Token 进行强制保障，可再次加：
   if(nameToken == HdAovTokens->color || nameToken == HdAovTokens->normal)
   {
     usage |= HgiTextureUsageBitsShaderRead;
   }
   if(isIdAov)
   {
-    // primId/instanceId 等如果你希望 CPU 上传后还能被别的 pass 采样，确保有 ShaderRead
     usage |= HgiTextureUsageBitsShaderRead;
   }
 
@@ -323,121 +313,47 @@ VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
   return VtValue(_texture);
 }
 
-//----------------------------------------------------------------------------------------------------------
-// test function,for test and learn how hgi works
-//----------------------------------------------------------------------------------------------------------
-#include <vector>
-#include <cstdint>
-
-void HdGatlingRenderBuffer::read_color_texture(GLuint textureId)
+void HdGatlingRenderBuffer::read_texture(GLuint textureId)
 {
-  glBindTexture(GL_TEXTURE_2D, textureId);
-  std::vector<float> pixels(_width * _height * 4);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-  memcpy(_buffer, pixels.data(), sizeof(float) * _width * _height * 4);
-}
-
-void HdGatlingRenderBuffer::read_object_texture(GLuint textureId)
-{
-  glBindTexture(GL_TEXTURE_2D, textureId);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_INT, _buffer);
-}
-
-
-void HdGatlingRenderBuffer::make_test_color()
-{
-  _frame_idx     = (_frame_idx + 1) % 400;
-  float* rgbaImg = (float*)_buffer;
-
-  // 清空缓冲区（填充透明黑色）
-  const size_t pixelCount = _width * _height * 4;
-  memset(rgbaImg, 0, pixelCount * sizeof(float));
-
-  int width_rect  = 100;
-  int height_rect = 100;
-  int left, top, right, bottom;
-  left   = _frame_idx * 2;
-  right  = left + width_rect;
-  top    = _frame_idx * 2;
-  bottom = top + height_rect;
-
-  for(int w = left; w < right; ++w)
+  if(textureId == 0 || !_buffer || _width == 0 || _height == 0)
   {
-    for(int h = top; h < bottom; ++h)
-    {
-      int i          = (h * _width + w) * 4;
-      rgbaImg[i + 0] = (float)255;
-      rgbaImg[i + 1] = (float)0;
-      rgbaImg[i + 2] = (float)0;
-      rgbaImg[i + 3] = 255;
-    }
-  }
-}
-
-void HdGatlingRenderBuffer::make_test_object_id()
-{
-  std::vector<int> pixels(_width * _height, -1);
-
-  int left, top, right, bottom;
-  left   = 0;
-  right  = _width;
-  top    = 0;
-  bottom = top + _height / 2;
-
-  for(int h = 0; h < _height; ++h)
-  {
-    for(int w = 0; w < _width; ++w)
-    {
-      int index = h * _width + w;
-      int value = -1;
-      if(h * 2 > _height)
-      {
-        value += 2;
-      }
-      if(w * 2 > _width)
-      {
-        value += 1;
-      }
-      pixels[index] = value;
-    }
-  }
-
-  memcpy(_buffer, pixels.data(), sizeof(int) * _width * _height);
-}
-
-void HdGatlingRenderBuffer::print()
-{
-  std::ofstream out("aa.txt");
-  if(!out)
-  {
-    std::cerr << "Failed to open file for writing: " << "aa.txt" << std::endl;
     return;
   }
-  auto cur_buffer = (int*)_buffer;
-  if(!cur_buffer)
+
+  glBindTexture(GL_TEXTURE_2D, textureId);
+  if(_format == HdFormatInt32)
   {
-    std::cerr << "RenderBuffer mem is nullptr!" << std::endl;
-    out.close();
-    return;
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_INT, _buffer);
   }
-  for(int h = 0; h < _height; h += 25)
+  else if(_format == HdFormatFloat32)
   {
-    for(int w = 0; w < _width; w += 25)
-    {
-      int step  = h * _width + w;
-      int value = cur_buffer[step];
-      if(value != -1)
-      {
-        out << "*";
-      }
-      else
-      {
-        out << ".";
-      }
-    }
-    out << std::endl;
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, _buffer);
   }
-  out.close();
+  else if(_format == HdFormatFloat32Vec4)
+  {
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, _buffer);
+  }
+  else if(_format == HdFormatFloat32Vec3)
+  {
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, _buffer);
+  }
+  else if(_format == HdFormatFloat32Vec2)
+  {
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, _buffer);
+  }
+  else if(_format == HdFormatUNorm8Vec4)
+  {
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, _buffer);
+  }
+  else if(_format == HdFormatUNorm8Vec3)
+  {
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, _buffer);
+  }
+  else
+  {
+    TF_WARN("Unsupported texture readback format: %d", _format);
+  }
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

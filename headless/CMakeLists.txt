@@ -28,6 +28,7 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../h
 # Source files for this project
 #
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
+file(GLOB DLSS_SOURCE_FILES dlss/*.cpp dlss/*.hpp)
 file(GLOB EXTRA_COMMON ${TUTO_KHR_DIR}/common/*.*)
 list(APPEND COMMON_SOURCE_FILES ${EXTRA_COMMON})
 include_directories(${TUTO_KHR_DIR}/common)
@@ -45,7 +46,7 @@ compile_glsl_directory(
 
 #--------------------------------------------------------------------------------------------------
 # Sources
-target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${HEADER_FILES})
+target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${HEADER_FILES} ${DLSS_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${COMMON_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${PACKAGE_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${GLSL_SOURCES} ${GLSL_HEADERS})
@@ -63,6 +64,7 @@ target_include_directories(${PROJNAME} PUBLIC
 #
 source_group("Common"       FILES ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
 source_group("Sources"      FILES ${SOURCE_FILES})
+source_group("DLSS"         FILES ${DLSS_SOURCE_FILES})
 source_group("Headers"      FILES ${HEADER_FILES})
 source_group("Shader Sources"  FILES ${GLSL_SOURCES})
 source_group("Shader Headers"  FILES ${GLSL_HEADERS})
@@ -81,6 +83,49 @@ foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
 endforeach(RELEASELIB)
 
 target_link_libraries(${PROJNAME} EGL GL)
+
+set(DLSS_RR_FOUND OFF)
+if(ENABLE_DLSS_RR)
+  set(_DLSS_HINT_ROOTS)
+  if(DLSS_SDK_ROOT)
+    list(APPEND _DLSS_HINT_ROOTS ${DLSS_SDK_ROOT})
+  endif()
+  if(DEFINED ENV{DLSS_SDK_ROOT} AND NOT "$ENV{DLSS_SDK_ROOT}" STREQUAL "")
+    list(APPEND _DLSS_HINT_ROOTS $ENV{DLSS_SDK_ROOT})
+  endif()
+  if(DEFINED ENV{NVSDK_NGX_SDK_ROOT} AND NOT "$ENV{NVSDK_NGX_SDK_ROOT}" STREQUAL "")
+    list(APPEND _DLSS_HINT_ROOTS $ENV{NVSDK_NGX_SDK_ROOT})
+  endif()
+
+  find_path(DLSS_SDK_INCLUDE_DIR
+            NAMES nvsdk_ngx_vk.h
+            HINTS ${_DLSS_HINT_ROOTS}
+            PATH_SUFFIXES include)
+
+  find_library(DLSS_SDK_LIBRARY
+               NAMES nvsdk_ngx
+               HINTS ${_DLSS_HINT_ROOTS}
+               PATH_SUFFIXES lib/Linux_x86_64)
+
+  if(DLSS_SDK_INCLUDE_DIR AND DLSS_SDK_LIBRARY)
+    set(DLSS_RR_FOUND ON)
+    message(STATUS "DLSS SDK include: ${DLSS_SDK_INCLUDE_DIR}")
+    message(STATUS "DLSS SDK library: ${DLSS_SDK_LIBRARY}")
+    target_include_directories(${PROJNAME} PUBLIC ${DLSS_SDK_INCLUDE_DIR})
+    target_link_libraries(${PROJNAME} ${DLSS_SDK_LIBRARY})
+    if(UNIX AND NOT APPLE)
+      target_link_libraries(${PROJNAME} dl)
+    endif()
+
+    get_filename_component(_DLSS_SDK_LIB_DIR ${DLSS_SDK_LIBRARY} DIRECTORY)
+    set(_DLSS_RR_DEFAULT_NGX_PATH ${_DLSS_SDK_LIB_DIR}/rel)
+    if(EXISTS ${_DLSS_RR_DEFAULT_NGX_PATH})
+      target_compile_definitions(${PROJNAME} PUBLIC DLSS_RR_DEFAULT_NGX_PATH="${_DLSS_RR_DEFAULT_NGX_PATH}")
+    endif()
+  else()
+    message(WARNING "ENABLE_DLSS_RR is ON but NVIDIA DLSS SDK was not found. Building with DLSS-RR disabled.")
+  endif()
+endif()
 #--------------------------------------------------------------------------------------------------
 # option
 #
@@ -91,6 +136,10 @@ target_compile_definitions(${PROJNAME} PUBLIC
 target_compile_definitions(${PROJNAME} PUBLIC
   $<$<BOOL:${ENABLE_HYDRA}>:ENABLE_HYDRA=1>
   $<$<NOT:$<BOOL:${ENABLE_HYDRA}>>:ENABLE_HYDRA=0>
+)
+target_compile_definitions(${PROJNAME} PUBLIC
+  $<$<BOOL:${DLSS_RR_FOUND}>:ENABLE_DLSS_RR=1>
+  $<$<NOT:$<BOOL:${DLSS_RR_FOUND}>>:ENABLE_DLSS_RR=0>
 )
 #--------------------------------------------------------------------------------------------------
 # copies binaries that need to be put next to the exe files (ZLib, etc.)

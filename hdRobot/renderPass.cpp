@@ -93,6 +93,90 @@ std::string FormatUpdatedIds(const std::vector<int>& ids)
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace
+{
+void SetAovTargetGlId(::HelloVulkan& app, const TfToken& name, GLuint textureId)
+{
+  if(name == HdAovTokens->color)
+  {
+    app.m_rtOutputGL.oglId = textureId;
+  }
+  else if(name == HdAovTokens->primId)
+  {
+    app.m_rtObjectIdGL.oglId = textureId;
+  }
+  else if(name == HdAovTokens->instanceId)
+  {
+    app.m_rtInstanceIdGL.oglId = textureId;
+  }
+  else if(name == HdGatlingAovTokens->dlssRRDiffuseAlbedo)
+  {
+    app.m_rtDiffuseAlbedoGL.oglId = textureId;
+  }
+  else if(name == HdGatlingAovTokens->dlssRRSpecularAlbedo)
+  {
+    app.m_rtSpecularAlbedoGL.oglId = textureId;
+  }
+  else if(name == HdGatlingAovTokens->dlssRRNormalRoughness)
+  {
+    app.m_rtNormalRoughnessGL.oglId = textureId;
+  }
+  else if(name == HdGatlingAovTokens->dlssRRMotionVector)
+  {
+    app.m_rtMotionVectorGL.oglId = textureId;
+  }
+  else if(name == HdGatlingAovTokens->dlssRRLinearDepth)
+  {
+    app.m_rtLinearDepthGL.oglId = textureId;
+  }
+  else if(name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
+  {
+    app.m_rtSpecularHitDistanceGL.oglId = textureId;
+  }
+}
+
+GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
+{
+  if(name == HdAovTokens->color)
+  {
+    return app.m_rtOutputGL.oglId;
+  }
+  if(name == HdAovTokens->primId)
+  {
+    return app.m_rtObjectIdGL.oglId;
+  }
+  if(name == HdAovTokens->instanceId)
+  {
+    return app.m_rtInstanceIdGL.oglId;
+  }
+  if(name == HdGatlingAovTokens->dlssRRDiffuseAlbedo)
+  {
+    return app.m_rtDiffuseAlbedoGL.oglId;
+  }
+  if(name == HdGatlingAovTokens->dlssRRSpecularAlbedo)
+  {
+    return app.m_rtSpecularAlbedoGL.oglId;
+  }
+  if(name == HdGatlingAovTokens->dlssRRNormalRoughness)
+  {
+    return app.m_rtNormalRoughnessGL.oglId;
+  }
+  if(name == HdGatlingAovTokens->dlssRRMotionVector)
+  {
+    return app.m_rtMotionVectorGL.oglId;
+  }
+  if(name == HdGatlingAovTokens->dlssRRLinearDepth)
+  {
+    return app.m_rtLinearDepthGL.oglId;
+  }
+  if(name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
+  {
+    return app.m_rtSpecularHitDistanceGL.oglId;
+  }
+  return 0;
+}
+}  // namespace
+
 HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex*             index,
                                          const HdRprimCollection&   collection,
                                          const HdRenderSettingsMap& settings,
@@ -173,24 +257,12 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     {
       const TfToken& name = binding.aovName;
       renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-      if(name == HdAovTokens->color)
-      {
-        _renderApp.getVulkan().m_rtOutputGL.oglId = renderBuffer->get_OpenGL_Texture_id();
-      }
-      else if(name == HdAovTokens->primId)
-      {
-        _renderApp.getVulkan().m_rtObjectIdGL.oglId = renderBuffer->get_OpenGL_Texture_id();
-        renderBuffer->_isIdAov                      = true;
-      }
-      else if(name == HdAovTokens->instanceId)
-      {
-        _renderApp.getVulkan().m_rtInstanceIdGL.oglId = renderBuffer->get_OpenGL_Texture_id();
-        renderBuffer->_isIdAov                        = true;
-      }
+      SetAovTargetGlId(_renderApp.getVulkan(), name, renderBuffer->get_OpenGL_Texture_id());
     }
 #endif
   }
   app_init();
+  app_apply_render_settings();
   app_updateCamera(*hdcamera);
   app_updateLight();
 #if USE_BASE_RENDER
@@ -203,18 +275,12 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   for(const HdRenderPassAovBinding& binding : hdAovBindings)
   {
     const TfToken& name = binding.aovName;
-    renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-    if(name == HdAovTokens->color)
+    renderBuffer         = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+    unsigned int sourceTexId = GetAovSourceGlId(_renderApp.getVulkan(), name);
+
+    if(sourceTexId != 0)
     {
-      renderBuffer->read_color_texture(_renderApp.getVulkan().m_rtOutputGL.oglId);
-    }
-    else if(name == HdAovTokens->primId)
-    {
-      renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtObjectIdGL.oglId);
-    }
-    else if(name == HdAovTokens->instanceId)
-    {
-      renderBuffer->read_object_texture(_renderApp.getVulkan().m_rtInstanceIdGL.oglId);
+      renderBuffer->read_texture(sourceTexId);
     }
     renderBuffer->ConvertToHgiTexture();
   }
@@ -280,6 +346,45 @@ void HdGatlingRenderPass::app_init()
   else if(_reset_renderbuffer)
   {
     _renderApp.resize(_width, _height);
+  }
+}
+
+void HdGatlingRenderPass::app_apply_render_settings()
+{
+  HelloVulkan& app = _renderApp.getVulkan();
+
+  if(const auto it = _settings.find(HdGatlingSettingsTokens->spp); it != _settings.end())
+  {
+    const VtValue& value = it->second;
+    if(value.IsHolding<int>())
+    {
+      app.setSamplesPerFrame(value.UncheckedGet<int>());
+    }
+    else if(value.IsHolding<unsigned int>())
+    {
+      app.setSamplesPerFrame(static_cast<int>(value.UncheckedGet<unsigned int>()));
+    }
+    else if(value.IsHolding<float>())
+    {
+      app.setSamplesPerFrame(static_cast<int>(value.UncheckedGet<float>()));
+    }
+    else if(value.IsHolding<double>())
+    {
+      app.setSamplesPerFrame(static_cast<int>(value.UncheckedGet<double>()));
+    }
+  }
+
+  if(const auto it = _settings.find(HdGatlingSettingsTokens->dlssRRDenoise); it != _settings.end())
+  {
+    const VtValue& value = it->second;
+    if(value.IsHolding<bool>())
+    {
+      app.setDlssRREnabled(value.UncheckedGet<bool>());
+    }
+    else if(value.IsHolding<int>())
+    {
+      app.setDlssRREnabled(value.UncheckedGet<int>() != 0);
+    }
   }
 }
 

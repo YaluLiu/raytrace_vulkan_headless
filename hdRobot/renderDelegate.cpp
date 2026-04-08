@@ -33,6 +33,7 @@
 #include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 #include <pxr/imaging/hd/camera.h>
+#include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec4f.h>
 
 
@@ -65,6 +66,18 @@ HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& sett
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
     , _renderParam(std::make_unique<HdGatlingRenderParam>())
 {
+  _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdGatlingSettingsTokens->spp, VtValue(4)});
+  _settingDescriptors.emplace_back(
+      HdRenderSettingDescriptor{"Enable DLSS-RR Denoise", HdGatlingSettingsTokens->dlssRRDenoise, VtValue(true)});
+
+  if(_settingsMap.find(HdGatlingSettingsTokens->spp) == _settingsMap.end())
+  {
+    _settingsMap[HdGatlingSettingsTokens->spp] = VtValue(4);
+  }
+  if(_settingsMap.find(HdGatlingSettingsTokens->dlssRRDenoise) == _settingsMap.end())
+  {
+    _settingsMap[HdGatlingSettingsTokens->dlssRRDenoise] = VtValue(true);
+  }
 }
 
 HdGatlingRenderDelegate::~HdGatlingRenderDelegate() {}
@@ -163,6 +176,19 @@ HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& 
   else if(name == HdAovTokens->primId || name == HdAovTokens->elementId || name == HdAovTokens->instanceId)
   {
     return HdAovDescriptor(HdFormatInt32, true, VtValue(-1));
+  }
+  else if(name == HdGatlingAovTokens->dlssRRDiffuseAlbedo || name == HdGatlingAovTokens->dlssRRSpecularAlbedo
+          || name == HdGatlingAovTokens->dlssRRNormalRoughness)
+  {
+    return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f)));
+  }
+  else if(name == HdGatlingAovTokens->dlssRRMotionVector)
+  {
+    return HdAovDescriptor(HdFormatFloat32Vec2, true, VtValue(GfVec2f(0.0f)));
+  }
+  else if(name == HdGatlingAovTokens->dlssRRLinearDepth || name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
+  {
+    return HdAovDescriptor(HdFormatFloat32, true, VtValue(0.0f));
   }
 
   return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f)));

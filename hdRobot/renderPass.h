@@ -77,6 +77,7 @@ private:
 private:
   void app_updateCamera(const HdCamera& camera);
   void app_updateLight();
+  void app_apply_render_settings();
   void app_init();
 
   void app_anim_real();

@@ -3,6 +3,9 @@
 #include "nvvk/commands_vk.hpp"
 #include <cassert>
 #include <array>
+#include <cstdlib>
+#include <iostream>
+#include <unordered_set>
 #include "ray_trace_app.hpp"
 
 // opengl上下文
@@ -10,6 +13,14 @@
 #include <algorithm>
 #include <filesystem>
 #include <utility>
+
+#ifndef ENABLE_DLSS_RR
+#define ENABLE_DLSS_RR 0
+#endif
+
+#if ENABLE_DLSS_RR
+#include "nvsdk_ngx_vk.h"
+#endif
 
 #include "obj_loader.h"
 
@@ -37,6 +48,78 @@ std::string getUsdRootFromEnvironment()
   const char* envValue = std::getenv("USD_ROOT");
   return envValue != nullptr ? std::string(envValue) : std::string();
 }
+
+#if ENABLE_DLSS_RR
+bool isDlssRuntimeEnabled()
+{
+  const char* envValue = std::getenv("ENABLE_DLSS_RR");
+  return envValue == nullptr || std::string(envValue) != "0";
+}
+
+void addNgxRequiredExtensions(nvvk::ContextCreateInfo& contextInfo)
+{
+  std::unordered_set<std::string> instanceExtensions;
+  std::unordered_set<std::string> deviceExtensions;
+
+  auto addInstance = [&](const char* extName) {
+    if(extName == nullptr || *extName == '\0')
+    {
+      return;
+    }
+    if(instanceExtensions.insert(extName).second)
+    {
+      contextInfo.addInstanceExtension(extName);
+    }
+  };
+
+  auto addDevice = [&](const char* extName) {
+    if(extName == nullptr || *extName == '\0')
+    {
+      return;
+    }
+    if(deviceExtensions.insert(extName).second)
+    {
+      // optional=false: treat DLSS-required extensions as hard requirements.
+      contextInfo.addDeviceExtension(extName, false);
+    }
+  };
+
+  unsigned int instanceExtCount = 0;
+  unsigned int deviceExtCount   = 0;
+  const char** instanceExts     = nullptr;
+  const char** deviceExts       = nullptr;
+
+  const NVSDK_NGX_Result reqResult =
+      NVSDK_NGX_VULKAN_RequiredExtensions(&instanceExtCount, &instanceExts, &deviceExtCount, &deviceExts);
+
+  if(reqResult == NVSDK_NGX_Result_Success)
+  {
+    for(unsigned int i = 0; i < instanceExtCount; ++i)
+    {
+      addInstance(instanceExts[i]);
+    }
+    for(unsigned int i = 0; i < deviceExtCount; ++i)
+    {
+      addDevice(deviceExts[i]);
+    }
+  }
+  else
+  {
+    std::cerr << "[DLSS-RR] warning: NVSDK_NGX_VULKAN_RequiredExtensions failed (code=" << static_cast<int>(reqResult)
+              << "), using fallback extension list\n";
+  }
+
+#if defined(VK_NVX_BINARY_IMPORT_EXTENSION_NAME)
+  addDevice(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
+#endif
+#if defined(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME)
+  addDevice(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
+#endif
+#if defined(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME)
+  addDevice(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+#endif
+}
+#endif
 }  // namespace
 
 RayTraceApp::RayTraceApp() {}
@@ -124,6 +207,13 @@ void RayTraceApp::setupContext()
   contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
+#if ENABLE_DLSS_RR
+  if(isDlssRuntimeEnabled())
+  {
+    addNgxRequiredExtensions(contextInfo);
+  }
+#endif
+
   m_vkctx.initInstance(contextInfo);
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
   assert(!compatibleDevices.empty());
@@ -144,6 +234,7 @@ void RayTraceApp::setupHelloVulkan()
 void RayTraceApp::createBVH()
 {
   m_helloVk.createOffscreenRender();
+  m_helloVk.createDlssRR();
   m_helloVk.createLightBuffer();
   m_helloVk.createInstanceIdBuffer();
 
@@ -174,6 +265,7 @@ void RayTraceApp::render()
   m_helloVk.updateLightBuffer(cmdBuf);
   m_helloVk.updateInstanceIdBuffer(cmdBuf);
   m_helloVk.raytrace(cmdBuf);
+  m_helloVk.runDlssRR(cmdBuf);
 
   vkEndCommandBuffer(cmdBuf);
   m_helloVk.submitFrame();

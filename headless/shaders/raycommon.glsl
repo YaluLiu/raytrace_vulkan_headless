@@ -7,6 +7,10 @@ struct hitPayload
   uint seed;
   int  depth;
   int  done;
+  vec4 firstHitWorldPosRoughness;  // xyz = world position, w = linear roughness
+  vec4 firstHitNormalSpecHitDist;  // xyz = world normal,  w = specular hit distance
+  vec4 firstHitDiffuseValid;       // xyz = diffuse albedo, w = valid flag
+  vec4 firstHitSpecularPad;        // xyz = specular albedo
 };
 
 uint initRng(uvec2 pixel, uint frameIndex, uint sampleIndex)

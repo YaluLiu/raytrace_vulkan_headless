@@ -31,6 +31,7 @@ bool lightEqual(const Light& lhs, const Light& rhs)
          && nearlyEqual(lhs.rotateQuat.x, rhs.rotateQuat.x) && nearlyEqual(lhs.rotateQuat.y, rhs.rotateQuat.y)
          && nearlyEqual(lhs.rotateQuat.z, rhs.rotateQuat.z) && nearlyEqual(lhs.rotateQuat.w, rhs.rotateQuat.w);
 }
+
 }  // namespace
 
 //--------------------------------------------------------------------------------------------------
@@ -133,7 +134,8 @@ void HelloVulkan::createOutputImage()
   {
     auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenColorFormat,
                                                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                                                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
     nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
     VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
@@ -145,6 +147,20 @@ void HelloVulkan::createOutputImage()
   m_rtOutputGL.imgSize = m_size;
   m_rtOutputGL.texVk   = m_offscreenColor;
   createTextureGL(m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createDenoisedImage()
+{
+  m_alloc.destroy(m_offscreenDenoised);
+  auto imageInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDenoisedFormat,
+                                                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                                                    | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+  nvvk::Image image = m_alloc.createImage(imageInfo);
+
+  VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageInfo);
+  VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+  m_offscreenDenoised                        = m_alloc.createTexture(image, ivInfo, sampler);
+  m_offscreenDenoised.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
 void HelloVulkan::createObjectIdImage()
@@ -183,6 +199,120 @@ void HelloVulkan::createInstanceIdImage()
   m_rtInstanceIdGL.imgSize = m_size;
   m_rtInstanceIdGL.texVk   = m_offscreenInstanceId;
   createTextureGL(m_rtInstanceIdGL, GL_R32I, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createDiffuseAlbedoImage()
+{
+  m_rtDiffuseAlbedoGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDiffuseAlbedoFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenDiffuseAlbedo                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenDiffuseAlbedo.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtDiffuseAlbedoGL.imgSize = m_size;
+  m_rtDiffuseAlbedoGL.texVk   = m_offscreenDiffuseAlbedo;
+  createTextureGL(m_rtDiffuseAlbedoGL, GL_RGBA16F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createSpecularAlbedoImage()
+{
+  m_rtSpecularAlbedoGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenSpecularAlbedoFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenSpecularAlbedo                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenSpecularAlbedo.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtSpecularAlbedoGL.imgSize = m_size;
+  m_rtSpecularAlbedoGL.texVk   = m_offscreenSpecularAlbedo;
+  createTextureGL(m_rtSpecularAlbedoGL, GL_RGBA16F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createNormalRoughnessImage()
+{
+  m_rtNormalRoughnessGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenNormalRoughnessFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenNormalRoughness                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenNormalRoughness.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtNormalRoughnessGL.imgSize = m_size;
+  m_rtNormalRoughnessGL.texVk   = m_offscreenNormalRoughness;
+  createTextureGL(m_rtNormalRoughnessGL, GL_RGBA16F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createMotionVectorImage()
+{
+  m_rtMotionVectorGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenMotionVectorFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenMotionVector                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenMotionVector.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtMotionVectorGL.imgSize = m_size;
+  m_rtMotionVectorGL.texVk   = m_offscreenMotionVector;
+  createTextureGL(m_rtMotionVectorGL, GL_RG32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createLinearDepthImage()
+{
+  m_rtLinearDepthGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenLinearDepthFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenLinearDepth                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenLinearDepth.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtLinearDepthGL.imgSize = m_size;
+  m_rtLinearDepthGL.texVk   = m_offscreenLinearDepth;
+  createTextureGL(m_rtLinearDepthGL, GL_R32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
+void HelloVulkan::createSpecularHitDistanceImage()
+{
+  m_rtSpecularHitDistanceGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenSpecularHitDistanceFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenSpecularHitDistance                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenSpecularHitDistance.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtSpecularHitDistanceGL.imgSize = m_size;
+  m_rtSpecularHitDistanceGL.texVk   = m_offscreenSpecularHitDistance;
+  createTextureGL(m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
 //--------------------------------------------------------------------------------------------------

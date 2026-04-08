@@ -31,10 +31,16 @@ END_BINDING();
 
 
 START_BINDING(RtxBindings)
-  eTlas       = 0,  // Top-level acceleration structure
-  eOutImage   = 1,  // Ray tracer output image (color)
-  eObjIdImage = 2,   // NEW: ObjectId output (r32ui)
-  eInsIdImage = 3   // NEW: ObjectId output (r32ui)
+  eTlas                   = 0,  // Top-level acceleration structure
+  eOutImage               = 1,  // Ray tracer output image (color)
+  eObjIdImage             = 2,  // ObjectId output
+  eInsIdImage             = 3,  // InstanceId output
+  eDiffuseAlbedoImage     = 4,  // DLSS-RR: diffuse albedo input
+  eSpecularAlbedoImage    = 5,  // DLSS-RR: specular albedo input
+  eNormalRoughnessImage   = 6,  // DLSS-RR: packed normal+roughness
+  eMotionVectorImage      = 7,  // DLSS-RR: motion vector
+  eLinearDepthImage       = 8,  // DLSS-RR: linear depth
+  eSpecularHitDistImage   = 9   // DLSS-RR: specular hit distance (optional)
 END_BINDING();
 // clang-format on
 
@@ -51,9 +57,11 @@ struct ObjDesc
 // Uniform buffer set at each frame
 struct GlobalUniforms
 {
-  mat4 viewProj;     // Camera view * projection
-  mat4 viewInverse;  // Camera inverse view matrix
-  mat4 projInverse;  // Camera inverse projection matrix
+  mat4 viewProj;      // Camera view * projection
+  mat4 view;          // Camera view matrix
+  mat4 viewInverse;   // Camera inverse view matrix
+  mat4 projInverse;   // Camera inverse projection matrix
+  mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
 struct Light

@@ -64,11 +64,7 @@ public:
 
   //just for test
   int  _frame_idx = 0;
-  void make_test_color();
-  void make_test_object_id();
-  void read_color_texture(GLuint textureId);
-  void read_object_texture(GLuint textureId);
-  void print();
+  void read_texture(GLuint textureId);
   void ConvertToHgiTexture();
 
 
@@ -80,8 +76,6 @@ public:
     HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(_texture.Get());
     return srcTexture->GetTextureId();
   }
-
-  bool _isIdAov = false;
 
 protected:
   void _Deallocate() override;

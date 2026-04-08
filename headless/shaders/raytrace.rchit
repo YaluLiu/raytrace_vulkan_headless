@@ -33,6 +33,12 @@ float computeShadowBias(vec3 worldPos)
   return max(0.001, sceneScale * 0.0001);
 }
 
+float roughnessFromShininess(float shininess)
+{
+  float n = max(shininess, 1.0);
+  return clamp(sqrt(2.0 / (n + 2.0)), 0.02, 1.0);
+}
+
 vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, WaveFrontMaterial mat, vec3 textureColor)
 {
   vec3 totalLight = vec3(0.0);
@@ -148,8 +154,16 @@ void main()
 
   if(prd.depth == 0)
   {
-    prd.objId      = int(gl_InstanceCustomIndexEXT);
-    prd.instanceId = instanceIdBuf.instanceIds[gl_InstanceID];
+    vec3 diffuseAlbedo  = clamp(mat.diffuse * textureColor, vec3(0.0), vec3(1.0));
+    vec3 specularAlbedo = clamp(mat.specular, vec3(0.0), vec3(1.0));
+    float roughness     = roughnessFromShininess(mat.shininess);
+
+    prd.objId                   = int(gl_InstanceCustomIndexEXT);
+    prd.instanceId              = instanceIdBuf.instanceIds[gl_InstanceID];
+    prd.firstHitWorldPosRoughness = vec4(worldPos, roughness);
+    prd.firstHitNormalSpecHitDist = vec4(normalize(worldNrm), 0.0);
+    prd.firstHitDiffuseValid      = vec4(diffuseAlbedo, 1.0);
+    prd.firstHitSpecularPad       = vec4(specularAlbedo, 0.0);
   }
 
   vec3 emission = computeEmission(mat, textureColor);

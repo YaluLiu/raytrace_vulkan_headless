@@ -48,11 +48,16 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 # convert vulkan to opengl for hydra plugin
 option(ENABLE_HYDRA "Enable OpenUsd hydra plugins" OFF)
 option(ENABLE_GL_VK_CONVERSION "Enable OpenGL/Vulkan conversion" ON)
+option(ENABLE_DLSS_RR "Enable NVIDIA NGX DLSS-RR denoiser integration" ON)
+set(DLSS_SDK_ROOT "" CACHE PATH "Root path of NVIDIA DLSS SDK (contains include/ and lib/)")
 # 让子目录可以访问
 set(ENABLE_GL_VK_CONVERSION ${ENABLE_GL_VK_CONVERSION} CACHE BOOL "Enable OpenGL/Vulkan conversion")
 set(ENABLE_HYDRA ${ENABLE_HYDRA} CACHE BOOL "Enable OpenUsd hydra plugins")
+set(ENABLE_DLSS_RR ${ENABLE_DLSS_RR} CACHE BOOL "Enable NVIDIA NGX DLSS-RR denoiser integration")
+set(DLSS_SDK_ROOT ${DLSS_SDK_ROOT} CACHE PATH "Root path of NVIDIA DLSS SDK (contains include/ and lib/)")
 
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
+message(STATUS "ENABLE_DLSS_RR: ${ENABLE_DLSS_RR}")
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------
 # Sub examples

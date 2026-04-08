@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gl_vkpp.hpp"
+#include "dlss/dlss_rr.hpp"
 
 #include "headless_vk.hpp"
 #include "nvvk/debug_util_vk.hpp"
@@ -115,7 +116,7 @@ public:
       0,                 // num lights
       0,                 // frame index
       6,                 // max depth
-      1                  // samples per frame
+      2                  // samples per frame
   };
 
   // #VK_animation
@@ -138,6 +139,37 @@ public:
 
   void saveOffscreenColorToFile(const char* filename);
 
+  // DLSS-RR
+  void createDlssRR();
+  void runDlssRR(const VkCommandBuffer& cmdBuf);
+  void setDlssRREnabled(bool enabled)
+  {
+    if(m_enableDlssRR != enabled)
+    {
+      m_enableDlssRR = enabled;
+      resetAccumulation();
+    }
+  }
+  bool isDlssRREnabled() const { return m_enableDlssRR && m_dlssRR.isOperational(); }
+  void setSamplesPerFrame(int spp)
+  {
+    if(spp < 1)
+    {
+      spp = 1;
+    }
+    else if(spp > 64)
+    {
+      spp = 64;
+    }
+
+    if(m_pcRay.samplesPerFrame != spp)
+    {
+      m_pcRay.samplesPerFrame = spp;
+      resetAccumulation();
+    }
+  }
+  int getSamplesPerFrame() const { return m_pcRay.samplesPerFrame; }
+
 
   // #Post - Draw the rendered image on a quad using a tonemapper
   void createOffscreenRender();
@@ -146,6 +178,9 @@ public:
   nvvk::Texture          m_offscreenColor;
   VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   void                   createOutputImage();
+  nvvk::Texture          m_offscreenDenoised;
+  VkFormat               m_offscreenDenoisedFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  void                   createDenoisedImage();
   interop::Texture2DVkGL m_rtOutputGL;
 
   // primId
@@ -160,7 +195,40 @@ public:
   void                   createInstanceIdImage();
   interop::Texture2DVkGL m_rtInstanceIdGL;
 
+  // DLSS-RR input buffers
+  nvvk::Texture m_offscreenDiffuseAlbedo;
+  VkFormat      m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
+  void          createDiffuseAlbedoImage();
+  interop::Texture2DVkGL m_rtDiffuseAlbedoGL;
+
+  nvvk::Texture m_offscreenSpecularAlbedo;
+  VkFormat      m_offscreenSpecularAlbedoFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
+  void          createSpecularAlbedoImage();
+  interop::Texture2DVkGL m_rtSpecularAlbedoGL;
+
+  nvvk::Texture m_offscreenNormalRoughness;
+  VkFormat      m_offscreenNormalRoughnessFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
+  void          createNormalRoughnessImage();
+  interop::Texture2DVkGL m_rtNormalRoughnessGL;
+
+  nvvk::Texture m_offscreenMotionVector;
+  VkFormat      m_offscreenMotionVectorFormat{VK_FORMAT_R32G32_SFLOAT};
+  void          createMotionVectorImage();
+  interop::Texture2DVkGL m_rtMotionVectorGL;
+
+  nvvk::Texture m_offscreenLinearDepth;
+  VkFormat      m_offscreenLinearDepthFormat{VK_FORMAT_R32_SFLOAT};
+  void          createLinearDepthImage();
+  interop::Texture2DVkGL m_rtLinearDepthGL;
+
+  nvvk::Texture m_offscreenSpecularHitDistance;
+  VkFormat      m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
+  void          createSpecularHitDistanceImage();
+  interop::Texture2DVkGL m_rtSpecularHitDistanceGL;
+
   interop::ResourceAllocatorGLInterop m_allocGL;
+  dlss::DlssRR                      m_dlssRR;
+  bool                              m_enableDlssRR{true};
 
   // depth buffer
   nvvk::Texture m_offscreenDepth;

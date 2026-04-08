@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_GATLING_SETTINGS_TOKENS                                                                                     \
   ((spp, "spp"))((maxBounces, "max-bounces"))((rrBounceOffset, "rr-bounce-offset"))(                                   \
       (rrInvMinTermProb, "rr-inv-min-term-prob"))((nextEventEstimation, "next-event-estimation"))(                     \
-      (progressiveAccumulation, "progressive-accumulation"))(                                                          \
+      (progressiveAccumulation, "progressive-accumulation"))((dlssRRDenoise, "dlss-rr-denoise"))(                     \
       (filterImportanceSampling, "filter-importance-sampling"))((depthOfField, "depth-of-field"))(                     \
       (lightIntensityMultiplier, "light-intensity-multiplier"))((mediumStackSize, "medium-stack-size"))(               \
       (maxVolumeWalkLength, "max-volume-walk-length"))((jitteredSampling, "jittered-sampling"))(                       \
@@ -47,7 +47,10 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((debugNee, "debug:nee"))((debugBarycentrics, "debug:barycentrics"))((debugTexcoords, "debug:texcoords"))(           \
       (debugBounces, "debug:bounces"))((debugClockCycles, "debug:clock_cycles"))((debugOpacity, "debug:opacity"))(     \
       (debugTangents, "debug:tangents"))((debugBitangents, "debug:bitangents"))(                                       \
-      (debugThinWalled, "debug:thinWalled"))((debugDoubleSided, "debug:doubleSided"))
+      (debugThinWalled, "debug:thinWalled"))((debugDoubleSided, "debug:doubleSided"))(                                \
+      (dlssRRDiffuseAlbedo, "dlssRR:diffuseAlbedo"))((dlssRRSpecularAlbedo, "dlssRR:specularAlbedo"))(                \
+      (dlssRRNormalRoughness, "dlssRR:normalRoughness"))((dlssRRMotionVector, "dlssRR:motionVector"))(                \
+      (dlssRRLinearDepth, "dlssRR:linearDepth"))((dlssRRSpecularHitDistance, "dlssRR:specularHitDistance"))
 
 #define HD_GATLING_COMMAND_TOKENS (printLicenses)
 
