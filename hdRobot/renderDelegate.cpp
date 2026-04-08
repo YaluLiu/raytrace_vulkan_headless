@@ -51,7 +51,10 @@ namespace {
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh, HdPrimTypeTokens->points};
 
 const static TfTokenVector _supportedSprimTypes = {
-    HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
+    HdPrimTypeTokens->camera,
+    HdPrimTypeTokens->material,
+    HdPrimTypeTokens->sphereLight,
+    HdPrimTypeTokens->distantLight,
     //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->domeLight,
     //  HdPrimTypeTokens->simpleLight,  // Required for usdview domeLight creation
@@ -171,11 +174,11 @@ HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& 
   }
   else if(name == HdAovTokens->depth)
   {
-    return HdAovDescriptor(HdFormatFloat32, true, VtValue(1.0f));
+    return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
   }
   else if(name == HdAovTokens->primId || name == HdAovTokens->elementId || name == HdAovTokens->instanceId)
   {
-    return HdAovDescriptor(HdFormatInt32, true, VtValue(-1));
+    return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
   }
   else if(name == HdGatlingAovTokens->dlssRRDiffuseAlbedo || name == HdGatlingAovTokens->dlssRRSpecularAlbedo
           || name == HdGatlingAovTokens->dlssRRNormalRoughness)
@@ -191,7 +194,7 @@ HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& 
     return HdAovDescriptor(HdFormatFloat32, true, VtValue(0.0f));
   }
 
-  return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f)));
+  return HdAovDescriptor();
 }
 
 HdRenderParam* HdGatlingRenderDelegate::GetRenderParam() const

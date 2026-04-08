@@ -33,6 +33,7 @@
 #include <iostream>
 #include "nvh/fileoperations.hpp"
 #include "nvh/cameramanipulator.hpp"
+#include <nvgl/extensions_gl.hpp>
 
 // open asset file
 #include <pxr/usd/ar/asset.h>
@@ -61,8 +62,7 @@ bool ensureDirectoryExists(const std::string& path)
   }
 }
 
-namespace
-{
+namespace {
 std::string FormatUpdatedIds(const std::vector<int>& ids)
 {
   std::ostringstream oss;
@@ -93,48 +93,7 @@ std::string FormatUpdatedIds(const std::vector<int>& ids)
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
-{
-void SetAovTargetGlId(::HelloVulkan& app, const TfToken& name, GLuint textureId)
-{
-  if(name == HdAovTokens->color)
-  {
-    app.m_rtOutputGL.oglId = textureId;
-  }
-  else if(name == HdAovTokens->primId)
-  {
-    app.m_rtObjectIdGL.oglId = textureId;
-  }
-  else if(name == HdAovTokens->instanceId)
-  {
-    app.m_rtInstanceIdGL.oglId = textureId;
-  }
-  else if(name == HdGatlingAovTokens->dlssRRDiffuseAlbedo)
-  {
-    app.m_rtDiffuseAlbedoGL.oglId = textureId;
-  }
-  else if(name == HdGatlingAovTokens->dlssRRSpecularAlbedo)
-  {
-    app.m_rtSpecularAlbedoGL.oglId = textureId;
-  }
-  else if(name == HdGatlingAovTokens->dlssRRNormalRoughness)
-  {
-    app.m_rtNormalRoughnessGL.oglId = textureId;
-  }
-  else if(name == HdGatlingAovTokens->dlssRRMotionVector)
-  {
-    app.m_rtMotionVectorGL.oglId = textureId;
-  }
-  else if(name == HdGatlingAovTokens->dlssRRLinearDepth)
-  {
-    app.m_rtLinearDepthGL.oglId = textureId;
-  }
-  else if(name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
-  {
-    app.m_rtSpecularHitDistanceGL.oglId = textureId;
-  }
-}
-
+namespace {
 GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
 {
   if(name == HdAovTokens->color)
@@ -174,6 +133,31 @@ GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
     return app.m_rtSpecularHitDistanceGL.oglId;
   }
   return 0;
+}
+
+void CopyAovToRenderBuffer(const ::HelloVulkan& app, const TfToken& name, HdGatlingRenderBuffer* renderBuffer)
+{
+  if(renderBuffer == nullptr)
+  {
+    return;
+  }
+
+  const GLuint srcTextureId = GetAovSourceGlId(app, name);
+  const GLuint dstTextureId = renderBuffer->get_OpenGL_Texture_id();
+  if(srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId)
+  {
+    return;
+  }
+
+  const GLsizei width  = static_cast<GLsizei>(renderBuffer->GetWidth());
+  const GLsizei height = static_cast<GLsizei>(renderBuffer->GetHeight());
+  if(width <= 0 || height <= 0)
+  {
+    return;
+  }
+
+  glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height,
+                     1);
 }
 }  // namespace
 
@@ -232,7 +216,6 @@ std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
 
 #define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
 #define USE_BASE_RENDER 0  // render the default vk_ray_trace image on screen, ignore the usd file
-#define ENABLE_SHARE ENABLE_GL_VK_CONVERSION  // disable vulkan->opengl interop
 #define TEST_MATERIAL 0
 
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
@@ -252,14 +235,6 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     _width              = renderBuffer->GetWidth();
     _height             = renderBuffer->GetHeight();
     _reset_renderbuffer = true;
-#if ENABLE_SHARE
-    for(const HdRenderPassAovBinding& binding : hdAovBindings)
-    {
-      const TfToken& name = binding.aovName;
-      renderBuffer        = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-      SetAovTargetGlId(_renderApp.getVulkan(), name, renderBuffer->get_OpenGL_Texture_id());
-    }
-#endif
   }
   app_init();
   app_apply_render_settings();
@@ -271,20 +246,13 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   app_anim_real();
 #endif  //USE_BASE_RENDER
   _renderApp.render();
-#if !ENABLE_SHARE
+
+  const ::HelloVulkan& app = _renderApp.getVulkan();
   for(const HdRenderPassAovBinding& binding : hdAovBindings)
   {
-    const TfToken& name = binding.aovName;
-    renderBuffer         = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
-    unsigned int sourceTexId = GetAovSourceGlId(_renderApp.getVulkan(), name);
-
-    if(sourceTexId != 0)
-    {
-      renderBuffer->read_texture(sourceTexId);
-    }
-    renderBuffer->ConvertToHgiTexture();
+    auto* aovBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
+    CopyAovToRenderBuffer(app, binding.aovName, aovBuffer);
   }
-#endif  //ENABLE_SHARE
 #endif  //USE_RAY_TRACE
   _frame_idx++;
 }
