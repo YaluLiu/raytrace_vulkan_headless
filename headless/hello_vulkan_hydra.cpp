@@ -217,7 +217,7 @@ void HelloVulkan::createDiffuseAlbedoImage()
   m_offscreenDiffuseAlbedo.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   m_rtDiffuseAlbedoGL.imgSize = m_size;
   m_rtDiffuseAlbedoGL.texVk   = m_offscreenDiffuseAlbedo;
-  createTextureGL(m_rtDiffuseAlbedoGL, GL_RGBA16F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+  createTextureGL(m_rtDiffuseAlbedoGL, GL_RGBA32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
 void HelloVulkan::createSpecularAlbedoImage()
@@ -236,7 +236,7 @@ void HelloVulkan::createSpecularAlbedoImage()
   m_offscreenSpecularAlbedo.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   m_rtSpecularAlbedoGL.imgSize = m_size;
   m_rtSpecularAlbedoGL.texVk   = m_offscreenSpecularAlbedo;
-  createTextureGL(m_rtSpecularAlbedoGL, GL_RGBA16F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+  createTextureGL(m_rtSpecularAlbedoGL, GL_RGBA32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
 void HelloVulkan::createNormalRoughnessImage()
@@ -255,7 +255,7 @@ void HelloVulkan::createNormalRoughnessImage()
   m_offscreenNormalRoughness.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
   m_rtNormalRoughnessGL.imgSize = m_size;
   m_rtNormalRoughnessGL.texVk   = m_offscreenNormalRoughness;
-  createTextureGL(m_rtNormalRoughnessGL, GL_RGBA16F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+  createTextureGL(m_rtNormalRoughnessGL, GL_RGBA32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
 void HelloVulkan::createMotionVectorImage()

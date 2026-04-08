@@ -424,7 +424,7 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
   evalParams.pInDiffuseAlbedo       = &diffuseAlbedoResource;
   evalParams.pInSpecularAlbedo      = &specularAlbedoResource;
   evalParams.pInNormals             = &normalRoughnessResource;
-  evalParams.pInRoughness           = nullptr;  // Roughness is packed in normal.w.
+  evalParams.pInRoughness           = &normalRoughnessResource;  // Match NVIDIA sample path for packed roughness.
   evalParams.pInSpecularHitDistance = hasSpecularHitDistance ? &specularHitDistanceResource : nullptr;
 
   evalParams.InJitterOffsetX           = inputs.jitterX;

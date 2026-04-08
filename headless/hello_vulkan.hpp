@@ -197,17 +197,17 @@ public:
 
   // DLSS-RR input buffers
   nvvk::Texture m_offscreenDiffuseAlbedo;
-  VkFormat      m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
+  VkFormat      m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   void          createDiffuseAlbedoImage();
   interop::Texture2DVkGL m_rtDiffuseAlbedoGL;
 
   nvvk::Texture m_offscreenSpecularAlbedo;
-  VkFormat      m_offscreenSpecularAlbedoFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
+  VkFormat      m_offscreenSpecularAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   void          createSpecularAlbedoImage();
   interop::Texture2DVkGL m_rtSpecularAlbedoGL;
 
   nvvk::Texture m_offscreenNormalRoughness;
-  VkFormat      m_offscreenNormalRoughnessFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
+  VkFormat      m_offscreenNormalRoughnessFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   void          createNormalRoughnessImage();
   interop::Texture2DVkGL m_rtNormalRoughnessGL;
 

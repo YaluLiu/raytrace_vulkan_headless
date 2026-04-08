@@ -124,7 +124,7 @@ GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
   {
     return app.m_rtMotionVectorGL.oglId;
   }
-  if(name == HdGatlingAovTokens->dlssRRLinearDepth)
+  if(name == HdAovTokens->depth || name == HdAovTokens->depthStencil || name == HdGatlingAovTokens->dlssRRLinearDepth)
   {
     return app.m_rtLinearDepthGL.oglId;
   }

@@ -162,15 +162,16 @@ void main()
   if(prd.depth == 0)
   {
     vec3 diffuseAlbedo  = clamp(mat.diffuse * textureColor, vec3(0.0), vec3(1.0));
-    vec3 specularAlbedo = clamp(mat.specular, vec3(0.0), vec3(1.0));
+    vec3 specularF0     = (mat.illum >= 2) ? clamp(mat.specular, vec3(0.0), vec3(0.98)) : vec3(0.0);
     float roughness     = roughnessFromShininess(mat.shininess);
+    float roughnessSq   = roughness * roughness;
 
     prd.objId                   = int(gl_InstanceCustomIndexEXT);
     prd.instanceId              = -1;
-    prd.firstHitWorldPosRoughness = vec4(worldPos, roughness);
+    prd.firstHitWorldPosRoughness = vec4(worldPos, roughnessSq);
     prd.firstHitNormalSpecHitDist = vec4(normalize(worldNrm), 0.0);
     prd.firstHitDiffuseValid      = vec4(diffuseAlbedo, 1.0);
-    prd.firstHitSpecularPad       = vec4(specularAlbedo, 0.0);
+    prd.firstHitSpecularPad       = vec4(specularF0, (mat.illum >= 2) ? 1.0 : 0.0);
   }
 
   vec3 emission = computeEmission(mat, textureColor);
