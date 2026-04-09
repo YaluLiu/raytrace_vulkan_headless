@@ -62,35 +62,6 @@ bool ensureDirectoryExists(const std::string& path)
   }
 }
 
-namespace {
-std::string FormatUpdatedIds(const std::vector<int>& ids)
-{
-  std::ostringstream oss;
-  size_t             limit = std::min<size_t>(ids.size(), 10);
-
-  if(ids.size() > 10)
-  {
-    oss << "count=" << ids.size() << ", first10=[";
-  }
-  else
-  {
-    oss << "ids=[";
-  }
-
-  for(size_t i = 0; i < limit; ++i)
-  {
-    if(i > 0)
-    {
-      oss << ", ";
-    }
-    oss << ids[i];
-  }
-
-  oss << "]";
-  return oss.str();
-}
-}  // namespace
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -156,8 +127,7 @@ void CopyAovToRenderBuffer(const ::HelloVulkan& app, const TfToken& name, HdGatl
     return;
   }
 
-  glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height,
-                     1);
+  glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
 }
 }  // namespace
 
@@ -214,10 +184,6 @@ std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
   return file_name;
 }
 
-#define USE_RAY_TRACE 1    // render the only color on screen, disable the vk_ray_trace, just color on screen
-#define USE_BASE_RENDER 0  // render the default vk_ray_trace image on screen, ignore the usd file
-#define TEST_MATERIAL 0
-
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
   TF_UNUSED(renderTags);
@@ -227,7 +193,6 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     return;
   }
   const auto& hdAovBindings = renderPassState->GetAovBindings();
-#if USE_RAY_TRACE
 
   HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(hdAovBindings[0].renderBuffer);
   if(_width != renderBuffer->GetWidth() || _height != renderBuffer->GetHeight())
@@ -240,11 +205,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   app_apply_render_settings();
   app_updateCamera(*hdcamera);
   app_updateLight();
-#if USE_BASE_RENDER
-  app_anim_base();
-#else
   app_anim_real();
-#endif  //USE_BASE_RENDER
   _renderApp.render();
 
   const ::HelloVulkan& app = _renderApp.getVulkan();
@@ -253,11 +214,9 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     auto* aovBuffer = static_cast<HdGatlingRenderBuffer*>(binding.renderBuffer);
     CopyAovToRenderBuffer(app, binding.aovName, aovBuffer);
   }
-#endif  //USE_RAY_TRACE
   _frame_idx++;
 }
 
-#if USE_RAY_TRACE
 void HdGatlingRenderPass::app_init()
 {
   if(!_isAppInited)
@@ -268,9 +227,6 @@ void HdGatlingRenderPass::app_init()
       _renderApp.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
     }
     _renderApp.setup(_width, _height);
-#if USE_BASE_RENDER
-    _renderApp.loadScene();
-#else
     ensureDirectoryExists("media/textures");
 
     bool is_first_model = true;
@@ -307,7 +263,6 @@ void HdGatlingRenderPass::app_init()
         cur_mesh.tlasIds.push_back(i + first_instance_id);
       }
     }
-#endif
     _renderApp.getVulkan().addSpheres(_scene.v_sphere);
     _renderApp.createBVH();
   }
@@ -380,16 +335,6 @@ void HdGatlingRenderPass::app_updateLight()
       _renderApp.getVulkan().addLight(cur_light.toLight());
     }
   }
-  // {
-  //   Light default_light;
-  //   default_light.type          = 0;  //sphere
-  //   default_light.baseEmission  = {150000.0f, 150000.0f, 150000.0f};
-  //   default_light.position      = {0, 0, 5000};
-  //   default_light.diffuse  = 1.0;
-  //   default_light.specular = 1.0;
-  //   default_light.radius        = 100;
-  //   _renderApp.getVulkan().addLight(default_light);
-  // }
   if(false)
   {
     Light default_light;
@@ -399,23 +344,17 @@ void HdGatlingRenderPass::app_updateLight()
     default_light.specular     = 1.0;
     default_light.radius       = 1;
 
-    // 球形分布参数
     float sphere_radius = 200.0f;  // 大球半径
     int   num_latitude  = 4;       // 纬度方向的数量
     int   num_longitude = 4;       // 经度方向的数量
 
-    // 在球面上均匀分布灯光
     for(int i = 0; i < num_latitude; i++)
     {
-      // 纬度角度 (从上到下: 0 到 π)
       float theta = M_PI * (i + 0.5f) / num_latitude;
 
       for(int j = 0; j < num_longitude; j++)
       {
-        // 经度角度 (绕一圈: 0 到 2π)
-        float phi = 2.0f * M_PI * j / num_longitude;
-
-        // 球坐标转笛卡尔坐标
+        float phi              = 2.0f * M_PI * j / num_longitude;
         default_light.position = {sphere_radius * sin(theta) * cos(phi), sphere_radius * sin(theta) * sin(phi),
                                   sphere_radius * cos(theta)};
 
@@ -489,15 +428,6 @@ void HdGatlingRenderPass::app_print_update_info()
   if(updated_blas_ids.empty() && updated_tlas_ids.empty())
   {
     return;
-  }
-
-  if(!updated_blas_ids.empty())
-  {
-    std::cout << "[RenderPass][Update] BLAS " << FormatUpdatedIds(updated_blas_ids) << std::endl;
-  }
-  if(!updated_tlas_ids.empty())
-  {
-    std::cout << "[RenderPass][Update] TLAS " << FormatUpdatedIds(updated_tlas_ids) << std::endl;
   }
 }
 
@@ -583,5 +513,4 @@ void HdGatlingRenderPass::app_anim_base()
   _renderApp.getVulkan().animationObject(diff.count());
   _renderApp.getVulkan().animationInstances(diff.count());
 }
-#endif
 PXR_NAMESPACE_CLOSE_SCOPE
