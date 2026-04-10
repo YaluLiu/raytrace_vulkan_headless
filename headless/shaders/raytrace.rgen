@@ -7,8 +7,14 @@
 #include "raycommon.glsl"
 #include "wavefront.glsl"
 
-const float kDlssInfDistance = 65504.0;
-const float kFloatMinValue   = 1e-15;
+const float kDlssInfDistance                                    = 65504.0;
+const float kFloatMinValue                                      = 1e-15;
+const float kLidarAzimuthMinDeg                                 = -60.0;
+const float kLidarAzimuthMaxDeg                                 = 60.0;
+const float kLidarAzimuthStepDeg                                = 0.5;
+const int   kLidarVerticalChannelCount                          = 8;
+const int   kLidarHorizontalSampleCount                         = 121;
+const float kLidarVerticalAnglesDeg[kLidarVerticalChannelCount] = float[](12.0, 8.0, 4.0, 1.0, -1.0, -4.0, -8.0, -12.0);
 
 float positiveRcp(float x)
 {
@@ -62,6 +68,78 @@ layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
 
+mat4 getProjectionMatrix()
+{
+  return uni.viewProj * uni.viewInverse;
+}
+
+vec3 getCameraForward()
+{
+  vec3 centerCamRay = (uni.projInverse * vec4(0.0, 0.0, 1.0, 1.0)).xyz;
+  return normalize(centerCamRay);
+}
+
+void getCameraBasis(out vec3 forwardCam, out vec3 rightCam, out vec3 upCam)
+{
+  forwardCam = getCameraForward();
+  rightCam   = cross(vec3(0.0, 1.0, 0.0), forwardCam);
+  if(length(rightCam) < 1e-6)
+  {
+    rightCam = vec3(1.0, 0.0, 0.0);
+  }
+  rightCam = normalize(rightCam);
+  upCam    = normalize(cross(forwardCam, rightCam));
+}
+
+int nearestLidarVerticalChannel(float elevationDeg)
+{
+  int   bestIdx  = 0;
+  float bestDiff = abs(elevationDeg - kLidarVerticalAnglesDeg[0]);
+  for(int i = 1; i < kLidarVerticalChannelCount; ++i)
+  {
+    float diff = abs(elevationDeg - kLidarVerticalAnglesDeg[i]);
+    if(diff < bestDiff)
+    {
+      bestDiff = diff;
+      bestIdx  = i;
+    }
+  }
+  return bestIdx;
+}
+
+vec3 lidarDirectionFromAngles(vec3 forwardCam, vec3 rightCam, vec3 upCam, float azimuthDeg, float elevationDeg)
+{
+  float azimuth       = radians(azimuthDeg);
+  float elevation     = radians(elevationDeg);
+  vec3  horizontalDir = normalize(cos(azimuth) * forwardCam + sin(azimuth) * rightCam);
+  return normalize(cos(elevation) * horizontalDir + sin(elevation) * upCam);
+}
+
+bool projectCameraDirectionToPixel(vec3 dirCam, mat4 proj, out ivec2 outPixel)
+{
+  vec4 clip = proj * vec4(dirCam, 1.0);
+  if(abs(clip.w) <= 1e-6)
+  {
+    return false;
+  }
+
+  vec2 ndc = clip.xy / clip.w;
+  if(any(greaterThan(abs(ndc), vec2(1.0))))
+  {
+    return false;
+  }
+
+  vec2  pixelFloat = (ndc * 0.5 + 0.5) * vec2(gl_LaunchSizeEXT.xy) - vec2(0.5);
+  ivec2 pixel      = ivec2(round(pixelFloat));
+  if(any(lessThan(pixel, ivec2(0))) || any(greaterThanEqual(pixel, ivec2(gl_LaunchSizeEXT.xy))))
+  {
+    return false;
+  }
+
+  outPixel = pixel;
+  return true;
+}
+
 
 void main()
 {
@@ -69,9 +147,9 @@ void main()
   vec2  pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
   int   spp         = max(pcRay.samplesPerFrame, 1);
 
-  vec3 sampleColor = vec3(0.0);
-  int  sampleObjId = -1;
-  int  sampleInsId = -1;
+  vec3 sampleColor             = vec3(0.0);
+  int  sampleObjId             = -1;
+  int  sampleInsId             = -1;
   vec4 sampleWorldPosRoughness = vec4(0.0);
   vec4 sampleNormalHitDist     = vec4(0.0);
   vec4 sampleDiffuseValid      = vec4(0.0);
@@ -79,7 +157,7 @@ void main()
 
   for(int sampleIdx = 0; sampleIdx < spp; ++sampleIdx)
   {
-    uint seed = initRng(gl_LaunchIDEXT.xy, pcRay.frameIndex, uint(sampleIdx));
+    uint seed   = initRng(gl_LaunchIDEXT.xy, pcRay.frameIndex, uint(sampleIdx));
     vec2 jitter = vec2(rand01(seed), rand01(seed)) - vec2(0.5);
     vec2 inUV   = (pixelCenter + jitter) / vec2(gl_LaunchSizeEXT.xy);
     vec2 d      = inUV * 2.0 - 1.0;
@@ -88,13 +166,13 @@ void main()
     vec4 target    = uni.projInverse * vec4(d.x, d.y, 1.0, 1.0);
     vec4 direction = uni.viewInverse * vec4(normalize(target.xyz), 0.0);
 
-    prd.radiance   = vec3(0.0);
-    prd.objId      = -1;
-    prd.instanceId = -1;
-    prd.throughput = vec3(1.0);
-    prd.seed       = seed;
-    prd.depth      = 0;
-    prd.done       = 0;
+    prd.radiance                  = vec3(0.0);
+    prd.objId                     = -1;
+    prd.instanceId                = -1;
+    prd.throughput                = vec3(1.0);
+    prd.seed                      = seed;
+    prd.depth                     = 0;
+    prd.done                      = 0;
     prd.firstHitWorldPosRoughness = vec4(0.0);
     prd.firstHitNormalSpecHitDist = vec4(0.0);
     prd.firstHitDiffuseValid      = vec4(0.0);
@@ -106,8 +184,8 @@ void main()
     sampleColor += prd.radiance;
     if(sampleIdx == 0)
     {
-      sampleObjId = prd.objId;
-      sampleInsId = prd.instanceId;
+      sampleObjId             = prd.objId;
+      sampleInsId             = prd.instanceId;
       sampleWorldPosRoughness = prd.firstHitWorldPosRoughness;
       sampleNormalHitDist     = prd.firstHitNormalSpecHitDist;
       sampleDiffuseValid      = prd.firstHitDiffuseValid;
@@ -122,30 +200,30 @@ void main()
   imageStore(objectIdImage, pixel, ivec4(sampleObjId, 0, 0, 0));
   imageStore(instanceIdImage, pixel, ivec4(sampleInsId, 0, 0, 0));
 
-  vec3 diffuseAlbedo      = clamp(sampleDiffuseValid.xyz, vec3(0.0), vec3(1.0));
-  vec3 specularAlbedo     = vec3(0.0);
-  float metallic          = 0.0;
-  vec3 packedNormal       = vec3(0.0);
-  float packedRoughness   = 0.0;
-  float linearDepth       = 1.0;
-  float distanceToCamera  = 0.0;
-  vec2 motionVectorPixels = vec2(0.0);
-  float specHitDistance   = max(sampleNormalHitDist.w, 0.0);
-  bool hasPrimaryHit      = sampleDiffuseValid.w > 0.5;
+  vec3  diffuseAlbedo      = clamp(sampleDiffuseValid.xyz, vec3(0.0), vec3(1.0));
+  vec3  specularAlbedo     = vec3(0.0);
+  float metallic           = 0.0;
+  vec3  packedNormal       = vec3(0.0);
+  float packedRoughness    = 0.0;
+  float linearDepth        = 1.0;
+  float distanceToCamera   = 0.0;
+  vec2  motionVectorPixels = vec2(0.0);
+  float specHitDistance    = max(sampleNormalHitDist.w, 0.0);
+  bool  hasPrimaryHit      = sampleDiffuseValid.w > 0.5;
 
   if(hasPrimaryHit)
   {
-    vec3 cameraPos = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-    vec4 worldPos = vec4(sampleWorldPosRoughness.xyz, 1.0);
+    vec3 cameraPos   = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    vec4 worldPos    = vec4(sampleWorldPosRoughness.xyz, 1.0);
     distanceToCamera = length(cameraPos - worldPos.xyz);
-    vec4 viewPos  = uni.view * worldPos;
-    float viewZ   = max(-viewPos.z, 0.0);
-    linearDepth   = normalizeViewZ(viewZ);
-    packedNormal = normalize(sampleNormalHitDist.xyz);
+    vec4  viewPos    = uni.view * worldPos;
+    float viewZ      = max(-viewPos.z, 0.0);
+    linearDepth      = normalizeViewZ(viewZ);
+    packedNormal     = normalize(sampleNormalHitDist.xyz);
 
     float roughnessSquared = clamp(sampleWorldPosRoughness.w, 0.0, 1.0);
     float alphaRoughness   = sqrt(roughnessSquared);
-    packedRoughness = alphaRoughness;
+    packedRoughness        = alphaRoughness;
 
     vec3  toEye = normalize(cameraPos - worldPos.xyz);
     float noV   = max(dot(packedNormal, toEye), 0.0);
@@ -155,33 +233,33 @@ void main()
       specularAlbedo = environmentTermRtg(f0, noV, roughnessSquared);
       // OBJ path does not provide metallic explicitly; approximate it from specular F0.
       float f0Max = max(f0.x, max(f0.y, f0.z));
-      metallic = clamp((f0Max - 0.04) / 0.96, 0.0, 1.0);
+      metallic    = clamp((f0Max - 0.04) / 0.96, 0.0, 1.0);
     }
     else
     {
       specularAlbedo = vec3(0.0);
-      metallic = 0.0;
+      metallic       = 0.0;
     }
 
-    vec4  prevClip  = uni.prevViewProj * worldPos;
-    float invW      = abs(prevClip.w) > 1e-6 ? (1.0 / prevClip.w) : 0.0;
-    vec2  prevNdc   = prevClip.xy * invW;
-    vec2  prevPixel = (prevNdc * 0.5 + 0.5) * vec2(gl_LaunchSizeEXT.xy);
-    vec2  currPixel = vec2(pixel) + vec2(0.5);
+    vec4  prevClip     = uni.prevViewProj * worldPos;
+    float invW         = abs(prevClip.w) > 1e-6 ? (1.0 / prevClip.w) : 0.0;
+    vec2  prevNdc      = prevClip.xy * invW;
+    vec2  prevPixel    = (prevNdc * 0.5 + 0.5) * vec2(gl_LaunchSizeEXT.xy);
+    vec2  currPixel    = vec2(pixel) + vec2(0.5);
     motionVectorPixels = prevPixel - currPixel;
   }
   else
   {
-    vec3 skyGuide = reinhardMax(max(outColor, vec3(0.0)));
-    diffuseAlbedo  = skyGuide;
-    specularAlbedo = vec3(0.0);
-    packedNormal   = vec3(0.0);
-    packedRoughness = 0.0;
-    linearDepth     = 1.0;
-    distanceToCamera = 0.0;
+    vec3 skyGuide      = reinhardMax(max(outColor, vec3(0.0)));
+    diffuseAlbedo      = skyGuide;
+    specularAlbedo     = vec3(0.0);
+    packedNormal       = vec3(0.0);
+    packedRoughness    = 0.0;
+    linearDepth        = 1.0;
+    distanceToCamera   = 0.0;
     motionVectorPixels = vec2(0.0);
-    specHitDistance = 0.0;
-    metallic        = 0.0;
+    specHitDistance    = 0.0;
+    metallic           = 0.0;
   }
 
   imageStore(diffuseAlbedoImage, pixel, vec4(diffuseAlbedo, metallic));
@@ -191,6 +269,66 @@ void main()
   imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
   imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
-  imageStore(lidarPointCloudImage, pixel, vec4(outColor, 1.0));
+  vec3  lidarColor    = outColor;
+  float lidarDistance = 0.0;
+
+  vec2 inUVNoJitter = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+  vec2 dNoJitter    = inUVNoJitter * 2.0 - 1.0;
+  vec3 pixelDirCam  = normalize((uni.projInverse * vec4(dNoJitter, 1.0, 1.0)).xyz);
+  vec3 forwardCam;
+  vec3 rightCam;
+  vec3 upCam;
+  getCameraBasis(forwardCam, rightCam, upCam);
+
+  float forwardComp  = dot(pixelDirCam, forwardCam);
+  float rightComp    = dot(pixelDirCam, rightCam);
+  float upComp       = dot(pixelDirCam, upCam);
+  float horizLen     = max(length(vec2(forwardComp, rightComp)), 1e-6);
+  float azimuthDeg   = degrees(atan(rightComp, forwardComp));
+  float elevationDeg = degrees(atan(upComp, horizLen));
+
+  if(azimuthDeg >= (kLidarAzimuthMinDeg - 0.5) && azimuthDeg <= (kLidarAzimuthMaxDeg + 0.5))
+  {
+    int azimuthIdx = int(round((azimuthDeg - kLidarAzimuthMinDeg) / kLidarAzimuthStepDeg));
+    azimuthIdx     = clamp(azimuthIdx, 0, kLidarHorizontalSampleCount - 1);
+
+    int   channelIdx   = nearestLidarVerticalChannel(elevationDeg);
+    float snappedAzDeg = kLidarAzimuthMinDeg + float(azimuthIdx) * kLidarAzimuthStepDeg;
+    float snappedElDeg = kLidarVerticalAnglesDeg[channelIdx];
+
+    vec3  beamDirCam = lidarDirectionFromAngles(forwardCam, rightCam, upCam, snappedAzDeg, snappedElDeg);
+    mat4  proj       = getProjectionMatrix();
+    ivec2 beamPixel  = ivec2(-1);
+    if(projectCameraDirectionToPixel(beamDirCam, proj, beamPixel) && all(equal(beamPixel, pixel)))
+    {
+      vec3 lidarOriginWorld = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+      vec3 lidarDirWorld    = normalize((uni.viewInverse * vec4(beamDirCam, 0.0)).xyz);
+
+      uint lidarSeed                = initRng(uvec2(uint(azimuthIdx), uint(channelIdx)), pcRay.frameIndex, 0u);
+      prd.radiance                  = vec3(0.0);
+      prd.objId                     = -1;
+      prd.instanceId                = -1;
+      prd.throughput                = vec3(1.0);
+      prd.seed                      = lidarSeed;
+      prd.depth                     = 0;
+      prd.done                      = 0;
+      prd.firstHitWorldPosRoughness = vec4(0.0);
+      prd.firstHitNormalSpecHitDist = vec4(0.0);
+      prd.firstHitDiffuseValid      = vec4(0.0);
+      prd.firstHitSpecularPad       = vec4(0.04, 0.04, 0.04, 0.0);
+
+      traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, lidarOriginWorld, 0.001, lidarDirWorld, 10000.0, 0);
+
+      bool lidarHit = prd.firstHitDiffuseValid.w > 0.5;
+      if(lidarHit)
+      {
+        vec3 hitCam   = (uni.view * vec4(prd.firstHitWorldPosRoughness.xyz, 1.0)).xyz;
+        lidarDistance = length(hitCam);
+        lidarColor    = vec3(1.0, 0.0, 0.0);
+      }
+    }
+  }
+
+  imageStore(lidarPointCloudImage, pixel, vec4(lidarColor, lidarDistance));
   imageStore(image, pixel, vec4(outColor, 1.0));
 }
