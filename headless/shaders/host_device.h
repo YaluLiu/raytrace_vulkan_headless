@@ -41,7 +41,8 @@ START_BINDING(RtxBindings)
   eMotionVectorImage      = 7,  // DLSS-RR: motion vector
   eLinearDepthImage       = 8,  // DLSS-RR: linear depth
   eSpecularHitDistImage   = 9,  // DLSS-RR: specular hit distance (optional)
-  eDistanceToCameraImage  = 10  // AOV: world-space distance from camera to first hit
+  eDistanceToCameraImage  = 10, // AOV: world-space distance from camera to first hit
+  eLidarPointCloudImage   = 11  // AOV: lidar point cloud
 END_BINDING();
 // clang-format on
 

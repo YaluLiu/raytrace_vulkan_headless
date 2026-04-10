@@ -231,6 +231,11 @@ public:
   void          createDistanceToCameraImage();
   interop::Texture2DVkGL m_rtDistanceToCameraGL;
 
+  nvvk::Texture m_offscreenLidarPointCloud;
+  VkFormat      m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  void          createLidarPointCloudImage();
+  interop::Texture2DVkGL m_rtLidarPointCloudGL;
+
   interop::ResourceAllocatorGLInterop m_allocGL;
   dlss::DlssRR                      m_dlssRR;
   bool                              m_enableDlssRR{true};

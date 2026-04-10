@@ -107,6 +107,10 @@ GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
   {
     return app.m_rtDistanceToCameraGL.oglId;
   }
+  if(name == HdGatlingAovTokens->lidarPointCloud)
+  {
+    return app.m_rtLidarPointCloudGL.oglId;
+  }
   return 0;
 }
 

@@ -334,6 +334,25 @@ void HelloVulkan::createDistanceToCameraImage()
   createTextureGL(m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
+void HelloVulkan::createLidarPointCloudImage()
+{
+  m_rtLidarPointCloudGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenLidarPointCloudFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenLidarPointCloud                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenLidarPointCloud.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtLidarPointCloudGL.imgSize = m_size;
+  m_rtLidarPointCloudGL.texVk   = m_offscreenLidarPointCloud;
+  createTextureGL(m_rtLidarPointCloudGL, GL_RGBA32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
 //--------------------------------------------------------------------------------------------------
 // 灯光管理函数
 //

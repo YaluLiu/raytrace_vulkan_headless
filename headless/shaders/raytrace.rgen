@@ -57,6 +57,7 @@ layout(set = 0, binding = eMotionVectorImage, rg32f) uniform image2D motionVecto
 layout(set = 0, binding = eLinearDepthImage, r32f) uniform image2D linearDepthImage;
 layout(set = 0, binding = eSpecularHitDistImage, r32f) uniform image2D specularHitDistanceImage;
 layout(set = 0, binding = eDistanceToCameraImage, r32f) uniform image2D distanceToCameraImage;
+layout(set = 0, binding = eLidarPointCloudImage, rgba32f) uniform image2D lidarPointCloudImage;
 layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
@@ -190,5 +191,6 @@ void main()
   imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
   imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
+  imageStore(lidarPointCloudImage, pixel, vec4(outColor, 1.0));
   imageStore(image, pixel, vec4(outColor, 1.0));
 }

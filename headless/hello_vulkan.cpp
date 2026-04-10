@@ -237,6 +237,7 @@ void HelloVulkan::destroyResources()
   m_rtLinearDepthGL.destroy(m_allocGL);
   m_rtSpecularHitDistanceGL.destroy(m_allocGL);
   m_rtDistanceToCameraGL.destroy(m_allocGL);
+  m_rtLidarPointCloudGL.destroy(m_allocGL);
   m_allocGL.deinit();
 
   m_alloc.destroy(m_offscreenDepth);
@@ -306,6 +307,7 @@ void HelloVulkan::createOffscreenRender()
   createLinearDepthImage();
   createSpecularHitDistanceImage();
   createDistanceToCameraImage();
+  createLidarPointCloudImage();
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -341,6 +343,7 @@ void HelloVulkan::createOffscreenRender()
                                 VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDistanceToCamera.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloud.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     genCmdBuf.submitAndWait(cmdBuf);
   }
 
