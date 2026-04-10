@@ -9,11 +9,13 @@
 
 const float kDlssInfDistance                                    = 65504.0;
 const float kFloatMinValue                                      = 1e-15;
-const float kLidarAzimuthMinDeg                                 = -60.0;
-const float kLidarAzimuthMaxDeg                                 = 60.0;
+const float kLidarAzimuthMinDeg                                 = -90.0;
+const float kLidarAzimuthMaxDeg                                 = 90.0;
 const float kLidarAzimuthStepDeg                                = 0.5;
+const float kLidarPointRadiusPixels                             = 3.0;
 const int   kLidarVerticalChannelCount                          = 8;
-const int   kLidarHorizontalSampleCount                         = 121;
+const int   kLidarHorizontalSampleCount                         =
+    int(((kLidarAzimuthMaxDeg - kLidarAzimuthMinDeg) / kLidarAzimuthStepDeg) + 0.5) + 1;
 const float kLidarVerticalAnglesDeg[kLidarVerticalChannelCount] = float[](12.0, 8.0, 4.0, 1.0, -1.0, -4.0, -8.0, -12.0);
 
 float positiveRcp(float x)
@@ -299,32 +301,38 @@ void main()
     vec3  beamDirCam = lidarDirectionFromAngles(forwardCam, rightCam, upCam, snappedAzDeg, snappedElDeg);
     mat4  proj       = getProjectionMatrix();
     ivec2 beamPixel  = ivec2(-1);
-    if(projectCameraDirectionToPixel(beamDirCam, proj, beamPixel) && all(equal(beamPixel, pixel)))
+    if(projectCameraDirectionToPixel(beamDirCam, proj, beamPixel))
     {
-      vec3 lidarOriginWorld = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-      vec3 lidarDirWorld    = normalize((uni.viewInverse * vec4(beamDirCam, 0.0)).xyz);
-
-      uint lidarSeed                = initRng(uvec2(uint(azimuthIdx), uint(channelIdx)), pcRay.frameIndex, 0u);
-      prd.radiance                  = vec3(0.0);
-      prd.objId                     = -1;
-      prd.instanceId                = -1;
-      prd.throughput                = vec3(1.0);
-      prd.seed                      = lidarSeed;
-      prd.depth                     = 0;
-      prd.done                      = 0;
-      prd.firstHitWorldPosRoughness = vec4(0.0);
-      prd.firstHitNormalSpecHitDist = vec4(0.0);
-      prd.firstHitDiffuseValid      = vec4(0.0);
-      prd.firstHitSpecularPad       = vec4(0.04, 0.04, 0.04, 0.0);
-
-      traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, lidarOriginWorld, 0.001, lidarDirWorld, 10000.0, 0);
-
-      bool lidarHit = prd.firstHitDiffuseValid.w > 0.5;
-      if(lidarHit)
+      vec2  pixelDelta   = vec2(pixel - beamPixel);
+      float pixelDist2   = dot(pixelDelta, pixelDelta);
+      float pointRadius2 = kLidarPointRadiusPixels * kLidarPointRadiusPixels;
+      if(pixelDist2 <= pointRadius2)
       {
-        vec3 hitCam   = (uni.view * vec4(prd.firstHitWorldPosRoughness.xyz, 1.0)).xyz;
-        lidarDistance = length(hitCam);
-        lidarColor    = vec3(1.0, 0.0, 0.0);
+        vec3 lidarOriginWorld = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+        vec3 lidarDirWorld    = normalize((uni.viewInverse * vec4(beamDirCam, 0.0)).xyz);
+
+        uint lidarSeed                = initRng(uvec2(uint(azimuthIdx), uint(channelIdx)), pcRay.frameIndex, 0u);
+        prd.radiance                  = vec3(0.0);
+        prd.objId                     = -1;
+        prd.instanceId                = -1;
+        prd.throughput                = vec3(1.0);
+        prd.seed                      = lidarSeed;
+        prd.depth                     = 0;
+        prd.done                      = 0;
+        prd.firstHitWorldPosRoughness = vec4(0.0);
+        prd.firstHitNormalSpecHitDist = vec4(0.0);
+        prd.firstHitDiffuseValid      = vec4(0.0);
+        prd.firstHitSpecularPad       = vec4(0.04, 0.04, 0.04, 0.0);
+
+        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, lidarOriginWorld, 0.001, lidarDirWorld, 10000.0, 0);
+
+        bool lidarHit = prd.firstHitDiffuseValid.w > 0.5;
+        if(lidarHit)
+        {
+          vec3 hitCam   = (uni.view * vec4(prd.firstHitWorldPosRoughness.xyz, 1.0)).xyz;
+          lidarDistance = length(hitCam);
+          lidarColor    = vec3(1.0, 0.0, 0.0);
+        }
       }
     }
   }
