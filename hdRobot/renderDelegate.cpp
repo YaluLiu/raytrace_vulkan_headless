@@ -189,7 +189,8 @@ HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& 
   {
     return HdAovDescriptor(HdFormatFloat32Vec2, true, VtValue(GfVec2f(0.0f)));
   }
-  else if(name == HdGatlingAovTokens->dlssRRLinearDepth || name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
+  else if(name == HdGatlingAovTokens->distanceToCamera || name == HdGatlingAovTokens->dlssRRLinearDepth
+          || name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
   {
     return HdAovDescriptor(HdFormatFloat32, true, VtValue(0.0f));
   }

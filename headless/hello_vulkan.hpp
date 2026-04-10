@@ -226,6 +226,11 @@ public:
   void          createSpecularHitDistanceImage();
   interop::Texture2DVkGL m_rtSpecularHitDistanceGL;
 
+  nvvk::Texture m_offscreenDistanceToCamera;
+  VkFormat      m_offscreenDistanceToCameraFormat{VK_FORMAT_R32_SFLOAT};
+  void          createDistanceToCameraImage();
+  interop::Texture2DVkGL m_rtDistanceToCameraGL;
+
   interop::ResourceAllocatorGLInterop m_allocGL;
   dlss::DlssRR                      m_dlssRR;
   bool                              m_enableDlssRR{true};

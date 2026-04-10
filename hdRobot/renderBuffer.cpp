@@ -170,6 +170,10 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
       {
         usage |= HgiTextureUsageBitsDepthTarget;
       }
+      else
+      {
+        usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
+      }
       break;
 
     case HdFormatInt32:

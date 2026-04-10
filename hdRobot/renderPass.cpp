@@ -103,6 +103,10 @@ GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
   {
     return app.m_rtSpecularHitDistanceGL.oglId;
   }
+  if(name == HdGatlingAovTokens->distanceToCamera)
+  {
+    return app.m_rtDistanceToCameraGL.oglId;
+  }
   return 0;
 }
 

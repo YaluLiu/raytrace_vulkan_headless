@@ -236,6 +236,7 @@ void HelloVulkan::destroyResources()
   m_rtMotionVectorGL.destroy(m_allocGL);
   m_rtLinearDepthGL.destroy(m_allocGL);
   m_rtSpecularHitDistanceGL.destroy(m_allocGL);
+  m_rtDistanceToCameraGL.destroy(m_allocGL);
   m_allocGL.deinit();
 
   m_alloc.destroy(m_offscreenDepth);
@@ -304,6 +305,7 @@ void HelloVulkan::createOffscreenRender()
   createMotionVectorImage();
   createLinearDepthImage();
   createSpecularHitDistanceImage();
+  createDistanceToCameraImage();
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -336,6 +338,8 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenMotionVector.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLinearDepth.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenSpecularHitDistance.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_LAYOUT_GENERAL);
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDistanceToCamera.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
     genCmdBuf.submitAndWait(cmdBuf);
   }

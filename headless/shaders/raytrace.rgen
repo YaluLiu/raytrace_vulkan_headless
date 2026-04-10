@@ -56,6 +56,7 @@ layout(set = 0, binding = eNormalRoughnessImage, rgba32f) uniform image2D normal
 layout(set = 0, binding = eMotionVectorImage, rg32f) uniform image2D motionVectorImage;
 layout(set = 0, binding = eLinearDepthImage, r32f) uniform image2D linearDepthImage;
 layout(set = 0, binding = eSpecularHitDistImage, r32f) uniform image2D specularHitDistanceImage;
+layout(set = 0, binding = eDistanceToCameraImage, r32f) uniform image2D distanceToCameraImage;
 layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
@@ -126,6 +127,7 @@ void main()
   vec3 packedNormal       = vec3(0.0);
   float packedRoughness   = 0.0;
   float linearDepth       = 1.0;
+  float distanceToCamera  = 0.0;
   vec2 motionVectorPixels = vec2(0.0);
   float specHitDistance   = max(sampleNormalHitDist.w, 0.0);
   bool hasPrimaryHit      = sampleDiffuseValid.w > 0.5;
@@ -134,6 +136,7 @@ void main()
   {
     vec3 cameraPos = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
     vec4 worldPos = vec4(sampleWorldPosRoughness.xyz, 1.0);
+    distanceToCamera = length(cameraPos - worldPos.xyz);
     vec4 viewPos  = uni.view * worldPos;
     float viewZ   = max(-viewPos.z, 0.0);
     linearDepth   = normalizeViewZ(viewZ);
@@ -174,6 +177,7 @@ void main()
     packedNormal   = vec3(0.0);
     packedRoughness = 0.0;
     linearDepth     = 1.0;
+    distanceToCamera = 0.0;
     motionVectorPixels = vec2(0.0);
     specHitDistance = 0.0;
     metallic        = 0.0;
@@ -185,5 +189,6 @@ void main()
   imageStore(motionVectorImage, pixel, vec4(motionVectorPixels, 0.0, 0.0));
   imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
+  imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
   imageStore(image, pixel, vec4(outColor, 1.0));
 }

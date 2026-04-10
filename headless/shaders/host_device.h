@@ -40,7 +40,8 @@ START_BINDING(RtxBindings)
   eNormalRoughnessImage   = 6,  // DLSS-RR: packed normal+roughness
   eMotionVectorImage      = 7,  // DLSS-RR: motion vector
   eLinearDepthImage       = 8,  // DLSS-RR: linear depth
-  eSpecularHitDistImage   = 9   // DLSS-RR: specular hit distance (optional)
+  eSpecularHitDistImage   = 9,  // DLSS-RR: specular hit distance (optional)
+  eDistanceToCameraImage  = 10  // AOV: world-space distance from camera to first hit
 END_BINDING();
 // clang-format on
 

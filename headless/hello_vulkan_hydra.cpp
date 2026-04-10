@@ -315,6 +315,25 @@ void HelloVulkan::createSpecularHitDistanceImage()
   createTextureGL(m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
 }
 
+void HelloVulkan::createDistanceToCameraImage()
+{
+  m_rtDistanceToCameraGL.destroy(m_allocGL);
+  {
+    auto CreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDistanceToCameraFormat,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                                                      | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    nvvk::Image           image  = m_allocGL.createImage(CreateInfo);
+    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, CreateInfo);
+    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    m_offscreenDistanceToCamera                        = m_allocGL.createTexture(image, ivInfo, sampler);
+  }
+  m_offscreenDistanceToCamera.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  m_rtDistanceToCameraGL.imgSize = m_size;
+  m_rtDistanceToCameraGL.texVk   = m_offscreenDistanceToCamera;
+  createTextureGL(m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, m_allocGL);
+}
+
 //--------------------------------------------------------------------------------------------------
 // 灯光管理函数
 //
