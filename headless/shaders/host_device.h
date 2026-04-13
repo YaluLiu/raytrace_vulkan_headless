@@ -66,6 +66,23 @@ struct GlobalUniforms
   mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
+#ifndef LIDAR_VERTICAL_CHANNEL_CAPACITY
+#define LIDAR_VERTICAL_CHANNEL_CAPACITY 8
+#endif
+
+struct LidarParams
+{
+  float azimuthMinDeg;
+  float azimuthMaxDeg;
+  float azimuthStepDeg;
+  float pointRadiusPixels;
+  int   verticalChannelCount;
+  int   horizontalSampleCount;
+  float padding0;
+  float padding1;
+  float verticalAnglesDeg[LIDAR_VERTICAL_CHANNEL_CAPACITY];
+};
+
 struct Light
 {
   // common
@@ -85,8 +102,6 @@ struct Light
   vec3 padding;
 };
 
-
-// 修改 PushConstantRay 结构体：
 struct PushConstantRay
 {
   vec4  clearColor;
@@ -97,6 +112,7 @@ struct PushConstantRay
   uint  frameIndex;
   int   maxDepth;
   int   samplesPerFrame;
+  LidarParams lidar;
 };
 
 struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for device

@@ -9,14 +9,6 @@
 
 const float kDlssInfDistance                                    = 65504.0;
 const float kFloatMinValue                                      = 1e-15;
-const float kLidarAzimuthMinDeg                                 = -90.0;
-const float kLidarAzimuthMaxDeg                                 = 90.0;
-const float kLidarAzimuthStepDeg                                = 0.5;
-const float kLidarPointRadiusPixels                             = 3.0;
-const int   kLidarVerticalChannelCount                          = 8;
-const int   kLidarHorizontalSampleCount                         =
-    int(((kLidarAzimuthMaxDeg - kLidarAzimuthMinDeg) / kLidarAzimuthStepDeg) + 0.5) + 1;
-const float kLidarVerticalAnglesDeg[kLidarVerticalChannelCount] = float[](12.0, 8.0, 4.0, 1.0, -1.0, -4.0, -8.0, -12.0);
 
 float positiveRcp(float x)
 {
@@ -95,11 +87,12 @@ void getCameraBasis(out vec3 forwardCam, out vec3 rightCam, out vec3 upCam)
 
 int nearestLidarVerticalChannel(float elevationDeg)
 {
+  int channelCount = clamp(pcRay.lidar.verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
   int   bestIdx  = 0;
-  float bestDiff = abs(elevationDeg - kLidarVerticalAnglesDeg[0]);
-  for(int i = 1; i < kLidarVerticalChannelCount; ++i)
+  float bestDiff = abs(elevationDeg - pcRay.lidar.verticalAnglesDeg[0]);
+  for(int i = 1; i < channelCount; ++i)
   {
-    float diff = abs(elevationDeg - kLidarVerticalAnglesDeg[i]);
+    float diff = abs(elevationDeg - pcRay.lidar.verticalAnglesDeg[i]);
     if(diff < bestDiff)
     {
       bestDiff = diff;
@@ -289,14 +282,20 @@ void main()
   float azimuthDeg   = degrees(atan(rightComp, forwardComp));
   float elevationDeg = degrees(atan(upComp, horizLen));
 
-  if(azimuthDeg >= (kLidarAzimuthMinDeg - 0.5) && azimuthDeg <= (kLidarAzimuthMaxDeg + 0.5))
-  {
-    int azimuthIdx = int(round((azimuthDeg - kLidarAzimuthMinDeg) / kLidarAzimuthStepDeg));
-    azimuthIdx     = clamp(azimuthIdx, 0, kLidarHorizontalSampleCount - 1);
+  float lidarAzimuthMinDeg   = min(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg);
+  float lidarAzimuthMaxDeg   = max(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg);
+  float lidarAzimuthStepDeg  = max(abs(pcRay.lidar.azimuthStepDeg), 1e-4);
+  float lidarPointRadius     = max(pcRay.lidar.pointRadiusPixels, 0.0);
+  int   lidarHorizontalCount = max(pcRay.lidar.horizontalSampleCount, 1);
 
-    int   channelIdx   = nearestLidarVerticalChannel(elevationDeg);
-    float snappedAzDeg = kLidarAzimuthMinDeg + float(azimuthIdx) * kLidarAzimuthStepDeg;
-    float snappedElDeg = kLidarVerticalAnglesDeg[channelIdx];
+  if(azimuthDeg >= (lidarAzimuthMinDeg - 0.5) && azimuthDeg <= (lidarAzimuthMaxDeg + 0.5))
+  {
+    int azimuthIdx = int(round((azimuthDeg - lidarAzimuthMinDeg) / lidarAzimuthStepDeg));
+    azimuthIdx     = clamp(azimuthIdx, 0, lidarHorizontalCount - 1);
+
+    int   channelIdx = nearestLidarVerticalChannel(elevationDeg);
+    float snappedAzDeg = lidarAzimuthMinDeg + float(azimuthIdx) * lidarAzimuthStepDeg;
+    float snappedElDeg = pcRay.lidar.verticalAnglesDeg[channelIdx];
 
     vec3  beamDirCam = lidarDirectionFromAngles(forwardCam, rightCam, upCam, snappedAzDeg, snappedElDeg);
     mat4  proj       = getProjectionMatrix();
@@ -305,7 +304,7 @@ void main()
     {
       vec2  pixelDelta   = vec2(pixel - beamPixel);
       float pixelDist2   = dot(pixelDelta, pixelDelta);
-      float pointRadius2 = kLidarPointRadiusPixels * kLidarPointRadiusPixels;
+      float pointRadius2 = lidarPointRadius * lidarPointRadius;
       if(pixelDist2 <= pointRadius2)
       {
         vec3 lidarOriginWorld = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;

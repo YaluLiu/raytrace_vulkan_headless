@@ -116,7 +116,9 @@ public:
       0,                 // num lights
       0,                 // frame index
       6,                 // max depth
-      2                  // samples per frame
+      2,                 // samples per frame
+      {-90.0f, 90.0f, 0.5f, 3.0f, LIDAR_VERTICAL_CHANNEL_CAPACITY, 361, 0.0f, 0.0f,
+       {12.0f, 8.0f, 4.0f, 1.0f, -1.0f, -4.0f, -8.0f, -12.0f}}
   };
 
   // #VK_animation
