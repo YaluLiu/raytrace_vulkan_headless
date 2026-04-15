@@ -74,25 +74,20 @@ private:
   // ----------------------------------------------------------------------------------
   // for headless ray trace app
 private:
-  void app_updateCamera(const HydraCamera& cameraData);
+  bool app_updateCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void app_updateLight();
   void app_apply_render_settings();
-  void app_init();
+  void app_init_or_resize();
 
   void app_anim_real();
-  void app_print_update_info();
   void app_update_blas();
   void app_update_tlas();
   void app_update_material();
-  // base mode, egg+five cow
-  void app_anim_base();
 
   bool _isAppInited        = false;
   bool _reset_renderbuffer = false;
 
   RayTraceApp                           _renderApp;
-  std::chrono::system_clock::time_point m_startTime;
-
   int _width  = -1;
   int _height = -1;
 };

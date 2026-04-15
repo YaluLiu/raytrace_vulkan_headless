@@ -38,7 +38,6 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/ar/resolvedPath.h>
 
-#include <chrono>
 #include <thread>
 #include <filesystem>
 #include <sstream>
@@ -149,9 +148,7 @@ HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex*             index,
     , _isConverged(false)
     , _scene(scene)
     , _resourcePath(std::move(resourcePath))
-{
-  m_startTime = std::chrono::system_clock::now();
-}
+{}
 
 HdGatlingRenderPass::~HdGatlingRenderPass() {}
 
@@ -195,30 +192,9 @@ std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
 void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
   TF_UNUSED(renderTags);
-  const HdCamera* hdcamera = renderPassState->GetCamera();
-  if(!hdcamera)
+  if(!app_updateCamera(renderPassState))
   {
     return;
-  }
-
-  HydraCamera cameraData;
-  bool        hasCameraData = false;
-  const std::string cameraId = hdcamera->GetId().GetString();
-  {
-    std::lock_guard guard(_scene.mutex);
-    auto            it = _scene.cameraCache.find(cameraId);
-    if(it != _scene.cameraCache.end() && it->second.valid)
-    {
-      cameraData    = it->second;
-      hasCameraData = true;
-    }
-  }
-
-  if(!hasCameraData)
-  {
-    cameraData = HdGatlingComputeCameraData(*hdcamera);
-    std::lock_guard guard(_scene.mutex);
-    _scene.cameraCache[cameraId] = cameraData;
   }
 
   const auto& hdAovBindings = renderPassState->GetAovBindings();
@@ -230,9 +206,8 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
     _height             = renderBuffer->GetHeight();
     _reset_renderbuffer = true;
   }
-  app_init();
+  app_init_or_resize();
   app_apply_render_settings();
-  app_updateCamera(cameraData);
   app_updateLight();
   app_anim_real();
   _renderApp.render();
@@ -246,7 +221,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   _frame_idx++;
 }
 
-void HdGatlingRenderPass::app_init()
+void HdGatlingRenderPass::app_init_or_resize()
 {
   if(!_isAppInited)
   {
@@ -340,19 +315,6 @@ void HdGatlingRenderPass::app_apply_render_settings()
   }
 }
 
-void printLightCompact(const Light& light)
-{
-  printf(
-      "Light { type=%d, baseEmission=(%.3f,%.3f,%.3f), "
-      "textureId=%d,diffuse=%.3f, specular=%.3f, dir=(%.3f,%.3f,%.3f), "
-      "angle=%.3f, pos=(%.3f,%.3f,%.3f), radius=%.3f, "
-      "quat=(%.3f,%.3f,%.3f,%.3f), }\n",
-      light.type, light.baseEmission.x, light.baseEmission.y, light.baseEmission.z, light.textureID, light.diffuse,
-      light.specular, light.direction.x, light.direction.y, light.direction.z, light.angle, light.position.x,
-      light.position.y, light.position.z, light.radius, light.rotateQuat.x, light.rotateQuat.y, light.rotateQuat.z,
-      light.rotateQuat.w);
-}
-
 void HdGatlingRenderPass::app_updateLight()
 {
   _renderApp.getVulkan().clearLights();
@@ -392,11 +354,37 @@ void HdGatlingRenderPass::app_updateLight()
     }
   }
 }
-void HdGatlingRenderPass::app_updateCamera(const HydraCamera& cameraData)
+bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr& renderPassState)
 {
+  const HdCamera* hdcamera = renderPassState ? renderPassState->GetCamera() : nullptr;
+  if(!hdcamera)
+  {
+    return false;
+  }
+
+  HydraCamera       cameraData;
+  bool              hasCameraData = false;
+  const std::string cameraId      = hdcamera->GetId().GetString();
+  {
+    std::lock_guard guard(_scene.mutex);
+    auto            it = _scene.cameraCache.find(cameraId);
+    if(it != _scene.cameraCache.end() && it->second.valid)
+    {
+      cameraData    = it->second;
+      hasCameraData = true;
+    }
+  }
+
+  if(!hasCameraData)
+  {
+    cameraData = HdGatlingComputeCameraData(*hdcamera);
+    std::lock_guard guard(_scene.mutex);
+    _scene.cameraCache[cameraId] = cameraData;
+  }
+
   if(!cameraData.valid)
   {
-    return;
+    return false;
   }
 
   glm::vec3 camPos     = cameraData.position;
@@ -410,41 +398,14 @@ void HdGatlingRenderPass::app_updateCamera(const HydraCamera& cameraData)
   }
   const float vfov_deg = std::clamp(cameraData.vfov_deg, 1.0f, 179.0f);
   CameraManip.setCamera({camPos, target, camUp, vfov_deg});
+  return true;
 }
 
 void HdGatlingRenderPass::app_anim_real()
 {
-  app_print_update_info();
   app_update_blas();
   app_update_tlas();
   app_update_material();
-}
-
-void HdGatlingRenderPass::app_print_update_info()
-{
-  std::vector<int> updated_blas_ids;
-  std::vector<int> updated_tlas_ids;
-
-  for(size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
-  {
-    auto& cur_mesh = _scene.v_mesh[mesh_id];
-    if(cur_mesh.blas_changed)
-    {
-      updated_blas_ids.push_back(static_cast<int>(mesh_id));
-    }
-    if(cur_mesh.tlas_changed)
-    {
-      for(size_t ins_id = 0; ins_id < cur_mesh.instanceTransforms.size() && ins_id < cur_mesh.tlasIds.size(); ++ins_id)
-      {
-        updated_tlas_ids.push_back(cur_mesh.tlasIds[ins_id]);
-      }
-    }
-  }
-
-  if(updated_blas_ids.empty() && updated_tlas_ids.empty())
-  {
-    return;
-  }
 }
 
 void HdGatlingRenderPass::app_update_blas()
@@ -523,10 +484,4 @@ void HdGatlingRenderPass::app_update_material()
   }
 }
 
-void HdGatlingRenderPass::app_anim_base()
-{
-  std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
-  _renderApp.getVulkan().animationObject(diff.count());
-  _renderApp.getVulkan().animationInstances(diff.count());
-}
 PXR_NAMESPACE_CLOSE_SCOPE
