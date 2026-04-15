@@ -75,15 +75,15 @@ public:
   nvvk::DebugUtil            m_debug;  // Utility to name objects
 
   // #VKRay
-  void initRayTracing();
-  auto objectToVkGeometryKHR(const ObjModel& model);
-  void createBottomLevelAS();
-  void createTopLevelAS();
-  void createRtDescriptorSet();
-  void updateRtDescriptorSet();
-  void createRtPipeline();
-  void raytrace(const VkCommandBuffer& cmdBuf);
-  void resetAccumulation();
+  void     initRayTracing();
+  auto     objectToVkGeometryKHR(const ObjModel& model);
+  void     createBottomLevelAS();
+  void     createTopLevelAS();
+  void     createRtDescriptorSet();
+  void     updateRtDescriptorSet();
+  void     createRtPipeline();
+  void     raytrace(const VkCommandBuffer& cmdBuf);
+  void     resetAccumulation();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
 
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
@@ -109,17 +109,11 @@ public:
 
   // Push constant for ray tracer
   PushConstantRay m_pcRay{
-      {1, 1, 1, 1.00f},  // clear color
-      {5.f, 10.f, 5.f},  // light position
-      1000.f,            // light intensity
-      0,                 // light type
-      0,                 // num lights
-      0,                 // frame index
-      6,                 // max depth
-      2,                 // samples per frame
-      {-90.0f, 90.0f, 0.5f, 3.0f, LIDAR_VERTICAL_CHANNEL_CAPACITY, 361, 0.0f, 0.0f,
-       {12.0f, 8.0f, 4.0f, 1.0f, -1.0f, -4.0f, -8.0f, -12.0f}}
-  };
+      0,  // num lights
+      0,  // frame index
+      6,  // max depth
+      2,  // samples per frame
+      {-90.0f, 90.0f, 0.5f, 3.0f, LIDAR_VERTICAL_CHANNEL_CAPACITY, 361, 0.0f, 0.0f, {12.0f, 8.0f, 4.0f, 1.0f, -1.0f, -4.0f, -8.0f, -12.0f}}};
 
   // #VK_animation
   void animationInstances(float time);
@@ -194,41 +188,41 @@ public:
   interop::Texture2DVkGL m_rtInstanceIdGL;
 
   // DLSS-RR input buffers
-  nvvk::Texture m_offscreenDiffuseAlbedo;
-  VkFormat      m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  nvvk::Texture          m_offscreenDiffuseAlbedo;
+  VkFormat               m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   interop::Texture2DVkGL m_rtDiffuseAlbedoGL;
 
-  nvvk::Texture m_offscreenSpecularAlbedo;
-  VkFormat      m_offscreenSpecularAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  nvvk::Texture          m_offscreenSpecularAlbedo;
+  VkFormat               m_offscreenSpecularAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   interop::Texture2DVkGL m_rtSpecularAlbedoGL;
 
-  nvvk::Texture m_offscreenNormalRoughness;
-  VkFormat      m_offscreenNormalRoughnessFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  nvvk::Texture          m_offscreenNormalRoughness;
+  VkFormat               m_offscreenNormalRoughnessFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   interop::Texture2DVkGL m_rtNormalRoughnessGL;
 
-  nvvk::Texture m_offscreenMotionVector;
-  VkFormat      m_offscreenMotionVectorFormat{VK_FORMAT_R32G32_SFLOAT};
+  nvvk::Texture          m_offscreenMotionVector;
+  VkFormat               m_offscreenMotionVectorFormat{VK_FORMAT_R32G32_SFLOAT};
   interop::Texture2DVkGL m_rtMotionVectorGL;
 
-  nvvk::Texture m_offscreenLinearDepth;
-  VkFormat      m_offscreenLinearDepthFormat{VK_FORMAT_R32_SFLOAT};
+  nvvk::Texture          m_offscreenLinearDepth;
+  VkFormat               m_offscreenLinearDepthFormat{VK_FORMAT_R32_SFLOAT};
   interop::Texture2DVkGL m_rtLinearDepthGL;
 
-  nvvk::Texture m_offscreenSpecularHitDistance;
-  VkFormat      m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
+  nvvk::Texture          m_offscreenSpecularHitDistance;
+  VkFormat               m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
   interop::Texture2DVkGL m_rtSpecularHitDistanceGL;
 
-  nvvk::Texture m_offscreenDistanceToCamera;
-  VkFormat      m_offscreenDistanceToCameraFormat{VK_FORMAT_R32_SFLOAT};
+  nvvk::Texture          m_offscreenDistanceToCamera;
+  VkFormat               m_offscreenDistanceToCameraFormat{VK_FORMAT_R32_SFLOAT};
   interop::Texture2DVkGL m_rtDistanceToCameraGL;
 
-  nvvk::Texture m_offscreenLidarPointCloud;
-  VkFormat      m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  nvvk::Texture          m_offscreenLidarPointCloud;
+  VkFormat               m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   interop::Texture2DVkGL m_rtLidarPointCloudGL;
 
   interop::ResourceAllocatorGLInterop m_allocGL;
-  dlss::DlssRR                      m_dlssRR;
-  bool                              m_enableDlssRR{true};
+  dlss::DlssRR                        m_dlssRR;
+  bool                                m_enableDlssRR{true};
 
   // depth buffer
   nvvk::Texture m_offscreenDepth;
@@ -271,15 +265,15 @@ public:
   void createRtShaderBindingTable();
 
 private:
-  void createOffscreenImage(nvvk::Texture& texture,
-                            VkFormat format,
-                            VkImageUsageFlags usage,
+  void createOffscreenImage(nvvk::Texture&          texture,
+                            VkFormat                format,
+                            VkImageUsageFlags       usage,
                             interop::Texture2DVkGL* interopTexture,
-                            int glInternalFormat,
-                            int glMinFilter,
-                            int glMagFilter);
+                            int                     glInternalFormat,
+                            int                     glMinFilter,
+                            int                     glMagFilter);
 
-  uint32_t m_accumulatedFrames{0};
+  uint32_t  m_accumulatedFrames{0};
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};
   bool      m_hasLastCamera{false};

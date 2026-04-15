@@ -104,14 +104,10 @@ struct Light
 
 struct PushConstantRay
 {
-  vec4  clearColor;
-  vec3  lightPosition;
-  float lightIntensity;
-  int   lightType;
-  int   numLights;
-  uint  frameIndex;
-  int   maxDepth;
-  int   samplesPerFrame;
+  int         numLights;
+  uint        frameIndex;
+  int         maxDepth;
+  int         samplesPerFrame;
   LidarParams lidar;
 };
 
