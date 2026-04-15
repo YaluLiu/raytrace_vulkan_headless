@@ -24,6 +24,7 @@
 #include "mesh.h"
 #include "material.h"
 #include "light.h"
+#include "camera.h"
 #include "points.h"
 #include "renderBuffer.h"
 //#include "pxr/imaging/hdSt/renderBuffer.h"
@@ -235,7 +236,7 @@ HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPa
 {
   if(typeId == HdPrimTypeTokens->camera)
   {
-    return new HdCamera(sprimId);
+    return new HdGatlingCamera(sprimId, _scene);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {

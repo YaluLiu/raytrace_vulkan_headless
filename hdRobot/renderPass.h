@@ -25,7 +25,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdCamera;
 class HdGatlingMesh;
 class MaterialNetworkCompiler;
 
@@ -75,7 +74,7 @@ private:
   // ----------------------------------------------------------------------------------
   // for headless ray trace app
 private:
-  void app_updateCamera(const HdCamera& camera);
+  void app_updateCamera(const HydraCamera& cameraData);
   void app_updateLight();
   void app_apply_render_settings();
   void app_init();
@@ -92,7 +91,6 @@ private:
   bool _reset_renderbuffer = false;
 
   RayTraceApp                           _renderApp;
-  GiCameraDesc                          _camera;
   std::chrono::system_clock::time_point m_startTime;
 
   int _width  = -1;

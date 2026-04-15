@@ -22,13 +22,11 @@
 #include "renderParam.h"
 #include "instancer.h"
 #include "tokens.h"
+#include "camera.h"
 
 #include <pxr/imaging/hd/renderPassState.h>
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
-#include <pxr/imaging/hd/camera.h>
-#include <pxr/base/gf/matrix3d.h>
-#include <pxr/base/gf/camera.h>
 #include "pxr/imaging/hgiGL/texture.h"
 #include <iostream>
 #include "nvh/fileoperations.hpp"
@@ -45,6 +43,8 @@
 #include <filesystem>
 #include <sstream>
 #include <utility>
+#include <algorithm>
+#include <mutex>
 
 bool ensureDirectoryExists(const std::string& path)
 {
@@ -200,6 +200,27 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   {
     return;
   }
+
+  HydraCamera cameraData;
+  bool        hasCameraData = false;
+  const std::string cameraId = hdcamera->GetId().GetString();
+  {
+    std::lock_guard guard(_scene.mutex);
+    auto            it = _scene.cameraCache.find(cameraId);
+    if(it != _scene.cameraCache.end() && it->second.valid)
+    {
+      cameraData    = it->second;
+      hasCameraData = true;
+    }
+  }
+
+  if(!hasCameraData)
+  {
+    cameraData = HdGatlingComputeCameraData(*hdcamera);
+    std::lock_guard guard(_scene.mutex);
+    _scene.cameraCache[cameraId] = cameraData;
+  }
+
   const auto& hdAovBindings = renderPassState->GetAovBindings();
 
   HdGatlingRenderBuffer* renderBuffer = static_cast<HdGatlingRenderBuffer*>(hdAovBindings[0].renderBuffer);
@@ -211,7 +232,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassS
   }
   app_init();
   app_apply_render_settings();
-  app_updateCamera(*hdcamera);
+  app_updateCamera(cameraData);
   app_updateLight();
   app_anim_real();
   _renderApp.render();
@@ -371,36 +392,23 @@ void HdGatlingRenderPass::app_updateLight()
     }
   }
 }
-void HdGatlingRenderPass::app_updateCamera(const HdCamera& camera)
+void HdGatlingRenderPass::app_updateCamera(const HydraCamera& cameraData)
 {
-  const GfMatrix4d& transform = camera.GetTransform();
-
-  GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
-  GfVec3d forward  = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
-  GfVec3d up       = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
-
-  forward.Normalize();
-  up.Normalize();
-
-  glm::vec3 camPos(position[0], position[1], position[2]);
-  glm::vec3 camForward(forward[0], forward[1], forward[2]);
-  glm::vec3 camUp(up[0], up[1], up[2]);
-  glm::vec3 target = camPos + camForward;
-
-  if(glm::length(glm::cross(camForward, camUp)) < 1e-6)
+  if(!cameraData.valid)
   {
-    camUp = glm::vec3(0, 1, 0);
+    return;
   }
 
-  float aperture    = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
-  float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
-  float vfov        = 2.0f * std::atan(aperture / (2.0f * focalLength));  // 单位：弧度
-  float vfov_deg    = glm::degrees(vfov);                                 // 单位：度
+  glm::vec3 camPos     = cameraData.position;
+  glm::vec3 camForward = cameraData.forward;
+  glm::vec3 camUp      = cameraData.up;
+  glm::vec3 target     = camPos + camForward;
 
-  float clipStart = camera.GetClippingRange().GetMin();
-  float clipEnd   = camera.GetClippingRange().GetMax();
-
-  vfov_deg = std::clamp(vfov_deg, 1.0f, 179.0f);
+  if(glm::length(glm::cross(camForward, camUp)) < 1e-6f)
+  {
+    camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+  }
+  const float vfov_deg = std::clamp(cameraData.vfov_deg, 1.0f, 179.0f);
   CameraManip.setCamera({camPos, target, camUp, vfov_deg});
 }
 

@@ -123,6 +123,17 @@ struct HydraLight
   }
 };
 
+struct HydraCamera
+{
+  bool      valid     = false;
+  glm::vec3 position  = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 forward   = glm::vec3(0.0f, 0.0f, -1.0f);
+  glm::vec3 up        = glm::vec3(0.0f, 1.0f, 0.0f);
+  float     vfov_deg  = 45.0f;
+  float     clipStart = 0.1f;
+  float     clipEnd   = 1000.0f;
+};
+
 struct HdGatlingScene
 {
   //multi thread mutex
@@ -131,6 +142,7 @@ struct HdGatlingScene
   std::vector<HydraMesh>     v_mesh;
   std::vector<HydraMaterial> v_mat;
   std::vector<HydraLight>    v_light;
+  std::unordered_map<std::string, HydraCamera> cameraCache;
   std::vector<Sphere>        v_sphere;
   std::vector<std::string>   v_texturePath;  //material&domelight, textures
 };

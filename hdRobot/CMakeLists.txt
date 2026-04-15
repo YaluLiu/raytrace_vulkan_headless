@@ -21,6 +21,8 @@ add_library(
   material.h
   light.cpp
   light.h
+  camera.cpp
+  camera.h
   mesh.cpp
   mesh.h
   points.h 
