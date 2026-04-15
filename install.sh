@@ -119,7 +119,7 @@ function hydra(){
     export DLSS_RR_APPDATA_PATH="${dlss_appdata_path}"
     export DLSS_RR_STATUS_LOG="${dlss_status_log}"
     export __NGX_LOG_PATH_OVERRIDE="${dlss_appdata_path}"
-    export __NGX_LOG_LEVEL="${__NGX_LOG_LEVEL:-2}"
+    export __NGX_LOG_LEVEL="${__NGX_LOG_LEVEL:-0}"
 
     echo "[hydra] ENABLE_DLSS_RR=${ENABLE_DLSS_RR}"
     echo "[hydra] RT_SPP=${RT_SPP}"
@@ -127,7 +127,7 @@ function hydra(){
     echo "[hydra] DLSS_RR_APPDATA_PATH=${DLSS_RR_APPDATA_PATH}"
     echo "[hydra] DLSS_RR_STATUS_LOG=${DLSS_RR_STATUS_LOG}"
 
-    /home/yalu/software/usdtweak/build/usdtweak
+    /home/yalu/software/usdtweak/build/usdtweak /home/yalu/docker/assets/unit_test/anim/pao/pao.usd
 }
 
 # function nsight{
