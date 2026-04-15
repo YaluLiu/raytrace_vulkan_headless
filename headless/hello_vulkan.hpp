@@ -179,63 +179,51 @@ public:
   // color
   nvvk::Texture          m_offscreenColor;
   VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  void                   createOutputImage();
   nvvk::Texture          m_offscreenDenoised;
   VkFormat               m_offscreenDenoisedFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  void                   createDenoisedImage();
   interop::Texture2DVkGL m_rtOutputGL;
 
   // primId
   nvvk::Texture          m_offscreenObjectId;  // VK_FORMAT_R32_SINT GL_R32I
   VkFormat               m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
-  void                   createObjectIdImage();
   interop::Texture2DVkGL m_rtObjectIdGL;
 
   // instanceId
   nvvk::Texture          m_offscreenInstanceId;
   VkFormat               m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
-  void                   createInstanceIdImage();
   interop::Texture2DVkGL m_rtInstanceIdGL;
 
   // DLSS-RR input buffers
   nvvk::Texture m_offscreenDiffuseAlbedo;
   VkFormat      m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  void          createDiffuseAlbedoImage();
   interop::Texture2DVkGL m_rtDiffuseAlbedoGL;
 
   nvvk::Texture m_offscreenSpecularAlbedo;
   VkFormat      m_offscreenSpecularAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  void          createSpecularAlbedoImage();
   interop::Texture2DVkGL m_rtSpecularAlbedoGL;
 
   nvvk::Texture m_offscreenNormalRoughness;
   VkFormat      m_offscreenNormalRoughnessFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  void          createNormalRoughnessImage();
   interop::Texture2DVkGL m_rtNormalRoughnessGL;
 
   nvvk::Texture m_offscreenMotionVector;
   VkFormat      m_offscreenMotionVectorFormat{VK_FORMAT_R32G32_SFLOAT};
-  void          createMotionVectorImage();
   interop::Texture2DVkGL m_rtMotionVectorGL;
 
   nvvk::Texture m_offscreenLinearDepth;
   VkFormat      m_offscreenLinearDepthFormat{VK_FORMAT_R32_SFLOAT};
-  void          createLinearDepthImage();
   interop::Texture2DVkGL m_rtLinearDepthGL;
 
   nvvk::Texture m_offscreenSpecularHitDistance;
   VkFormat      m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
-  void          createSpecularHitDistanceImage();
   interop::Texture2DVkGL m_rtSpecularHitDistanceGL;
 
   nvvk::Texture m_offscreenDistanceToCamera;
   VkFormat      m_offscreenDistanceToCameraFormat{VK_FORMAT_R32_SFLOAT};
-  void          createDistanceToCameraImage();
   interop::Texture2DVkGL m_rtDistanceToCameraGL;
 
   nvvk::Texture m_offscreenLidarPointCloud;
   VkFormat      m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  void          createLidarPointCloudImage();
   interop::Texture2DVkGL m_rtLidarPointCloudGL;
 
   interop::ResourceAllocatorGLInterop m_allocGL;
@@ -283,6 +271,14 @@ public:
   void createRtShaderBindingTable();
 
 private:
+  void createOffscreenImage(nvvk::Texture& texture,
+                            VkFormat format,
+                            VkImageUsageFlags usage,
+                            interop::Texture2DVkGL* interopTexture,
+                            int glInternalFormat,
+                            int glMinFilter,
+                            int glMagFilter);
+
   uint32_t m_accumulatedFrames{0};
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};

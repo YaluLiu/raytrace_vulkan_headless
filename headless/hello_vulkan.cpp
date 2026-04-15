@@ -296,18 +296,35 @@ void HelloVulkan::createOffscreenRender()
 {
   // 释放旧的离屏color和depth资源
 
-  createOutputImage();
-  createDenoisedImage();
-  createObjectIdImage();
-  createInstanceIdImage();
-  createDiffuseAlbedoImage();
-  createSpecularAlbedoImage();
-  createNormalRoughnessImage();
-  createMotionVectorImage();
-  createLinearDepthImage();
-  createSpecularHitDistanceImage();
-  createDistanceToCameraImage();
-  createLidarPointCloudImage();
+  constexpr VkImageUsageFlags kInteropUsage =
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+
+  createOffscreenImage(
+      m_offscreenColor, m_offscreenColorFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+      &m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR);
+  createOffscreenImage(m_offscreenDenoised, m_offscreenDenoisedFormat,
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr,
+                       0, 0, 0);
+  createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kInteropUsage, &m_rtObjectIdGL, GL_R32I, GL_LINEAR,
+                       GL_LINEAR);
+  createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kInteropUsage, &m_rtInstanceIdGL, GL_R32I,
+                       GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kInteropUsage, &m_rtDiffuseAlbedoGL,
+                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kInteropUsage, &m_rtSpecularAlbedoGL,
+                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenNormalRoughness, m_offscreenNormalRoughnessFormat, kInteropUsage, &m_rtNormalRoughnessGL,
+                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenMotionVector, m_offscreenMotionVectorFormat, kInteropUsage, &m_rtMotionVectorGL, GL_RG32F,
+                       GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kInteropUsage, &m_rtLinearDepthGL, GL_R32F,
+                       GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kInteropUsage,
+                       &m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kInteropUsage,
+                       &m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST);
+  createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat, kInteropUsage, &m_rtLidarPointCloudGL,
+                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
