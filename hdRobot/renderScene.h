@@ -147,7 +147,6 @@ struct HdGatlingScene
   std::vector<HydraMesh>     v_mesh;
   std::vector<HydraMaterial> v_mat;
   std::vector<HydraLight>    v_light;
-  std::unordered_map<std::string, HydraCamera> cameraCache;
   std::vector<Sphere>        v_sphere;
   std::vector<std::string>   v_texturePath;  //material&domelight, textures
 };

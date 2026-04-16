@@ -18,23 +18,28 @@
 #pragma once
 
 #include <pxr/imaging/hd/camera.h>
+#include <mutex>
 #include "renderScene.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HydraCamera HdGatlingComputeCameraData(const HdCamera& camera);
+HydraCamera HdGatlingComputeCameraData(const HdCamera &camera);
+class HdGatlingRenderPass;
 
 class HdGatlingCamera final : public HdCamera
 {
 public:
-  HdGatlingCamera(const SdfPath& id, HdGatlingScene& scene);
+  explicit HdGatlingCamera(const SdfPath &id);
 
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
-  void        Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
+  void Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderParam, HdDirtyBits *dirtyBits) override;
+
+  mutable HydraCamera _cameraData;
 
 private:
-  HdGatlingScene& _scene;
+  friend class HdGatlingRenderPass;
+  mutable std::mutex _cameraDataMutex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -236,7 +236,7 @@ HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPa
 {
   if(typeId == HdPrimTypeTokens->camera)
   {
-    return new HdGatlingCamera(sprimId, _scene);
+    return new HdGatlingCamera(sprimId);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {

@@ -29,288 +29,284 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-constexpr float kCameraEpsilon = 1.0e-6f;
-constexpr float kLidarCompareEpsilon = 1.0e-5f;
-
-LidarParams DefaultLidarParams()
+namespace
 {
-  return {-90.0f, 90.0f, 0.5f, 3.0f, LIDAR_VERTICAL_CHANNEL_CAPACITY, 361, 0.0f, 0.0f,
-          {12.0f, 8.0f, 4.0f, 1.0f, -1.0f, -4.0f, -8.0f, -12.0f}};
-}
+  constexpr float kCameraEpsilon = 1.0e-6f;
+  constexpr float kLidarCompareEpsilon = 1.0e-5f;
 
-bool NearlyEqual(float a, float b)
-{
-  return std::fabs(a - b) <= kLidarCompareEpsilon;
-}
-
-bool LidarParamsEqual(const LidarParams& a, const LidarParams& b)
-{
-  if(!NearlyEqual(a.azimuthMinDeg, b.azimuthMinDeg) || !NearlyEqual(a.azimuthMaxDeg, b.azimuthMaxDeg)
-     || !NearlyEqual(a.azimuthStepDeg, b.azimuthStepDeg) || !NearlyEqual(a.pointRadiusPixels, b.pointRadiusPixels)
-     || a.verticalChannelCount != b.verticalChannelCount || a.horizontalSampleCount != b.horizontalSampleCount)
+  LidarParams DefaultLidarParams()
   {
-    return false;
+    return {-90.0f, 90.0f, 0.5f, 3.0f, LIDAR_VERTICAL_CHANNEL_CAPACITY, 361, 0.0f, 0.0f, {12.0f, 8.0f, 4.0f, 1.0f, -1.0f, -4.0f, -8.0f, -12.0f}};
   }
 
-  for(int i = 0; i < LIDAR_VERTICAL_CHANNEL_CAPACITY; ++i)
+  bool NearlyEqual(float a, float b)
   {
-    if(!NearlyEqual(a.verticalAnglesDeg[i], b.verticalAnglesDeg[i]))
+    return std::fabs(a - b) <= kLidarCompareEpsilon;
+  }
+
+  bool LidarParamsEqual(const LidarParams &a, const LidarParams &b)
+  {
+    if (!NearlyEqual(a.azimuthMinDeg, b.azimuthMinDeg) || !NearlyEqual(a.azimuthMaxDeg, b.azimuthMaxDeg) || !NearlyEqual(a.azimuthStepDeg, b.azimuthStepDeg) || !NearlyEqual(a.pointRadiusPixels, b.pointRadiusPixels) || a.verticalChannelCount != b.verticalChannelCount || a.horizontalSampleCount != b.horizontalSampleCount)
     {
       return false;
     }
+
+    for (int i = 0; i < LIDAR_VERTICAL_CHANNEL_CAPACITY; ++i)
+    {
+      if (!NearlyEqual(a.verticalAnglesDeg[i], b.verticalAnglesDeg[i]))
+      {
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  return true;
-}
-
-bool TryGetFloat(const VtValue& value, float* outValue)
-{
-  if(outValue == nullptr || value.IsEmpty())
+  bool TryGetFloat(const VtValue &value, float *outValue)
   {
+    if (outValue == nullptr || value.IsEmpty())
+    {
+      return false;
+    }
+
+    if (value.IsHolding<float>())
+    {
+      *outValue = value.UncheckedGet<float>();
+      return true;
+    }
+    if (value.IsHolding<double>())
+    {
+      *outValue = static_cast<float>(value.UncheckedGet<double>());
+      return true;
+    }
+    if (value.IsHolding<int>())
+    {
+      *outValue = static_cast<float>(value.UncheckedGet<int>());
+      return true;
+    }
+    if (value.IsHolding<long>())
+    {
+      *outValue = static_cast<float>(value.UncheckedGet<long>());
+      return true;
+    }
+    if (value.IsHolding<long long>())
+    {
+      *outValue = static_cast<float>(value.UncheckedGet<long long>());
+      return true;
+    }
     return false;
   }
 
-  if(value.IsHolding<float>())
+  bool TryGetInt(const VtValue &value, int *outValue)
   {
-    *outValue = value.UncheckedGet<float>();
-    return true;
-  }
-  if(value.IsHolding<double>())
-  {
-    *outValue = static_cast<float>(value.UncheckedGet<double>());
-    return true;
-  }
-  if(value.IsHolding<int>())
-  {
-    *outValue = static_cast<float>(value.UncheckedGet<int>());
-    return true;
-  }
-  if(value.IsHolding<long>())
-  {
-    *outValue = static_cast<float>(value.UncheckedGet<long>());
-    return true;
-  }
-  if(value.IsHolding<long long>())
-  {
-    *outValue = static_cast<float>(value.UncheckedGet<long long>());
-    return true;
-  }
-  return false;
-}
+    if (outValue == nullptr || value.IsEmpty())
+    {
+      return false;
+    }
 
-bool TryGetInt(const VtValue& value, int* outValue)
-{
-  if(outValue == nullptr || value.IsEmpty())
-  {
+    if (value.IsHolding<int>())
+    {
+      *outValue = value.UncheckedGet<int>();
+      return true;
+    }
+    if (value.IsHolding<long>())
+    {
+      *outValue = static_cast<int>(value.UncheckedGet<long>());
+      return true;
+    }
+    if (value.IsHolding<long long>())
+    {
+      *outValue = static_cast<int>(value.UncheckedGet<long long>());
+      return true;
+    }
+    if (value.IsHolding<float>())
+    {
+      *outValue = static_cast<int>(std::lround(value.UncheckedGet<float>()));
+      return true;
+    }
+    if (value.IsHolding<double>())
+    {
+      *outValue = static_cast<int>(std::lround(value.UncheckedGet<double>()));
+      return true;
+    }
     return false;
   }
 
-  if(value.IsHolding<int>())
+  bool TryGetFloatArray(const VtValue &value, std::vector<float> *outValues)
   {
-    *outValue = value.UncheckedGet<int>();
-    return true;
-  }
-  if(value.IsHolding<long>())
-  {
-    *outValue = static_cast<int>(value.UncheckedGet<long>());
-    return true;
-  }
-  if(value.IsHolding<long long>())
-  {
-    *outValue = static_cast<int>(value.UncheckedGet<long long>());
-    return true;
-  }
-  if(value.IsHolding<float>())
-  {
-    *outValue = static_cast<int>(std::lround(value.UncheckedGet<float>()));
-    return true;
-  }
-  if(value.IsHolding<double>())
-  {
-    *outValue = static_cast<int>(std::lround(value.UncheckedGet<double>()));
-    return true;
-  }
-  return false;
-}
+    if (outValues == nullptr || value.IsEmpty())
+    {
+      return false;
+    }
 
-bool TryGetFloatArray(const VtValue& value, std::vector<float>* outValues)
-{
-  if(outValues == nullptr || value.IsEmpty())
-  {
+    if (value.IsHolding<VtFloatArray>())
+    {
+      const VtFloatArray &arr = value.UncheckedGet<VtFloatArray>();
+      outValues->assign(arr.begin(), arr.end());
+      return true;
+    }
+    if (value.IsHolding<VtDoubleArray>())
+    {
+      const VtDoubleArray &arr = value.UncheckedGet<VtDoubleArray>();
+      outValues->assign(arr.begin(), arr.end());
+      return true;
+    }
+    if (value.IsHolding<VtIntArray>())
+    {
+      const VtIntArray &arr = value.UncheckedGet<VtIntArray>();
+      outValues->assign(arr.begin(), arr.end());
+      return true;
+    }
     return false;
   }
 
-  if(value.IsHolding<VtFloatArray>())
+  template <size_t N>
+  VtValue GetFirstCameraParamValue(HdSceneDelegate *sceneDelegate, const SdfPath &cameraId, const TfToken (&tokenNames)[N])
   {
-    const VtFloatArray& arr = value.UncheckedGet<VtFloatArray>();
-    outValues->assign(arr.begin(), arr.end());
-    return true;
-  }
-  if(value.IsHolding<VtDoubleArray>())
-  {
-    const VtDoubleArray& arr = value.UncheckedGet<VtDoubleArray>();
-    outValues->assign(arr.begin(), arr.end());
-    return true;
-  }
-  if(value.IsHolding<VtIntArray>())
-  {
-    const VtIntArray& arr = value.UncheckedGet<VtIntArray>();
-    outValues->assign(arr.begin(), arr.end());
-    return true;
-  }
-  return false;
-}
+    if (sceneDelegate == nullptr)
+    {
+      return {};
+    }
 
-template <size_t N>
-VtValue GetFirstCameraParamValue(HdSceneDelegate* sceneDelegate, const SdfPath& cameraId, const TfToken (&tokenNames)[N])
-{
-  if(sceneDelegate == nullptr)
-  {
+    for (const TfToken &tokenName : tokenNames)
+    {
+      VtValue value = sceneDelegate->GetCameraParamValue(cameraId, tokenName);
+      if (!value.IsEmpty())
+      {
+        return value;
+      }
+    }
     return {};
   }
 
-  for(const TfToken& tokenName : tokenNames)
+  template <size_t N>
+  bool TryReadCameraFloat(HdSceneDelegate *sceneDelegate, const SdfPath &cameraId, const TfToken (&tokenNames)[N], float *outValue)
   {
-    VtValue value = sceneDelegate->GetCameraParamValue(cameraId, tokenName);
-    if(!value.IsEmpty())
-    {
-      return value;
-    }
-  }
-  return {};
-}
-
-template <size_t N>
-bool TryReadCameraFloat(HdSceneDelegate* sceneDelegate, const SdfPath& cameraId, const TfToken (&tokenNames)[N], float* outValue)
-{
-  return TryGetFloat(GetFirstCameraParamValue(sceneDelegate, cameraId, tokenNames), outValue);
-}
-
-template <size_t N>
-bool TryReadCameraInt(HdSceneDelegate* sceneDelegate, const SdfPath& cameraId, const TfToken (&tokenNames)[N], int* outValue)
-{
-  return TryGetInt(GetFirstCameraParamValue(sceneDelegate, cameraId, tokenNames), outValue);
-}
-
-template <size_t N>
-bool TryReadCameraFloatArray(HdSceneDelegate*     sceneDelegate,
-                             const SdfPath&       cameraId,
-                             const TfToken (&tokenNames)[N],
-                             std::vector<float>*  outValues)
-{
-  return TryGetFloatArray(GetFirstCameraParamValue(sceneDelegate, cameraId, tokenNames), outValues);
-}
-
-LidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& cameraId, const LidarParams& defaults)
-{
-  static const TfToken kAzimuthMinDegTokens[] = {TfToken("lidar:azimuthMinDeg"), TfToken("azimuthMinDeg"),
-                                                  TfToken("lidarAzimuthMinDeg")};
-  static const TfToken kAzimuthMaxDegTokens[] = {TfToken("lidar:azimuthMaxDeg"), TfToken("azimuthMaxDeg"),
-                                                  TfToken("lidarAzimuthMaxDeg")};
-  static const TfToken kAzimuthStepDegTokens[] = {TfToken("lidar:azimuthStepDeg"), TfToken("azimuthStepDeg"),
-                                                   TfToken("lidarAzimuthStepDeg")};
-  static const TfToken kPointRadiusPixelsTokens[] = {TfToken("lidar:pointRadiusPixels"), TfToken("pointRadiusPixels"),
-                                                      TfToken("lidarPointRadiusPixels")};
-  static const TfToken kVerticalChannelCountTokens[] = {TfToken("lidar:verticalChannelCount"),
-                                                         TfToken("verticalChannelCount"),
-                                                         TfToken("lidarVerticalChannelCount")};
-  static const TfToken kHorizontalSampleCountTokens[] = {TfToken("lidar:horizontalSampleCount"),
-                                                          TfToken("horizontalSampleCount"),
-                                                          TfToken("lidarHorizontalSampleCount")};
-  static const TfToken kVerticalAnglesDegTokens[] = {TfToken("lidar:verticalAnglesDeg"), TfToken("verticalAnglesDeg"),
-                                                      TfToken("lidarVerticalAnglesDeg")};
-
-  LidarParams params = defaults;
-
-  TryReadCameraFloat(sceneDelegate, cameraId, kAzimuthMinDegTokens, &params.azimuthMinDeg);
-  TryReadCameraFloat(sceneDelegate, cameraId, kAzimuthMaxDegTokens, &params.azimuthMaxDeg);
-  TryReadCameraFloat(sceneDelegate, cameraId, kAzimuthStepDegTokens, &params.azimuthStepDeg);
-  TryReadCameraFloat(sceneDelegate, cameraId, kPointRadiusPixelsTokens, &params.pointRadiusPixels);
-
-  int  verticalChannelCount = params.verticalChannelCount;
-  bool hasVerticalChannelCount =
-      TryReadCameraInt(sceneDelegate, cameraId, kVerticalChannelCountTokens, &verticalChannelCount);
-
-  int horizontalSampleCount = params.horizontalSampleCount;
-  TryReadCameraInt(sceneDelegate, cameraId, kHorizontalSampleCountTokens, &horizontalSampleCount);
-
-  std::vector<float> verticalAnglesDeg;
-  if(TryReadCameraFloatArray(sceneDelegate, cameraId, kVerticalAnglesDegTokens, &verticalAnglesDeg)
-     && !verticalAnglesDeg.empty())
-  {
-    const int copiedCount = std::min(static_cast<int>(verticalAnglesDeg.size()), LIDAR_VERTICAL_CHANNEL_CAPACITY);
-    for(int i = 0; i < copiedCount; ++i)
-    {
-      params.verticalAnglesDeg[i] = verticalAnglesDeg[i];
-    }
-
-    if(!hasVerticalChannelCount)
-    {
-      verticalChannelCount = copiedCount;
-    }
+    return TryGetFloat(GetFirstCameraParamValue(sceneDelegate, cameraId, tokenNames), outValue);
   }
 
-  params.verticalChannelCount = std::clamp(verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
-  params.horizontalSampleCount = std::max(horizontalSampleCount, 1);
-  return params;
-}
+  template <size_t N>
+  bool TryReadCameraInt(HdSceneDelegate *sceneDelegate, const SdfPath &cameraId, const TfToken (&tokenNames)[N], int *outValue)
+  {
+    return TryGetInt(GetFirstCameraParamValue(sceneDelegate, cameraId, tokenNames), outValue);
+  }
+
+  template <size_t N>
+  bool TryReadCameraFloatArray(HdSceneDelegate *sceneDelegate,
+                               const SdfPath &cameraId,
+                               const TfToken (&tokenNames)[N],
+                               std::vector<float> *outValues)
+  {
+    return TryGetFloatArray(GetFirstCameraParamValue(sceneDelegate, cameraId, tokenNames), outValues);
+  }
+
+  LidarParams ReadLidarParams(HdSceneDelegate *sceneDelegate, const SdfPath &cameraId, const LidarParams &defaults)
+  {
+    static const TfToken kAzimuthMinDegTokens[] = {TfToken("lidar:azimuthMinDeg"), TfToken("azimuthMinDeg"),
+                                                   TfToken("lidarAzimuthMinDeg")};
+    static const TfToken kAzimuthMaxDegTokens[] = {TfToken("lidar:azimuthMaxDeg"), TfToken("azimuthMaxDeg"),
+                                                   TfToken("lidarAzimuthMaxDeg")};
+    static const TfToken kAzimuthStepDegTokens[] = {TfToken("lidar:azimuthStepDeg"), TfToken("azimuthStepDeg"),
+                                                    TfToken("lidarAzimuthStepDeg")};
+    static const TfToken kPointRadiusPixelsTokens[] = {TfToken("lidar:pointRadiusPixels"), TfToken("pointRadiusPixels"),
+                                                       TfToken("lidarPointRadiusPixels")};
+    static const TfToken kVerticalChannelCountTokens[] = {TfToken("lidar:verticalChannelCount"),
+                                                          TfToken("verticalChannelCount"),
+                                                          TfToken("lidarVerticalChannelCount")};
+    static const TfToken kHorizontalSampleCountTokens[] = {TfToken("lidar:horizontalSampleCount"),
+                                                           TfToken("horizontalSampleCount"),
+                                                           TfToken("lidarHorizontalSampleCount")};
+    static const TfToken kVerticalAnglesDegTokens[] = {TfToken("lidar:verticalAnglesDeg"), TfToken("verticalAnglesDeg"),
+                                                       TfToken("lidarVerticalAnglesDeg")};
+
+    LidarParams params = defaults;
+
+    TryReadCameraFloat(sceneDelegate, cameraId, kAzimuthMinDegTokens, &params.azimuthMinDeg);
+    TryReadCameraFloat(sceneDelegate, cameraId, kAzimuthMaxDegTokens, &params.azimuthMaxDeg);
+    TryReadCameraFloat(sceneDelegate, cameraId, kAzimuthStepDegTokens, &params.azimuthStepDeg);
+    TryReadCameraFloat(sceneDelegate, cameraId, kPointRadiusPixelsTokens, &params.pointRadiusPixels);
+
+    int verticalChannelCount = params.verticalChannelCount;
+    bool hasVerticalChannelCount =
+        TryReadCameraInt(sceneDelegate, cameraId, kVerticalChannelCountTokens, &verticalChannelCount);
+
+    int horizontalSampleCount = params.horizontalSampleCount;
+    TryReadCameraInt(sceneDelegate, cameraId, kHorizontalSampleCountTokens, &horizontalSampleCount);
+
+    std::vector<float> verticalAnglesDeg;
+    if (TryReadCameraFloatArray(sceneDelegate, cameraId, kVerticalAnglesDegTokens, &verticalAnglesDeg) && !verticalAnglesDeg.empty())
+    {
+      const int copiedCount = std::min(static_cast<int>(verticalAnglesDeg.size()), LIDAR_VERTICAL_CHANNEL_CAPACITY);
+      for (int i = 0; i < copiedCount; ++i)
+      {
+        params.verticalAnglesDeg[i] = verticalAnglesDeg[i];
+      }
+
+      if (!hasVerticalChannelCount)
+      {
+        verticalChannelCount = copiedCount;
+      }
+    }
+
+    params.verticalChannelCount = std::clamp(verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
+    params.horizontalSampleCount = std::max(horizontalSampleCount, 1);
+    return params;
+  }
 
 }
 
-void HydraCamera::PrintLidarParamsForDebug(const std::string& cameraId) const
+void HydraCamera::PrintLidarParamsForDebug(const std::string &cameraId) const
 {
   std::cout << "[LidarParams] camera=" << cameraId << " azimuthStepDeg=" << lidar.azimuthStepDeg
             << " verticalChannelCount=" << lidar.verticalChannelCount << '\n';
 }
 
-HydraCamera HdGatlingComputeCameraData(const HdCamera& camera)
+HydraCamera HdGatlingComputeCameraData(const HdCamera &camera)
 {
-  const GfMatrix4d& transform = camera.GetTransform();
+  const GfMatrix4d &transform = camera.GetTransform();
 
   GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
-  GfVec3d forward  = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
-  GfVec3d up       = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
+  GfVec3d forward = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
+  GfVec3d up = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
 
   forward.Normalize();
   up.Normalize();
 
   HydraCamera data;
   data.position = glm::vec3(position[0], position[1], position[2]);
-  data.forward  = glm::vec3(forward[0], forward[1], forward[2]);
-  data.up       = glm::vec3(up[0], up[1], up[2]);
+  data.forward = glm::vec3(forward[0], forward[1], forward[2]);
+  data.up = glm::vec3(up[0], up[1], up[2]);
 
-  if(glm::length(glm::cross(data.forward, data.up)) < kCameraEpsilon)
+  if (glm::length(glm::cross(data.forward, data.up)) < kCameraEpsilon)
   {
     data.up = glm::vec3(0.0f, 1.0f, 0.0f);
   }
 
-  const float aperture    = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
+  const float aperture = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
   const float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
-  float       vfov_deg    = data.vfov_deg;
-  if(camera.GetProjection() == HdCamera::Perspective && focalLength > kCameraEpsilon)
+  float vfov_deg = data.vfov_deg;
+  if (camera.GetProjection() == HdCamera::Perspective && focalLength > kCameraEpsilon)
   {
     float vfov = 2.0f * std::atan(aperture / (2.0f * focalLength));
-    vfov_deg   = glm::degrees(vfov);
+    vfov_deg = glm::degrees(vfov);
   }
-  if(!std::isfinite(vfov_deg))
+  if (!std::isfinite(vfov_deg))
   {
     vfov_deg = 45.0f;
   }
   data.vfov_deg = std::clamp(vfov_deg, 1.0f, 179.0f);
 
   const GfRange1f clippingRange = camera.GetClippingRange();
-  data.clipStart                = std::max(clippingRange.GetMin(), 0.001f);
-  data.clipEnd                  = std::max(clippingRange.GetMax(), data.clipStart + 0.001f);
-  data.lidar                    = DefaultLidarParams();
+  data.clipStart = std::max(clippingRange.GetMin(), 0.001f);
+  data.clipEnd = std::max(clippingRange.GetMax(), data.clipStart + 0.001f);
+  data.lidar = DefaultLidarParams();
 
   data.valid = true;
   return data;
 }
 
-HdGatlingCamera::HdGatlingCamera(const SdfPath& id, HdGatlingScene& scene)
+HdGatlingCamera::HdGatlingCamera(const SdfPath &id)
     : HdCamera(id)
-    , _scene(scene)
 {
 }
 
@@ -319,9 +315,9 @@ HdDirtyBits HdGatlingCamera::GetInitialDirtyBitsMask() const
   return HdCamera::AllDirty;
 }
 
-void HdGatlingCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+void HdGatlingCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderParam, HdDirtyBits *dirtyBits)
 {
-  if(!dirtyBits)
+  if (!dirtyBits)
   {
     return;
   }
@@ -329,30 +325,15 @@ void HdGatlingCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   const HdDirtyBits bits = *dirtyBits;
   HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);
 
-  if((bits & (DirtyBits::DirtyTransform | DirtyBits::DirtyParams)) == 0)
+  if ((bits & (DirtyBits::DirtyTransform | DirtyBits::DirtyParams)) == 0)
   {
     return;
   }
 
   HydraCamera cameraData = HdGatlingComputeCameraData(*this);
-  cameraData.lidar       = ReadLidarParams(sceneDelegate, GetId(), cameraData.lidar);
-
-  bool              lidarChanged = true;
-  const std::string cameraId     = GetId().GetString();
-  {
-    std::lock_guard guard(_scene.mutex);
-    auto            it = _scene.cameraCache.find(cameraId);
-    if(it != _scene.cameraCache.end() && it->second.valid)
-    {
-      lidarChanged = !LidarParamsEqual(it->second.lidar, cameraData.lidar);
-      cameraData.lidarChanged = it->second.lidarChanged || lidarChanged;
-    }
-    else
-    {
-      cameraData.lidarChanged = true;
-    }
-    _scene.cameraCache[cameraId] = cameraData;
-  }
+  cameraData.lidar = ReadLidarParams(sceneDelegate, GetId(), cameraData.lidar);
+  _cameraData = cameraData;
+  std::cout << "[camera] " << GetId().GetString() << " " << _cameraData.lidar.verticalChannelCount << std::endl;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

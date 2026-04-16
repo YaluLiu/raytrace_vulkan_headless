@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdGatlingMesh;
 class MaterialNetworkCompiler;
+class HdGatlingCamera;
 
 struct GiCameraDesc
 {
@@ -76,7 +77,7 @@ private:
   // for headless ray trace app
 private:
   bool app_updateCamera(const HdRenderPassStateSharedPtr& renderPassState);
-  void app_updateCameraLidar(const HdCamera* hdcamera, const HydraCamera& cameraData);
+  void app_updateCameraLidar(const HdGatlingCamera& camera);
   void app_updateLight();
   void app_apply_render_settings();
   void app_init_or_resize();
