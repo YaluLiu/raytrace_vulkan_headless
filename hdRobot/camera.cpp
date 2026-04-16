@@ -332,8 +332,8 @@ void HdGatlingCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *render
 
   HydraCamera cameraData = HdGatlingComputeCameraData(*this);
   cameraData.lidar = ReadLidarParams(sceneDelegate, GetId(), cameraData.lidar);
+  cameraData.name = GetId().GetString();
   _cameraData = cameraData;
-  std::cout << "[camera] " << GetId().GetString() << " " << _cameraData.lidar.verticalChannelCount << std::endl;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

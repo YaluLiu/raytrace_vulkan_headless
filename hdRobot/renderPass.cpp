@@ -366,7 +366,6 @@ bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &ren
   }
 
   HydraCamera cameraData = gatlingCamera->_cameraData;
-  std::cout << "[renderpass] " << gatlingCamera->GetId().GetString() << " " << cameraData.lidar.verticalChannelCount << std::endl;
   app_updateCameraLidar(*gatlingCamera);
 
   glm::vec3 camPos = cameraData.position;
