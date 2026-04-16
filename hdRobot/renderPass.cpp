@@ -387,6 +387,8 @@ bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr& ren
     return false;
   }
 
+  app_updateCameraLidar(hdcamera, cameraData);
+
   glm::vec3 camPos     = cameraData.position;
   glm::vec3 camForward = cameraData.forward;
   glm::vec3 camUp      = cameraData.up;
@@ -399,6 +401,24 @@ bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr& ren
   const float vfov_deg = std::clamp(cameraData.vfov_deg, 1.0f, 179.0f);
   CameraManip.setCamera({camPos, target, camUp, vfov_deg});
   return true;
+}
+
+void HdGatlingRenderPass::app_updateCameraLidar(const HdCamera* hdcamera, const HydraCamera& cameraData)
+{
+  if(hdcamera == nullptr || !cameraData.valid)
+  {
+    return;
+  }
+
+  if(dynamic_cast<const HdGatlingCamera*>(hdcamera) == nullptr)
+  {
+    return;
+  }
+
+  LidarParams lidar = cameraData.lidar;
+  lidar.verticalChannelCount   = std::clamp(lidar.verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
+  lidar.horizontalSampleCount = std::max(lidar.horizontalSampleCount, 1);
+  _renderApp.getVulkan().m_pcRay.lidar = lidar;
 }
 
 void HdGatlingRenderPass::app_anim_real()
