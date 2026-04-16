@@ -365,14 +365,31 @@ bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr& ren
   HydraCamera       cameraData;
   bool              hasCameraData = false;
   const std::string cameraId      = hdcamera->GetId().GetString();
+  std::vector<std::pair<std::string, HydraCamera>> lidarChangedCameras;
   {
     std::lock_guard guard(_scene.mutex);
+    lidarChangedCameras.reserve(_scene.cameraCache.size());
+
+    for(auto& [cachedCameraId, cachedCameraData] : _scene.cameraCache)
+    {
+      if(cachedCameraData.valid && cachedCameraData.lidarChanged)
+      {
+        lidarChangedCameras.emplace_back(cachedCameraId, cachedCameraData);
+        cachedCameraData.lidarChanged = false;
+      }
+    }
+
     auto            it = _scene.cameraCache.find(cameraId);
     if(it != _scene.cameraCache.end() && it->second.valid)
     {
       cameraData    = it->second;
       hasCameraData = true;
     }
+  }
+
+  for(const auto& [changedCameraId, changedCameraData] : lidarChangedCameras)
+  {
+    changedCameraData.PrintLidarParamsForDebug(changedCameraId);
   }
 
   if(!hasCameraData)

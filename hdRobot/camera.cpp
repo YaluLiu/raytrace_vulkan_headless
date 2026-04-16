@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <sstream>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -257,27 +256,12 @@ LidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& camer
   return params;
 }
 
-void PrintLidarParamsForDebug(const SdfPath& cameraId, const LidarParams& params)
-{
-  std::ostringstream oss;
-  oss << "[LidarParams] camera=" << cameraId.GetText() << " azimuthMinDeg=" << params.azimuthMinDeg
-      << " azimuthMaxDeg=" << params.azimuthMaxDeg << " azimuthStepDeg=" << params.azimuthStepDeg
-      << " pointRadiusPixels=" << params.pointRadiusPixels << " verticalChannelCount=" << params.verticalChannelCount
-      << " horizontalSampleCount=" << params.horizontalSampleCount << " verticalAnglesDeg=[";
-
-  const int channelCount = std::clamp(params.verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
-  for(int i = 0; i < channelCount; ++i)
-  {
-    if(i > 0)
-    {
-      oss << ", ";
-    }
-    oss << params.verticalAnglesDeg[i];
-  }
-  oss << "]";
-
-  std::cout << oss.str() << '\n';
 }
+
+void HydraCamera::PrintLidarParamsForDebug(const std::string& cameraId) const
+{
+  std::cout << "[LidarParams] camera=" << cameraId << " azimuthStepDeg=" << lidar.azimuthStepDeg
+            << " verticalChannelCount=" << lidar.verticalChannelCount << '\n';
 }
 
 HydraCamera HdGatlingComputeCameraData(const HdCamera& camera)
@@ -361,13 +345,13 @@ void HdGatlingCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
     if(it != _scene.cameraCache.end() && it->second.valid)
     {
       lidarChanged = !LidarParamsEqual(it->second.lidar, cameraData.lidar);
+      cameraData.lidarChanged = it->second.lidarChanged || lidarChanged;
+    }
+    else
+    {
+      cameraData.lidarChanged = true;
     }
     _scene.cameraCache[cameraId] = cameraData;
-  }
-
-  if(lidarChanged)
-  {
-    PrintLidarParamsForDebug(GetId(), cameraData.lidar);
   }
 }
 
