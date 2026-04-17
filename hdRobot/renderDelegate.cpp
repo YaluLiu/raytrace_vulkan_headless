@@ -41,6 +41,7 @@
 //添加hdlight
 #include "pxr/imaging/hdSt/light.h"
 #include <memory>
+#include <unordered_map>
 
 //添加hgi
 #include "pxr/imaging/hgi/hgi.h"
@@ -49,7 +50,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+using RprimFactory = HdRprim* (*)(const SdfPath&, HdRobotScene&);
+
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh, HdPrimTypeTokens->points};
+
+const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rprimFactories = {
+    {HdPrimTypeTokens->mesh,
+     [](const SdfPath& rprimId, HdRobotScene& scene) -> HdRprim* { return new HdRobotMesh(rprimId, scene); }},
+    {HdPrimTypeTokens->points,
+     [](const SdfPath& rprimId, HdRobotScene& scene) -> HdRprim* { return new HdRobotPoints(rprimId, scene); }}};
 
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera,
@@ -211,14 +220,12 @@ const TfTokenVector& HdRobotRenderDelegate::GetSupportedRprimTypes() const
 
 HdRprim* HdRobotRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath& rprimId)
 {
-  if(typeId == HdPrimTypeTokens->mesh)
+  const auto factoryIt = _rprimFactories.find(typeId);
+  if(factoryIt != _rprimFactories.end())
   {
-    return new HdRobotMesh(rprimId, _scene);
+    return factoryIt->second(rprimId, _scene);
   }
-  else if(typeId == HdPrimTypeTokens->points)
-  {
-    return new HdRobotPoints(rprimId, _scene);
-  }
+
   return nullptr;
 }
 
