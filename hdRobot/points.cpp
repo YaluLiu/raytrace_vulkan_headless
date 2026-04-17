@@ -5,6 +5,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -76,7 +77,6 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
     if(pointsValue.IsHolding<VtVec3fArray>())
     {
       _points = pointsValue.UncheckedGet<VtVec3fArray>();
-      std::cout << "Points loaded: " << _points.size() << " points" << std::endl;
     }
   }
 
@@ -87,13 +87,11 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
     if(widthsValue.IsHolding<VtFloatArray>())
     {
       _widths = widthsValue.UncheckedGet<VtFloatArray>();
-      std::cout << "Widths loaded: " << _widths.size() << " widths" << std::endl;
     }
     else
     {
       // 如果没有宽度数据，使用默认值
       _widths.assign(_points.size(), 1.0f);
-      std::cout << "Using default widths for " << _points.size() << " points" << std::endl;
     }
   }
 
@@ -105,13 +103,11 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
     if(colorValue.IsHolding<VtVec3fArray>())
     {
       _colors = colorValue.UncheckedGet<VtVec3fArray>();
-      std::cout << "Colors loaded: " << _colors.size() << " colors" << std::endl;
     }
     else
     {
       // 使用默认白色
       _colors.assign(_points.size(), GfVec3f(1.0f, 1.0f, 1.0f));
-      std::cout << "Using default white color for " << _points.size() << " points" << std::endl;
     }
   }
 
@@ -125,29 +121,27 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
 
 void HdRobotPoints::_UpdateTransform(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
 {
+  TF_UNUSED(dirtyBits);
   SdfPath const& id = GetId();
   _transform        = sceneDelegate->GetTransform(id);
-
-  std::cout << "Transform updated for " << id << std::endl;
 }
 
 void HdRobotPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
 {
+  TF_UNUSED(dirtyBits);
   SdfPath const& id = GetId();
   _visible          = sceneDelegate->GetVisible(id);
-
-  std::cout << "Visibility updated: " << (_visible ? "visible" : "hidden") << std::endl;
 }
 
 void HdRobotPoints::_UpdateRenderScene() const
 {
-  int points_size = _points.size();
-  _scene.v_sphere.resize(points_size);
-  for(size_t i = 0; i < points_size; ++i)
+  const size_t pointsSize = _points.size();
+  _scene.v_sphere.resize(pointsSize);
+  for(size_t i = 0; i < pointsSize; ++i)
   {
     const GfVec3f& point      = _points[i];
     _scene.v_sphere[i].center = glm::vec3(point[0], point[1], point[2]);
-    _scene.v_sphere[i].radius = _widths[i];
+    _scene.v_sphere[i].radius = i < _widths.size() ? _widths[i] : 1.0f;
   }
 }
 
@@ -173,7 +167,8 @@ void HdRobotPoints::_PrintPointsDetailed() const
   std::cout << "Colors count: " << _colors.size() << std::endl;
   std::cout << std::fixed << std::setprecision(3);
 
-  for(size_t i = 0; i < 20; ++i)
+  const size_t sampleCount = std::min<size_t>(20, _points.size());
+  for(size_t i = 0; i < sampleCount; ++i)
   {
     const GfVec3f& point = _points[i];
 

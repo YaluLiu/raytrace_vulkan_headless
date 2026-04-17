@@ -932,7 +932,7 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
       auto bitangentSignsIt = primvarMap.find(_tokens->bitangentSigns);
       if(bitangentSignsIt != primvarMap.end())
       {
-        const ProcessedPrimvar& pb = tangentsIt->second;
+        const ProcessedPrimvar& pb = bitangentSignsIt->second;
 
         if(pb.type == HdTypeFloat)
         {
@@ -958,20 +958,11 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   VtIntArray           materialIds(faceCount, 0);
   const HdGeomSubsets& geomSubsets = topology.GetGeomSubsets();
   HdRenderIndex&       renderIndex = sceneDelegate->GetRenderIndex();
-
-  bool isTriangulated =
-      topology.GetScheme() == PxOsdOpenSubdivTokens->none || topology.GetScheme() == PxOsdOpenSubdivTokens->bilinear;
-
   const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
-  bool              allTriangles     = true;
-  for(int count : faceVertexCounts)
-  {
-    if(count != 3)
-    {
-      allTriangles = false;
-      break;
-    }
-  }
+
+  auto& sceneMesh = _scene.v_mesh[_mesh_id];
+  sceneMesh.scene_mat_ids.clear();
+  sceneMesh.scene_mat_ids.emplace_back(0);
 
   for(size_t i = 0; i < geomSubsets.size(); i++)
   {
@@ -981,8 +972,8 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
 
     if(materialPrim)
     {
-      _scene.v_mesh[_mesh_id].scene_mat_ids.emplace_back(materialPrim->_mat_id);
-      int localMatIdx = static_cast<int>(_scene.v_mesh[_mesh_id].scene_mat_ids.size() - 1);
+      sceneMesh.scene_mat_ids.emplace_back(materialPrim->_mat_id);
+      int localMatIdx = static_cast<int>(sceneMesh.scene_mat_ids.size() - 1);
 
       for(int faceIdx : subset.indices)
       {
@@ -1003,12 +994,12 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   }
 
   // Collect vertices and indices
-  _scene.v_mesh[_mesh_id].faces        = faces;
-  _scene.v_mesh[_mesh_id].points       = points;
-  _scene.v_mesh[_mesh_id].normals      = normals;
-  _scene.v_mesh[_mesh_id].texCoords    = texCoords;
-  _scene.v_mesh[_mesh_id].materialIds  = materialIds;  // 新增：每个面的材质 ID
-  _scene.v_mesh[_mesh_id].blas_changed = true;
+  sceneMesh.faces        = faces;
+  sceneMesh.points       = points;
+  sceneMesh.normals      = normals;
+  sceneMesh.texCoords    = texCoords;
+  sceneMesh.materialIds  = materialIds;
+  sceneMesh.blas_changed = true;
 }
 
 HdDirtyBits HdRobotMesh::GetInitialDirtyBitsMask() const

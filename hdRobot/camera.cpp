@@ -314,6 +314,11 @@ HdDirtyBits HdRobotCamera::GetInitialDirtyBitsMask() const
   return HdCamera::AllDirty;
 }
 
+const HdRobotCameraData &HdRobotCamera::GetCameraData() const
+{
+  return _cameraData;
+}
+
 void HdRobotCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderParam, HdDirtyBits *dirtyBits)
 {
   if (!dirtyBits)
@@ -329,9 +334,11 @@ void HdRobotCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderPa
     return;
   }
 
+  const LidarParams previousLidar = _cameraData.lidar;
   HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
   cameraData.lidar = ReadLidarParams(sceneDelegate, GetId(), cameraData.lidar);
   cameraData.name = GetId().GetString();
+  cameraData.lidarChanged = !LidarParamsEqual(previousLidar, cameraData.lidar);
   _cameraData = cameraData;
 }
 

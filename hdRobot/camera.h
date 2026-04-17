@@ -20,7 +20,6 @@
 #include <pxr/imaging/hd/camera.h>
 #include <glm/glm.hpp>
 #include <string>
-#include <mutex>
 #include "shaders/host_device.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,7 +41,6 @@ struct HdRobotCameraData
 };
 
 HdRobotCameraData HdRobotComputeCameraData(const HdCamera &camera);
-class HdRobotRenderPass;
 
 class HdRobotCamera final : public HdCamera
 {
@@ -52,11 +50,10 @@ public:
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
   void Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderParam, HdDirtyBits *dirtyBits) override;
-
-  mutable HdRobotCameraData _cameraData;
+  const HdRobotCameraData &GetCameraData() const;
 
 private:
-  friend class HdRobotRenderPass;
+  mutable HdRobotCameraData _cameraData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

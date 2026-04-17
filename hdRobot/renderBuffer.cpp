@@ -29,19 +29,83 @@
 #include "renderDelegate.h"
 #include "renderBuffer.h"
 
+#include <cstdlib>
+#include <cstring>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace
+{
+constexpr size_t kCpuBufferAlignment = 64;
+
+size_t AlignUp(size_t value, size_t alignment)
+{
+  return ((value + alignment - 1) / alignment) * alignment;
+}
+
+HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
+{
+  HgiTextureUsage usage = 0;
+
+  const bool isIdAov = (nameToken == HdAovTokens->primId) || (nameToken == HdAovTokens->instanceId) ||
+#if PXR_VERSION >= 2408
+                       (nameToken == HdAovTokens->elementId) ||
+#endif
+                       false;
+
+  switch(format)
+  {
+    case HdFormatFloat32Vec4:
+    case HdFormatFloat32Vec3:
+    case HdFormatFloat32Vec2:
+    case HdFormatUNorm8Vec4:
+    case HdFormatUNorm8Vec3:
+      usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
+      break;
+
+    case HdFormatFloat32:
+      if(nameToken == HdAovTokens->depth || nameToken == HdAovTokens->depthStencil)
+      {
+        usage |= HgiTextureUsageBitsDepthTarget;
+      }
+      else
+      {
+        usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
+      }
+      break;
+
+    case HdFormatInt32:
+      usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
+      break;
+
+    default:
+      TF_WARN("Unsupported HdFormat in GetTextureUsage: %d", format);
+      break;
+  }
+
+  if(nameToken == HdAovTokens->color || nameToken == HdAovTokens->normal || isIdAov)
+  {
+    usage |= HgiTextureUsageBitsShaderRead;
+  }
+
+  return usage;
+}
+}  // namespace
 
 HdRobotRenderBuffer::HdRobotRenderBuffer(const SdfPath& id, HdRobotRenderDelegate* renderDelegate)
     : HdRenderBuffer(id)
     , _owner(renderDelegate)
-    , _isConverged(false)
 {
 }
 
-HdRobotRenderBuffer::~HdRobotRenderBuffer() {}
+HdRobotRenderBuffer::~HdRobotRenderBuffer()
+{
+  _Deallocate();
+}
 
 bool HdRobotRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSampled)
 {
+  TF_UNUSED(multiSampled);
   _Deallocate();
 
   if(dimensions[2] != 1)
@@ -60,7 +124,14 @@ bool HdRobotRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, b
   _height      = dimensions[1];
   _format      = format;
   _buffer_size = _GetBufferSize(GfVec2i(_width, _height), _format);
-  _buffer      = static_cast<void*>(aligned_alloc(64, _buffer_size));
+  const size_t alignedSize = AlignUp(_buffer_size, kCpuBufferAlignment);
+  _buffer                 = std::aligned_alloc(kCpuBufferAlignment, alignedSize);
+  if(_buffer == nullptr)
+  {
+    TF_RUNTIME_ERROR("Failed to allocate render buffer (%zu bytes)", alignedSize);
+    _Deallocate();
+    return false;
+  }
 
   createDesc();
   return true;
@@ -68,7 +139,10 @@ bool HdRobotRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, b
 
 void HdRobotRenderBuffer::clear(int num)
 {
-  memset(_buffer, num, _buffer_size);
+  if(_buffer != nullptr && _buffer_size > 0)
+  {
+    std::memset(_buffer, num, _buffer_size);
+  }
 }
 size_t HdRobotRenderBuffer::_GetBufferSize(GfVec2i const& dims, HdFormat format)
 {
@@ -112,94 +186,63 @@ void HdRobotRenderBuffer::SetConverged(bool converged)
 
 void* HdRobotRenderBuffer::Map()
 {
-  // return _renderBuffer ? giGetRenderBufferMem(_renderBuffer) : nullptr;
-  _isMaped = true;
+  _isMapped = true;
   if(_texture)
   {
-    read_texture(get_OpenGL_Texture_id());
+    read_texture(GetOpenGlTextureId());
   }
   return _buffer;
 }
 
 bool HdRobotRenderBuffer::IsMapped() const
 {
-  return _isMaped;
+  return _isMapped;
 }
 
-void HdRobotRenderBuffer::Unmap() {}
+void HdRobotRenderBuffer::Unmap()
+{
+  _isMapped = false;
+}
 
 void HdRobotRenderBuffer::Resolve() {}
 
 void HdRobotRenderBuffer::_Deallocate()
 {
+  if(_texture)
+  {
+    if(Hgi* hgi = _GetHgi())
+    {
+      hgi->DestroyTexture(&_texture);
+    }
+    _texture = HgiTextureHandle();
+  }
+  if(_buffer != nullptr)
+  {
+    std::free(_buffer);
+    _buffer = nullptr;
+  }
+
   _width  = 0;
   _height = 0;
   _format = HdFormatInvalid;
+  _buffer_size = 0;
+  _isMapped = false;
 }
 
 
 Hgi* HdRobotRenderBuffer::_GetHgi()
 {
-  return _owner->GetHgi();
-}
-
-// 原来的 _getTextureUsage 替换为下面这个更完整的版本
-HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
-{
-  HgiTextureUsage usage = 0;
-
-  const bool isIdAov = (nameToken == HdAovTokens->primId) || (nameToken == HdAovTokens->instanceId) ||
-#if PXR_VERSION >= 2408
-                       (nameToken == HdAovTokens->elementId) ||  // 新版本里可能存在
-#endif
-                       false;
-
-
-  switch(format)
-  {
-    case HdFormatFloat32Vec4:
-    case HdFormatFloat32Vec3:
-    case HdFormatFloat32Vec2:
-    case HdFormatUNorm8Vec4:
-    case HdFormatUNorm8Vec3:
-      usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
-      break;
-
-    case HdFormatFloat32:
-      if(nameToken == HdAovTokens->depth || nameToken == HdAovTokens->depthStencil)
-      {
-        usage |= HgiTextureUsageBitsDepthTarget;
-      }
-      else
-      {
-        usage |= HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
-      }
-      break;
-
-    case HdFormatInt32:
-      usage |= HgiTextureUsageBitsShaderRead;
-      usage |= HgiTextureUsageBitsColorTarget;
-      break;
-
-    default:
-      TF_WARN("Unsupported HdFormat in _getTextureUsage: %d", format);
-      break;
-  }
-
-  if(nameToken == HdAovTokens->color || nameToken == HdAovTokens->normal)
-  {
-    usage |= HgiTextureUsageBitsShaderRead;
-  }
-  if(isIdAov)
-  {
-    usage |= HgiTextureUsageBitsShaderRead;
-  }
-
-  return usage;
+  return _owner != nullptr ? _owner->GetHgi() : nullptr;
 }
 
 void HdRobotRenderBuffer::createDesc()
 {
+  Hgi* hgi = _GetHgi();
+  if(hgi == nullptr)
+  {
+    return;
+  }
+
   const GfVec3i dim(GetWidth(), GetHeight(), 1);
 
   HdFormat hdFormat = GetFormat();
@@ -221,7 +264,7 @@ void HdRobotRenderBuffer::createDesc()
 
   // 关键：根据格式 + AOV 名称计算 usage
   TfToken nameToken = GetId().GetNameToken();
-  _texDesc.usage    = _getTextureUsage(GetFormat(), nameToken);
+  _texDesc.usage    = GetTextureUsage(GetFormat(), nameToken);
 
   // 初始数据（CPU -> GPU 一次性上传）
   _texDesc.initialData    = _buffer;
@@ -229,9 +272,9 @@ void HdRobotRenderBuffer::createDesc()
 
   if(_texture)
   {
-    _GetHgi()->DestroyTexture(&_texture);
+    hgi->DestroyTexture(&_texture);
   }
-  _texture = _GetHgi()->CreateTexture(_texDesc);
+  _texture = hgi->CreateTexture(_texDesc);
 }
 
 void _ConvertRGBtoRGBA(const float* rgbValues, size_t numRgbValues, std::vector<float>* rgbaValues)
@@ -263,6 +306,12 @@ void _ConvertRGBtoRGBA(const float* rgbValues, size_t numRgbValues, std::vector<
 
 void HdRobotRenderBuffer::ConvertToHgiTexture()
 {
+  Hgi* hgi = _GetHgi();
+  if(hgi == nullptr)
+  {
+    return;
+  }
+
   const GfVec3i dim(GetWidth(), GetHeight(), GetDepth());
 
   const void* pixelData = _buffer;
@@ -292,23 +341,23 @@ void HdRobotRenderBuffer::ConvertToHgiTexture()
     copyOp.bufferByteSize         = dataByteSize;
     copyOp.cpuSourceBuffer        = pixelData;
     copyOp.gpuDestinationTexture  = _texture;
-    HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
     blitCmds->PushDebugGroup("Upload CPU texels");
     blitCmds->CopyTextureCpuToGpu(copyOp);
     blitCmds->PopDebugGroup();
-    _GetHgi()->SubmitCmds(blitCmds.get());
+    hgi->SubmitCmds(blitCmds.get());
   }
   else
   {
     // Destroy old texture
     if(_texture)
     {
-      _GetHgi()->DestroyTexture(&_texture);
+      hgi->DestroyTexture(&_texture);
     }
     // _buffer will changed when resize
     _texDesc.initialData    = _buffer;
     _texDesc.pixelsByteSize = _buffer_size;
-    _texture                = _GetHgi()->CreateTexture(_texDesc);
+    _texture                = hgi->CreateTexture(_texDesc);
   }
 }
 

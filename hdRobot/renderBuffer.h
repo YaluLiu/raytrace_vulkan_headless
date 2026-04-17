@@ -69,33 +69,37 @@ public:
 
 
   Hgi*  _GetHgi();
-  void* _buffer;
+  void* _buffer = nullptr;
 
-  GLuint get_OpenGL_Texture_id()
+  GLuint GetOpenGlTextureId() const
   {
-    HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(_texture.Get());
-    return srcTexture->GetTextureId();
+    if(!_texture)
+    {
+      return 0;
+    }
+    const HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(_texture.Get());
+    return srcTexture ? srcTexture->GetTextureId() : 0;
   }
 
 protected:
   void _Deallocate() override;
 
 private:
-  HdFormat _format;
+  HdFormat _format = HdFormatInvalid;
 
-  size_t _buffer_size;
+  size_t _buffer_size = 0;
 
-  uint32_t         _width;
-  uint32_t         _height;
+  uint32_t         _width = 0;
+  uint32_t         _height = 0;
   HgiTextureHandle _texture;
 
-  bool _isMaped     = false;
+  bool _isMapped    = false;
   bool _isConverged = false;
   // Calculate the needed buffer size, given the allocation parameters.
   static size_t _GetBufferSize(GfVec2i const& dims, HdFormat format);
 
-  HdRobotRenderDelegate* _owner;
-  Hgi*                     _hgi;
+  HdRobotRenderDelegate* _owner = nullptr;
+  Hgi*                   _hgi = nullptr;
 
 
   // 测试用，测试handlek的拷贝能否成功
