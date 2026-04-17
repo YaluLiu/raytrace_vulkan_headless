@@ -20,7 +20,7 @@
 #include "renderPass.h"
 #include "instancer.h"
 
-//gatling or hdstorm
+//robot or hdstorm
 #include "mesh.h"
 #include "material.h"
 #include "light.h"
@@ -65,33 +65,33 @@ const static TfTokenVector _supportedSprimTypes = {
 const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
 }  // namespace
 
-HdGatlingRenderDelegate::HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
+HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
     : _resourcePath(resourcePath)
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
-    , _renderParam(std::make_unique<HdGatlingRenderParam>())
+    , _renderParam(std::make_unique<HdRobotRenderParam>())
 {
-  _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdGatlingSettingsTokens->spp, VtValue(4)});
+  _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(4)});
   _settingDescriptors.emplace_back(
-      HdRenderSettingDescriptor{"Enable DLSS-RR Denoise", HdGatlingSettingsTokens->dlssRRDenoise, VtValue(true)});
+      HdRenderSettingDescriptor{"Enable DLSS-RR Denoise", HdRobotSettingsTokens->dlssRRDenoise, VtValue(true)});
 
-  if(_settingsMap.find(HdGatlingSettingsTokens->spp) == _settingsMap.end())
+  if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
   {
-    _settingsMap[HdGatlingSettingsTokens->spp] = VtValue(4);
+    _settingsMap[HdRobotSettingsTokens->spp] = VtValue(4);
   }
-  if(_settingsMap.find(HdGatlingSettingsTokens->dlssRRDenoise) == _settingsMap.end())
+  if(_settingsMap.find(HdRobotSettingsTokens->dlssRRDenoise) == _settingsMap.end())
   {
-    _settingsMap[HdGatlingSettingsTokens->dlssRRDenoise] = VtValue(true);
+    _settingsMap[HdRobotSettingsTokens->dlssRRDenoise] = VtValue(true);
   }
 }
 
-HdGatlingRenderDelegate::~HdGatlingRenderDelegate() {}
+HdRobotRenderDelegate::~HdRobotRenderDelegate() {}
 
-HdRenderSettingDescriptorList HdGatlingRenderDelegate::GetRenderSettingDescriptors() const
+HdRenderSettingDescriptorList HdRobotRenderDelegate::GetRenderSettingDescriptors() const
 {
   return _settingDescriptors;
 }
 
-void HdGatlingRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue& value)
+void HdRobotRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue& value)
 {
 #ifdef NDEBUG
   // Disallow changing debug render settings in release config.
@@ -107,16 +107,16 @@ void HdGatlingRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue
 }
 
 const HdCommandDescriptors COMMAND_DESCRIPTORS = {
-    HdCommandDescriptor{HdGatlingCommandTokens->printLicenses, "Print Licenses"}};
+    HdCommandDescriptor{HdRobotCommandTokens->printLicenses, "Print Licenses"}};
 
-HdCommandDescriptors HdGatlingRenderDelegate::GetCommandDescriptors() const
+HdCommandDescriptors HdRobotRenderDelegate::GetCommandDescriptors() const
 {
   return COMMAND_DESCRIPTORS;
 }
 
-bool HdGatlingRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused]] const HdCommandArgs& args)
+bool HdRobotRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused]] const HdCommandArgs& args)
 {
-  if(command == HdGatlingCommandTokens->printLicenses)
+  if(command == HdRobotCommandTokens->printLicenses)
   {
     std::string licenseFilePath = TfStringCatPaths(_resourcePath, "LICENSE");
     std::string errorMessage;
@@ -141,33 +141,33 @@ bool HdGatlingRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unus
   return false;
 }
 
-HdRenderPassSharedPtr HdGatlingRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
+HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
 {
-  return HdRenderPassSharedPtr(new HdGatlingRenderPass(index, collection, _settingsMap, _scene, _resourcePath));
+  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, _settingsMap, _scene, _resourcePath));
 }
 
-HdResourceRegistrySharedPtr HdGatlingRenderDelegate::GetResourceRegistry() const
+HdResourceRegistrySharedPtr HdRobotRenderDelegate::GetResourceRegistry() const
 {
   return _resourceRegistry;
 }
 
-void HdGatlingRenderDelegate::CommitResources(HdChangeTracker* tracker)
+void HdRobotRenderDelegate::CommitResources(HdChangeTracker* tracker)
 {
   TF_UNUSED(tracker);
   // We delay BVH building and GPU uploads to the next render call.
 }
 
-HdInstancer* HdGatlingRenderDelegate::CreateInstancer(HdSceneDelegate* delegate, const SdfPath& id)
+HdInstancer* HdRobotRenderDelegate::CreateInstancer(HdSceneDelegate* delegate, const SdfPath& id)
 {
-  return new HdGatlingInstancer(delegate, id);
+  return new HdRobotInstancer(delegate, id);
 }
 
-void HdGatlingRenderDelegate::DestroyInstancer(HdInstancer* instancer)
+void HdRobotRenderDelegate::DestroyInstancer(HdInstancer* instancer)
 {
   delete instancer;
 }
 
-HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& name) const
+HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& name) const
 {
   if(name == HdAovTokens->color)
   {
@@ -181,17 +181,17 @@ HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& 
   {
     return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
   }
-  else if(name == HdGatlingAovTokens->dlssRRDiffuseAlbedo || name == HdGatlingAovTokens->dlssRRSpecularAlbedo
-          || name == HdGatlingAovTokens->dlssRRNormalRoughness || name == HdGatlingAovTokens->lidarPointCloud)
+  else if(name == HdRobotAovTokens->dlssRRDiffuseAlbedo || name == HdRobotAovTokens->dlssRRSpecularAlbedo
+          || name == HdRobotAovTokens->dlssRRNormalRoughness || name == HdRobotAovTokens->lidarPointCloud)
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f)));
   }
-  else if(name == HdGatlingAovTokens->dlssRRMotionVector)
+  else if(name == HdRobotAovTokens->dlssRRMotionVector)
   {
     return HdAovDescriptor(HdFormatFloat32Vec2, true, VtValue(GfVec2f(0.0f)));
   }
-  else if(name == HdGatlingAovTokens->distanceToCamera || name == HdGatlingAovTokens->dlssRRLinearDepth
-          || name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
+  else if(name == HdRobotAovTokens->distanceToCamera || name == HdRobotAovTokens->dlssRRLinearDepth
+          || name == HdRobotAovTokens->dlssRRSpecularHitDistance)
   {
     return HdAovDescriptor(HdFormatFloat32, true, VtValue(0.0f));
   }
@@ -199,131 +199,131 @@ HdAovDescriptor HdGatlingRenderDelegate::GetDefaultAovDescriptor(const TfToken& 
   return HdAovDescriptor();
 }
 
-HdRenderParam* HdGatlingRenderDelegate::GetRenderParam() const
+HdRenderParam* HdRobotRenderDelegate::GetRenderParam() const
 {
   return _renderParam.get();
 }
 
-const TfTokenVector& HdGatlingRenderDelegate::GetSupportedRprimTypes() const
+const TfTokenVector& HdRobotRenderDelegate::GetSupportedRprimTypes() const
 {
   return _supportedRprimTypes;
 }
 
-HdRprim* HdGatlingRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath& rprimId)
+HdRprim* HdRobotRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath& rprimId)
 {
   if(typeId == HdPrimTypeTokens->mesh)
   {
-    return new HdGatlingMesh(rprimId, _scene);
+    return new HdRobotMesh(rprimId, _scene);
   }
   else if(typeId == HdPrimTypeTokens->points)
   {
-    return new HdGatlingPoints(rprimId, _scene);
+    return new HdRobotPoints(rprimId, _scene);
   }
   return nullptr;
 }
 
-void HdGatlingRenderDelegate::DestroyRprim(HdRprim* rprim)
+void HdRobotRenderDelegate::DestroyRprim(HdRprim* rprim)
 {
   delete rprim;
 }
 
-const TfTokenVector& HdGatlingRenderDelegate::GetSupportedSprimTypes() const
+const TfTokenVector& HdRobotRenderDelegate::GetSupportedSprimTypes() const
 {
   return _supportedSprimTypes;
 }
 
-HdSprim* HdGatlingRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& sprimId)
+HdSprim* HdRobotRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& sprimId)
 {
   if(typeId == HdPrimTypeTokens->camera)
   {
-    return new HdGatlingCamera(sprimId);
+    return new HdRobotCamera(sprimId);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {
-    return new HdGatlingMaterial(sprimId, _scene);
+    return new HdRobotMaterial(sprimId, _scene);
   }
   else if(typeId == HdPrimTypeTokens->distantLight)
   {
-    return new HdGatlingDistantLight(sprimId, _scene);
+    return new HdRobotDistantLight(sprimId, _scene);
   }
   else if(typeId == HdPrimTypeTokens->sphereLight)
   {
-    return new HdGatlingSphereLight(sprimId, _scene);
+    return new HdRobotSphereLight(sprimId, _scene);
   }
   else if(typeId == HdPrimTypeTokens->domeLight)
   {
-    return new HdGatlingDomeLight(sprimId, _scene);
+    return new HdRobotDomeLight(sprimId, _scene);
   }
   return nullptr;
 }
 
-HdSprim* HdGatlingRenderDelegate::CreateFallbackSprim(const TfToken& typeId)
+HdSprim* HdRobotRenderDelegate::CreateFallbackSprim(const TfToken& typeId)
 {
   const SdfPath& sprimId = SdfPath::EmptyPath();
 
   return CreateSprim(typeId, sprimId);
 }
 
-void HdGatlingRenderDelegate::DestroySprim(HdSprim* sprim)
+void HdRobotRenderDelegate::DestroySprim(HdSprim* sprim)
 {
   delete sprim;
 }
 
-const TfTokenVector& HdGatlingRenderDelegate::GetSupportedBprimTypes() const
+const TfTokenVector& HdRobotRenderDelegate::GetSupportedBprimTypes() const
 {
   return _supportedBprimTypes;
 }
 
-HdBprim* HdGatlingRenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& bprimId)
+HdBprim* HdRobotRenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& bprimId)
 {
   if(typeId == HdPrimTypeTokens->renderBuffer)
   {
-    return new HdGatlingRenderBuffer(bprimId, this);
+    return new HdRobotRenderBuffer(bprimId, this);
   }
 
   return nullptr;
 }
 
-HdBprim* HdGatlingRenderDelegate::CreateFallbackBprim(const TfToken& typeId)
+HdBprim* HdRobotRenderDelegate::CreateFallbackBprim(const TfToken& typeId)
 {
   const SdfPath& bprimId = SdfPath::EmptyPath();
 
   return CreateBprim(typeId, bprimId);
 }
 
-void HdGatlingRenderDelegate::DestroyBprim(HdBprim* bprim)
+void HdRobotRenderDelegate::DestroyBprim(HdBprim* bprim)
 {
   delete bprim;
 }
 
-TfToken HdGatlingRenderDelegate::GetMaterialBindingPurpose() const
+TfToken HdRobotRenderDelegate::GetMaterialBindingPurpose() const
 {
   return HdTokens->full;
 }
 
-TfTokenVector HdGatlingRenderDelegate::GetMaterialRenderContexts() const
+TfTokenVector HdRobotRenderDelegate::GetMaterialRenderContexts() const
 {
-  return TfTokenVector{HdGatlingRenderContexts->mtlx, HdGatlingRenderContexts->mdl};
+  return TfTokenVector{HdRobotRenderContexts->mtlx, HdRobotRenderContexts->mdl};
 }
 
-TfTokenVector HdGatlingRenderDelegate::GetShaderSourceTypes() const
+TfTokenVector HdRobotRenderDelegate::GetShaderSourceTypes() const
 {
-  return TfTokenVector{HdGatlingSourceTypes->mtlx, HdGatlingSourceTypes->mdl};
+  return TfTokenVector{HdRobotSourceTypes->mtlx, HdRobotSourceTypes->mdl};
 }
 
 #if PXR_VERSION >= 2408
-bool HdGatlingRenderDelegate::IsParallelSyncEnabled(const TfToken& primType) const
+bool HdRobotRenderDelegate::IsParallelSyncEnabled(const TfToken& primType) const
 {
   return primType == HdPrimTypeTokens->mesh || primType == HdPrimTypeTokens->material || primType == HdPrimTypeTokens->instancer;
 }
 #endif
 
-Hgi* HdGatlingRenderDelegate::GetHgi()
+Hgi* HdRobotRenderDelegate::GetHgi()
 {
   return _hgi;
 }
 
-void HdGatlingRenderDelegate::SetDrivers(HdDriverVector const& drivers)
+void HdRobotRenderDelegate::SetDrivers(HdDriverVector const& drivers)
 {
   // For Storm we want to use the Hgi driver, so extract it.
   for(HdDriver* hdDriver : drivers)

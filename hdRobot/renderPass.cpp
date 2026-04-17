@@ -79,42 +79,42 @@ namespace
     {
       return app.m_rtInstanceIdGL.oglId;
     }
-    if (name == HdGatlingAovTokens->dlssRRDiffuseAlbedo)
+    if (name == HdRobotAovTokens->dlssRRDiffuseAlbedo)
     {
       return app.m_rtDiffuseAlbedoGL.oglId;
     }
-    if (name == HdGatlingAovTokens->dlssRRSpecularAlbedo)
+    if (name == HdRobotAovTokens->dlssRRSpecularAlbedo)
     {
       return app.m_rtSpecularAlbedoGL.oglId;
     }
-    if (name == HdGatlingAovTokens->dlssRRNormalRoughness)
+    if (name == HdRobotAovTokens->dlssRRNormalRoughness)
     {
       return app.m_rtNormalRoughnessGL.oglId;
     }
-    if (name == HdGatlingAovTokens->dlssRRMotionVector)
+    if (name == HdRobotAovTokens->dlssRRMotionVector)
     {
       return app.m_rtMotionVectorGL.oglId;
     }
-    if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil || name == HdGatlingAovTokens->dlssRRLinearDepth)
+    if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil || name == HdRobotAovTokens->dlssRRLinearDepth)
     {
       return app.m_rtLinearDepthGL.oglId;
     }
-    if (name == HdGatlingAovTokens->dlssRRSpecularHitDistance)
+    if (name == HdRobotAovTokens->dlssRRSpecularHitDistance)
     {
       return app.m_rtSpecularHitDistanceGL.oglId;
     }
-    if (name == HdGatlingAovTokens->distanceToCamera)
+    if (name == HdRobotAovTokens->distanceToCamera)
     {
       return app.m_rtDistanceToCameraGL.oglId;
     }
-    if (name == HdGatlingAovTokens->lidarPointCloud)
+    if (name == HdRobotAovTokens->lidarPointCloud)
     {
       return app.m_rtLidarPointCloudGL.oglId;
     }
     return 0;
   }
 
-  void CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdGatlingRenderBuffer *renderBuffer)
+  void CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobotRenderBuffer *renderBuffer)
   {
     if (renderBuffer == nullptr)
     {
@@ -139,23 +139,23 @@ namespace
   }
 } // namespace
 
-HdGatlingRenderPass::HdGatlingRenderPass(HdRenderIndex *index,
+HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex *index,
                                          const HdRprimCollection &collection,
                                          const HdRenderSettingsMap &settings,
-                                         HdGatlingScene &scene,
+                                         HdRobotScene &scene,
                                          std::string resourcePath)
     : HdRenderPass(index, collection), _settings(settings), _isConverged(false), _scene(scene), _resourcePath(std::move(resourcePath))
 {
 }
 
-HdGatlingRenderPass::~HdGatlingRenderPass() {}
+HdRobotRenderPass::~HdRobotRenderPass() {}
 
-bool HdGatlingRenderPass::IsConverged() const
+bool HdRobotRenderPass::IsConverged() const
 {
   return _isConverged;
 }
 
-std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
+std::string HdRobotRenderPass::open_asset(std::string path, int idx)
 {
   ArResolver &resolver = ArGetResolver();
   ArResolvedPath resolvedPath = resolver.Resolve(path);
@@ -186,7 +186,7 @@ std::string HdGatlingRenderPass::open_asset(std::string path, int idx)
   return file_name;
 }
 
-void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassState, const TfTokenVector &renderTags)
+void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassState, const TfTokenVector &renderTags)
 {
   TF_UNUSED(renderTags);
   if (!app_updateCamera(renderPassState))
@@ -196,7 +196,7 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassS
 
   const auto &hdAovBindings = renderPassState->GetAovBindings();
 
-  HdGatlingRenderBuffer *renderBuffer = static_cast<HdGatlingRenderBuffer *>(hdAovBindings[0].renderBuffer);
+  HdRobotRenderBuffer *renderBuffer = static_cast<HdRobotRenderBuffer *>(hdAovBindings[0].renderBuffer);
   if (_width != renderBuffer->GetWidth() || _height != renderBuffer->GetHeight())
   {
     _width = renderBuffer->GetWidth();
@@ -212,13 +212,13 @@ void HdGatlingRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassS
   const ::HelloVulkan &app = _renderApp.getVulkan();
   for (const HdRenderPassAovBinding &binding : hdAovBindings)
   {
-    auto *aovBuffer = static_cast<HdGatlingRenderBuffer *>(binding.renderBuffer);
+    auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
     CopyAovToRenderBuffer(app, binding.aovName, aovBuffer);
   }
   _frame_idx++;
 }
 
-void HdGatlingRenderPass::app_init_or_resize()
+void HdRobotRenderPass::app_init_or_resize()
 {
   if (!_isAppInited)
   {
@@ -273,11 +273,11 @@ void HdGatlingRenderPass::app_init_or_resize()
   }
 }
 
-void HdGatlingRenderPass::app_apply_render_settings()
+void HdRobotRenderPass::app_apply_render_settings()
 {
   HelloVulkan &app = _renderApp.getVulkan();
 
-  if (const auto it = _settings.find(HdGatlingSettingsTokens->spp); it != _settings.end())
+  if (const auto it = _settings.find(HdRobotSettingsTokens->spp); it != _settings.end())
   {
     const VtValue &value = it->second;
     if (value.IsHolding<int>())
@@ -298,7 +298,7 @@ void HdGatlingRenderPass::app_apply_render_settings()
     }
   }
 
-  if (const auto it = _settings.find(HdGatlingSettingsTokens->dlssRRDenoise); it != _settings.end())
+  if (const auto it = _settings.find(HdRobotSettingsTokens->dlssRRDenoise); it != _settings.end())
   {
     const VtValue &value = it->second;
     if (value.IsHolding<bool>())
@@ -312,7 +312,7 @@ void HdGatlingRenderPass::app_apply_render_settings()
   }
 }
 
-void HdGatlingRenderPass::app_updateLight()
+void HdRobotRenderPass::app_updateLight()
 {
   _renderApp.getVulkan().clearLights();
 
@@ -351,7 +351,7 @@ void HdGatlingRenderPass::app_updateLight()
     }
   }
 }
-bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &renderPassState)
+bool HdRobotRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &renderPassState)
 {
   const HdCamera *hdcamera = renderPassState ? renderPassState->GetCamera() : nullptr;
   if (!hdcamera)
@@ -359,14 +359,14 @@ bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &ren
     return false;
   }
 
-  const HdGatlingCamera *gatlingCamera = dynamic_cast<const HdGatlingCamera *>(hdcamera);
-  if (gatlingCamera == nullptr)
+  const HdRobotCamera *robotCamera = dynamic_cast<const HdRobotCamera *>(hdcamera);
+  if (robotCamera == nullptr)
   {
     return false;
   }
 
-  HydraCamera cameraData = gatlingCamera->_cameraData;
-  app_updateCameraLidar(*gatlingCamera);
+  HdRobotCameraData cameraData = robotCamera->_cameraData;
+  app_updateCameraLidar(cameraData);
 
   glm::vec3 camPos = cameraData.position;
   glm::vec3 camForward = cameraData.forward;
@@ -382,30 +382,22 @@ bool HdGatlingRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &ren
   return true;
 }
 
-void HdGatlingRenderPass::app_updateCameraLidar(const HdGatlingCamera &camera)
+void HdRobotRenderPass::app_updateCameraLidar(const HdRobotCameraData &cameraData)
 {
-  HydraCamera cameraData;
-  cameraData = camera._cameraData;
-
-  if (!cameraData.valid)
-  {
-    return;
-  }
-
   LidarParams lidar = cameraData.lidar;
   lidar.verticalChannelCount = std::clamp(lidar.verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
   lidar.horizontalSampleCount = std::max(lidar.horizontalSampleCount, 1);
   _renderApp.getVulkan().m_pcRay.lidar = lidar;
 }
 
-void HdGatlingRenderPass::app_anim_real()
+void HdRobotRenderPass::app_anim_real()
 {
   app_update_blas();
   app_update_tlas();
   app_update_material();
 }
 
-void HdGatlingRenderPass::app_update_blas()
+void HdRobotRenderPass::app_update_blas()
 {
   for (size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
   {
@@ -418,7 +410,7 @@ void HdGatlingRenderPass::app_update_blas()
   }
 }
 
-void HdGatlingRenderPass::app_update_tlas()
+void HdRobotRenderPass::app_update_tlas()
 {
   bool update_tlas = false;
 
@@ -444,7 +436,7 @@ void HdGatlingRenderPass::app_update_tlas()
   }
 }
 
-void HdGatlingRenderPass::app_update_material()
+void HdRobotRenderPass::app_update_material()
 {
   std::vector<MaterialUpdate> new_materials;
   for (size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)

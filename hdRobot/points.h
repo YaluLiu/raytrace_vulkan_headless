@@ -10,11 +10,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingPoints final : public HdPoints
+class HdRobotPoints final : public HdPoints
 {
 public:
-  HdGatlingPoints(const SdfPath& id, HdGatlingScene& _scene);
-  virtual ~HdGatlingPoints();
+  HdRobotPoints(const SdfPath& id, HdRobotScene& _scene);
+  virtual ~HdRobotPoints();
 
   // 同步数据从场景图到渲染器
   virtual void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, TfToken const& reprToken) override;
@@ -57,7 +57,7 @@ private:
   void _PrintPointsDetailed() const;
   void _PrintPointsSummary() const;
 
-  HdGatlingScene& _scene;
+  HdRobotScene& _scene;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

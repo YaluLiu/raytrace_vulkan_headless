@@ -22,10 +22,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingLight : public HdLight
+class HdRobotLight : public HdLight
 {
 public:
-  HdGatlingLight(const SdfPath& id, HdGatlingScene& scene);
+  HdRobotLight(const SdfPath& id, HdRobotScene& scene);
 
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -34,32 +34,32 @@ protected:
   void    Finalize(HdRenderParam* renderParam) override;
 
 protected:
-  HdGatlingScene& _scene;
+  HdRobotScene& _scene;
   int             _light_id;
 };
 
-class HdGatlingDistantLight final : public HdGatlingLight
+class HdRobotDistantLight final : public HdRobotLight
 {
 public:
-  HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene);
+  HdRobotDistantLight(const SdfPath& id, HdRobotScene& scene);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 };
 
-class HdGatlingSphereLight final : public HdGatlingLight
+class HdRobotSphereLight final : public HdRobotLight
 {
 public:
-  HdGatlingSphereLight(const SdfPath& id, HdGatlingScene& scene);
+  HdRobotSphereLight(const SdfPath& id, HdRobotScene& scene);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 };
 
-class HdGatlingDomeLight final : public HdGatlingLight
+class HdRobotDomeLight final : public HdRobotLight
 {
 public:
-  HdGatlingDomeLight(const SdfPath& id, HdGatlingScene& scene);
+  HdRobotDomeLight(const SdfPath& id, HdRobotScene& scene);
 
 public:
   std::string GetTexturePath(HdSceneDelegate* sceneDelegate);

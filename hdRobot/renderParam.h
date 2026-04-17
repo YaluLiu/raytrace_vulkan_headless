@@ -21,7 +21,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingRenderParam final : public HdRenderParam
+class HdRobotRenderParam final : public HdRenderParam
 {
 };
 

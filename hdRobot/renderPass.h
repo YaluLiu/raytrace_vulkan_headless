@@ -26,9 +26,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingMesh;
+class HdRobotMesh;
 class MaterialNetworkCompiler;
-class HdGatlingCamera;
+class HdRobotCamera;
+struct HdRobotCameraData;
 
 struct GiCameraDesc
 {
@@ -48,16 +49,16 @@ struct GiCameraDesc
 
 glm::mat4 computeProjectionMatrix(const GiCameraDesc& cameraDesc, float aspectRatio);
 
-class HdGatlingRenderPass final : public HdRenderPass
+class HdRobotRenderPass final : public HdRenderPass
 {
 public:
-  HdGatlingRenderPass(HdRenderIndex*             index,
+  HdRobotRenderPass(HdRenderIndex*             index,
                       const HdRprimCollection&   collection,
                       const HdRenderSettingsMap& settings,
-                      HdGatlingScene&            scene,
+                      HdRobotScene&            scene,
                       std::string                resourcePath);
 
-  ~HdGatlingRenderPass() override;
+  ~HdRobotRenderPass() override;
 
 public:
   bool IsConverged() const override;
@@ -70,14 +71,14 @@ private:
   const HdRenderSettingsMap& _settings;
   bool                       _isConverged;
   int                        _frame_idx = 0;
-  HdGatlingScene&            _scene;
+  HdRobotScene&            _scene;
   std::string                _resourcePath;
 
   // ----------------------------------------------------------------------------------
   // for headless ray trace app
 private:
   bool app_updateCamera(const HdRenderPassStateSharedPtr& renderPassState);
-  void app_updateCameraLidar(const HdGatlingCamera& camera);
+  void app_updateCameraLidar(const HdRobotCameraData& cameraData);
   void app_updateLight();
   void app_apply_render_settings();
   void app_init_or_resize();

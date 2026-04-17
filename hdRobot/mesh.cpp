@@ -373,7 +373,7 @@ bool _IsPrimvarEligibleForVertexData(const TfToken& name, const TfToken& role)
 }
 }  // namespace
 
-HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
+HdRobotMesh::HdRobotMesh(const SdfPath& id, HdRobotScene& scene)
     : HdMesh(id)
     , _scene(scene)
 {
@@ -383,7 +383,7 @@ HdGatlingMesh::HdGatlingMesh(const SdfPath& id, HdGatlingScene& scene)
   _scene.v_mesh[_mesh_id].scene_mat_ids = {0};
 }
 
-void HdGatlingMesh::setValid(bool value)
+void HdRobotMesh::setValid(bool value)
 {
   if(_scene.v_mesh[_mesh_id].valid != value)
   {
@@ -392,13 +392,13 @@ void HdGatlingMesh::setValid(bool value)
   }
 }
 
-void HdGatlingMesh::Finalize(HdRenderParam* renderParam)
+void HdRobotMesh::Finalize(HdRenderParam* renderParam)
 {
   setValid(false);
 }
 
 
-void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
+void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
 {
   // primvars:displayColor 的 token
   TfToken displayColorToken("displayColor");
@@ -440,7 +440,7 @@ void HdGatlingMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
   }
 }
 
-void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, const TfToken& reprToken)
+void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, const TfToken& reprToken)
 {
   TF_UNUSED(renderParam);
   TF_UNUSED(reprToken);
@@ -485,7 +485,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     else
     {
       HdInstancer*        boxedInstancer = renderIndex.GetInstancer(instancerId);
-      HdGatlingInstancer* instancer      = static_cast<HdGatlingInstancer*>(boxedInstancer);
+      HdRobotInstancer* instancer      = static_cast<HdRobotInstancer*>(boxedInstancer);
 
       transforms = instancer->ComputeFlattenedTransforms(id);
     }
@@ -528,7 +528,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     SetMaterialId(materialId);
 
     // Because Hydra syncs Rprims last, it is guaranteed that the material has been processed
-    auto* materialPrim = static_cast<HdGatlingMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+    auto* materialPrim = static_cast<HdRobotMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
     if(materialPrim)
     {
@@ -545,7 +545,7 @@ void HdGatlingMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 }
 
 
-void HdGatlingMesh::_AnalyzePrimvars(HdSceneDelegate* sceneDelegate, bool& foundNormals, bool& indexingAllowed)
+void HdRobotMesh::_AnalyzePrimvars(HdSceneDelegate* sceneDelegate, bool& foundNormals, bool& indexingAllowed)
 {
   const SdfPath& id = GetId();
 
@@ -560,7 +560,7 @@ void HdGatlingMesh::_AnalyzePrimvars(HdSceneDelegate* sceneDelegate, bool& found
     {
       VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
-      if(!HdGatlingIsPrimvarTypeSupported(value))
+      if(!HdRobotIsPrimvarTypeSupported(value))
       {
         continue;
       }
@@ -578,7 +578,7 @@ void HdGatlingMesh::_AnalyzePrimvars(HdSceneDelegate* sceneDelegate, bool& found
   }
 }
 
-std::optional<HdGatlingMesh::ProcessedPrimvar> HdGatlingMesh::_ProcessPrimvar(HdSceneDelegate*  sceneDelegate,
+std::optional<HdRobotMesh::ProcessedPrimvar> HdRobotMesh::_ProcessPrimvar(HdSceneDelegate*  sceneDelegate,
                                                                               const VtIntArray& primitiveParams,
                                                                               const HdPrimvarDescriptor& primvarDesc,
                                                                               const VtVec3iArray&        faces,
@@ -591,7 +591,7 @@ std::optional<HdGatlingMesh::ProcessedPrimvar> HdGatlingMesh::_ProcessPrimvar(Hd
   VtValue boxedValues = GetPrimvar(sceneDelegate, primvarDesc.name);
   HdType  type        = HdGetValueTupleType(boxedValues).type;
 
-  if(!HdGatlingIsPrimvarTypeSupported(boxedValues))
+  if(!HdRobotIsPrimvarTypeSupported(boxedValues))
   {
     return std::nullopt;
   }
@@ -599,7 +599,7 @@ std::optional<HdGatlingMesh::ProcessedPrimvar> HdGatlingMesh::_ProcessPrimvar(Hd
   // Gi doesn't natively support bool primvars; convert them to ints
   if(type == HdTypeBool)
   {
-    HdGatlingConvertVtBoolArrayToVtIntArray(boxedValues);
+    HdRobotConvertVtBoolArrayToVtIntArray(boxedValues);
     type = HdTypeInt32;
   }
 
@@ -667,7 +667,7 @@ std::optional<HdGatlingMesh::ProcessedPrimvar> HdGatlingMesh::_ProcessPrimvar(Hd
                           .indexMatchingData = result};
 }
 
-// HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(HdSceneDelegate* sceneDelegate,
+// HdRobotMesh::PrimvarMap HdRobotMesh::_ProcessPrimvars(HdSceneDelegate* sceneDelegate,
 //                                                           const VtIntArray& primitiveParams,
 //                                                           const VtVec3iArray& faces,
 //                                                           uint32_t vertexCount,
@@ -702,7 +702,7 @@ std::optional<HdGatlingMesh::ProcessedPrimvar> HdGatlingMesh::_ProcessPrimvar(Hd
 //   return map;
 // }
 
-HdGatlingMesh::PrimvarMap HdGatlingMesh::_ProcessPrimvars(HdSceneDelegate*    sceneDelegate,
+HdRobotMesh::PrimvarMap HdRobotMesh::_ProcessPrimvars(HdSceneDelegate*    sceneDelegate,
                                                           const VtIntArray&   primitiveParams,
                                                           const VtVec3iArray& faces,
                                                           uint32_t            vertexCount,
@@ -805,7 +805,7 @@ std::pair<int, int> GetTriangulatedFaceRange(const VtIntArray& faceVertexCounts,
   return {startIdx, startIdx + numTriangles};
 }
 
-void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
+void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
 {
   const SdfPath& id = GetId();
 
@@ -977,7 +977,7 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   {
     const HdGeomSubset& subset = geomSubsets[i];
 
-    auto* materialPrim = static_cast<HdGatlingMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, subset.materialId));
+    auto* materialPrim = static_cast<HdRobotMaterial*>(renderIndex.GetSprim(HdPrimTypeTokens->material, subset.materialId));
 
     if(materialPrim)
     {
@@ -1011,19 +1011,19 @@ void HdGatlingMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   _scene.v_mesh[_mesh_id].blas_changed = true;
 }
 
-HdDirtyBits HdGatlingMesh::GetInitialDirtyBitsMask() const
+HdDirtyBits HdRobotMesh::GetInitialDirtyBitsMask() const
 {
   return HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology
          | HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex | HdChangeTracker::DirtyTransform
          | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyDoubleSided;
 }
 
-HdDirtyBits HdGatlingMesh::_PropagateDirtyBits(HdDirtyBits bits) const
+HdDirtyBits HdRobotMesh::_PropagateDirtyBits(HdDirtyBits bits) const
 {
   return bits;
 }
 
-void HdGatlingMesh::_InitRepr(const TfToken& reprName, HdDirtyBits* dirtyBits)
+void HdRobotMesh::_InitRepr(const TfToken& reprName, HdDirtyBits* dirtyBits)
 {
   TF_UNUSED(reprName);
   TF_UNUSED(dirtyBits);

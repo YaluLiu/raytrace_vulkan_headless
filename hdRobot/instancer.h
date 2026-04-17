@@ -22,12 +22,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingInstancer final : public HdInstancer
+class HdRobotInstancer final : public HdInstancer
 {
 public:
-  HdGatlingInstancer(HdSceneDelegate* delegate, const SdfPath& id);
+  HdRobotInstancer(HdSceneDelegate* delegate, const SdfPath& id);
 
-  ~HdGatlingInstancer() override;
+  ~HdRobotInstancer() override;
 
 public:
   VtMatrix4fArray ComputeFlattenedTransforms(const SdfPath& prototypeId);

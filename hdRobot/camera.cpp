@@ -255,13 +255,13 @@ namespace
 
 }
 
-void HydraCamera::PrintLidarParamsForDebug(const std::string &cameraId) const
+void HdRobotCameraData::PrintLidarParamsForDebug(const std::string &cameraId) const
 {
   std::cout << "[LidarParams] camera=" << cameraId << " azimuthStepDeg=" << lidar.azimuthStepDeg
             << " verticalChannelCount=" << lidar.verticalChannelCount << '\n';
 }
 
-HydraCamera HdGatlingComputeCameraData(const HdCamera &camera)
+HdRobotCameraData HdRobotComputeCameraData(const HdCamera &camera)
 {
   const GfMatrix4d &transform = camera.GetTransform();
 
@@ -272,7 +272,7 @@ HydraCamera HdGatlingComputeCameraData(const HdCamera &camera)
   forward.Normalize();
   up.Normalize();
 
-  HydraCamera data;
+  HdRobotCameraData data;
   data.position = glm::vec3(position[0], position[1], position[2]);
   data.forward = glm::vec3(forward[0], forward[1], forward[2]);
   data.up = glm::vec3(up[0], up[1], up[2]);
@@ -301,21 +301,20 @@ HydraCamera HdGatlingComputeCameraData(const HdCamera &camera)
   data.clipEnd = std::max(clippingRange.GetMax(), data.clipStart + 0.001f);
   data.lidar = DefaultLidarParams();
 
-  data.valid = true;
   return data;
 }
 
-HdGatlingCamera::HdGatlingCamera(const SdfPath &id)
+HdRobotCamera::HdRobotCamera(const SdfPath &id)
     : HdCamera(id)
 {
 }
 
-HdDirtyBits HdGatlingCamera::GetInitialDirtyBitsMask() const
+HdDirtyBits HdRobotCamera::GetInitialDirtyBitsMask() const
 {
   return HdCamera::AllDirty;
 }
 
-void HdGatlingCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderParam, HdDirtyBits *dirtyBits)
+void HdRobotCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *renderParam, HdDirtyBits *dirtyBits)
 {
   if (!dirtyBits)
   {
@@ -330,7 +329,7 @@ void HdGatlingCamera::Sync(HdSceneDelegate *sceneDelegate, HdRenderParam *render
     return;
   }
 
-  HydraCamera cameraData = HdGatlingComputeCameraData(*this);
+  HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
   cameraData.lidar = ReadLidarParams(sceneDelegate, GetId(), cameraData.lidar);
   cameraData.name = GetId().GetString();
   _cameraData = cameraData;

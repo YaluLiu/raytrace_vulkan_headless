@@ -25,12 +25,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
 
-class HdGatlingRenderDelegate final : public HdRenderDelegate
+class HdRobotRenderDelegate final : public HdRenderDelegate
 {
 public:
-  HdGatlingRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath);
+  HdRobotRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath);
 
-  ~HdGatlingRenderDelegate() override;
+  ~HdRobotRenderDelegate() override;
 
 public:
   HdRenderSettingDescriptorList GetRenderSettingDescriptors() const override;
@@ -106,8 +106,8 @@ private:
   HdRenderSettingDescriptorList  _settingDescriptors;
   HdRenderSettingDescriptorList  _debugSettingDescriptors;
   std::unique_ptr<HdRenderParam> _renderParam;
-  // std::unique_str<HdGatlingRenderBuffer> _colorBuffer;
-  HdGatlingScene _scene;
+  // std::unique_str<HdRobotRenderBuffer> _colorBuffer;
+  HdRobotScene _scene;
   Hgi*           _hgi = nullptr;
 };
 

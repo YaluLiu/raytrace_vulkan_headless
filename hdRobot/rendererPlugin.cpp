@@ -55,7 +55,7 @@ HdRenderDelegate* HdRobotRendererPlugin::CreateRenderDelegate(const HdRenderSett
 
   const std::string& resourcePath = plugin->GetResourcePath();
 
-  return new HdGatlingRenderDelegate(settingsMap, resourcePath);
+  return new HdRobotRenderDelegate(settingsMap, resourcePath);
 }
 
 void HdRobotRendererPlugin::DeleteRenderDelegate(HdRenderDelegate* renderDelegate)

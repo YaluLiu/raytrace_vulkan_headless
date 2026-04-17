@@ -22,14 +22,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool HdGatlingIsPrimvarTypeSupported(const VtValue& value)
+bool HdRobotIsPrimvarTypeSupported(const VtValue& value)
 {
   return value.IsHolding<VtVec4fArray>() || value.IsHolding<VtVec3fArray>() || value.IsHolding<VtVec2fArray>()
          || value.IsHolding<VtFloatArray>() || value.IsHolding<VtVec4iArray>() || value.IsHolding<VtVec3iArray>()
          || value.IsHolding<VtVec2iArray>() || value.IsHolding<VtBoolArray>() || value.IsHolding<VtIntArray>();
 }
 
-void HdGatlingConvertVtBoolArrayToVtIntArray(VtValue& values)
+void HdRobotConvertVtBoolArrayToVtIntArray(VtValue& values)
 {
   auto       boolArray = values.Get<VtBoolArray>();
   VtIntArray intArray(boolArray.size());
@@ -43,7 +43,7 @@ void HdGatlingConvertVtBoolArrayToVtIntArray(VtValue& values)
 }
 
 
-GiPrimvarType HdGatlingGetGiPrimvarType(HdType type)
+GiPrimvarType HdRobotGetGiPrimvarType(HdType type)
 {
   switch(type)
   {

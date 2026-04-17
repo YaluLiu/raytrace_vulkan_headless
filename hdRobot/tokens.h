@@ -21,7 +21,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HD_GATLING_SETTINGS_TOKENS                                                                                     \
+#define HD_ROBOT_SETTINGS_TOKENS                                                                                     \
   ((spp, "spp"))((maxBounces, "max-bounces"))((rrBounceOffset, "rr-bounce-offset"))(                                   \
       (rrInvMinTermProb, "rr-inv-min-term-prob"))((nextEventEstimation, "next-event-estimation"))(                     \
       (progressiveAccumulation, "progressive-accumulation"))((dlssRRDenoise, "dlss-rr-denoise"))(                     \
@@ -31,19 +31,19 @@ PXR_NAMESPACE_OPEN_SCOPE
       (clippingPlanes, "clipping-planes"))((metersPerSceneUnit, "meters-per-scene-unit"))
 
 // mtlx node identifier is given by UsdMtlx.
-#define HD_GATLING_NODE_IDENTIFIER_TOKENS (mdl)(mtlx)
+#define HD_ROBOT_NODE_IDENTIFIER_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_SOURCE_TYPE_TOKENS (mdl)(mtlx)
+#define HD_ROBOT_SOURCE_TYPE_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_DISCOVERY_TYPE_TOKENS (mdl)(mtlx)
+#define HD_ROBOT_DISCOVERY_TYPE_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_RENDER_CONTEXT_TOKENS (mdl)(mtlx)
+#define HD_ROBOT_RENDER_CONTEXT_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_NODE_CONTEXT_TOKENS (mdl)(mtlx)
+#define HD_ROBOT_NODE_CONTEXT_TOKENS (mdl)(mtlx)
 
-#define HD_GATLING_NODE_METADATA_TOKENS (subIdentifier)
+#define HD_ROBOT_NODE_METADATA_TOKENS (subIdentifier)
 
-#define HD_GATLING_AOV_TOKENS                                                                                          \
+#define HD_ROBOT_AOV_TOKENS                                                                                          \
   ((debugNee, "debug:nee"))((debugBarycentrics, "debug:barycentrics"))((debugTexcoords, "debug:texcoords"))(           \
       (debugBounces, "debug:bounces"))((debugClockCycles, "debug:clock_cycles"))((debugOpacity, "debug:opacity"))(     \
       (debugTangents, "debug:tangents"))((debugBitangents, "debug:bitangents"))(                                       \
@@ -54,16 +54,16 @@ PXR_NAMESPACE_OPEN_SCOPE
       (dlssRRNormalRoughness, "dlssRR:normalRoughness"))((dlssRRMotionVector, "dlssRR:motionVector"))(                \
       (dlssRRLinearDepth, "dlssRR:linearDepth"))((dlssRRSpecularHitDistance, "dlssRR:specularHitDistance"))
 
-#define HD_GATLING_COMMAND_TOKENS (printLicenses)
+#define HD_ROBOT_COMMAND_TOKENS (printLicenses)
 
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingSettingsTokens, HD_GATLING_SETTINGS_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingNodeIdentifiers, HD_GATLING_NODE_IDENTIFIER_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingSourceTypes, HD_GATLING_SOURCE_TYPE_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingDiscoveryTypes, HD_GATLING_DISCOVERY_TYPE_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingRenderContexts, HD_GATLING_RENDER_CONTEXT_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingNodeContexts, HD_GATLING_NODE_CONTEXT_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingNodeMetadata, HD_GATLING_NODE_METADATA_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingAovTokens, HD_GATLING_AOV_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGatlingCommandTokens, HD_GATLING_COMMAND_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotSettingsTokens, HD_ROBOT_SETTINGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeIdentifiers, HD_ROBOT_NODE_IDENTIFIER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotSourceTypes, HD_ROBOT_SOURCE_TYPE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotDiscoveryTypes, HD_ROBOT_DISCOVERY_TYPE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotRenderContexts, HD_ROBOT_RENDER_CONTEXT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeContexts, HD_ROBOT_NODE_CONTEXT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeMetadata, HD_ROBOT_NODE_METADATA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotAovTokens, HD_ROBOT_AOV_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotCommandTokens, HD_ROBOT_COMMAND_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

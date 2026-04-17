@@ -26,14 +26,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdGatlingInstancer::HdGatlingInstancer(HdSceneDelegate* delegate, const SdfPath& id)
+HdRobotInstancer::HdRobotInstancer(HdSceneDelegate* delegate, const SdfPath& id)
     : HdInstancer(delegate, id)
 {
 }
 
-HdGatlingInstancer::~HdGatlingInstancer() {}
+HdRobotInstancer::~HdRobotInstancer() {}
 
-void HdGatlingInstancer::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+void HdRobotInstancer::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   TF_UNUSED(renderParam);
 
@@ -89,7 +89,7 @@ struct _TypeConversionHelper
 };
 }  // namespace
 
-std::vector<GiPrimvarData> HdGatlingInstancer::ComputeFlattenedPrimvars(const SdfPath& prototypeId)
+std::vector<GiPrimvarData> HdRobotInstancer::ComputeFlattenedPrimvars(const SdfPath& prototypeId)
 {
   HdSceneDelegate* sceneDelegate = GetDelegate();
 
@@ -103,7 +103,7 @@ std::vector<GiPrimvarData> HdGatlingInstancer::ComputeFlattenedPrimvars(const Sd
 
   const HdRenderIndex& renderIndex          = sceneDelegate->GetRenderIndex();
   HdInstancer*         boxedParentInstancer = renderIndex.GetInstancer(parentId);
-  HdGatlingInstancer*  parentInstancer      = static_cast<HdGatlingInstancer*>(boxedParentInstancer);
+  HdRobotInstancer*  parentInstancer      = static_cast<HdRobotInstancer*>(boxedParentInstancer);
 
   const SdfPath&             id             = GetId();
   std::vector<GiPrimvarData> parentPrimvars = parentInstancer->ComputeFlattenedPrimvars(id);
@@ -131,7 +131,7 @@ std::vector<GiPrimvarData> HdGatlingInstancer::ComputeFlattenedPrimvars(const Sd
   return primvars;
 }
 
-std::vector<GiPrimvarData> HdGatlingInstancer::MakeGiPrimvars(const SdfPath& prototypeId)
+std::vector<GiPrimvarData> HdRobotInstancer::MakeGiPrimvars(const SdfPath& prototypeId)
 {
   std::vector<GiPrimvarData> primvars;
 
@@ -157,7 +157,7 @@ std::vector<GiPrimvarData> HdGatlingInstancer::MakeGiPrimvars(const SdfPath& pro
 
       VtValue values = sceneDelegate->Get(id, primvar.name);
 
-      if(!HdGatlingIsPrimvarTypeSupported(values))
+      if(!HdRobotIsPrimvarTypeSupported(values))
       {
         continue;
       }
@@ -167,7 +167,7 @@ std::vector<GiPrimvarData> HdGatlingInstancer::MakeGiPrimvars(const SdfPath& pro
       // Gi doesn't natively support bool primvars; convert them to ints
       if(type == HdTypeBool)
       {
-        HdGatlingConvertVtBoolArrayToVtIntArray(values);
+        HdRobotConvertVtBoolArrayToVtIntArray(values);
         type = HdTypeInt32;
       }
 
@@ -185,14 +185,14 @@ std::vector<GiPrimvarData> HdGatlingInstancer::MakeGiPrimvars(const SdfPath& pro
       }
 
       primvars.push_back(GiPrimvarData{
-          .name = name.GetString(), .type = HdGatlingGetGiPrimvarType(type), .interpolation = giInterpolation, .data = data});
+          .name = name.GetString(), .type = HdRobotGetGiPrimvarType(type), .interpolation = giInterpolation, .data = data});
     }
   }
 
   return primvars;
 }
 
-VtMatrix4fArray HdGatlingInstancer::ComputeFlattenedTransforms(const SdfPath& prototypeId)
+VtMatrix4fArray HdRobotInstancer::ComputeFlattenedTransforms(const SdfPath& prototypeId)
 {
   HdSceneDelegate* sceneDelegate = GetDelegate();
 
@@ -311,7 +311,7 @@ VtMatrix4fArray HdGatlingInstancer::ComputeFlattenedTransforms(const SdfPath& pr
 
   const HdRenderIndex& renderIndex          = sceneDelegate->GetRenderIndex();
   HdInstancer*         boxedParentInstancer = renderIndex.GetInstancer(parentId);
-  HdGatlingInstancer*  parentInstancer      = static_cast<HdGatlingInstancer*>(boxedParentInstancer);
+  HdRobotInstancer*  parentInstancer      = static_cast<HdRobotInstancer*>(boxedParentInstancer);
 
   VtMatrix4fArray parentTransforms = parentInstancer->ComputeFlattenedTransforms(id);
 

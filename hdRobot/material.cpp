@@ -22,7 +22,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id, HdGatlingScene& scene)
+HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotScene& scene)
     : HdMaterial(id)
     , _scene(scene)
 {
@@ -31,17 +31,17 @@ HdGatlingMaterial::HdGatlingMaterial(const SdfPath& id, HdGatlingScene& scene)
   _scene.v_mat.emplace_back(HydraMaterial());
 }
 
-void HdGatlingMaterial::Finalize(HdRenderParam* renderParam)
+void HdRobotMaterial::Finalize(HdRenderParam* renderParam)
 {
   _scene.v_mat[_mat_id].set_default();
 }
 
-HdDirtyBits HdGatlingMaterial::GetInitialDirtyBitsMask() const
+HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
 {
   return DirtyBits::DirtyParams;
 }
 
-void HdGatlingMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   if(!TF_VERIFY(sceneDelegate))
     return;

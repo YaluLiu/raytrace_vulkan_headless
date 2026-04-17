@@ -8,22 +8,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdGatlingPoints::HdGatlingPoints(const SdfPath& id, HdGatlingScene& scene)
+HdRobotPoints::HdRobotPoints(const SdfPath& id, HdRobotScene& scene)
     : HdPoints(id)
     , _scene(scene)
     , _visible(true)
 {
 }
 
-HdGatlingPoints::~HdGatlingPoints() {}
+HdRobotPoints::~HdRobotPoints() {}
 
-HdDirtyBits HdGatlingPoints::GetInitialDirtyBitsMask() const
+HdDirtyBits HdRobotPoints::GetInitialDirtyBitsMask() const
 {
   return HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyWidths | HdChangeTracker::DirtyPrimvar
          | HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRepr;
 }
 
-void HdGatlingPoints::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
+void HdRobotPoints::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 {
   // 简单的实现 - 让基类处理repr初始化
   // 在大多数情况下，这就足够了
@@ -31,12 +31,12 @@ void HdGatlingPoints::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits
   *dirtyBits |= HdChangeTracker::DirtyRepr;
 }
 
-HdDirtyBits HdGatlingPoints::_PropagateDirtyBits(HdDirtyBits bits) const
+HdDirtyBits HdRobotPoints::_PropagateDirtyBits(HdDirtyBits bits) const
 {
   return bits;
 }
 
-void HdGatlingPoints::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, TfToken const& reprToken)
+void HdRobotPoints::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, TfToken const& reprToken)
 {
   TF_UNUSED(renderParam);
   TF_UNUSED(reprToken);
@@ -65,7 +65,7 @@ void HdGatlingPoints::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   *dirtyBits = HdChangeTracker::Clean;
 }
 
-void HdGatlingPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
+void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
 {
   SdfPath const& id = GetId();
 
@@ -123,7 +123,7 @@ void HdGatlingPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBit
   }
 }
 
-void HdGatlingPoints::_UpdateTransform(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
+void HdRobotPoints::_UpdateTransform(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
 {
   SdfPath const& id = GetId();
   _transform        = sceneDelegate->GetTransform(id);
@@ -131,7 +131,7 @@ void HdGatlingPoints::_UpdateTransform(HdSceneDelegate* sceneDelegate, HdDirtyBi
   std::cout << "Transform updated for " << id << std::endl;
 }
 
-void HdGatlingPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
+void HdRobotPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyBits* dirtyBits)
 {
   SdfPath const& id = GetId();
   _visible          = sceneDelegate->GetVisible(id);
@@ -139,7 +139,7 @@ void HdGatlingPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyB
   std::cout << "Visibility updated: " << (_visible ? "visible" : "hidden") << std::endl;
 }
 
-void HdGatlingPoints::_UpdateRenderScene() const
+void HdRobotPoints::_UpdateRenderScene() const
 {
   int points_size = _points.size();
   _scene.v_sphere.resize(points_size);
@@ -152,7 +152,7 @@ void HdGatlingPoints::_UpdateRenderScene() const
 }
 
 // 打印函数实现
-void HdGatlingPoints::_PrintPoints() const
+void HdRobotPoints::_PrintPoints() const
 {
   std::cout << "=== Points Data ===" << std::endl;
   std::cout << "Total points: " << _points.size() << std::endl;
@@ -165,7 +165,7 @@ void HdGatlingPoints::_PrintPoints() const
   std::cout << "===================" << std::endl;
 }
 
-void HdGatlingPoints::_PrintPointsDetailed() const
+void HdRobotPoints::_PrintPointsDetailed() const
 {
   std::cout << "=== Detailed Points Data ===" << std::endl;
   std::cout << "Total points: " << _points.size() << std::endl;
@@ -200,7 +200,7 @@ void HdGatlingPoints::_PrintPointsDetailed() const
   std::cout << "=============================" << std::endl;
 }
 
-void HdGatlingPoints::_PrintPointsSummary() const
+void HdRobotPoints::_PrintPointsSummary() const
 {
   std::cout << "=== Points Summary ===" << std::endl;
   std::cout << "Total points: " << _points.size() << std::endl;

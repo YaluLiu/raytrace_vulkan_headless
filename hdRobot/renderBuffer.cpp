@@ -31,16 +31,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdGatlingRenderBuffer::HdGatlingRenderBuffer(const SdfPath& id, HdGatlingRenderDelegate* renderDelegate)
+HdRobotRenderBuffer::HdRobotRenderBuffer(const SdfPath& id, HdRobotRenderDelegate* renderDelegate)
     : HdRenderBuffer(id)
     , _owner(renderDelegate)
     , _isConverged(false)
 {
 }
 
-HdGatlingRenderBuffer::~HdGatlingRenderBuffer() {}
+HdRobotRenderBuffer::~HdRobotRenderBuffer() {}
 
-bool HdGatlingRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSampled)
+bool HdRobotRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSampled)
 {
   _Deallocate();
 
@@ -66,51 +66,51 @@ bool HdGatlingRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format,
   return true;
 }
 
-void HdGatlingRenderBuffer::clear(int num)
+void HdRobotRenderBuffer::clear(int num)
 {
   memset(_buffer, num, _buffer_size);
 }
-size_t HdGatlingRenderBuffer::_GetBufferSize(GfVec2i const& dims, HdFormat format)
+size_t HdRobotRenderBuffer::_GetBufferSize(GfVec2i const& dims, HdFormat format)
 {
   return dims[0] * dims[1] * HdDataSizeOfFormat(format);
 }
 
-unsigned int HdGatlingRenderBuffer::GetWidth() const
+unsigned int HdRobotRenderBuffer::GetWidth() const
 {
   return _width;
 }
 
-unsigned int HdGatlingRenderBuffer::GetHeight() const
+unsigned int HdRobotRenderBuffer::GetHeight() const
 {
   return _height;
 }
 
-unsigned int HdGatlingRenderBuffer::GetDepth() const
+unsigned int HdRobotRenderBuffer::GetDepth() const
 {
   return 1u;
 }
 
-HdFormat HdGatlingRenderBuffer::GetFormat() const
+HdFormat HdRobotRenderBuffer::GetFormat() const
 {
   return _format;
 }
 
-bool HdGatlingRenderBuffer::IsMultiSampled() const
+bool HdRobotRenderBuffer::IsMultiSampled() const
 {
   return false;
 }
 
-bool HdGatlingRenderBuffer::IsConverged() const
+bool HdRobotRenderBuffer::IsConverged() const
 {
   return _isConverged;
 }
 
-void HdGatlingRenderBuffer::SetConverged(bool converged)
+void HdRobotRenderBuffer::SetConverged(bool converged)
 {
   _isConverged = converged;
 }
 
-void* HdGatlingRenderBuffer::Map()
+void* HdRobotRenderBuffer::Map()
 {
   // return _renderBuffer ? giGetRenderBufferMem(_renderBuffer) : nullptr;
   _isMaped = true;
@@ -121,16 +121,16 @@ void* HdGatlingRenderBuffer::Map()
   return _buffer;
 }
 
-bool HdGatlingRenderBuffer::IsMapped() const
+bool HdRobotRenderBuffer::IsMapped() const
 {
   return _isMaped;
 }
 
-void HdGatlingRenderBuffer::Unmap() {}
+void HdRobotRenderBuffer::Unmap() {}
 
-void HdGatlingRenderBuffer::Resolve() {}
+void HdRobotRenderBuffer::Resolve() {}
 
-void HdGatlingRenderBuffer::_Deallocate()
+void HdRobotRenderBuffer::_Deallocate()
 {
   _width  = 0;
   _height = 0;
@@ -138,7 +138,7 @@ void HdGatlingRenderBuffer::_Deallocate()
 }
 
 
-Hgi* HdGatlingRenderBuffer::_GetHgi()
+Hgi* HdRobotRenderBuffer::_GetHgi()
 {
   return _owner->GetHgi();
 }
@@ -198,7 +198,7 @@ HgiTextureUsage _getTextureUsage(HdFormat format, TfToken const& nameToken)
   return usage;
 }
 
-void HdGatlingRenderBuffer::createDesc()
+void HdRobotRenderBuffer::createDesc()
 {
   const GfVec3i dim(GetWidth(), GetHeight(), 1);
 
@@ -261,7 +261,7 @@ void _ConvertRGBtoRGBA(const float* rgbValues, size_t numRgbValues, std::vector<
   }
 }
 
-void HdGatlingRenderBuffer::ConvertToHgiTexture()
+void HdRobotRenderBuffer::ConvertToHgiTexture()
 {
   const GfVec3i dim(GetWidth(), GetHeight(), GetDepth());
 
@@ -312,12 +312,12 @@ void HdGatlingRenderBuffer::ConvertToHgiTexture()
   }
 }
 
-VtValue HdGatlingRenderBuffer::GetResource(bool /*multiSampled*/) const
+VtValue HdRobotRenderBuffer::GetResource(bool /*multiSampled*/) const
 {
   return VtValue(_texture);
 }
 
-void HdGatlingRenderBuffer::read_texture(GLuint textureId)
+void HdRobotRenderBuffer::read_texture(GLuint textureId)
 {
   if(textureId == 0 || !_buffer || _width == 0 || _height == 0)
   {

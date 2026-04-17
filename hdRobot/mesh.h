@@ -24,10 +24,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingMesh final : public HdMesh
+class HdRobotMesh final : public HdMesh
 {
 public:
-  HdGatlingMesh(const SdfPath& id, HdGatlingScene& _scene);
+  HdRobotMesh(const SdfPath& id, HdRobotScene& _scene);
 
   void Finalize(HdRenderParam* renderParam) override;
   void setValid(bool value);
@@ -73,7 +73,7 @@ private:
   void _CreateGiMeshes(HdSceneDelegate* sceneDelegate);
 
 private:
-  HdGatlingScene& _scene;
+  HdRobotScene& _scene;
   int             _mesh_id = -1;
 };
 

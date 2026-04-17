@@ -26,10 +26,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingMaterial final : public HdMaterial
+class HdRobotMaterial final : public HdMaterial
 {
 public:
-  HdGatlingMaterial(const SdfPath& id, HdGatlingScene& _scene);
+  HdRobotMaterial(const SdfPath& id, HdRobotScene& _scene);
 
   void Finalize(HdRenderParam* renderParam) override;
 
@@ -39,7 +39,7 @@ public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 
 public:
-  HdGatlingScene& _scene;
+  HdRobotScene& _scene;
   int             _mat_id;
 };
 

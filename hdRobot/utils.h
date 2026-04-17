@@ -22,9 +22,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool HdGatlingIsPrimvarTypeSupported(const VtValue& value);
+bool HdRobotIsPrimvarTypeSupported(const VtValue& value);
 
-void HdGatlingConvertVtBoolArrayToVtIntArray(VtValue& values);
+void HdRobotConvertVtBoolArrayToVtIntArray(VtValue& values);
 
 enum class GiPrimvarType
 {
@@ -55,6 +55,6 @@ struct GiPrimvarData
   std::vector<uint8_t>   data;
 };
 
-GiPrimvarType HdGatlingGetGiPrimvarType(HdType type);
+GiPrimvarType HdRobotGetGiPrimvarType(HdType type);
 
 PXR_NAMESPACE_CLOSE_SCOPE

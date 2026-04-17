@@ -44,7 +44,7 @@ float _AreaEllipsoid(float radiusX, float radiusY, float radiusZ)
 // Base Light
 //
 
-HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& scene)
+HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotScene& scene)
     : HdLight(id)
     , _scene(scene)
 {
@@ -55,7 +55,7 @@ HdGatlingLight::HdGatlingLight(const SdfPath& id, HdGatlingScene& scene)
 
 // We strive to conform to following UsdLux-enhancing specification:
 // https://github.com/anderslanglands/light_comparison/blob/777ccc7afd1c174a5dcbbde964ced950eb3af11b/specification/specification.md
-GfVec3f HdGatlingLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float normalizeFactor = 1.0f)
+GfVec3f HdRobotLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float normalizeFactor = 1.0f)
 {
   const SdfPath& id = GetId();
 
@@ -88,24 +88,24 @@ GfVec3f HdGatlingLight::_CalcBaseEmission(HdSceneDelegate* sceneDelegate, float 
   return baseEmission;
 }
 
-HdDirtyBits HdGatlingLight::GetInitialDirtyBitsMask() const
+HdDirtyBits HdRobotLight::GetInitialDirtyBitsMask() const
 {
   return DirtyBits::DirtyParams | DirtyBits::DirtyTransform;
 }
 
-void HdGatlingLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
+void HdRobotLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
 {
   _scene.v_light[_light_id].valid = 0;
 }
 
 // --------Sphere Light-------------------------
-HdGatlingSphereLight::HdGatlingSphereLight(const SdfPath& id, HdGatlingScene& scene)
-    : HdGatlingLight(id, scene)
+HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotScene& scene)
+    : HdRobotLight(id, scene)
 {
   _scene.v_light[_light_id].type = 0;
 }
 
-void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   const SdfPath&   id = GetId();
   const GfMatrix4f transform(sceneDelegate->GetTransform(id));
@@ -146,13 +146,13 @@ void HdGatlingSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]]
 }
 
 // --------Distant Light-------------------------
-HdGatlingDistantLight::HdGatlingDistantLight(const SdfPath& id, HdGatlingScene& scene)
-    : HdGatlingLight(id, scene)
+HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotScene& scene)
+    : HdRobotLight(id, scene)
 {
   _scene.v_light[_light_id].type = 1;
 }
 
-void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   const SdfPath& id               = GetId();
   _scene.v_light[_light_id].valid = 1;
@@ -193,13 +193,13 @@ void HdGatlingDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]
 
 
 // --------Dome Light-------------------------
-HdGatlingDomeLight::HdGatlingDomeLight(const SdfPath& id, HdGatlingScene& scene)
-    : HdGatlingLight(id, scene)
+HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotScene& scene)
+    : HdRobotLight(id, scene)
 {
   _scene.v_light[_light_id].type = 2;
 }
 
-std::string HdGatlingDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
+std::string HdRobotDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
 {
   const SdfPath& id               = GetId();
   VtValue        boxedTextureFile = sceneDelegate->GetLightParamValue(id, HdLightTokens->textureFile);
@@ -227,7 +227,7 @@ std::string HdGatlingDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
   return path;
 }
 
-void HdGatlingDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
   const SdfPath& id               = GetId();
   _scene.v_light[_light_id].valid = 1;

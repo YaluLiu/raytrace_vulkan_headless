@@ -23,16 +23,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdGatlingRenderDelegate;
+class HdRobotRenderDelegate;
 class Hgi;
 
 
-class HdGatlingRenderBuffer final : public HdRenderBuffer
+class HdRobotRenderBuffer final : public HdRenderBuffer
 {
 public:
-  HdGatlingRenderBuffer(const SdfPath& id, HdGatlingRenderDelegate* renderDelegate);
+  HdRobotRenderBuffer(const SdfPath& id, HdRobotRenderDelegate* renderDelegate);
 
-  ~HdGatlingRenderBuffer() override;
+  ~HdRobotRenderBuffer() override;
 
 public:
   bool Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSamples) override;
@@ -94,7 +94,7 @@ private:
   // Calculate the needed buffer size, given the allocation parameters.
   static size_t _GetBufferSize(GfVec2i const& dims, HdFormat format);
 
-  HdGatlingRenderDelegate* _owner;
+  HdRobotRenderDelegate* _owner;
   Hgi*                     _hgi;
 
 
