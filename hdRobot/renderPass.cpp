@@ -166,6 +166,31 @@ namespace
     result.textureId = material.textureID;
     return result;
   }
+
+  TfTokenVector NormalizeRenderTags(TfTokenVector tags)
+  {
+    std::sort(tags.begin(), tags.end(), [](const TfToken &a, const TfToken &b) {
+      return a.GetString() < b.GetString();
+    });
+    tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+    return tags;
+  }
+
+  bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
+  {
+    if (lhs.size() != rhs.size())
+    {
+      return false;
+    }
+    for (size_t i = 0; i < lhs.size(); ++i)
+    {
+      if (lhs[i] != rhs[i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
 } // namespace
 
 HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex *index,
@@ -217,7 +242,14 @@ std::string HdRobotRenderPass::open_asset(const std::string &path, int idx)
 
 void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassState, const TfTokenVector &renderTags)
 {
-  TF_UNUSED(renderTags);
+  if (_UpdateActiveRenderTags(renderTags))
+  {
+    for (auto &mesh : _scene.v_mesh)
+    {
+      mesh.tlas_changed = true;
+    }
+  }
+
   if (!renderPassState || !app_updateCamera(renderPassState))
   {
     return;
@@ -291,16 +323,20 @@ void HdRobotRenderPass::app_init_or_resize()
       vulkan.loadModel(loader);
       auto instance = vulkan.m_instances.back();
       const size_t first_instance_id = vulkan.m_instances.size() - 1;
-      for (size_t i = 1; i < cur_mesh.instanceTransforms.size(); ++i)
+      const size_t authoredInstanceCount = cur_mesh.instanceTransforms.size();
+      const size_t tlasSlotCount = std::max<size_t>(authoredInstanceCount, 1);
+      cur_mesh.hasInstances = authoredInstanceCount > 0;
+      for (size_t i = 1; i < tlasSlotCount; ++i)
       {
         vulkan.m_instances.push_back(instance);
         vulkan.m_instanceIds.push_back(static_cast<int>(i));
       }
       cur_mesh.tlasIds.clear();
-      for (size_t i = 0; i < cur_mesh.instanceTransforms.size(); ++i)
+      for (size_t i = 0; i < tlasSlotCount; ++i)
       {
         cur_mesh.tlasIds.push_back(static_cast<int>(i + first_instance_id));
       }
+      cur_mesh.tlas_changed = true;
     }
     vulkan.addSpheres(_scene.v_sphere);
     _renderApp.createBVH();
@@ -436,12 +472,18 @@ void HdRobotRenderPass::app_update_tlas()
     {
       update_tlas = true;
       cur_mesh.tlas_changed = false;
-      const size_t instanceCount = std::min(cur_mesh.instanceTransforms.size(), cur_mesh.tlasIds.size());
-      for (size_t ins_id = 0; ins_id < instanceCount; ++ins_id)
+      const bool tagMatched = _IsMeshRenderTagMatched(cur_mesh);
+      const bool meshVisible = cur_mesh.visible && cur_mesh.valid && tagMatched;
+      for (size_t ins_id = 0; ins_id < cur_mesh.tlasIds.size(); ++ins_id)
       {
         auto tlas_id = cur_mesh.tlasIds[ins_id];
-        const bool flag_show = cur_mesh.visible && cur_mesh.valid;
-        glm::mat4 cur_trans = glm::transpose(cur_mesh.transform * cur_mesh.instanceTransforms[ins_id]);
+        const bool instanceValid = cur_mesh.hasInstances && (ins_id < cur_mesh.instanceTransforms.size());
+        const bool flag_show = meshVisible && instanceValid;
+        glm::mat4 cur_trans = glm::transpose(cur_mesh.transform);
+        if (instanceValid)
+        {
+          cur_trans = glm::transpose(cur_mesh.transform * cur_mesh.instanceTransforms[ins_id]);
+        }
         vulkan.updateTlas(tlas_id, cur_trans, flag_show);
       }
     }
@@ -450,6 +492,27 @@ void HdRobotRenderPass::app_update_tlas()
   {
     vulkan.updateTlasEnd();
   }
+}
+
+bool HdRobotRenderPass::_UpdateActiveRenderTags(const TfTokenVector &renderTags)
+{
+  TfTokenVector normalizedRenderTags = NormalizeRenderTags(renderTags);
+  if (RenderTagsEqual(_activeRenderTags, normalizedRenderTags))
+  {
+    return false;
+  }
+
+  _activeRenderTags = std::move(normalizedRenderTags);
+  return true;
+}
+
+bool HdRobotRenderPass::_IsMeshRenderTagMatched(const HydraMesh &mesh) const
+{
+  if (_activeRenderTags.empty())
+  {
+    return true;
+  }
+  return std::find(_activeRenderTags.begin(), _activeRenderTags.end(), mesh.renderTag) != _activeRenderTags.end();
 }
 
 void HdRobotRenderPass::app_update_material()

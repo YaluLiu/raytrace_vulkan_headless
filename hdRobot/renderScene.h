@@ -1,8 +1,10 @@
 #pragma once
 #include <pxr/base/gf/vec2f.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/imaging/hd/tokens.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -32,12 +34,14 @@ struct HydraMesh
   VtIntArray   materialIds;     // material ids, in gpu buffer, [0*100,1*100], as two boot
   bool         visible = true;  // if mesh is visible
   bool         valid   = true;
+  TfToken      renderTag = HdRenderTagTokens->geometry;
 
   bool blas_changed = false;
   bool tlas_changed = false;
   //--------------------------------------------------------
   std::vector<int>       scene_mat_ids;  //对应的材质在scene队列的id
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1}};
+  bool                   hasInstances       = true;
   glm::mat4              transform          = glm::mat4{1};
   std::vector<int>       tlasIds;  // 当前mesh的实例在tlas队列中对应的id[0-n]
 };

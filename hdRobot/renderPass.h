@@ -21,6 +21,7 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/camera.h>
 #include <string>
+#include <vector>
 #include <ray_trace_app.hpp>
 #include <renderScene.h>
 
@@ -87,9 +88,12 @@ private:
   void app_update_blas();
   void app_update_tlas();
   void app_update_material();
+  bool _UpdateActiveRenderTags(const TfTokenVector& renderTags);
+  bool _IsMeshRenderTagMatched(const HydraMesh& mesh) const;
 
   bool _isAppInited        = false;
   bool _reset_renderbuffer = false;
+  TfTokenVector _activeRenderTags;
 
   RayTraceApp                           _renderApp;
   int _width  = -1;

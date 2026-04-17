@@ -460,6 +460,16 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
   setValid(true);
 
   auto& _mesh = _scene.v_mesh[_mesh_id];
+  if(*dirtyBits & HdChangeTracker::DirtyRenderTag)
+  {
+    const TfToken newRenderTag = sceneDelegate->GetRenderTag(id);
+    if(_mesh.renderTag != newRenderTag)
+    {
+      _mesh.renderTag    = newRenderTag;
+      _mesh.tlas_changed = true;
+    }
+  }
+
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)
   {
     _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
@@ -490,20 +500,21 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
       transforms = instancer->ComputeFlattenedTransforms(id);
     }
 
-    int  num_instances  = uint32_t(transforms.size());
-    auto transformsData = (const float (*)[4][4])transforms[0].data();
+    int num_instances = uint32_t(transforms.size());
     _mesh.instanceTransforms.resize(num_instances);
 
     for(uint32_t k = 0; k < num_instances; ++k)
     {
+      const GfMatrix4f& transform = transforms[k];
       for(int i = 0; i < 4; ++i)
       {
         for(int j = 0; j < 4; ++j)
         {
-          _mesh.instanceTransforms[k][i][j] = transformsData[k][j][i];  // 按行复制
+          _mesh.instanceTransforms[k][i][j] = transform[j][i];  // 按行复制
         }
       }
     }
+    _mesh.hasInstances = num_instances > 0;
     _mesh.tlas_changed = true;
   }
 
@@ -1006,7 +1017,8 @@ HdDirtyBits HdRobotMesh::GetInitialDirtyBitsMask() const
 {
   return HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology
          | HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex | HdChangeTracker::DirtyTransform
-         | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyDoubleSided;
+         | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyDoubleSided
+         | HdChangeTracker::DirtyRenderTag;
 }
 
 HdDirtyBits HdRobotMesh::_PropagateDirtyBits(HdDirtyBits bits) const
