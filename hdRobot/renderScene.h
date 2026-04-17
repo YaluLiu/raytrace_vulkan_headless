@@ -123,6 +123,32 @@ struct HydraLight
   }
 };
 
+struct TextureRegistry
+{
+  int Register(const std::string& texturePath)
+  {
+    const auto it = _textureIdByPath.find(texturePath);
+    if(it != _textureIdByPath.end())
+    {
+      return it->second;
+    }
+
+    const int textureId = static_cast<int>(_texturePaths.size());
+    _texturePaths.emplace_back(texturePath);
+    _textureIdByPath.emplace(texturePath, textureId);
+    return textureId;
+  }
+
+  const std::vector<std::string>& GetPaths() const
+  {
+    return _texturePaths;
+  }
+
+private:
+  std::vector<std::string>      _texturePaths;
+  std::unordered_map<std::string, int> _textureIdByPath;
+};
+
 struct HdRobotScene
 {
   //multi thread mutex
@@ -132,7 +158,18 @@ struct HdRobotScene
   std::vector<HydraMaterial> v_mat;
   std::vector<HydraLight>    v_light;
   std::vector<Sphere>        v_sphere;
-  std::vector<std::string>   v_texturePath;  //material&domelight, textures
+  TextureRegistry            textureRegistry;
+
+  int RegisterTexturePath(const std::string& texturePath)
+  {
+    std::lock_guard guard(mutex);
+    return textureRegistry.Register(texturePath);
+  }
+
+  const std::vector<std::string>& GetTexturePaths() const
+  {
+    return textureRegistry.GetPaths();
+  }
 };
 
 

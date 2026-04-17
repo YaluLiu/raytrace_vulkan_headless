@@ -122,9 +122,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
                   if(_scene.v_mat[_mat_id].texturePath != texturePath)
                   {
                     _scene.v_mat[_mat_id].texturePath = texturePath;  //GetResolvedPath
-                    std::lock_guard guard(_scene.mutex);
-                    _scene.v_mat[_mat_id].textureID = _scene.v_texturePath.size();
-                    _scene.v_texturePath.emplace_back(texturePath);
+                    _scene.v_mat[_mat_id].textureID   = _scene.RegisterTexturePath(texturePath);
                   }
                   // std::cout << "[material] _mat_id:" << _mat_id << "," << upstreamNodePath << ","
                   //           << _scene.v_mat[_mat_id].texturePath << std::endl;

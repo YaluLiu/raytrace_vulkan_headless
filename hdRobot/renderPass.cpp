@@ -274,9 +274,10 @@ void HdRobotRenderPass::app_init_or_resize()
       loader.m_textures.clear();
       if (is_first_model)
       {
-        for (size_t id = 0; id < _scene.v_texturePath.size(); ++id)
+        const auto& texturePaths = _scene.GetTexturePaths();
+        for (size_t id = 0; id < texturePaths.size(); ++id)
         {
-          auto file_name = open_asset(_scene.v_texturePath[id], id);
+          auto file_name = open_asset(texturePaths[id], id);
           loader.m_textures.push_back(file_name);
         }
         is_first_model = false;
