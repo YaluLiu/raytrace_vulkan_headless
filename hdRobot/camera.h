@@ -20,7 +20,6 @@
 #include <pxr/imaging/hd/camera.h>
 #include <glm/glm.hpp>
 #include <string>
-#include "shaders/host_device.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,11 +32,6 @@ struct HdRobotCameraData
   float       vfov_deg     = 45.0f;
   float       clipStart    = 0.1f;
   float       clipEnd      = 1000.0f;
-  bool        lidarChanged = false;
-  LidarParams lidar        = {-90.0f, 90.0f, 0.5f, 3.0f, LIDAR_VERTICAL_CHANNEL_CAPACITY, 361, 0.0f, 0.0f,
-                              {12.0f, 8.0f, 4.0f, 1.0f, -1.0f, -4.0f, -8.0f, -12.0f}};
-
-  void PrintLidarParamsForDebug(const std::string &cameraId) const;
 };
 
 HdRobotCameraData HdRobotComputeCameraData(const HdCamera &camera);

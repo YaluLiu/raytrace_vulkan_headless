@@ -79,7 +79,6 @@ private:
   // for headless ray trace app
 private:
   bool app_updateCamera(const HdRenderPassStateSharedPtr& renderPassState);
-  void app_updateCameraLidar(const HdRobotCameraData& cameraData);
   void app_updateLight();
   void app_apply_render_settings();
   void app_init_or_resize();

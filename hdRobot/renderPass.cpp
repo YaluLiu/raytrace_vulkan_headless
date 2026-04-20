@@ -415,7 +415,6 @@ bool HdRobotRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &rende
   }
 
   const HdRobotCameraData &cameraData = robotCamera->GetCameraData();
-  app_updateCameraLidar(cameraData);
 
   glm::vec3 camPos = cameraData.position;
   glm::vec3 camForward = cameraData.forward;
@@ -429,14 +428,6 @@ bool HdRobotRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &rende
   const float vfov_deg = std::clamp(cameraData.vfov_deg, 1.0f, 179.0f);
   CameraManip.setCamera({camPos, target, camUp, vfov_deg});
   return true;
-}
-
-void HdRobotRenderPass::app_updateCameraLidar(const HdRobotCameraData &cameraData)
-{
-  LidarParams lidar = cameraData.lidar;
-  lidar.verticalChannelCount = std::clamp(lidar.verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
-  lidar.horizontalSampleCount = std::max(lidar.horizontalSampleCount, 1);
-  _renderApp.getVulkan().m_pcRay.lidar = lidar;
 }
 
 void HdRobotRenderPass::app_anim_real()
