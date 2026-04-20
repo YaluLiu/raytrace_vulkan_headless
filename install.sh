@@ -130,6 +130,12 @@ function hydra(){
     /home/yalu/software/usdtweak/build/usdtweak /home/yalu/docker/assets/unit_test/anim/pao/pao.usd
 }
 
+function restore()
+{
+    git restore .
+    python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
+}
+
 # function nsight{
 #     sudo /opt/nvidia/nsight-graphics-for-linux/nsight-graphics-for-linux-2025.5.0.0/host/linux-desktop-nomad-x64/ngfx-ui
 # }
