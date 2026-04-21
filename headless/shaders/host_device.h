@@ -66,21 +66,16 @@ struct GlobalUniforms
   mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
-#ifndef LIDAR_VERTICAL_CHANNEL_CAPACITY
-#define LIDAR_VERTICAL_CHANNEL_CAPACITY 8
-#endif
-
 struct LidarParams
 {
   float azimuthMinDeg;
   float azimuthMaxDeg;
   float azimuthStepDeg;
   float pointRadiusPixels;
-  int   verticalChannelCount;
+  float verticalMinDeg;
+  float verticalMaxDeg;
+  float verticalStepDeg;
   int   horizontalSampleCount;
-  float padding0;
-  float padding1;
-  float verticalAnglesDeg[LIDAR_VERTICAL_CHANNEL_CAPACITY];
 };
 
 struct Light

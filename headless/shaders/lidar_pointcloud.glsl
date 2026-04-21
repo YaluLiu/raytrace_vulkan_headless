@@ -21,21 +21,19 @@ void lidarCameraBasis(out vec3 forwardCam, out vec3 rightCam, out vec3 upCam)
   upCam    = normalize(cross(forwardCam, rightCam));
 }
 
-int nearestLidarVerticalChannel(float elevationDeg)
+int nearestLidarVerticalChannel(float elevationDeg, out float snappedElevationDeg)
 {
-  int channelCount = clamp(pcRay.lidar.verticalChannelCount, 1, LIDAR_VERTICAL_CHANNEL_CAPACITY);
-  int   bestIdx  = 0;
-  float bestDiff = abs(elevationDeg - pcRay.lidar.verticalAnglesDeg[0]);
-  for(int i = 1; i < channelCount; ++i)
-  {
-    float diff = abs(elevationDeg - pcRay.lidar.verticalAnglesDeg[i]);
-    if(diff < bestDiff)
-    {
-      bestDiff = diff;
-      bestIdx  = i;
-    }
-  }
-  return bestIdx;
+  float verticalStepAbsDeg    = max(abs(pcRay.lidar.verticalStepDeg), 1e-4);
+  float verticalStepSign      = (pcRay.lidar.verticalMaxDeg >= pcRay.lidar.verticalMinDeg) ? 1.0 : -1.0;
+  float verticalStepSignedDeg = verticalStepAbsDeg * verticalStepSign;
+  float verticalSpanDeg       = abs(pcRay.lidar.verticalMaxDeg - pcRay.lidar.verticalMinDeg);
+  int   channelCount          = max(int(round(verticalSpanDeg / verticalStepAbsDeg)) + 1, 1);
+
+  float channelFloat = (elevationDeg - pcRay.lidar.verticalMinDeg) / verticalStepSignedDeg;
+  int   channelIdx   = clamp(int(round(channelFloat)), 0, channelCount - 1);
+
+  snappedElevationDeg = pcRay.lidar.verticalMinDeg + float(channelIdx) * verticalStepSignedDeg;
+  return channelIdx;
 }
 
 vec3 lidarDirectionFromAngles(vec3 forwardCam, vec3 rightCam, vec3 upCam, float azimuthDeg, float elevationDeg)
@@ -120,9 +118,9 @@ void traceLidarPointCloudAtPixel(ivec2 pixel, vec2 pixelCenter, vec3 fallbackCol
   int azimuthIdx = int(round((azimuthDeg - lidarAzimuthMinDeg) / lidarAzimuthStepDeg));
   azimuthIdx     = clamp(azimuthIdx, 0, lidarHorizontalCount - 1);
 
-  int   channelIdx   = nearestLidarVerticalChannel(elevationDeg);
+  float snappedElDeg = 0.0;
+  int   channelIdx   = nearestLidarVerticalChannel(elevationDeg, snappedElDeg);
   float snappedAzDeg = lidarAzimuthMinDeg + float(azimuthIdx) * lidarAzimuthStepDeg;
-  float snappedElDeg = pcRay.lidar.verticalAnglesDeg[channelIdx];
 
   vec3  beamDirCam = lidarDirectionFromAngles(forwardCam, rightCam, upCam, snappedAzDeg, snappedElDeg);
   mat4  proj       = lidarProjectionMatrix();
