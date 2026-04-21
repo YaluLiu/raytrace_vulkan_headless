@@ -5,6 +5,7 @@
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
+#include <iomanip>
 #include "nvh/cameramanipulator.hpp"
 
 namespace fs = std::filesystem;
@@ -22,7 +23,7 @@ void applyDefaultDlssRuntime()
 {
   setEnvDefault("ENABLE_DLSS_RR", "1");
   setEnvDefault("ENABLE_DLSS_SR", "1");
-  setEnvDefault("DLSS_SR_SCALE", "0.6");
+  setEnvDefault("DLSS_SR_SCALE", "1");
 }
 }  // namespace
 
@@ -65,6 +66,12 @@ public:
       return;
     }
 
+    // 先写入基础相机参数，再进入 updatecamera() 的增量更新
+    CameraManip.setLookat(glm::vec3(-2.291995, 2.000000, 9.995736),  // eye
+                          glm::vec3(0.0f, 1.0f, 0.0f),             // ctr
+                          glm::vec3(0.0f, 1.0f, 0.0f));            // up
+
+    m_app.render();
     for(int i = 0; i < 10; ++i)
     {
       updatecamera();
@@ -90,6 +97,15 @@ public:
     glm::vec3 eye(x, y, z);
 
     CameraManip.setLookat(eye, ctr, up);
+
+    ++m_cameraUpdateCount;
+    if(m_cameraUpdateCount <= 10)
+    {
+      std::cout << std::fixed << std::setprecision(6)
+                << "[camera] update#" << m_cameraUpdateCount << " yaw=" << m_yaw << " eye=(" << eye.x << ", " << eye.y
+                << ", " << eye.z << ") ctr=(" << ctr.x << ", " << ctr.y << ", " << ctr.z << ") up=(" << up.x << ", "
+                << up.y << ", " << up.z << ")\n";
+    }
   }
 
   void add_light()
@@ -182,7 +198,8 @@ private:
   bool                                  m_testOnUsd;
   std::chrono::system_clock::time_point m_startTime;
   RayTraceApp                           m_app;
-  float                                 m_yaw = 0.0f;  // 在文件顶部或类成员变量中定义
+  float                                 m_yaw = 1.4f;  // 首次 updatecamera() 后 yaw=1.6，对齐你指定的 update#4 参数
+  int                                   m_cameraUpdateCount = 0;
 };
 
 int main()
