@@ -197,6 +197,8 @@ public:
   // color
   nvvk::Texture          m_offscreenColor;
   VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
+  nvvk::Texture          m_offscreenDlssOutput;
+  VkFormat               m_offscreenDlssOutputFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   nvvk::Texture          m_offscreenDenoised;
   VkFormat               m_offscreenDenoisedFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   interop::Texture2DVkGL m_rtOutputGL;
