@@ -31,8 +31,10 @@ struct InitInputs
 struct EvaluateInputs
 {
   VkCommandBuffer cmd{VK_NULL_HANDLE};
-  uint32_t        width{0};
-  uint32_t        height{0};
+  uint32_t        renderWidth{0};
+  uint32_t        renderHeight{0};
+  uint32_t        targetWidth{0};
+  uint32_t        targetHeight{0};
 
   bool  reset{false};
   float jitterX{0.0f};
@@ -82,4 +84,3 @@ private:
 };
 
 }  // namespace dlss
-

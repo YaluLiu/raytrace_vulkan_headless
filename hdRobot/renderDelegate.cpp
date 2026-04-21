@@ -82,6 +82,10 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
   _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(4)});
   _settingDescriptors.emplace_back(
       HdRenderSettingDescriptor{"Enable DLSS-RR Denoise", HdRobotSettingsTokens->dlssRRDenoise, VtValue(true)});
+  _settingDescriptors.emplace_back(
+      HdRenderSettingDescriptor{"Enable DLSS-SR Upscale", HdRobotSettingsTokens->dlssSREnable, VtValue(true)});
+  _settingDescriptors.emplace_back(
+      HdRenderSettingDescriptor{"DLSS-SR Render Scale", HdRobotSettingsTokens->dlssSRScale, VtValue(0.6f)});
 
   if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
   {
@@ -90,6 +94,14 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
   if(_settingsMap.find(HdRobotSettingsTokens->dlssRRDenoise) == _settingsMap.end())
   {
     _settingsMap[HdRobotSettingsTokens->dlssRRDenoise] = VtValue(true);
+  }
+  if(_settingsMap.find(HdRobotSettingsTokens->dlssSREnable) == _settingsMap.end())
+  {
+    _settingsMap[HdRobotSettingsTokens->dlssSREnable] = VtValue(true);
+  }
+  if(_settingsMap.find(HdRobotSettingsTokens->dlssSRScale) == _settingsMap.end())
+  {
+    _settingsMap[HdRobotSettingsTokens->dlssSRScale] = VtValue(0.6f);
   }
 }
 

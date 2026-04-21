@@ -299,7 +299,7 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
                      0, sizeof(PushConstantRay), &m_pcRay);
 
   auto& regions = m_sbtWrapper.getRegions();
-  vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_size.width, m_size.height, 1);
+  vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_renderSize.width, m_renderSize.height, 1);
 
   m_accumulatedFrames++;
 

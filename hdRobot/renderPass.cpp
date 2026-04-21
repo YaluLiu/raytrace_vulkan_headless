@@ -148,7 +148,37 @@ namespace
       return;
     }
 
-    glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+    GLint srcWidth = 0;
+    GLint srcHeight = 0;
+    glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_WIDTH, &srcWidth);
+    glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_HEIGHT, &srcHeight);
+    if (srcWidth <= 0 || srcHeight <= 0)
+    {
+      return;
+    }
+
+    if (srcWidth == width && srcHeight == height)
+    {
+      glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+      return;
+    }
+
+    GLuint readFbo = 0;
+    GLuint drawFbo = 0;
+    glCreateFramebuffers(1, &readFbo);
+    glCreateFramebuffers(1, &drawFbo);
+    glNamedFramebufferTexture(readFbo, GL_COLOR_ATTACHMENT0, srcTextureId, 0);
+    glNamedFramebufferTexture(drawFbo, GL_COLOR_ATTACHMENT0, dstTextureId, 0);
+
+    const GLenum readStatus = glCheckNamedFramebufferStatus(readFbo, GL_FRAMEBUFFER);
+    const GLenum drawStatus = glCheckNamedFramebufferStatus(drawFbo, GL_FRAMEBUFFER);
+    if (readStatus == GL_FRAMEBUFFER_COMPLETE && drawStatus == GL_FRAMEBUFFER_COMPLETE)
+    {
+      glBlitNamedFramebuffer(readFbo, drawFbo, 0, 0, srcWidth, srcHeight, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
+
+    glDeleteFramebuffers(1, &readFbo);
+    glDeleteFramebuffers(1, &drawFbo);
   }
 
   WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
@@ -383,6 +413,40 @@ void HdRobotRenderPass::app_apply_render_settings()
     else if (value.IsHolding<int>())
     {
       app.setDlssRREnabled(value.UncheckedGet<int>() != 0);
+    }
+  }
+
+  if (const auto it = _settings.find(HdRobotSettingsTokens->dlssSREnable); it != _settings.end())
+  {
+    const VtValue &value = it->second;
+    if (value.IsHolding<bool>())
+    {
+      app.setDlssSREnabled(value.UncheckedGet<bool>());
+    }
+    else if (value.IsHolding<int>())
+    {
+      app.setDlssSREnabled(value.UncheckedGet<int>() != 0);
+    }
+  }
+
+  if (const auto it = _settings.find(HdRobotSettingsTokens->dlssSRScale); it != _settings.end())
+  {
+    const VtValue &value = it->second;
+    if (value.IsHolding<float>())
+    {
+      app.setDlssSRScale(value.UncheckedGet<float>());
+    }
+    else if (value.IsHolding<double>())
+    {
+      app.setDlssSRScale(static_cast<float>(value.UncheckedGet<double>()));
+    }
+    else if (value.IsHolding<int>())
+    {
+      app.setDlssSRScale(static_cast<float>(value.UncheckedGet<int>()));
+    }
+    else if (value.IsHolding<unsigned int>())
+    {
+      app.setDlssSRScale(static_cast<float>(value.UncheckedGet<unsigned int>()));
     }
   }
 }

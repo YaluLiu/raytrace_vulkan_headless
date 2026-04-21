@@ -66,6 +66,11 @@ void logDlssError(const std::string& line)
   std::cerr << line << '\n';
   appendDlssStatusLog(line);
 }
+
+float clampDlssScale(float scale)
+{
+  return std::clamp(scale, 0.1f, 1.0f);
+}
 }  // namespace
 
 // opengl context with windows
@@ -103,6 +108,19 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   {
     m_enableDlssRR = std::string(enableDlssEnv) != "0";
   }
+  if(const char* enableDlssSrEnv = std::getenv("ENABLE_DLSS_SR"))
+  {
+    m_enableDlssSR = std::string(enableDlssSrEnv) != "0";
+  }
+  if(const char* dlssScaleEnv = std::getenv("DLSS_SR_SCALE"))
+  {
+    char* end = nullptr;
+    float scale = std::strtof(dlssScaleEnv, &end);
+    if(end != dlssScaleEnv && end != nullptr && *end == '\0')
+    {
+      m_dlssSRScale = clampDlssScale(scale);
+    }
+  }
   if(const char* sppEnv = std::getenv("RT_SPP"))
   {
     char* end = nullptr;
@@ -119,6 +137,55 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
 void HelloVulkan::resetAccumulation()
 {
   m_accumulatedFrames = 0;
+}
+
+void HelloVulkan::setDlssSRScale(float scale)
+{
+  const float clamped = clampDlssScale(scale);
+  if(std::fabs(m_dlssSRScale - clamped) > 1e-6f)
+  {
+    m_dlssSRScale = clamped;
+    refreshOffscreenRenderTargetsIfNeeded();
+    resetAccumulation();
+  }
+}
+
+bool HelloVulkan::shouldRenderAtDlssScale() const
+{
+  return m_enableDlssRR && m_enableDlssSR && m_dlssRR.isOperational() && m_dlssSRScale < 0.999f;
+}
+
+VkExtent2D HelloVulkan::computeRenderSize() const
+{
+  if(!shouldRenderAtDlssScale() || m_size.width == 0 || m_size.height == 0)
+  {
+    return m_size;
+  }
+
+  const float scale = clampDlssScale(m_dlssSRScale);
+  const auto  scaledWidth = static_cast<uint32_t>(std::max(1.0f, std::round(static_cast<float>(m_size.width) * scale)));
+  const auto  scaledHeight = static_cast<uint32_t>(std::max(1.0f, std::round(static_cast<float>(m_size.height) * scale)));
+  return {std::min(scaledWidth, m_size.width), std::min(scaledHeight, m_size.height)};
+}
+
+void HelloVulkan::refreshOffscreenRenderTargetsIfNeeded()
+{
+  if(m_device == VK_NULL_HANDLE || m_size.width == 0 || m_size.height == 0)
+  {
+    return;
+  }
+
+  const VkExtent2D desiredRenderSize = computeRenderSize();
+  if(desiredRenderSize.width == m_renderSize.width && desiredRenderSize.height == m_renderSize.height)
+  {
+    return;
+  }
+
+  createOffscreenRender();
+  if(m_rtDescSet != VK_NULL_HANDLE)
+  {
+    updateRtDescriptorSet();
+  }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -241,7 +308,7 @@ void HelloVulkan::destroyResources()
   m_allocGL.deinit();
 
   m_alloc.destroy(m_offscreenDepth);
-  m_alloc.destroy(m_offscreenDenoised);
+  m_alloc.destroy(m_offscreenColor);
 
   // #VKRay 光线追踪相关
   m_rtBuilder.destroy();
@@ -275,16 +342,26 @@ void HelloVulkan::destroyResources()
 //headless:模式下一般不会有窗口 resize
 void HelloVulkan::onResize(int w, int h)
 {
-  if(w == (int)m_size.width && h == (int)m_size.height)
+  if(w <= 0 || h <= 0)
+  {
     return;
+  }
+
+  if(w == (int)m_size.width && h == (int)m_size.height)
+  {
+    refreshOffscreenRenderTargetsIfNeeded();
+    return;
+  }
+
   m_size.width  = w;
   m_size.height = h;
   // 重建离屏渲染（包括color/depth framebuffer、renderpass等）
   createOffscreenRender();
-  // 更新后处理描述符集（采样新的offscreen image）
-  // updatePostDescriptorSet();
-  // 更新光线追踪输出描述符集（采样新的offscreen image）
-  updateRtDescriptorSet();
+  if(m_rtDescSet != VK_NULL_HANDLE)
+  {
+    // 更新光线追踪输出描述符集（采样新的offscreen image）
+    updateRtDescriptorSet();
+  }
   resetAccumulation();
   m_hasLastCamera = false;
 }
@@ -294,40 +371,41 @@ void HelloVulkan::onResize(int w, int h)
 // 包括color和depth两张image，适配当前窗口大小
 void HelloVulkan::createOffscreenRender()
 {
-  // 释放旧的离屏color和depth资源
+  m_renderSize = computeRenderSize();
 
   constexpr VkImageUsageFlags kInteropUsage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
+  createOffscreenImage(m_offscreenColor, m_offscreenColorFormat,
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr, 0, 0,
+                       0, m_renderSize);
   createOffscreenImage(
-      m_offscreenColor, m_offscreenColorFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-      &m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR);
-  createOffscreenImage(m_offscreenDenoised, m_offscreenDenoisedFormat,
-                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr,
-                       0, 0, 0);
+      m_offscreenDenoised, m_offscreenDenoisedFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+      &m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, m_size);
   createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kInteropUsage, &m_rtObjectIdGL, GL_R32I, GL_LINEAR,
-                       GL_LINEAR);
+                       GL_LINEAR, m_renderSize);
   createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kInteropUsage, &m_rtInstanceIdGL, GL_R32I,
-                       GL_NEAREST, GL_NEAREST);
-  createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kInteropUsage, &m_rtDiffuseAlbedoGL,
-                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
-  createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kInteropUsage, &m_rtSpecularAlbedoGL,
-                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
+  createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kInteropUsage, &m_rtDiffuseAlbedoGL, GL_RGBA32F,
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
+  createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kInteropUsage, &m_rtSpecularAlbedoGL, GL_RGBA32F,
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenNormalRoughness, m_offscreenNormalRoughnessFormat, kInteropUsage, &m_rtNormalRoughnessGL,
-                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
+                       GL_RGBA32F, GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenMotionVector, m_offscreenMotionVectorFormat, kInteropUsage, &m_rtMotionVectorGL, GL_RG32F,
-                       GL_NEAREST, GL_NEAREST);
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kInteropUsage, &m_rtLinearDepthGL, GL_R32F,
-                       GL_NEAREST, GL_NEAREST);
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kInteropUsage,
-                       &m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST);
+                       &m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kInteropUsage,
-                       &m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST);
-  createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat, kInteropUsage, &m_rtLidarPointCloudGL,
-                       GL_RGBA32F, GL_NEAREST, GL_NEAREST);
+                       &m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_renderSize);
+  createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat, kInteropUsage, &m_rtLidarPointCloudGL, GL_RGBA32F,
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
-  auto depthCreateInfo = nvvk::makeImage2DCreateInfo(m_size, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+  auto depthCreateInfo =
+      nvvk::makeImage2DCreateInfo(m_renderSize, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   {
     nvvk::Image image = m_alloc.createImage(depthCreateInfo);
 
@@ -409,11 +487,12 @@ void HelloVulkan::createDlssRR()
   }
 
   logDlssInfo(std::string("[DLSS-RR] enabled: appDataPath=") + init.applicationDataPath);
+  refreshOffscreenRenderTargetsIfNeeded();
 }
 
 void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
 {
-  if(!m_enableDlssRR || !m_dlssRR.isOperational() || cmdBuf == VK_NULL_HANDLE)
+  if(cmdBuf == VK_NULL_HANDLE)
   {
     return;
   }
@@ -464,10 +543,12 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
   };
 
   dlss::EvaluateInputs eval{};
-  eval.cmd        = cmdBuf;
-  eval.width      = m_size.width;
-  eval.height     = m_size.height;
-  eval.reset      = (m_accumulatedFrames <= 1);
+  eval.cmd         = cmdBuf;
+  eval.renderWidth = m_renderSize.width;
+  eval.renderHeight = m_renderSize.height;
+  eval.targetWidth = m_size.width;
+  eval.targetHeight = m_size.height;
+  eval.reset       = (m_accumulatedFrames <= 1);
   eval.frameTimeMs = 16.6667f;
   eval.worldToView = m_lastView;
   eval.viewToClip  = m_lastProj;
@@ -483,44 +564,75 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
 
   static bool reportedFailure = false;
   static bool reportedSuccess = false;
-  if(!m_dlssRR.evaluate(eval))
+  bool        dlssApplied     = false;
+  if(m_enableDlssRR && m_dlssRR.isOperational())
   {
-    if(!reportedFailure)
+    if(!m_dlssRR.evaluate(eval))
     {
-      logDlssError(std::string("[DLSS-RR] evaluate failed: ") + m_dlssRR.getLastError());
-      reportedFailure = true;
+      if(!reportedFailure)
+      {
+        logDlssError(std::string("[DLSS-RR] evaluate failed: ") + m_dlssRR.getLastError());
+        reportedFailure = true;
+      }
+      reportedSuccess = false;
     }
-    reportedSuccess = false;
-    return;
+    else
+    {
+      reportedFailure = false;
+      dlssApplied     = true;
+      if(!reportedSuccess)
+      {
+        logDlssInfo("[DLSS-RR] evaluate active");
+        reportedSuccess = true;
+      }
+    }
   }
-  reportedFailure = false;
-  if(!reportedSuccess)
+  else
   {
-    logDlssInfo("[DLSS-RR] evaluate active");
-    reportedSuccess = true;
+    reportedFailure = false;
+    reportedSuccess = false;
+  }
+
+  if(dlssApplied)
+  {
+    return;
   }
 
   std::array<VkImageMemoryBarrier, 2> toCopyBarriers{
-      makeBarrier(m_offscreenDenoised.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
-                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
-      makeBarrier(m_offscreenColor.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+      makeBarrier(m_offscreenColor.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
+      makeBarrier(m_offscreenDenoised.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
                   VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
   };
 
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
                        static_cast<uint32_t>(toCopyBarriers.size()), toCopyBarriers.data());
 
-  VkImageCopy region{};
-  region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-  region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-  region.extent         = {m_size.width, m_size.height, 1};
-  vkCmdCopyImage(cmdBuf, m_offscreenDenoised.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_offscreenColor.image,
-                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  if(m_renderSize.width == m_size.width && m_renderSize.height == m_size.height)
+  {
+    VkImageCopy region{};
+    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.extent         = {m_size.width, m_size.height, 1};
+    vkCmdCopyImage(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_offscreenDenoised.image,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  }
+  else
+  {
+    VkImageBlit region{};
+    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.srcOffsets[1]  = {static_cast<int32_t>(m_renderSize.width), static_cast<int32_t>(m_renderSize.height), 1};
+    region.dstOffsets[1]  = {static_cast<int32_t>(m_size.width), static_cast<int32_t>(m_size.height), 1};
+
+    vkCmdBlitImage(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_offscreenDenoised.image,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, VK_FILTER_LINEAR);
+  }
 
   std::array<VkImageMemoryBarrier, 2> restoreBarriers{
-      makeBarrier(m_offscreenDenoised.image, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+      makeBarrier(m_offscreenColor.image, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL),
-      makeBarrier(m_offscreenColor.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+      makeBarrier(m_offscreenDenoised.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL),
   };
 

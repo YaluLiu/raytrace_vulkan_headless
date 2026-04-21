@@ -143,10 +143,34 @@ public:
     if(m_enableDlssRR != enabled)
     {
       m_enableDlssRR = enabled;
+      if(m_enableDlssRR)
+      {
+        if(!m_dlssRR.isOperational())
+        {
+          createDlssRR();
+        }
+      }
+      else
+      {
+        m_dlssRR.shutdown();
+      }
+      refreshOffscreenRenderTargetsIfNeeded();
       resetAccumulation();
     }
   }
-  bool isDlssRREnabled() const { return m_enableDlssRR && m_dlssRR.isOperational(); }
+  bool isDlssRREnabled() const { return m_enableDlssRR; }
+  void setDlssSREnabled(bool enabled)
+  {
+    if(m_enableDlssSR != enabled)
+    {
+      m_enableDlssSR = enabled;
+      refreshOffscreenRenderTargetsIfNeeded();
+      resetAccumulation();
+    }
+  }
+  bool isDlssSREnabled() const { return m_enableDlssSR; }
+  void setDlssSRScale(float scale);
+  float getDlssSRScale() const { return m_dlssSRScale; }
   void setSamplesPerFrame(int spp)
   {
     if(spp < 1)
@@ -223,6 +247,9 @@ public:
   interop::ResourceAllocatorGLInterop m_allocGL;
   dlss::DlssRR                        m_dlssRR;
   bool                                m_enableDlssRR{true};
+  bool                                m_enableDlssSR{true};
+  float                               m_dlssSRScale{0.6f};
+  VkExtent2D                          m_renderSize{0, 0};
 
   // depth buffer
   nvvk::Texture m_offscreenDepth;
@@ -271,7 +298,11 @@ private:
                             interop::Texture2DVkGL* interopTexture,
                             int                     glInternalFormat,
                             int                     glMinFilter,
-                            int                     glMagFilter);
+                            int                     glMagFilter,
+                            VkExtent2D              extent = {0, 0});
+  bool       shouldRenderAtDlssScale() const;
+  VkExtent2D computeRenderSize() const;
+  void       refreshOffscreenRenderTargetsIfNeeded();
 
   uint32_t  m_accumulatedFrames{0};
   glm::mat4 m_lastView{1.0f};

@@ -218,16 +218,16 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
   printf("Saved %s (%ux%u)\n", filename, width, height);
 }
 
-// 保存 m_offscreenColor 到本地 PNG 文件
+// 保存最终输出纹理到本地 PNG 文件
 void HelloVulkan::saveOffscreenColorToFile(const char* filename)
 {
   VkDevice device = m_device;
   VkQueue  queue  = m_queue;
 
   // 1. 获取 image 信息
-  // VkFormat     format    = m_offscreenColor.imageFormat;
+  // VkFormat     format    = m_offscreenDenoised.imageFormat;
   VkExtent2D extent    = m_size;
-  VkImage    srcImage  = m_offscreenColor.image;
+  VkImage    srcImage  = m_offscreenDenoised.image;
   uint32_t   w         = extent.width;
   uint32_t   h         = extent.height;
   size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT

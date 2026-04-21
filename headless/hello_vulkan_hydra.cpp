@@ -133,9 +133,15 @@ void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
                                        interop::Texture2DVkGL* interopTexture,
                                        int glInternalFormat,
                                        int glMinFilter,
-                                       int glMagFilter)
+                                       int glMagFilter,
+                                       VkExtent2D extent)
 {
-  auto imageInfo = nvvk::makeImage2DCreateInfo(m_size, format, usage);
+  if(extent.width == 0 || extent.height == 0)
+  {
+    extent = m_size;
+  }
+
+  auto imageInfo = nvvk::makeImage2DCreateInfo(extent, format, usage);
 
   if(interopTexture != nullptr)
   {
@@ -147,7 +153,7 @@ void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
     texture                        = m_allocGL.createTexture(image, ivInfo, sampler);
     texture.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-    interopTexture->imgSize = m_size;
+    interopTexture->imgSize = extent;
     interopTexture->texVk   = texture;
     createTextureGL(*interopTexture, glInternalFormat, glMinFilter, glMagFilter, GL_CLAMP_TO_EDGE, m_allocGL);
     return;

@@ -95,8 +95,10 @@ struct DlssRR::Impl
   NVSDK_NGX_Parameter* capabilityParams{nullptr};
   NVSDK_NGX_Parameter* runtimeParams{nullptr};
 
-  uint32_t featureWidth{0};
-  uint32_t featureHeight{0};
+  uint32_t featureRenderWidth{0};
+  uint32_t featureRenderHeight{0};
+  uint32_t featureTargetWidth{0};
+  uint32_t featureTargetHeight{0};
 
   std::wstring                appDataPathWide;
   std::vector<std::wstring>   featureSearchPathsWide;
@@ -317,8 +319,10 @@ void DlssRR::shutdown()
     NVSDK_NGX_VULKAN_Shutdown1(m_impl->device);
   }
 
-  m_impl->featureWidth  = 0;
-  m_impl->featureHeight = 0;
+  m_impl->featureRenderWidth  = 0;
+  m_impl->featureRenderHeight = 0;
+  m_impl->featureTargetWidth  = 0;
+  m_impl->featureTargetHeight = 0;
 #endif
 
   m_impl->initialized = false;
@@ -341,7 +345,8 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
     return false;
   }
 
-  if(inputs.cmd == VK_NULL_HANDLE || inputs.width == 0 || inputs.height == 0)
+  if(inputs.cmd == VK_NULL_HANDLE || inputs.renderWidth == 0 || inputs.renderHeight == 0 || inputs.targetWidth == 0
+     || inputs.targetHeight == 0)
   {
     m_impl->lastError = "DLSS-RR evaluate failed: invalid command buffer or dimensions";
     return false;
@@ -361,7 +366,9 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
     return false;
   }
 
-  if(m_impl->featureHandle == nullptr || m_impl->featureWidth != inputs.width || m_impl->featureHeight != inputs.height)
+  if(m_impl->featureHandle == nullptr || m_impl->featureRenderWidth != inputs.renderWidth
+     || m_impl->featureRenderHeight != inputs.renderHeight || m_impl->featureTargetWidth != inputs.targetWidth
+     || m_impl->featureTargetHeight != inputs.targetHeight)
   {
     if(m_impl->featureHandle != nullptr)
     {
@@ -373,11 +380,13 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
     createParams.InDenoiseMode          = NVSDK_NGX_DLSS_Denoise_Mode_DLUnified;
     createParams.InRoughnessMode        = NVSDK_NGX_DLSS_Roughness_Mode_Packed;
     createParams.InUseHWDepth           = NVSDK_NGX_DLSS_Depth_Type_Linear;
-    createParams.InWidth                = inputs.width;
-    createParams.InHeight               = inputs.height;
-    createParams.InTargetWidth          = inputs.width;
-    createParams.InTargetHeight         = inputs.height;
-    createParams.InPerfQualityValue     = NVSDK_NGX_PerfQuality_Value_DLAA;
+    createParams.InWidth                = inputs.renderWidth;
+    createParams.InHeight               = inputs.renderHeight;
+    createParams.InTargetWidth          = inputs.targetWidth;
+    createParams.InTargetHeight         = inputs.targetHeight;
+    createParams.InPerfQualityValue     = (inputs.renderWidth == inputs.targetWidth && inputs.renderHeight == inputs.targetHeight)
+                                              ? NVSDK_NGX_PerfQuality_Value_DLAA
+                                              : NVSDK_NGX_PerfQuality_Value_Balanced;
     createParams.InFeatureCreateFlags   = NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
     createParams.InEnableOutputSubrects = false;
 
@@ -390,28 +399,37 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
       return false;
     }
 
-    m_impl->featureWidth  = inputs.width;
-    m_impl->featureHeight = inputs.height;
+    m_impl->featureRenderWidth  = inputs.renderWidth;
+    m_impl->featureRenderHeight = inputs.renderHeight;
+    m_impl->featureTargetWidth  = inputs.targetWidth;
+    m_impl->featureTargetHeight = inputs.targetHeight;
   }
 
   VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 
-  auto makeImageResource = [&](const ImageInput& image, bool readWrite) {
-    return NVSDK_NGX_Create_ImageView_Resource_VK(image.view, image.image, range, image.format, inputs.width, inputs.height, readWrite);
+  auto makeImageResource = [&](const ImageInput& image, uint32_t width, uint32_t height, bool readWrite) {
+    return NVSDK_NGX_Create_ImageView_Resource_VK(image.view, image.image, range, image.format, width, height, readWrite);
   };
 
-  NVSDK_NGX_Resource_VK colorResource           = makeImageResource(inputs.color, false);
-  NVSDK_NGX_Resource_VK outputResource          = makeImageResource(inputs.output, true);
-  NVSDK_NGX_Resource_VK depthResource           = makeImageResource(inputs.depth, false);
-  NVSDK_NGX_Resource_VK motionResource          = makeImageResource(inputs.motionVectors, false);
-  NVSDK_NGX_Resource_VK diffuseAlbedoResource   = makeImageResource(inputs.diffuseAlbedo, false);
-  NVSDK_NGX_Resource_VK specularAlbedoResource  = makeImageResource(inputs.specularAlbedo, false);
-  NVSDK_NGX_Resource_VK normalRoughnessResource = makeImageResource(inputs.normalsRoughness, false);
+  NVSDK_NGX_Resource_VK colorResource =
+      makeImageResource(inputs.color, inputs.renderWidth, inputs.renderHeight, false);
+  NVSDK_NGX_Resource_VK outputResource =
+      makeImageResource(inputs.output, inputs.targetWidth, inputs.targetHeight, true);
+  NVSDK_NGX_Resource_VK depthResource =
+      makeImageResource(inputs.depth, inputs.renderWidth, inputs.renderHeight, false);
+  NVSDK_NGX_Resource_VK motionResource =
+      makeImageResource(inputs.motionVectors, inputs.renderWidth, inputs.renderHeight, false);
+  NVSDK_NGX_Resource_VK diffuseAlbedoResource =
+      makeImageResource(inputs.diffuseAlbedo, inputs.renderWidth, inputs.renderHeight, false);
+  NVSDK_NGX_Resource_VK specularAlbedoResource =
+      makeImageResource(inputs.specularAlbedo, inputs.renderWidth, inputs.renderHeight, false);
+  NVSDK_NGX_Resource_VK normalRoughnessResource =
+      makeImageResource(inputs.normalsRoughness, inputs.renderWidth, inputs.renderHeight, false);
   NVSDK_NGX_Resource_VK specularHitDistanceResource{};
   const bool            hasSpecularHitDistance = isValidInputImage(inputs.specularHitDistance);
   if(hasSpecularHitDistance)
   {
-    specularHitDistanceResource = makeImageResource(inputs.specularHitDistance, false);
+    specularHitDistanceResource = makeImageResource(inputs.specularHitDistance, inputs.renderWidth, inputs.renderHeight, false);
   }
 
   m_impl->runtimeParams->Reset();
@@ -429,7 +447,7 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
 
   evalParams.InJitterOffsetX           = inputs.jitterX;
   evalParams.InJitterOffsetY           = inputs.jitterY;
-  evalParams.InRenderSubrectDimensions = {inputs.width, inputs.height};
+  evalParams.InRenderSubrectDimensions = {inputs.renderWidth, inputs.renderHeight};
   evalParams.InReset                   = inputs.reset ? 1 : 0;
   evalParams.InMVScaleX                = inputs.mvScaleX;
   evalParams.InMVScaleY                = inputs.mvScaleY;
