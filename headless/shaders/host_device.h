@@ -71,11 +71,10 @@ struct LidarParams
   float azimuthMinDeg;
   float azimuthMaxDeg;
   float azimuthStepDeg;
-  float pointRadiusPixels;
   float verticalMinDeg;
   float verticalMaxDeg;
   float verticalStepDeg;
-  int   horizontalSampleCount;
+  float pointRadiusPixels;
 };
 
 struct Light

@@ -110,8 +110,9 @@ void traceLidarPointCloudAtPixel(ivec2 pixel, vec2 pixelCenter, vec3 fallbackCol
   float lidarAzimuthMinDeg   = min(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg);
   float lidarAzimuthMaxDeg   = max(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg);
   float lidarAzimuthStepDeg  = max(abs(pcRay.lidar.azimuthStepDeg), 1e-4);
+  float lidarAzimuthSpanDeg  = lidarAzimuthMaxDeg - lidarAzimuthMinDeg;
   float lidarPointRadius     = max(pcRay.lidar.pointRadiusPixels, 0.0);
-  int   lidarHorizontalCount = max(pcRay.lidar.horizontalSampleCount, 1);
+  int   lidarHorizontalCount = max(int(floor(lidarAzimuthSpanDeg / lidarAzimuthStepDeg)) + 1, 1);
 
   if(azimuthDeg < (lidarAzimuthMinDeg - 0.5) || azimuthDeg > (lidarAzimuthMaxDeg + 0.5))
   {

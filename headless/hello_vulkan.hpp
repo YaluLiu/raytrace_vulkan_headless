@@ -113,7 +113,7 @@ public:
       0,  // frame index
       6,  // max depth
       2,  // samples per frame
-      {-90.0f, 90.0f, 0.5f, 3.0f, -2.0f, -20.0f, 1.0f, 361}};
+      {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f}};
 
   // #VK_animation
   void animationInstances(float time);
