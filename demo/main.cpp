@@ -4,9 +4,27 @@
 #include <filesystem>
 #include <iostream>
 #include <chrono>
+#include <cstdlib>
 #include "nvh/cameramanipulator.hpp"
 
 namespace fs = std::filesystem;
+
+namespace {
+void setEnvDefault(const char* name, const char* value)
+{
+  if(std::getenv(name) == nullptr)
+  {
+    setenv(name, value, 0);
+  }
+}
+
+void applyDefaultDlssRuntime()
+{
+  setEnvDefault("ENABLE_DLSS_RR", "1");
+  setEnvDefault("ENABLE_DLSS_SR", "1");
+  setEnvDefault("DLSS_SR_SCALE", "0.6");
+}
+}  // namespace
 
 class RayTraceAppTest
 {
@@ -21,6 +39,8 @@ public:
 
   void run()
   {
+    applyDefaultDlssRuntime();
+
     int width  = 1280;
     int height = 720;
     m_app.setup(width, height);
@@ -35,29 +55,18 @@ public:
     }
     add_light();
 
-    for(int i = 0; i < 10; i++)
+    if(!m_testOnUsd)
     {
-      // // 测试窗口resize
-      // if(i % 3 == 0)
-      // {
-      //   width  = static_cast<int>(width * 1.1);
-      //   height = static_cast<int>(height * 1.1);
-      // }
-      // m_app.resize(width, height);
-
-      if(!m_testOnUsd)
-      {
-        animate();
-      }
-      else
-      {
-        updatecamera();
-      }
-      m_app.render();
-
-      std::string pngname = "result/" + std::to_string(i) + ".png";
-      m_app.saveFrame(pngname);
+      animate();
     }
+    else
+    {
+      updatecamera();
+    }
+
+    m_app.render();
+    fs::create_directories("result");
+    m_app.saveFrame("result/0.png");
   }
 
   void updatecamera()
