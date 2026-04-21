@@ -55,18 +55,22 @@ public:
     }
     add_light();
 
+    fs::create_directories("result");
+
     if(!m_testOnUsd)
     {
       animate();
-    }
-    else
-    {
-      updatecamera();
+      m_app.render();
+      m_app.saveFrame("result/0.png");
+      return;
     }
 
-    m_app.render();
-    fs::create_directories("result");
-    m_app.saveFrame("result/0.png");
+    for(int i = 0; i < 10; ++i)
+    {
+      updatecamera();
+      m_app.render();
+      m_app.saveFrame((fs::path("result") / (std::to_string(i) + ".png")).string());
+    }
   }
 
   void updatecamera()
@@ -93,12 +97,12 @@ public:
     m_app.getVulkan().clearLights();
     Light default_light;
     default_light.type         = 0;  //sphere
-    default_light.baseEmission = {100.0f, 100.0f, 100.0f};
+    default_light.baseEmission = {300.0f, 300.0f, 300.0f};
     default_light.diffuse      = 1.0;
     default_light.specular     = 1.0;
     default_light.radius       = 2;
 
-    default_light.position = {0, 0, 10};
+    default_light.position = {0.0f, 5.0f, 0.0f};
     m_app.getVulkan().addLight(default_light);
   }
 
