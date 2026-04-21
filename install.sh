@@ -84,7 +84,7 @@ function demo() {
 
     export ENABLE_DLSS_RR="${ENABLE_DLSS_RR:-1}"
     export ENABLE_DLSS_SR="${ENABLE_DLSS_SR:-1}"
-    export DLSS_SR_SCALE="${DLSS_SR_SCALE:-0.6}"
+    export DLSS_SR_SCALE="${DLSS_SR_SCALE:-1}"
     export DLSS_RR_FEATURE_PATH="${dlss_feature_path}"
     export DLSS_RR_APPDATA_PATH="${dlss_appdata_path}"
     export DLSS_RR_STATUS_LOG="${dlss_status_log}"

@@ -42,8 +42,8 @@ public:
   {
     applyDefaultDlssRuntime();
 
-    int width  = 1280;
-    int height = 720;
+    int width  = 3840;
+    int height = 2160;
     m_app.setup(width, height);
 
     if(m_testOnUsd)
@@ -66,13 +66,13 @@ public:
       return;
     }
 
-    // 先写入基础相机参数，再进入 updatecamera() 的增量更新
-    CameraManip.setLookat(glm::vec3(-2.291995, 2.000000, 9.995736),  // eye
-                          glm::vec3(0.0f, 1.0f, 0.0f),             // ctr
-                          glm::vec3(0.0f, 1.0f, 0.0f));            // up
+    // 相机贴近主体（猫+球），让目标占据画面更大面积
+    CameraManip.setLookat(glm::vec3(0.2f, 1.35f, 3.6f),   // eye
+                          glm::vec3(1.0f, 1.0f, 0.6f),    // ctr: cat(0,0.5,0) 与 ball(2,0.5,1) 的中间区域
+                          glm::vec3(0.0f, 1.0f, 0.0f));   // up
 
     m_app.render();
-    for(int i = 0; i < 10; ++i)
+    for(int i = 0; i < 1; ++i)
     {
       updatecamera();
       m_app.render();
@@ -82,7 +82,7 @@ public:
 
   void updatecamera()
   {
-    float     radius = 10.0f;  // 距离目标点的半径，可根据需要调整
+    float     radius = 3.2f;  // 更近的轨道半径，让主体显著放大
     glm::vec3 ctr    = CameraManip.getCenter();
     glm::vec3 up     = CameraManip.getUp();
 
@@ -92,7 +92,7 @@ public:
     // 假设 up 是 (0, 1, 0)，在水平面围绕 ctr 旋转
     float x = ctr.x + radius * cos(m_yaw);
     float z = ctr.z + radius * sin(m_yaw);
-    float y = ctr.y + 1.0f;  // 可以固定高度，也可以做垂直旋转
+    float y = ctr.y + 0.45f;
 
     glm::vec3 eye(x, y, z);
 
@@ -198,7 +198,7 @@ private:
   bool                                  m_testOnUsd;
   std::chrono::system_clock::time_point m_startTime;
   RayTraceApp                           m_app;
-  float                                 m_yaw = 1.4f;  // 首次 updatecamera() 后 yaw=1.6，对齐你指定的 update#4 参数
+  float                                 m_yaw = 1.6f;  // 首次 updatecamera() 后 yaw=1.6，对齐你指定的 update#4 参数
   int                                   m_cameraUpdateCount = 0;
 };
 
