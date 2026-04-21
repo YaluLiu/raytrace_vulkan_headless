@@ -97,12 +97,12 @@ public:
     m_app.getVulkan().clearLights();
     Light default_light;
     default_light.type         = 0;  //sphere
-    default_light.baseEmission = {300.0f, 300.0f, 300.0f};
+    default_light.baseEmission = {800.0f, 800.0f, 800.0f};
     default_light.diffuse      = 1.0;
     default_light.specular     = 1.0;
     default_light.radius       = 2;
 
-    default_light.position = {0.0f, 5.0f, 0.0f};
+    default_light.position = {0.0f, 5.0f, 30.0f};
     m_app.getVulkan().addLight(default_light);
   }
 
@@ -140,10 +140,9 @@ private:
     UsdLoader catloader;
     catloader.loadModel(m_cwd / "media/scenes/cat/cat.usdz");
 
-    // todo: change usd texture file path
     catloader.m_textures.clear();
-    catloader.m_textures.push_back("PatrickStar.jpg");      //yellow
-    catloader.m_textures.push_back("aMedKitm_albedo.jpg");  //red
+    catloader.m_textures.push_back("cat.png");
+    catloader.m_textures.push_back("beautyball.png"); //only support load once on start
     catloader.m_materials[0].textureID = 0;
 
     m_app.getVulkan().loadModel(catloader, glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f))
@@ -152,8 +151,6 @@ private:
 
     UsdLoader ballloader;
     ballloader.loadModel(m_cwd / "media/scenes/beautyball/beautyball.usdz");
-
-    // todo: change usd texture file path
     ballloader.m_textures.clear();
     ballloader.m_materials[0].textureID = 1;
 
@@ -161,9 +158,9 @@ private:
                                                 * glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.5f, 1.0f)));
 
     // 平面,只有obj的平面
-    // ObjLoader planeLoader;
-    // planeLoader.loadModel("media/scenes/plane.obj");
-    // m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
+    ObjLoader planeLoader;
+    planeLoader.loadModel("media/scenes/plane.obj");
+    m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
 
     m_app.createBVH();
   }
