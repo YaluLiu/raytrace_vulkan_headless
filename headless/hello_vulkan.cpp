@@ -378,10 +378,14 @@ void HelloVulkan::createOffscreenRender()
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
   createOffscreenImage(m_offscreenColor, m_offscreenColorFormat,
-                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr, 0, 0,
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                       nullptr, 0, 0,
                        0, m_renderSize);
   createOffscreenImage(m_offscreenDlssOutput, m_offscreenDlssOutputFormat,
-                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr, 0, 0,
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                       nullptr, 0, 0,
                        0, m_size);
   createOffscreenImage(
       m_offscreenDenoised, m_offscreenDenoisedFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
