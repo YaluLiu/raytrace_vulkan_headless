@@ -24,15 +24,18 @@ void lidarCameraBasis(out vec3 forwardCam, out vec3 rightCam, out vec3 upCam)
 int nearestLidarVerticalChannel(float elevationDeg, out float snappedElevationDeg)
 {
   float verticalStepAbsDeg    = max(abs(pcRay.lidar.verticalStepDeg), 1e-4);
+  float verticalMinBoundDeg   = min(pcRay.lidar.verticalMinDeg, pcRay.lidar.verticalMaxDeg);
+  float verticalMaxBoundDeg   = max(pcRay.lidar.verticalMinDeg, pcRay.lidar.verticalMaxDeg);
   float verticalStepSign      = (pcRay.lidar.verticalMaxDeg >= pcRay.lidar.verticalMinDeg) ? 1.0 : -1.0;
   float verticalStepSignedDeg = verticalStepAbsDeg * verticalStepSign;
   float verticalSpanDeg       = abs(pcRay.lidar.verticalMaxDeg - pcRay.lidar.verticalMinDeg);
-  int   channelCount          = max(int(round(verticalSpanDeg / verticalStepAbsDeg)) + 1, 1);
+  int   channelCount          = max(int(floor(verticalSpanDeg / verticalStepAbsDeg)) + 1, 1);
 
   float channelFloat = (elevationDeg - pcRay.lidar.verticalMinDeg) / verticalStepSignedDeg;
   int   channelIdx   = clamp(int(round(channelFloat)), 0, channelCount - 1);
 
   snappedElevationDeg = pcRay.lidar.verticalMinDeg + float(channelIdx) * verticalStepSignedDeg;
+  snappedElevationDeg = clamp(snappedElevationDeg, verticalMinBoundDeg, verticalMaxBoundDeg);
   return channelIdx;
 }
 
