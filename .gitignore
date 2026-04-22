@@ -65,6 +65,8 @@ graphify-out/
 output/
 
 提示词.md
+scripts/__pycache__/
+
 
 
 
