@@ -23,7 +23,7 @@ const glm::vec3 kGroundPlaneScale       = {2.f, 1.f, 2.f};
 const glm::vec3 kIdentityScale          = {1.f, 1.f, 1.f};
 const glm::vec3 kCatTranslation         = {0.0f, 0.5f, 0.0f};
 const glm::vec3 kBeautyBallTranslation  = {2.0f, 0.5f, 1.0f};
-const LidarParams kDefaultRadarParams   = {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f};
+const LidarParams kDefaultRadarParams   = {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
 
 class DemoOpenGLContext
 {
@@ -179,7 +179,10 @@ private:
     }
     radarCamera.up          = CameraManip.getUp();
     radarCamera.fovDeg      = CameraManip.getFov();
-    radarCamera.lidarParams = kDefaultRadarParams;
+    radarCamera.lidarParams = {kDefaultRadarParams.azimuthMinDeg, kDefaultRadarParams.azimuthMaxDeg,
+                               kDefaultRadarParams.azimuthStepDeg, kDefaultRadarParams.verticalMinDeg,
+                               kDefaultRadarParams.verticalMaxDeg, kDefaultRadarParams.verticalStepDeg,
+                               kDefaultRadarParams.pointRadiusPixels, kDefaultRadarParams.maxDistance};
     m_app.setRadarCamera(radarCamera);
   }
 

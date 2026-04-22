@@ -18,7 +18,7 @@ public:
     glm::vec3   center{0.0f, 0.0f, -1.0f};
     glm::vec3   up{0.0f, 1.0f, 0.0f};
     float       fovDeg{60.0f};
-    LidarParams lidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f};
+    LidarParams lidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
   };
 
   RayTraceApp();

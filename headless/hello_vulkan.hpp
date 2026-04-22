@@ -123,7 +123,7 @@ public:
       0,  // frame index
       6,  // max depth
       2,  // samples per frame
-      {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f}};
+      {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f}};
 
   // #VK_animation
   void animationInstances(float time);
@@ -323,5 +323,5 @@ private:
   bool      m_hasLastCamera{false};
   RadarCameraData m_radarCamera{};
   bool            m_hasRadarCamera{false};
-  LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f};
+  LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
 };

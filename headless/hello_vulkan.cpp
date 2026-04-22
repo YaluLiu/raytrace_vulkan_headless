@@ -52,7 +52,8 @@ bool lidarParamsNearlyEqual(const LidarParams& a, const LidarParams& b, float ep
          && std::fabs(a.azimuthStepDeg - b.azimuthStepDeg) <= eps
          && std::fabs(a.verticalMinDeg - b.verticalMinDeg) <= eps && std::fabs(a.verticalMaxDeg - b.verticalMaxDeg) <= eps
          && std::fabs(a.verticalStepDeg - b.verticalStepDeg) <= eps
-         && std::fabs(a.pointRadiusPixels - b.pointRadiusPixels) <= eps;
+         && std::fabs(a.pointRadiusPixels - b.pointRadiusPixels) <= eps
+         && std::fabs(a.maxDistance - b.maxDistance) <= eps;
 }
 
 void appendDlssStatusLog(const std::string& line)
@@ -259,7 +260,8 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
       glm::vec4(m_radarLidarParams.azimuthMinDeg, m_radarLidarParams.azimuthMaxDeg, m_radarLidarParams.azimuthStepDeg,
                 m_radarLidarParams.pointRadiusPixels);
   frameUBO.lidar.params.verticalParams =
-      glm::vec4(m_radarLidarParams.verticalMinDeg, m_radarLidarParams.verticalMaxDeg, m_radarLidarParams.verticalStepDeg, 0.0f);
+      glm::vec4(m_radarLidarParams.verticalMinDeg, m_radarLidarParams.verticalMaxDeg, m_radarLidarParams.verticalStepDeg,
+                m_radarLidarParams.maxDistance);
   frameUBO.lidar.camera.prevViewProj = frameUBO.lidar.camera.viewProj;
 
   m_lastView      = view;

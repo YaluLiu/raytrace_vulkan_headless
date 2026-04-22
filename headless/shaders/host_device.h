@@ -68,9 +68,9 @@ struct CameraUniforms
 
 struct LidarParamsUniforms
 {
-  vec4 positionAndFov;   // xyz: lidar world position, w: pointRadiusPixels
-  vec4 azimuthParams;    // x: minDeg, y: maxDeg, z: stepDeg, w: reserved
-  vec4 verticalParams;   // x: minDeg, y: maxDeg, z: stepDeg, w: reserved
+  vec4 positionAndFov;   // xyz: lidar world position, w: lidar fov(deg)
+  vec4 azimuthParams;    // x: minDeg, y: maxDeg, z: stepDeg, w: pointRadiusPixels
+  vec4 verticalParams;   // x: minDeg, y: maxDeg, z: stepDeg, w: maxDistance
 };
 
 struct LidarUniforms
@@ -94,6 +94,7 @@ struct LidarParams
   float verticalMaxDeg;
   float verticalStepDeg;
   float pointRadiusPixels;
+  float maxDistance;
 };
 
 struct Light
