@@ -65,7 +65,11 @@ graphify-out/
 output/
 
 提示词.md
+work.md
 scripts/__pycache__/
+
+# 注释版代码文件
+*_annotated.*
 
 
 
