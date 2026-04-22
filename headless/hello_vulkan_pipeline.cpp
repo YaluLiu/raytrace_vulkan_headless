@@ -1,5 +1,6 @@
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 #include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/cameramanipulator.hpp"
@@ -13,6 +14,36 @@
 #include "nvvk/buffers_vk.hpp"
 
 extern std::vector<std::string> defaultSearchPaths;
+
+namespace {
+int lidarAxisSampleCount(float minDeg, float maxDeg, float stepDeg)
+{
+  const float absStep = std::max(std::abs(stepDeg), 1e-4f);
+  const float span    = std::abs(maxDeg - minDeg);
+  const int   steps   = static_cast<int>(std::floor(span / absStep + 0.5f));
+  return std::max(steps + 1, 1);
+}
+
+uint32_t lidarRayCount(const LidarParams& params)
+{
+  const int azCount = lidarAxisSampleCount(params.azimuthMinDeg, params.azimuthMaxDeg, params.azimuthStepDeg);
+  const int elCount = lidarAxisSampleCount(params.verticalMinDeg, params.verticalMaxDeg, params.verticalStepDeg);
+  return static_cast<uint32_t>(std::max(azCount * elCount, 1));
+}
+
+void insertGeneralImageBarrier(VkCommandBuffer cmdBuf, VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+                               VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+{
+  VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+  barrier.srcAccessMask       = srcAccessMask;
+  barrier.dstAccessMask       = dstAccessMask;
+  barrier.oldLayout           = VK_IMAGE_LAYOUT_GENERAL;
+  barrier.newLayout           = VK_IMAGE_LAYOUT_GENERAL;
+  barrier.image               = image;
+  barrier.subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  vkCmdPipelineBarrier(cmdBuf, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+}
+}  // namespace
 
 void HelloVulkan::createRtDescriptorSet()
 {
@@ -290,15 +321,42 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
   m_pcRay.frameIndex      = m_accumulatedFrames;
   m_pcRay.maxDepth        = std::max(m_pcRay.maxDepth, 1);
   m_pcRay.samplesPerFrame = std::max(m_pcRay.samplesPerFrame, 1);
+  m_pcRay.lidarPassMode   = 1;
   std::vector<VkDescriptorSet> descSets{m_rtDescSet, m_descSet};
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipeline);
   vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipelineLayout, 0,
                           (uint32_t)descSets.size(), descSets.data(), 0, nullptr);
-  vkCmdPushConstants(cmdBuf, m_rtPipelineLayout,
-                     VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR,
-                     0, sizeof(PushConstantRay), &m_pcRay);
+  const VkShaderStageFlags pushStages =
+      VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
   auto& regions = m_sbtWrapper.getRegions();
+
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                            VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+  VkClearColorValue       clearValue{};
+  VkImageSubresourceRange clearRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  vkCmdClearColorImage(cmdBuf, m_offscreenLidarPointCloud.image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_TRANSFER_WRITE_BIT,
+                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+  PushConstantRay lidarPassPc = m_pcRay;
+  lidarPassPc.lidarPassMode   = 0;
+  lidarPassPc.numLights       = 0;
+  lidarPassPc.maxDepth        = 1;
+  lidarPassPc.samplesPerFrame = 1;
+  vkCmdPushConstants(cmdBuf, m_rtPipelineLayout, pushStages, 0, sizeof(PushConstantRay), &lidarPassPc);
+  vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], lidarRayCount(lidarPassPc.lidar), 1, 1);
+
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+  PushConstantRay mainPassPc = m_pcRay;
+  mainPassPc.lidarPassMode   = 1;
+  vkCmdPushConstants(cmdBuf, m_rtPipelineLayout, pushStages, 0, sizeof(PushConstantRay), &mainPassPc);
   vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_renderSize.width, m_renderSize.height, 1);
 
   m_accumulatedFrames++;

@@ -123,6 +123,7 @@ public:
       0,  // frame index
       6,  // max depth
       2,  // samples per frame
+      1,  // lidar pass mode (default main pass)
       {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f}};
 
   // #VK_animation
