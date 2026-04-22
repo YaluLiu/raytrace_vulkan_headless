@@ -193,10 +193,10 @@ void main()
   imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
   imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
+  
   vec3  lidarColor;
-  float lidarDistance;
-  traceLidarPointCloudAtPixel(pixel, pixelCenter, outColor, lidarColor, lidarDistance);
+  traceLidarPointCloudAtPixel(pixel, pixelCenter, outColor, lidarColor);
 
-  imageStore(lidarPointCloudImage, pixel, vec4(lidarColor, lidarDistance));
+  imageStore(lidarPointCloudImage, pixel, vec4(lidarColor, 1.0));
   imageStore(image, pixel, vec4(outColor, 1.0));
 }
