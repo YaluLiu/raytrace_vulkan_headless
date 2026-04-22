@@ -2,10 +2,10 @@
 #include "obj_loader.h"
 #include "usd_loader.h"
 #include <array>
-#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
+#include <utility>
 #include "nvh/cameramanipulator.hpp"
 #include "nvgl/contextwindow_gl.hpp"
 
@@ -14,10 +14,7 @@ namespace fs = std::filesystem;
 namespace {
 constexpr int   kRenderWidth            = 3840;
 constexpr int   kRenderHeight           = 2160;
-constexpr int   kFrameCount             = 1;
-constexpr float kCameraOrbitRadius      = 3.2f;
-constexpr float kCameraYawStep          = 0.2f;
-constexpr float kCameraEyeHeightOffset  = 0.45f;
+constexpr int   kOutputFrameCount       = 2;
 const fs::path  kOutputDirectory        = "result";
 const glm::vec3 kInitialCameraEye       = {0.2f, 1.35f, 3.6f};
 const glm::vec3 kInitialCameraCenter    = {1.0f, 1.0f, 0.6f};
@@ -118,21 +115,7 @@ public:
     loadConfiguredScene();
     addDefaultLight();
     setupInitialCamera();
-    syncRadarCameraWithMainCamera();
     renderFrames();
-  }
-
-  void updateCamera()
-  {
-    const glm::vec3 ctr = CameraManip.getCenter();
-    const glm::vec3 up  = CameraManip.getUp();
-    m_yaw += kCameraYawStep;
-
-    const float x = ctr.x + kCameraOrbitRadius * std::cos(m_yaw);
-    const float z = ctr.z + kCameraOrbitRadius * std::sin(m_yaw);
-    const float y = ctr.y + kCameraEyeHeightOffset;
-    const glm::vec3 eye(x, y, z);
-    CameraManip.setLookat(eye, ctr, up);
   }
 
   void addDefaultLight()
@@ -170,22 +153,30 @@ private:
 
   void renderFrames()
   {
-    fs::create_directories(kOutputDirectory);
     m_app.render();
-    for(int i = 0; i < kFrameCount; ++i)
+    
+    fs::create_directories(kOutputDirectory);
+    syncRadarCameraWithMainCamera(/*reverseEyeAndCenter=*/false);
+    m_app.render();
+    m_app.saveFrame(buildOutputFramePath(kOutputDirectory, 0));
+
+    if(kOutputFrameCount >= 2)
     {
-      updateCamera();
-      syncRadarCameraWithMainCamera();
+      syncRadarCameraWithMainCamera(/*reverseEyeAndCenter=*/true);
       m_app.render();
-      m_app.saveFrame(buildOutputFramePath(kOutputDirectory, i));
+      m_app.saveFrame(buildOutputFramePath(kOutputDirectory, 1));
     }
   }
 
-  void syncRadarCameraWithMainCamera()
+  void syncRadarCameraWithMainCamera(bool reverseEyeAndCenter)
   {
     RayTraceApp::RadarCameraInput radarCamera{};
     radarCamera.eye         = CameraManip.getEye();
     radarCamera.center      = CameraManip.getCenter();
+    if(reverseEyeAndCenter)
+    {
+      std::swap(radarCamera.eye, radarCamera.center);
+    }
     radarCamera.up          = CameraManip.getUp();
     radarCamera.fovDeg      = CameraManip.getFov();
     radarCamera.lidarParams = kDefaultRadarParams;
@@ -240,7 +231,6 @@ private:
   fs::path                              m_cwd;
   bool                                  m_testOnUsd;
   RayTraceApp                           m_app;
-  float                                 m_yaw = 1.6f;  // 首次 updateCamera() 后 yaw=1.6，对齐你指定的 update#4 参数
 };
 
 int main()
