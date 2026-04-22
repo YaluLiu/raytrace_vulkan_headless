@@ -173,6 +173,16 @@ function hydra(){
     /home/yalu/software/usdtweak/build/usdtweak /home/yalu/docker/assets/unit_test/anim/pao/pao.usd
 }
 
+function baseline(){
+    set -e
+    bash scripts/visual_regression.sh capture
+}
+
+function selfcheck(){
+    set -e
+    bash scripts/visual_regression.sh check
+}
+
 function restore()
 {
     git restore .

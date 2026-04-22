@@ -5,7 +5,6 @@
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
-#include <iomanip>
 #include "nvh/cameramanipulator.hpp"
 
 namespace fs = std::filesystem;
@@ -98,14 +97,6 @@ public:
 
     CameraManip.setLookat(eye, ctr, up);
 
-    ++m_cameraUpdateCount;
-    if(m_cameraUpdateCount <= 10)
-    {
-      std::cout << std::fixed << std::setprecision(6)
-                << "[camera] update#" << m_cameraUpdateCount << " yaw=" << m_yaw << " eye=(" << eye.x << ", " << eye.y
-                << ", " << eye.z << ") ctr=(" << ctr.x << ", " << ctr.y << ", " << ctr.z << ") up=(" << up.x << ", "
-                << up.y << ", " << up.z << ")\n";
-    }
   }
 
   void add_light()
@@ -199,7 +190,6 @@ private:
   std::chrono::system_clock::time_point m_startTime;
   RayTraceApp                           m_app;
   float                                 m_yaw = 1.6f;  // 首次 updatecamera() 后 yaw=1.6，对齐你指定的 update#4 参数
-  int                                   m_cameraUpdateCount = 0;
 };
 
 int main()

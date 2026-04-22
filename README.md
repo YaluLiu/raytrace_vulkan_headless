@@ -70,6 +70,30 @@ DLSS_SDK_ROOT=/path/to/DLSS bash install.sh hydra
 - `include/nvsdk_ngx_vk.h`
 - `lib/Linux_x86_64/libnvsdk_ngx.a`
 
+## Visual Regression (AI Self-check)
+
+Use rendered images as a functional regression gate:
+
+```bash
+# 1) Capture baseline (stores result/gl_0.png and result/lidar_0.png)
+bash install.sh baseline
+
+# 2) After code changes, rerun demo and compare against baseline
+bash install.sh selfcheck
+```
+
+Artifacts:
+
+- Baseline images: `output/visual_baseline/`
+- Current captures: `output/visual_current/`
+- Diff reports (`json` + `diff_*.png`): `output/visual_report/latest/`
+
+Common overrides:
+
+- `VIS_DEMO_CMD`: custom demo command
+- `VIS_MAX_MAE`, `VIS_MAX_RMSE`, `VIS_MAX_CHANGED_RATIO`: pass/fail thresholds
+- `VIS_SKIP_RUN=1`: compare existing `result/*.png` without rerunning demo
+
 ## References
 
 - [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR)

@@ -259,7 +259,6 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
     out_pixels[i * 4 + 3] = toByte(pixels[i * 4 + 3]);
   }
   stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
-  printf("Saved %s (%ux%u)\n", filename, width, height);
 }
 
 void HelloVulkan::dumpLidarInteropTexture(const char* filename)
@@ -287,7 +286,6 @@ void HelloVulkan::dumpLidarInteropTexture(const char* filename)
   }
 
   stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
-  printf("Saved %s (%ux%u)\n", filename, width, height);
 }
 
 // 保存最终输出纹理到本地 PNG 文件
@@ -392,5 +390,4 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   // 5. 释放资源
   vkFreeMemory(device, stagingMemory, nullptr);
   vkDestroyBuffer(device, stagingBuffer, nullptr);
-  printf("Saved %s (%ux%u)\n", filename, w, h);
 }

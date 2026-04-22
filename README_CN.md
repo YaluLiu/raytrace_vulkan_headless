@@ -69,6 +69,30 @@ DLSS_SDK_ROOT=/path/to/DLSS bash install.sh hydra
 - `include/nvsdk_ngx_vk.h`
 - `lib/Linux_x86_64/libnvsdk_ngx.a`
 
+## 视觉回归（AI 自验收）
+
+把 demo 渲染结果作为功能回归门禁：
+
+```bash
+# 1) 采集基线（保存 result/gl_0.png 和 result/lidar_0.png）
+bash install.sh baseline
+
+# 2) 每次改动后重跑 demo，并与基线对比
+bash install.sh selfcheck
+```
+
+产物目录：
+
+- 基线图：`output/visual_baseline/`
+- 当前运行图：`output/visual_current/`
+- 对比报告（`json` + `diff_*.png`）：`output/visual_report/latest/`
+
+常用参数：
+
+- `VIS_DEMO_CMD`：自定义运行命令
+- `VIS_MAX_MAE`、`VIS_MAX_RMSE`、`VIS_MAX_CHANGED_RATIO`：对比阈值
+- `VIS_SKIP_RUN=1`：不重跑 demo，直接对当前 `result/*.png` 做对比
+
 ## 参考
 
 - [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR)
