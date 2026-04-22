@@ -31,6 +31,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#ifdef _WIN32
+#include <malloc.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,6 +44,24 @@ constexpr size_t kCpuBufferAlignment = 64;
 size_t AlignUp(size_t value, size_t alignment)
 {
   return ((value + alignment - 1) / alignment) * alignment;
+}
+
+void* AllocateAlignedBuffer(size_t alignment, size_t size)
+{
+#ifdef _WIN32
+  return _aligned_malloc(size, alignment);
+#else
+  return std::aligned_alloc(alignment, size);
+#endif
+}
+
+void FreeAlignedBuffer(void* ptr)
+{
+#ifdef _WIN32
+  _aligned_free(ptr);
+#else
+  std::free(ptr);
+#endif
 }
 
 HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
@@ -125,7 +146,7 @@ bool HdRobotRenderBuffer::Allocate(const GfVec3i& dimensions, HdFormat format, b
   _format      = format;
   _buffer_size = _GetBufferSize(GfVec2i(_width, _height), _format);
   const size_t alignedSize = AlignUp(_buffer_size, kCpuBufferAlignment);
-  _buffer                 = std::aligned_alloc(kCpuBufferAlignment, alignedSize);
+  _buffer                 = AllocateAlignedBuffer(kCpuBufferAlignment, alignedSize);
   if(_buffer == nullptr)
   {
     TF_RUNTIME_ERROR("Failed to allocate render buffer (%zu bytes)", alignedSize);
@@ -218,7 +239,7 @@ void HdRobotRenderBuffer::_Deallocate()
   }
   if(_buffer != nullptr)
   {
-    std::free(_buffer);
+    FreeAlignedBuffer(_buffer);
     _buffer = nullptr;
   }
 
