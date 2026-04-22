@@ -180,6 +180,7 @@ function baseline(){
 
 function selfcheck(){
     set -e
+    VIS_EXPECTED_IMAGES="${VIS_EXPECTED_IMAGES:-gl_0.png}" \
     bash scripts/visual_regression.sh check
 }
 
