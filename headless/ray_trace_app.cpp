@@ -49,6 +49,18 @@ std::string getUsdRootFromEnvironment()
   return envValue != nullptr ? std::string(envValue) : std::string();
 }
 
+std::string buildPrefixedOutputPath(const std::string& outputImagePath, const std::string& prefix)
+{
+  const fs::path inputPath(outputImagePath);
+  const fs::path parentDir = inputPath.parent_path();
+  std::string    fileName  = inputPath.filename().string();
+  if(fileName.empty())
+  {
+    fileName = "headless.png";
+  }
+  return (parentDir / (prefix + fileName)).string();
+}
+
 #if ENABLE_DLSS_RR
 bool isDlssRuntimeEnabled()
 {
@@ -273,9 +285,10 @@ void RayTraceApp::render()
 
 void RayTraceApp::saveFrame(std::string outputImagePath)
 {
-  std::string gl_pngname = outputImagePath;
-  gl_pngname.replace(gl_pngname.find("/"), 1, "/gl_");
-  m_helloVk.dumpInteropTexture(gl_pngname.c_str());
+  const std::string glPngName    = buildPrefixedOutputPath(outputImagePath, "gl_");
+  const std::string lidarPngName = buildPrefixedOutputPath(outputImagePath, "lidar_");
+  m_helloVk.dumpInteropTexture(glPngName.c_str());
+  m_helloVk.dumpLidarInteropTexture(lidarPngName.c_str());
 }
 
 void RayTraceApp::cleanup()

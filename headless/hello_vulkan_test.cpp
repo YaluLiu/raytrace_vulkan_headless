@@ -262,6 +262,34 @@ void HelloVulkan::dumpInteropTexture(const char* filename)
   printf("Saved %s (%ux%u)\n", filename, width, height);
 }
 
+void HelloVulkan::dumpLidarInteropTexture(const char* filename)
+{
+  int width  = m_rtLidarPointCloudGL.imgSize.width;
+  int height = m_rtLidarPointCloudGL.imgSize.height;
+  glBindTexture(GL_TEXTURE_2D, m_rtLidarPointCloudGL.oglId);
+  std::vector<float> pixels(width * height * 4);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
+
+  std::vector<unsigned char> out_pixels(width * height * 4);
+  auto saturate = [](float v) {
+    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
+  };
+  auto toByte = [&](float v) {
+    return static_cast<unsigned char>(saturate(v) * 255.0f + 0.5f);
+  };
+
+  for(size_t i = 0; i < static_cast<size_t>(width) * static_cast<size_t>(height); ++i)
+  {
+    out_pixels[i * 4 + 0] = toByte(pixels[i * 4 + 0]);
+    out_pixels[i * 4 + 1] = toByte(pixels[i * 4 + 1]);
+    out_pixels[i * 4 + 2] = toByte(pixels[i * 4 + 2]);
+    out_pixels[i * 4 + 3] = 255;
+  }
+
+  stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
+  printf("Saved %s (%ux%u)\n", filename, width, height);
+}
+
 // 保存最终输出纹理到本地 PNG 文件
 void HelloVulkan::saveOffscreenColorToFile(const char* filename)
 {
