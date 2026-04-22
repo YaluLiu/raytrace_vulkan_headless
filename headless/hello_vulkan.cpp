@@ -255,7 +255,7 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   frameUBO.lidar.camera.view        = radarView;
   frameUBO.lidar.camera.viewInverse = glm::inverse(radarView);
   frameUBO.lidar.camera.projInverse = glm::inverse(radarProj);
-  frameUBO.lidar.params.positionAndFov = glm::vec4(radarEye, radarFov);
+  frameUBO.lidar.params.positionAndPad = glm::vec4(radarEye, 0.0f);
   frameUBO.lidar.params.azimuthParams =
       glm::vec4(m_radarLidarParams.azimuthMinDeg, m_radarLidarParams.azimuthMaxDeg, m_radarLidarParams.azimuthStepDeg,
                 m_radarLidarParams.pointRadiusPixels);
