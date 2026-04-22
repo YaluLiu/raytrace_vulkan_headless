@@ -219,7 +219,7 @@ void main()
   vec4 lidarPoint = imageLoad(lidarPointCloudImage, pixel);
   if(lidarPoint.a > 0.5)
   {
-    outColor = mix(outColor, lidarPoint.rgb, 0.7);
+    outColor = lidarPoint.rgb;
   }
 
   imageStore(image, pixel, vec4(outColor, 1.0));
