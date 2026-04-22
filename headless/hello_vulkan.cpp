@@ -8,6 +8,7 @@
 #include <string>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
@@ -38,6 +39,20 @@ bool matrixNearlyEqual(const glm::mat4& a, const glm::mat4& b, float eps = 1e-5f
     }
   }
   return true;
+}
+
+bool vecNearlyEqual(const glm::vec3& a, const glm::vec3& b, float eps = 1e-5f)
+{
+  return std::fabs(a.x - b.x) <= eps && std::fabs(a.y - b.y) <= eps && std::fabs(a.z - b.z) <= eps;
+}
+
+bool lidarParamsNearlyEqual(const LidarParams& a, const LidarParams& b, float eps = 1e-5f)
+{
+  return std::fabs(a.azimuthMinDeg - b.azimuthMinDeg) <= eps && std::fabs(a.azimuthMaxDeg - b.azimuthMaxDeg) <= eps
+         && std::fabs(a.azimuthStepDeg - b.azimuthStepDeg) <= eps
+         && std::fabs(a.verticalMinDeg - b.verticalMinDeg) <= eps && std::fabs(a.verticalMaxDeg - b.verticalMaxDeg) <= eps
+         && std::fabs(a.verticalStepDeg - b.verticalStepDeg) <= eps
+         && std::fabs(a.pointRadiusPixels - b.pointRadiusPixels) <= eps;
 }
 
 void appendDlssStatusLog(const std::string& line)
@@ -130,6 +145,32 @@ void HelloVulkan::setDlssSRScale(float scale)
   }
 }
 
+void HelloVulkan::setRadarCamera(const RadarCameraData& camera)
+{
+  const bool cameraChanged = !m_hasRadarCamera || !vecNearlyEqual(camera.eye, m_radarCamera.eye)
+                             || !vecNearlyEqual(camera.center, m_radarCamera.center)
+                             || !vecNearlyEqual(camera.up, m_radarCamera.up)
+                             || std::fabs(camera.fov - m_radarCamera.fov) > 1e-5f;
+
+  m_radarCamera    = camera;
+  m_hasRadarCamera = true;
+
+  if(cameraChanged)
+  {
+    resetAccumulation();
+  }
+}
+
+void HelloVulkan::setRadarLidarParams(const LidarParams& params)
+{
+  if(!lidarParamsNearlyEqual(params, m_radarLidarParams))
+  {
+    m_radarLidarParams = params;
+    m_pcRay.lidar      = params;
+    resetAccumulation();
+  }
+}
+
 bool HelloVulkan::shouldRenderAtDlssScale() const
 {
   return m_enableDlssRR && m_enableDlssSR && m_dlssRR.isOperational() && m_dlssSRScale < 0.999f;
@@ -187,11 +228,38 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
     resetAccumulation();
   }
 
-  hostUBO.viewProj    = proj * view;
-  hostUBO.view        = view;
-  hostUBO.viewInverse = glm::inverse(view);
-  hostUBO.projInverse = glm::inverse(proj);
-  hostUBO.prevViewProj = prevViewProj;
+  hostUBO.camera.viewProj     = proj * view;
+  hostUBO.camera.view         = view;
+  hostUBO.camera.viewInverse  = glm::inverse(view);
+  hostUBO.camera.projInverse  = glm::inverse(proj);
+  hostUBO.camera.prevViewProj = prevViewProj;
+
+  const glm::vec3 mainEye    = CameraManip.getEye();
+  const glm::vec3 mainCenter = CameraManip.getCenter();
+  const glm::vec3 mainUp     = CameraManip.getUp();
+  const float     mainFov    = CameraManip.getFov();
+
+  const glm::vec3 radarEye    = m_hasRadarCamera ? m_radarCamera.eye : mainEye;
+  const glm::vec3 radarCenter = m_hasRadarCamera ? m_radarCamera.center : mainCenter;
+  const glm::vec3 radarUp     = m_hasRadarCamera ? m_radarCamera.up : mainUp;
+  const float     radarFov    = m_hasRadarCamera ? m_radarCamera.fov : mainFov;
+
+  glm::mat4 radarView = glm::lookAt(radarEye, radarCenter, radarUp);
+  glm::mat4 radarProj = glm::perspectiveRH_ZO(glm::radians(radarFov), aspectRatio, 0.1f, 1000.0f);
+#if !ENABLE_HYDRA
+  radarProj[1][1] *= -1;  // Vulkan坐标系Y反转
+#endif
+
+  hostUBO.radar.viewProj = radarProj * radarView;
+  hostUBO.radar.view     = radarView;
+  hostUBO.radar.viewInverse = glm::inverse(radarView);
+  hostUBO.radar.projInverse = glm::inverse(radarProj);
+  hostUBO.radar.positionAndFov = glm::vec4(radarEye, radarFov);
+  hostUBO.radar.azimuthParams =
+      glm::vec4(m_radarLidarParams.azimuthMinDeg, m_radarLidarParams.azimuthMaxDeg, m_radarLidarParams.azimuthStepDeg,
+                m_radarLidarParams.pointRadiusPixels);
+  hostUBO.radar.verticalParams =
+      glm::vec4(m_radarLidarParams.verticalMinDeg, m_radarLidarParams.verticalMaxDeg, m_radarLidarParams.verticalStepDeg, 0.0f);
 
   m_lastView      = view;
   m_lastProj      = proj;
@@ -225,7 +293,7 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 }
 
 //--------------------------------------------------------------------------------------------------
-// 创建uniform buffer（摄像机矩阵等），显存可见
+// 创建uniform buffer（主相机+雷达相机数据），显存可见
 void HelloVulkan::createUniformBuffer()
 {
   m_bGlobals = m_alloc.createBuffer(sizeof(GlobalUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,

@@ -1,11 +1,11 @@
 mat4 lidarProjectionMatrix()
 {
-  return uni.viewProj * uni.viewInverse;
+  return uni.radar.viewProj * uni.radar.viewInverse;
 }
 
 vec3 lidarCameraForward()
 {
-  vec3 centerCamRay = (uni.projInverse * vec4(0.0, 0.0, 1.0, 1.0)).xyz;
+  vec3 centerCamRay = (uni.radar.projInverse * vec4(0.0, 0.0, 1.0, 1.0)).xyz;
   return normalize(centerCamRay);
 }
 
@@ -23,18 +23,21 @@ void lidarCameraBasis(out vec3 forwardCam, out vec3 rightCam, out vec3 upCam)
 
 int nearestLidarVerticalChannel(float elevationDeg, out float snappedElevationDeg)
 {
-  float verticalStepAbsDeg    = max(abs(pcRay.lidar.verticalStepDeg), 1e-4);
-  float verticalMinBoundDeg   = min(pcRay.lidar.verticalMinDeg, pcRay.lidar.verticalMaxDeg);
-  float verticalMaxBoundDeg   = max(pcRay.lidar.verticalMinDeg, pcRay.lidar.verticalMaxDeg);
-  float verticalStepSign      = (pcRay.lidar.verticalMaxDeg >= pcRay.lidar.verticalMinDeg) ? 1.0 : -1.0;
+  float verticalMinDeg        = uni.radar.verticalParams.x;
+  float verticalMaxDeg        = uni.radar.verticalParams.y;
+  float verticalStepDeg       = uni.radar.verticalParams.z;
+  float verticalStepAbsDeg    = max(abs(verticalStepDeg), 1e-4);
+  float verticalMinBoundDeg   = min(verticalMinDeg, verticalMaxDeg);
+  float verticalMaxBoundDeg   = max(verticalMinDeg, verticalMaxDeg);
+  float verticalStepSign      = (verticalMaxDeg >= verticalMinDeg) ? 1.0 : -1.0;
   float verticalStepSignedDeg = verticalStepAbsDeg * verticalStepSign;
-  float verticalSpanDeg       = abs(pcRay.lidar.verticalMaxDeg - pcRay.lidar.verticalMinDeg);
+  float verticalSpanDeg       = abs(verticalMaxDeg - verticalMinDeg);
   int   channelCount          = max(int(floor(verticalSpanDeg / verticalStepAbsDeg)) + 1, 1);
 
-  float channelFloat = (elevationDeg - pcRay.lidar.verticalMinDeg) / verticalStepSignedDeg;
+  float channelFloat = (elevationDeg - verticalMinDeg) / verticalStepSignedDeg;
   int   channelIdx   = clamp(int(round(channelFloat)), 0, channelCount - 1);
 
-  snappedElevationDeg = pcRay.lidar.verticalMinDeg + float(channelIdx) * verticalStepSignedDeg;
+  snappedElevationDeg = verticalMinDeg + float(channelIdx) * verticalStepSignedDeg;
   snappedElevationDeg = clamp(snappedElevationDeg, verticalMinBoundDeg, verticalMaxBoundDeg);
   return channelIdx;
 }
@@ -94,7 +97,7 @@ void traceLidarPointCloudAtPixel(ivec2 pixel, vec2 pixelCenter, vec3 fallbackCol
 
   vec2 inUVNoJitter = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
   vec2 dNoJitter    = inUVNoJitter * 2.0 - 1.0;
-  vec3 pixelDirCam  = normalize((uni.projInverse * vec4(dNoJitter, 1.0, 1.0)).xyz);
+  vec3 pixelDirCam  = normalize((uni.radar.projInverse * vec4(dNoJitter, 1.0, 1.0)).xyz);
   vec3 forwardCam;
   vec3 rightCam;
   vec3 upCam;
@@ -107,11 +110,11 @@ void traceLidarPointCloudAtPixel(ivec2 pixel, vec2 pixelCenter, vec3 fallbackCol
   float azimuthDeg   = degrees(atan(rightComp, forwardComp));
   float elevationDeg = degrees(atan(upComp, horizLen));
 
-  float lidarAzimuthMinDeg   = min(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg);
-  float lidarAzimuthMaxDeg   = max(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg);
-  float lidarAzimuthStepDeg  = max(abs(pcRay.lidar.azimuthStepDeg), 1e-4);
+  float lidarAzimuthMinDeg   = min(uni.radar.azimuthParams.x, uni.radar.azimuthParams.y);
+  float lidarAzimuthMaxDeg   = max(uni.radar.azimuthParams.x, uni.radar.azimuthParams.y);
+  float lidarAzimuthStepDeg  = max(abs(uni.radar.azimuthParams.z), 1e-4);
   float lidarAzimuthSpanDeg  = lidarAzimuthMaxDeg - lidarAzimuthMinDeg;
-  float lidarPointRadius     = max(pcRay.lidar.pointRadiusPixels, 0.0);
+  float lidarPointRadius     = max(uni.radar.azimuthParams.w, 0.0);
   int   lidarHorizontalCount = max(int(floor(lidarAzimuthSpanDeg / lidarAzimuthStepDeg)) + 1, 1);
 
   if(azimuthDeg < (lidarAzimuthMinDeg - 0.5) || azimuthDeg > (lidarAzimuthMaxDeg + 0.5))
@@ -142,8 +145,8 @@ void traceLidarPointCloudAtPixel(ivec2 pixel, vec2 pixelCenter, vec3 fallbackCol
     return;
   }
 
-  vec3 lidarOriginWorld = (uni.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  vec3 lidarDirWorld    = normalize((uni.viewInverse * vec4(beamDirCam, 0.0)).xyz);
+  vec3 lidarOriginWorld = (uni.radar.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  vec3 lidarDirWorld    = normalize((uni.radar.viewInverse * vec4(beamDirCam, 0.0)).xyz);
 
   uint lidarSeed = initRng(uvec2(uint(azimuthIdx), uint(channelIdx)), pcRay.frameIndex, 0u);
   resetLidarPayload(lidarSeed);
@@ -151,7 +154,7 @@ void traceLidarPointCloudAtPixel(ivec2 pixel, vec2 pixelCenter, vec3 fallbackCol
 
   if(prd.firstHitDiffuseValid.w > 0.5)
   {
-    vec3 hitCam   = (uni.view * vec4(prd.firstHitWorldPosRoughness.xyz, 1.0)).xyz;
+    vec3 hitCam   = (uni.radar.view * vec4(prd.firstHitWorldPosRoughness.xyz, 1.0)).xyz;
     lidarDistance = length(hitCam);
     lidarColor    = vec3(1.0, 0.0, 0.0);
   }

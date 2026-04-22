@@ -26,6 +26,7 @@ const glm::vec3 kGroundPlaneScale       = {2.f, 1.f, 2.f};
 const glm::vec3 kIdentityScale          = {1.f, 1.f, 1.f};
 const glm::vec3 kCatTranslation         = {0.0f, 0.5f, 0.0f};
 const glm::vec3 kBeautyBallTranslation  = {2.0f, 0.5f, 1.0f};
+const LidarParams kDefaultRadarParams   = {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f};
 
 class DemoOpenGLContext
 {
@@ -117,6 +118,7 @@ public:
     loadConfiguredScene();
     addDefaultLight();
     setupInitialCamera();
+    syncRadarCameraWithMainCamera();
     renderFrames();
   }
 
@@ -173,9 +175,21 @@ private:
     for(int i = 0; i < kFrameCount; ++i)
     {
       updateCamera();
+      syncRadarCameraWithMainCamera();
       m_app.render();
       m_app.saveFrame(buildOutputFramePath(kOutputDirectory, i));
     }
+  }
+
+  void syncRadarCameraWithMainCamera()
+  {
+    RayTraceApp::RadarCameraInput radarCamera{};
+    radarCamera.eye         = CameraManip.getEye();
+    radarCamera.center      = CameraManip.getCenter();
+    radarCamera.up          = CameraManip.getUp();
+    radarCamera.fovDeg      = CameraManip.getFov();
+    radarCamera.lidarParams = kDefaultRadarParams;
+    m_app.setRadarCamera(radarCamera);
   }
 
   void loadGroundPlane()

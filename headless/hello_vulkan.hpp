@@ -26,6 +26,14 @@ struct MaterialUpdate
 class HelloVulkan : public nvvkhl::AppOffline
 {
 public:
+  struct RadarCameraData
+  {
+    glm::vec3 eye{0.0f};
+    glm::vec3 center{0.0f, 0.0f, -1.0f};
+    glm::vec3 up{0.0f, 1.0f, 0.0f};
+    float     fov{60.0f};
+  };
+
   void setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily) override;
   void createDescriptorSetLayout();
   void loadModel(ModelLoader& loader, glm::mat4 transform = glm::mat4(1));
@@ -34,6 +42,8 @@ public:
   void createObjDescriptionBuffer();
   void createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
+  void setRadarCamera(const RadarCameraData& camera);
+  void setRadarLidarParams(const LidarParams& params);
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
 
@@ -66,7 +76,7 @@ public:
   VkDescriptorSetLayout       m_descSetLayout;
   VkDescriptorSet             m_descSet;
 
-  nvvk::Buffer m_bGlobals;  // Device-Host of the camera matrices
+  nvvk::Buffer m_bGlobals;  // Device buffer of camera/radar global uniforms
   nvvk::Buffer m_bObjDesc;  // Device buffer of the OBJ descriptions
 
   std::vector<nvvk::Texture> m_textures;  // vector of all textures of the scene
@@ -311,4 +321,7 @@ private:
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};
   bool      m_hasLastCamera{false};
+  RadarCameraData m_radarCamera{};
+  bool            m_hasRadarCamera{false};
+  LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f};
 };

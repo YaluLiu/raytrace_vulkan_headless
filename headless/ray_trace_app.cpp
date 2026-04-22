@@ -291,6 +291,17 @@ void RayTraceApp::saveFrame(std::string outputImagePath)
   m_helloVk.dumpLidarInteropTexture(lidarPngName.c_str());
 }
 
+void RayTraceApp::setRadarCamera(const RadarCameraInput& radarCamera)
+{
+  HelloVulkan::RadarCameraData radar{};
+  radar.eye    = radarCamera.eye;
+  radar.center = radarCamera.center;
+  radar.up     = radarCamera.up;
+  radar.fov    = radarCamera.fovDeg;
+  m_helloVk.setRadarCamera(radar);
+  m_helloVk.setRadarLidarParams(radarCamera.lidarParams);
+}
+
 void RayTraceApp::cleanup()
 {
   vkDeviceWaitIdle(m_helloVk.getDevice());
