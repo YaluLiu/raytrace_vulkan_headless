@@ -76,7 +76,7 @@ public:
   VkDescriptorSetLayout       m_descSetLayout;
   VkDescriptorSet             m_descSet;
 
-  nvvk::Buffer m_bGlobals;  // Device buffer of camera/radar global uniforms
+  nvvk::Buffer m_bFrameUniforms;  // Device buffer of frame uniforms (camera + lidar)
   nvvk::Buffer m_bObjDesc;  // Device buffer of the OBJ descriptions
 
   std::vector<nvvk::Texture> m_textures;  // vector of all textures of the scene

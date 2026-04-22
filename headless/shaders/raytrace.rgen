@@ -58,7 +58,7 @@ layout(set = 0, binding = eLinearDepthImage, r32f) uniform image2D linearDepthIm
 layout(set = 0, binding = eSpecularHitDistImage, r32f) uniform image2D specularHitDistanceImage;
 layout(set = 0, binding = eDistanceToCameraImage, r32f) uniform image2D distanceToCameraImage;
 layout(set = 0, binding = eLidarPointCloudImage, rgba32f) uniform image2D lidarPointCloudImage;
-layout(set = 1, binding = eGlobals) uniform _GlobalUniforms { GlobalUniforms uni; };
+layout(set = 1, binding = eFrameUniforms) uniform _FrameUniforms { FrameUniforms frameUni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
 
@@ -86,9 +86,9 @@ void main()
     vec2 inUV   = (pixelCenter + jitter) / vec2(gl_LaunchSizeEXT.xy);
     vec2 d      = inUV * 2.0 - 1.0;
 
-    vec4 origin    = uni.camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0);
-    vec4 target    = uni.camera.projInverse * vec4(d.x, d.y, 1.0, 1.0);
-    vec4 direction = uni.camera.viewInverse * vec4(normalize(target.xyz), 0.0);
+    vec4 origin    = frameUni.camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 target    = frameUni.camera.projInverse * vec4(d.x, d.y, 1.0, 1.0);
+    vec4 direction = frameUni.camera.viewInverse * vec4(normalize(target.xyz), 0.0);
 
     prd.radiance                  = vec3(0.0);
     prd.objId                     = -1;
@@ -137,10 +137,10 @@ void main()
 
   if(hasPrimaryHit)
   {
-    vec3 cameraPos   = (uni.camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    vec3 cameraPos   = (frameUni.camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
     vec4 worldPos    = vec4(sampleWorldPosRoughness.xyz, 1.0);
     distanceToCamera = length(cameraPos - worldPos.xyz);
-    vec4  viewPos    = uni.camera.view * worldPos;
+    vec4  viewPos    = frameUni.camera.view * worldPos;
     float viewZ      = max(-viewPos.z, 0.0);
     linearDepth      = normalizeViewZ(viewZ);
     packedNormal     = normalize(sampleNormalHitDist.xyz);
@@ -165,7 +165,7 @@ void main()
       metallic       = 0.0;
     }
 
-    vec4  prevClip     = uni.camera.prevViewProj * worldPos;
+    vec4  prevClip     = frameUni.camera.prevViewProj * worldPos;
     float invW         = abs(prevClip.w) > 1e-6 ? (1.0 / prevClip.w) : 0.0;
     vec2  prevNdc      = prevClip.xy * invW;
     vec2  prevPixel    = (prevNdc * 0.5 + 0.5) * vec2(gl_LaunchSizeEXT.xy);

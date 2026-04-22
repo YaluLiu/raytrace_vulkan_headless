@@ -214,7 +214,7 @@ void HelloVulkan::refreshOffscreenRenderTargetsIfNeeded()
 void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 {
   const float    aspectRatio = m_size.width / static_cast<float>(m_size.height);
-  GlobalUniforms hostUBO     = {};
+  FrameUniforms  frameUBO    = {};
   const auto&    view        = CameraManip.getMatrix();
   glm::mat4      proj        = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
 #if !ENABLE_HYDRA
@@ -228,11 +228,11 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
     resetAccumulation();
   }
 
-  hostUBO.camera.viewProj     = proj * view;
-  hostUBO.camera.view         = view;
-  hostUBO.camera.viewInverse  = glm::inverse(view);
-  hostUBO.camera.projInverse  = glm::inverse(proj);
-  hostUBO.camera.prevViewProj = prevViewProj;
+  frameUBO.camera.viewProj     = proj * view;
+  frameUBO.camera.view         = view;
+  frameUBO.camera.viewInverse  = glm::inverse(view);
+  frameUBO.camera.projInverse  = glm::inverse(proj);
+  frameUBO.camera.prevViewProj = prevViewProj;
 
   const glm::vec3 mainEye    = CameraManip.getEye();
   const glm::vec3 mainCenter = CameraManip.getCenter();
@@ -250,22 +250,23 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   radarProj[1][1] *= -1;  // Vulkan坐标系Y反转
 #endif
 
-  hostUBO.radar.viewProj = radarProj * radarView;
-  hostUBO.radar.view     = radarView;
-  hostUBO.radar.viewInverse = glm::inverse(radarView);
-  hostUBO.radar.projInverse = glm::inverse(radarProj);
-  hostUBO.radar.positionAndFov = glm::vec4(radarEye, radarFov);
-  hostUBO.radar.azimuthParams =
+  frameUBO.lidar.camera.viewProj    = radarProj * radarView;
+  frameUBO.lidar.camera.view        = radarView;
+  frameUBO.lidar.camera.viewInverse = glm::inverse(radarView);
+  frameUBO.lidar.camera.projInverse = glm::inverse(radarProj);
+  frameUBO.lidar.params.positionAndFov = glm::vec4(radarEye, radarFov);
+  frameUBO.lidar.params.azimuthParams =
       glm::vec4(m_radarLidarParams.azimuthMinDeg, m_radarLidarParams.azimuthMaxDeg, m_radarLidarParams.azimuthStepDeg,
                 m_radarLidarParams.pointRadiusPixels);
-  hostUBO.radar.verticalParams =
+  frameUBO.lidar.params.verticalParams =
       glm::vec4(m_radarLidarParams.verticalMinDeg, m_radarLidarParams.verticalMaxDeg, m_radarLidarParams.verticalStepDeg, 0.0f);
+  frameUBO.lidar.camera.prevViewProj = frameUBO.lidar.camera.viewProj;
 
   m_lastView      = view;
   m_lastProj      = proj;
   m_hasLastCamera = true;
 
-  VkBuffer deviceUBO      = m_bGlobals.buffer;
+  VkBuffer deviceUBO      = m_bFrameUniforms.buffer;
   auto     uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
 
   // 屏障，保证写入前上帧不会读到
@@ -274,12 +275,12 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   beforeBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   beforeBarrier.buffer        = deviceUBO;
   beforeBarrier.offset        = 0;
-  beforeBarrier.size          = sizeof(hostUBO);
+  beforeBarrier.size          = sizeof(frameUBO);
   vkCmdPipelineBarrier(cmdBuf, uboUsageStages, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
                        nullptr, 1, &beforeBarrier, 0, nullptr);
 
   // 用命令缓冲直接更新UBO数据（host -> device）
-  vkCmdUpdateBuffer(cmdBuf, m_bGlobals.buffer, 0, sizeof(GlobalUniforms), &hostUBO);
+  vkCmdUpdateBuffer(cmdBuf, m_bFrameUniforms.buffer, 0, sizeof(FrameUniforms), &frameUBO);
 
   // 屏障，保证写入后可供shader读取
   VkBufferMemoryBarrier afterBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
@@ -287,7 +288,7 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   afterBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   afterBarrier.buffer        = deviceUBO;
   afterBarrier.offset        = 0;
-  afterBarrier.size          = sizeof(hostUBO);
+  afterBarrier.size          = sizeof(frameUBO);
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
                        nullptr, 1, &afterBarrier, 0, nullptr);
 }
@@ -296,9 +297,9 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 // 创建uniform buffer（主相机+雷达相机数据），显存可见
 void HelloVulkan::createUniformBuffer()
 {
-  m_bGlobals = m_alloc.createBuffer(sizeof(GlobalUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  m_debug.setObjectName(m_bGlobals.buffer, "Globals");
+  m_bFrameUniforms = m_alloc.createBuffer(sizeof(FrameUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  m_debug.setObjectName(m_bFrameUniforms.buffer, "FrameUniforms");
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -326,7 +327,7 @@ void HelloVulkan::destroyResources()
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
 
-  m_alloc.destroy(m_bGlobals);
+  m_alloc.destroy(m_bFrameUniforms);
   m_alloc.destroy(m_bObjDesc);
 
   for(auto& m : m_objModel)

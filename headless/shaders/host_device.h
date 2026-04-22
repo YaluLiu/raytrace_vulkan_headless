@@ -21,7 +21,7 @@ using uint = unsigned int;
 #endif
 
 START_BINDING(SceneBindings)
-  eGlobals     = 0,  // Global uniform containing camera + radar data
+  eFrameUniforms = 0,  // Frame uniform containing main camera + lidar data
   eObjDescs    = 1,  // Access to the object descriptions
   eTextures    = 2,  // Access to textures
   eLights      = 3,  // 灯光缓冲区
@@ -66,21 +66,23 @@ struct CameraUniforms
   mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
-struct RadarUniforms
+struct LidarParamsUniforms
 {
-  mat4 viewProj;      // Radar view * projection
-  mat4 view;          // Radar view matrix
-  mat4 viewInverse;   // Radar inverse view matrix
-  mat4 projInverse;   // Radar inverse projection matrix
-  vec4 positionAndFov;   // xyz: radar world position, w: radar fov(deg)
-  vec4 azimuthParams;    // x: minDeg, y: maxDeg, z: stepDeg, w: pointRadiusPixels
+  vec4 positionAndFov;   // xyz: lidar world position, w: pointRadiusPixels
+  vec4 azimuthParams;    // x: minDeg, y: maxDeg, z: stepDeg, w: reserved
   vec4 verticalParams;   // x: minDeg, y: maxDeg, z: stepDeg, w: reserved
 };
 
-struct GlobalUniforms
+struct LidarUniforms
+{
+  CameraUniforms      camera;
+  LidarParamsUniforms params;
+};
+
+struct FrameUniforms
 {
   CameraUniforms camera;
-  RadarUniforms  radar;
+  LidarUniforms  lidar;
 };
 
 struct LidarParams
