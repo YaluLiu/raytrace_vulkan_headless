@@ -74,7 +74,7 @@ if(TARGET usd_ms)
   set(USD_LIBS_PUBLIC usd_ms)
 else()
   set(USD_LIBS_PUBLIC hd)
-  set(USD_LIBS_PRIVATE usdImaging usdMtlx hdMtlx glf)
+  set(USD_LIBS_PRIVATE usdImaging usdMtlx hdMtlx glf hgi hgiGL hgiInterop hdx)
 endif()
 
 target_link_libraries(

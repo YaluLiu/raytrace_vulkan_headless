@@ -69,6 +69,17 @@ DLSS_SDK_ROOT=/path/to/DLSS bash install.sh hydra
 - `include/nvsdk_ngx_vk.h`
 - `lib/Linux_x86_64/libnvsdk_ngx.a`
 
+可以用 `HYDRA_SCENE_PATH` 覆盖 `install.sh hydra` 默认打开的 Hydra 场景：
+
+```bash
+HYDRA_SCENE_PATH=hydra_lidar_verify/scene_a.usda bash install.sh hydra
+```
+
+仓库内提供了两个用于 lidar 相机分离验证的场景，位于 `hydra_lidar_verify/`：
+
+- `scene_a.usda`：主渲染相机固定，lidar 相机位于 +X 侧
+- `scene_b.usda`：主渲染相机不变，lidar 相机镜像到 -X 侧
+
 ## 视觉回归（AI 自验收）
 
 把 demo 渲染结果作为功能回归门禁：

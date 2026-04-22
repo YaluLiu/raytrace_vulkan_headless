@@ -123,6 +123,7 @@ function hydra(){
     usd_path="/home/${USER}/software/USD"
     plugin_name="hdRobot"
     project_root="$(pwd)"
+    hydra_scene_path="${HYDRA_SCENE_PATH:-/home/yalu/docker/assets/unit_test/anim/pao/pao.usd}"
     dlss_sdk_root="${DLSS_SDK_ROOT:-/home/yalu/dlss/DLSS}"
     dlss_feature_path="${DLSS_RR_FEATURE_PATH:-${dlss_sdk_root}/lib/Linux_x86_64/rel}"
     dlss_appdata_path="${DLSS_RR_APPDATA_PATH:-${project_root}/output/ngx}"
@@ -169,8 +170,9 @@ function hydra(){
     echo "[hydra] DLSS_RR_FEATURE_PATH=${DLSS_RR_FEATURE_PATH}"
     echo "[hydra] DLSS_RR_APPDATA_PATH=${DLSS_RR_APPDATA_PATH}"
     echo "[hydra] DLSS_RR_STATUS_LOG=${DLSS_RR_STATUS_LOG}"
+    echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"
 
-    /home/yalu/software/usdtweak/build/usdtweak /home/yalu/docker/assets/unit_test/anim/pao/pao.usd
+    /home/yalu/software/usdtweak/build/usdtweak "${hydra_scene_path}"
 }
 
 function baseline(){

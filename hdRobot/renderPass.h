@@ -30,6 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRobotMesh;
 class MaterialNetworkCompiler;
 class HdRobotCamera;
+class HdRobotRenderParam;
 struct HdRobotCameraData;
 
 struct GiCameraDesc
@@ -57,6 +58,7 @@ public:
                       const HdRprimCollection&   collection,
                       const HdRenderSettingsMap& settings,
                       HdRobotScene&            scene,
+                      HdRobotRenderParam*      renderParam,
                       std::string                resourcePath);
 
   ~HdRobotRenderPass() override;
@@ -78,7 +80,8 @@ private:
   // ----------------------------------------------------------------------------------
   // for headless ray trace app
 private:
-  bool app_updateCamera(const HdRenderPassStateSharedPtr& renderPassState);
+  bool app_updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState, HdRobotCameraData* cameraData);
+  void app_updateLidarCamera(const HdRobotCameraData& fallbackCameraData);
   void app_updateLight();
   void app_apply_render_settings();
   void app_init_or_resize();
@@ -93,6 +96,7 @@ private:
   bool _isAppInited        = false;
   bool _reset_renderbuffer = false;
   TfTokenVector _activeRenderTags;
+  HdRobotRenderParam* _renderParam{ nullptr };
 
   RayTraceApp                           _renderApp;
   int _width  = -1;

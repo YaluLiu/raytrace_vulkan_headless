@@ -17,12 +17,27 @@
 
 #pragma once
 
+#include "camera.h"
+
 #include <pxr/imaging/hd/renderDelegate.h>
+
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderParam final : public HdRenderParam
 {
+public:
+  void UpdateLidarCamera(const SdfPath& cameraId, const HdRobotLidarData& lidarData);
+  void ClearLidarCamera(const SdfPath& cameraId);
+  bool GetLidarCamera(HdRobotLidarData* lidarData) const;
+
+private:
+  mutable std::mutex _lidarMutex;
+  SdfPath            _lidarCameraId;
+  HdRobotLidarData   _lidarCameraData;
+  bool               _hasLidarCamera{ false };
+  bool               _warnedMultipleLidarCameras{ false };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

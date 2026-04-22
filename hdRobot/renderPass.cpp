@@ -227,8 +227,14 @@ HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex *index,
                                          const HdRprimCollection &collection,
                                          const HdRenderSettingsMap &settings,
                                          HdRobotScene &scene,
+                                         HdRobotRenderParam* renderParam,
                                          std::string resourcePath)
-    : HdRenderPass(index, collection), _settings(settings), _isConverged(false), _scene(scene), _resourcePath(std::move(resourcePath))
+    : HdRenderPass(index, collection)
+    , _settings(settings)
+    , _isConverged(false)
+    , _scene(scene)
+    , _resourcePath(std::move(resourcePath))
+    , _renderParam(renderParam)
 {
 }
 
@@ -280,10 +286,12 @@ void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassSta
     }
   }
 
-  if (!renderPassState || !app_updateCamera(renderPassState))
+  HdRobotCameraData mainCameraData;
+  if (!renderPassState || !app_updateMainCamera(renderPassState, &mainCameraData))
   {
     return;
   }
+  app_updateLidarCamera(mainCameraData);
 
   const auto &hdAovBindings = renderPassState->GetAovBindings();
   HdRobotRenderBuffer *primaryRenderBuffer = GetPrimaryRenderBuffer(hdAovBindings);
@@ -464,34 +472,68 @@ void HdRobotRenderPass::app_updateLight()
     }
   }
 }
-bool HdRobotRenderPass::app_updateCamera(const HdRenderPassStateSharedPtr &renderPassState)
+bool HdRobotRenderPass::app_updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState, HdRobotCameraData* cameraData)
 {
-  const HdCamera *hdcamera = renderPassState ? renderPassState->GetCamera() : nullptr;
+  const HdCamera* hdcamera = renderPassState ? renderPassState->GetCamera() : nullptr;
   if (!hdcamera)
   {
     return false;
   }
 
-  const HdRobotCamera *robotCamera = dynamic_cast<const HdRobotCamera *>(hdcamera);
+  const HdRobotCamera* robotCamera = dynamic_cast<const HdRobotCamera*>(hdcamera);
   if (robotCamera == nullptr)
   {
     return false;
   }
 
-  const HdRobotCameraData &cameraData = robotCamera->GetCameraData();
+  const HdRobotCameraData& mainCameraData = robotCamera->GetCameraData();
 
-  glm::vec3 camPos = cameraData.position;
-  glm::vec3 camForward = cameraData.forward;
-  glm::vec3 camUp = cameraData.up;
+  glm::vec3 camPos = mainCameraData.position;
+  glm::vec3 camForward = mainCameraData.forward;
+  glm::vec3 camUp = mainCameraData.up;
   glm::vec3 target = camPos + camForward;
 
   if (glm::length(glm::cross(camForward, camUp)) < 1e-6f)
   {
     camUp = glm::vec3(0.0f, 1.0f, 0.0f);
   }
-  const float vfov_deg = std::clamp(cameraData.vfov_deg, 1.0f, 179.0f);
+  const float vfov_deg = std::clamp(mainCameraData.vfov_deg, 1.0f, 179.0f);
   CameraManip.setCamera({camPos, target, camUp, vfov_deg});
+  if(cameraData != nullptr)
+  {
+    *cameraData = mainCameraData;
+  }
   return true;
+}
+
+void HdRobotRenderPass::app_updateLidarCamera(const HdRobotCameraData& fallbackCameraData)
+{
+  HdRobotLidarData lidarData;
+  if(_renderParam == nullptr || !_renderParam->GetLidarCamera(&lidarData))
+  {
+    lidarData.name   = fallbackCameraData.name;
+    lidarData.eye    = fallbackCameraData.position;
+    lidarData.center = fallbackCameraData.position + fallbackCameraData.forward;
+    lidarData.up     = fallbackCameraData.up;
+    lidarData.fovDeg = fallbackCameraData.vfov_deg;
+  }
+
+  RayTraceApp::RadarCameraInput lidarCamera{};
+  lidarCamera.eye         = lidarData.eye;
+  lidarCamera.center      = lidarData.center;
+  lidarCamera.up          = lidarData.up;
+  lidarCamera.fovDeg      = lidarData.fovDeg;
+  lidarCamera.lidarParams = {
+      lidarData.params.azimuthMinDeg,
+      lidarData.params.azimuthMaxDeg,
+      lidarData.params.azimuthStepDeg,
+      lidarData.params.verticalMinDeg,
+      lidarData.params.verticalMaxDeg,
+      lidarData.params.verticalStepDeg,
+      lidarData.params.pointRadiusPixels,
+      lidarData.params.maxDistance,
+  };
+  _renderApp.setRadarCamera(lidarCamera);
 }
 
 void HdRobotRenderPass::app_anim_real()

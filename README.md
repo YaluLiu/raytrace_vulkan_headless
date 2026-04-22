@@ -70,6 +70,17 @@ DLSS_SDK_ROOT=/path/to/DLSS bash install.sh hydra
 - `include/nvsdk_ngx_vk.h`
 - `lib/Linux_x86_64/libnvsdk_ngx.a`
 
+You can override the default Hydra scene used by `install.sh hydra`:
+
+```bash
+HYDRA_SCENE_PATH=hydra_lidar_verify/scene_a.usda bash install.sh hydra
+```
+
+Tracked lidar-camera verification scenes live in `hydra_lidar_verify/`:
+
+- `scene_a.usda`: main render camera fixed, lidar camera on the +X side
+- `scene_b.usda`: same main camera, lidar camera mirrored to the -X side
+
 ## Visual Regression (AI Self-check)
 
 Use rendered images as a functional regression gate:

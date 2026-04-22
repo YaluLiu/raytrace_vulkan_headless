@@ -164,7 +164,9 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused
 
 HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
 {
-  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, _settingsMap, _scene, _resourcePath));
+  return HdRenderPassSharedPtr(
+      new HdRobotRenderPass(index, collection, _settingsMap, _scene, static_cast<HdRobotRenderParam*>(_renderParam.get()),
+                            _resourcePath));
 }
 
 HdResourceRegistrySharedPtr HdRobotRenderDelegate::GetResourceRegistry() const

@@ -17,7 +17,48 @@
 
 #include "renderParam.h"
 
+#include <pxr/base/tf/diagnostic.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+void HdRobotRenderParam::UpdateLidarCamera(const SdfPath& cameraId, const HdRobotLidarData& lidarData)
+{
+  std::lock_guard<std::mutex> lock(_lidarMutex);
+
+  if(_hasLidarCamera && _lidarCameraId != cameraId && !_warnedMultipleLidarCameras)
+  {
+    TF_WARN("Multiple lidar cameras are unsupported (%s -> %s). Latest synced camera wins.", _lidarCameraId.GetText(),
+            cameraId.GetText());
+    _warnedMultipleLidarCameras = true;
+  }
+
+  _lidarCameraId   = cameraId;
+  _lidarCameraData = lidarData;
+  _hasLidarCamera  = true;
+}
+
+void HdRobotRenderParam::ClearLidarCamera(const SdfPath& cameraId)
+{
+  std::lock_guard<std::mutex> lock(_lidarMutex);
+  if(_hasLidarCamera && _lidarCameraId == cameraId)
+  {
+    _lidarCameraId              = SdfPath();
+    _lidarCameraData            = HdRobotLidarData();
+    _hasLidarCamera             = false;
+    _warnedMultipleLidarCameras = false;
+  }
+}
+
+bool HdRobotRenderParam::GetLidarCamera(HdRobotLidarData* lidarData) const
+{
+  std::lock_guard<std::mutex> lock(_lidarMutex);
+  if(!_hasLidarCamera || lidarData == nullptr)
+  {
+    return false;
+  }
+
+  *lidarData = _lidarCameraData;
+  return true;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
