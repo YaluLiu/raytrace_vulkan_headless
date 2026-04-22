@@ -5,11 +5,55 @@
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
+#include <stdexcept>
 #include "nvh/cameramanipulator.hpp"
+#include "nvgl/contextwindow_gl.hpp"
 
 namespace fs = std::filesystem;
 
 namespace {
+class DemoOpenGLContext
+{
+public:
+  DemoOpenGLContext()
+  {
+    if(glfwInit() == GLFW_FALSE)
+    {
+      throw std::runtime_error("Failed to initialize GLFW for demo OpenGL context");
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+    m_window = glfwCreateWindow(1, 1, "raytrace-demo-hidden-gl-context", nullptr, nullptr);
+    if(m_window == nullptr)
+    {
+      glfwTerminate();
+      throw std::runtime_error("Failed to create hidden GLFW window for demo OpenGL context");
+    }
+
+    glfwMakeContextCurrent(m_window);
+    load_GL(nvgl::ContextWindow::sysGetProcAddress);
+  }
+
+  ~DemoOpenGLContext()
+  {
+    if(m_window != nullptr)
+    {
+      glfwDestroyWindow(m_window);
+      m_window = nullptr;
+    }
+    glfwTerminate();
+  }
+
+  DemoOpenGLContext(const DemoOpenGLContext&)            = delete;
+  DemoOpenGLContext& operator=(const DemoOpenGLContext&) = delete;
+
+private:
+  GLFWwindow* m_window{nullptr};
+};
+
 void setEnvDefault(const char* name, const char* value)
 {
   if(std::getenv(name) == nullptr)
@@ -44,6 +88,7 @@ public:
     int width  = 3840;
     int height = 2160;
     m_app.setup(width, height);
+    DemoOpenGLContext glContext;
 
     if(m_testOnUsd)
     {

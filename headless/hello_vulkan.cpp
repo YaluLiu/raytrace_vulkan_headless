@@ -72,23 +72,6 @@ float clampDlssScale(float scale)
   return std::clamp(scale, 0.1f, 1.0f);
 }
 }  // namespace
-
-// opengl context with windows
-#include "nvgl/contextwindow_gl.hpp"
-void createOpenGLContext()
-{
-  glfwInit();
-  // 设置 GLFW 窗口使用 OpenGL 4.5
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // 创建隐藏窗口
-  // 创建 GLFW 窗口
-  GLFWwindow* gl_window = glfwCreateWindow(1, 1, PROJECT_NAME, NULL, NULL);
-  // 设置当前 OpenGL 上下文
-  glfwMakeContextCurrent(gl_window);
-  // 加载OpenGL函数
-  load_GL(nvgl::ContextWindow::sysGetProcAddress);
-}
 //--------------------------------------------------------------------------------------------------
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
@@ -100,9 +83,6 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_debug.setup(m_device);
   // 查找适合的离屏深度格式
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
-#if !ENABLE_HYDRA
-  createOpenGLContext();
-#endif
   m_allocGL.init(device, physicalDevice);
   if(const char* enableDlssEnv = std::getenv("ENABLE_DLSS_RR"))
   {
