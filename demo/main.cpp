@@ -15,11 +15,12 @@ namespace fs = std::filesystem;
 namespace {
 constexpr int   kRenderWidth            = 3840;
 constexpr int   kRenderHeight           = 2160;
-constexpr int   kOutputFrameCount       = 2;
+constexpr int   kOutputFrameCount       = 10;
 constexpr float kMainCameraStepDeg      = 30.0f;
 const fs::path  kOutputDirectory        = "result";
+// y-height z-front
 const glm::vec3 kInitialCameraEye       = {1.2f, 2.5f, 10.0f};
-const glm::vec3 kInitialLidarEye        = {0.2f, 0.5f, 10.0f};
+const glm::vec3 kInitialLidarEye        = {0.2f, 1.0f, 8.0f};
 const glm::vec3 kInitialCameraCenter    = {1.0f, 1.0f, 0.6f};
 const glm::vec3 kInitialCameraUp        = {0.0f, 1.0f, 0.0f};
 const glm::vec3 kGroundPlaneScale       = {2.f, 1.f, 2.f};
