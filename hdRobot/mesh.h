@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,14 +20,14 @@
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/base/gf/vec2f.h>
 #include <optional>
-#include "renderScene.h"
+#include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotMesh final : public HdMesh
 {
 public:
-  HdRobotMesh(const SdfPath& id, HdRobotScene& _scene);
+  HdRobotMesh(const SdfPath& id, HdRobotRenderParam& _scene);
 
   void Finalize(HdRenderParam* renderParam) override;
   void setValid(bool value);
@@ -73,8 +73,9 @@ private:
   void _CreateGiMeshes(HdSceneDelegate* sceneDelegate);
 
 private:
-  HdRobotScene& _scene;
+  HdRobotRenderParam& _scene;
   int             _mesh_id = -1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

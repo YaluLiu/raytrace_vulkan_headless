@@ -1,4 +1,4 @@
-#include "points.h"
+﻿#include "points.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -9,7 +9,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdRobotPoints::HdRobotPoints(const SdfPath& id, HdRobotScene& scene)
+HdRobotPoints::HdRobotPoints(const SdfPath& id, HdRobotRenderParam& scene)
     : HdPoints(id)
     , _scene(scene)
     , _visible(true)
@@ -26,8 +26,8 @@ HdDirtyBits HdRobotPoints::GetInitialDirtyBitsMask() const
 
 void HdRobotPoints::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 {
-  // 简单的实现 - 让基类处理repr初始化
-  // 在大多数情况下，这就足够了
+  // 绠€鍗曠殑瀹炵幇 - 璁╁熀绫诲鐞唕epr鍒濆鍖?
+  // 鍦ㄥぇ澶氭暟鎯呭喌涓嬶紝杩欏氨瓒冲浜?
   TF_UNUSED(reprToken);
   *dirtyBits |= HdChangeTracker::DirtyRepr;
 }
@@ -44,25 +44,25 @@ void HdRobotPoints::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
   SdfPath const& id = GetId();
 
-  // 更新几何数据
+  // 鏇存柊鍑犱綍鏁版嵁
   if(*dirtyBits & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyWidths | HdChangeTracker::DirtyPrimvar))
   {
     _UpdateGeometry(sceneDelegate, dirtyBits);
   }
 
-  // 更新变换
+  // 鏇存柊鍙樻崲
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
   {
     _UpdateTransform(sceneDelegate, dirtyBits);
   }
 
-  // 更新可见性
+  // 鏇存柊鍙鎬?
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)
   {
     _UpdateVisibility(sceneDelegate, dirtyBits);
   }
 
-  // 清除脏位
+  // 娓呴櫎鑴忎綅
   *dirtyBits = HdChangeTracker::Clean;
 }
 
@@ -70,7 +70,7 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
 {
   SdfPath const& id = GetId();
 
-  // 读取点位置（必需）
+  // 璇诲彇鐐逛綅缃紙蹇呴渶锛?
   if(*dirtyBits & HdChangeTracker::DirtyPoints)
   {
     VtValue pointsValue = sceneDelegate->Get(id, HdTokens->points);
@@ -80,7 +80,7 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
     }
   }
 
-  // 读取点宽度（必需）
+  // 璇诲彇鐐瑰搴︼紙蹇呴渶锛?
   if(*dirtyBits & HdChangeTracker::DirtyWidths)
   {
     VtValue widthsValue = sceneDelegate->Get(id, HdTokens->widths);
@@ -90,15 +90,15 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
     }
     else
     {
-      // 如果没有宽度数据，使用默认值
+      // 濡傛灉娌℃湁瀹藉害鏁版嵁锛屼娇鐢ㄩ粯璁ゅ€?
       _widths.assign(_points.size(), 1.0f);
     }
   }
 
-  // 读取颜色（可选）
+  // 璇诲彇棰滆壊锛堝彲閫夛級
   if(*dirtyBits & HdChangeTracker::DirtyPrimvar)
   {
-    // 尝试获取displayColor
+    // 灏濊瘯鑾峰彇displayColor
     VtValue colorValue = sceneDelegate->Get(id, HdTokens->displayColor);
     if(colorValue.IsHolding<VtVec3fArray>())
     {
@@ -106,12 +106,12 @@ void HdRobotPoints::_UpdateGeometry(HdSceneDelegate* sceneDelegate, HdDirtyBits*
     }
     else
     {
-      // 使用默认白色
+      // 浣跨敤榛樿鐧借壊
       _colors.assign(_points.size(), GfVec3f(1.0f, 1.0f, 1.0f));
     }
   }
 
-  // 打印点数据
+  // 鎵撳嵃鐐规暟鎹?
   if(*dirtyBits & HdChangeTracker::DirtyPoints)
   {
     _UpdateRenderScene();
@@ -145,7 +145,7 @@ void HdRobotPoints::_UpdateRenderScene() const
   }
 }
 
-// 打印函数实现
+// 鎵撳嵃鍑芥暟瀹炵幇
 void HdRobotPoints::_PrintPoints() const
 {
   std::cout << "=== Points Data ===" << std::endl;
@@ -176,13 +176,13 @@ void HdRobotPoints::_PrintPointsDetailed() const
               << "pos(" << std::setw(8) << point[0] << ", " << std::setw(8) << point[1] << ", " << std::setw(8)
               << point[2] << ")";
 
-    // 打印宽度信息
+    // 鎵撳嵃瀹藉害淇℃伅
     if(i < _widths.size())
     {
       std::cout << " width(" << std::setw(6) << _widths[i] << ")";
     }
 
-    // 打印颜色信息
+    // 鎵撳嵃棰滆壊淇℃伅
     if(i < _colors.size())
     {
       const GfVec3f& color = _colors[i];
@@ -207,7 +207,7 @@ void HdRobotPoints::_PrintPointsSummary() const
     return;
   }
 
-  // 计算边界框
+  // 璁＄畻杈圭晫妗?
   GfVec3f minPoint = _points[0];
   GfVec3f maxPoint = _points[0];
 
@@ -225,7 +225,7 @@ void HdRobotPoints::_PrintPointsSummary() const
   std::cout << "  Min: (" << minPoint[0] << ", " << minPoint[1] << ", " << minPoint[2] << ")" << std::endl;
   std::cout << "  Max: (" << maxPoint[0] << ", " << maxPoint[1] << ", " << maxPoint[2] << ")" << std::endl;
 
-  // 打印前5个点作为示例
+  // 鎵撳嵃鍓?涓偣浣滀负绀轰緥
   size_t sampleCount = std::min(size_t(5), _points.size());
   std::cout << "First " << sampleCount << " points:" << std::endl;
 
@@ -251,3 +251,4 @@ void HdRobotPoints::_PrintPointsSummary() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include "ray_trace_app.hpp"
-#include "renderScene.h"
+#include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -101,14 +101,17 @@ public:
 #endif
 
 private:
+  HdRobotRenderParam* _GetRobotRenderParam() const;
+
+private:
   const std::string              _resourcePath;
   HdResourceRegistrySharedPtr    _resourceRegistry;
   HdRenderSettingDescriptorList  _settingDescriptors;
   HdRenderSettingDescriptorList  _debugSettingDescriptors;
-  std::unique_ptr<HdRenderParam> _renderParam;
+  std::unique_ptr<HdRobotRenderParam> _renderParam;
   // std::unique_str<HdRobotRenderBuffer> _colorBuffer;
-  HdRobotScene _scene;
-  Hgi*           _hgi = nullptr;
+  Hgi*                         _hgi = nullptr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

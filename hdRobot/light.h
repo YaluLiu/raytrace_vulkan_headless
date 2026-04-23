@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2023 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2023 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,14 +18,14 @@
 #pragma once
 
 #include <pxr/imaging/hd/light.h>
-#include "renderScene.h"
+#include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotLight : public HdLight
 {
 public:
-  HdRobotLight(const SdfPath& id, HdRobotScene& scene);
+  HdRobotLight(const SdfPath& id, HdRobotRenderParam& scene);
 
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -34,14 +34,14 @@ protected:
   void    Finalize(HdRenderParam* renderParam) override;
 
 protected:
-  HdRobotScene& _scene;
+  HdRobotRenderParam& _scene;
   int             _light_id;
 };
 
 class HdRobotDistantLight final : public HdRobotLight
 {
 public:
-  HdRobotDistantLight(const SdfPath& id, HdRobotScene& scene);
+  HdRobotDistantLight(const SdfPath& id, HdRobotRenderParam& scene);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -50,7 +50,7 @@ public:
 class HdRobotSphereLight final : public HdRobotLight
 {
 public:
-  HdRobotSphereLight(const SdfPath& id, HdRobotScene& scene);
+  HdRobotSphereLight(const SdfPath& id, HdRobotRenderParam& scene);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -59,7 +59,7 @@ public:
 class HdRobotDomeLight final : public HdRobotLight
 {
 public:
-  HdRobotDomeLight(const SdfPath& id, HdRobotScene& scene);
+  HdRobotDomeLight(const SdfPath& id, HdRobotRenderParam& scene);
 
 public:
   std::string GetTexturePath(HdSceneDelegate* sceneDelegate);
@@ -67,3 +67,4 @@ public:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

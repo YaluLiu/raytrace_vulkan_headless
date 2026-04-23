@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotScene& scene)
+HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene)
     : HdMaterial(id)
     , _scene(scene)
 {
@@ -73,21 +73,21 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
     return;
   }
 
-  // 遍历材质网络中的所有节点
-  // network.nodes 是一个 map,存储了材质网络中所有的节点
-  // key: SdfPath (节点路径), value: HdMaterialNode2 (节点数据)
+  // 閬嶅巻鏉愯川缃戠粶涓殑鎵€鏈夎妭鐐?
+  // network.nodes 鏄竴涓?map,瀛樺偍浜嗘潗璐ㄧ綉缁滀腑鎵€鏈夌殑鑺傜偣
+  // key: SdfPath (鑺傜偣璺緞), value: HdMaterialNode2 (鑺傜偣鏁版嵁)
   for(const auto& nodePair : network.nodes)
   {
-    // 获取当前节点的路径(唯一标识符)
+    // 鑾峰彇褰撳墠鑺傜偣鐨勮矾寰?鍞竴鏍囪瘑绗?
     const SdfPath& nodePath = nodePair.first;
-    // 获取当前节点的数据(包含节点类型、参数、连接等信息)
+    // 鑾峰彇褰撳墠鑺傜偣鐨勬暟鎹?鍖呭惈鑺傜偣绫诲瀷銆佸弬鏁般€佽繛鎺ョ瓑淇℃伅)
     const HdMaterialNode2& node = nodePair.second;
-    // 遍历当前节点的所有输入连接
-    // inputConnections 描述了哪些输入是从其他节点连接过来的
-    // 例如: diffuseColor 可能连接到一个纹理节点
+    // 閬嶅巻褰撳墠鑺傜偣鐨勬墍鏈夎緭鍏ヨ繛鎺?
+    // inputConnections 鎻忚堪浜嗗摢浜涜緭鍏ユ槸浠庡叾浠栬妭鐐硅繛鎺ヨ繃鏉ョ殑
+    // 渚嬪: diffuseColor 鍙兘杩炴帴鍒颁竴涓汗鐞嗚妭鐐?
     for(const auto& connPair : node.inputConnections)
     {
-      // 输入端口的名称(如 "diffuseColor", "roughness" 等)
+      // 杈撳叆绔彛鐨勫悕绉?濡?"diffuseColor", "roughness" 绛?
       const TfToken&                            inputName   = connPair.first;
       const std::vector<HdMaterialConnection2>& connections = connPair.second;
 
@@ -95,16 +95,16 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       {
         for(const auto& conn : connections)
         {
-          // 获取上游节点的路径(提供数据的节点,如/_materials/default_002/preview/Image_Texture)
+          // 鑾峰彇涓婃父鑺傜偣鐨勮矾寰?鎻愪緵鏁版嵁鐨勮妭鐐?濡?_materials/default_002/preview/Image_Texture)
           const SdfPath& upstreamNodePath = conn.upstreamNode;
-          // 上游节点的输出端口名称(如 "rgb", "result" 等)
+          // 涓婃父鑺傜偣鐨勮緭鍑虹鍙ｅ悕绉?濡?"rgb", "result" 绛?
           const TfToken& upstreamOutputName = conn.upstreamOutputName;
 
-          // 在 network.nodes 中查找上游节点
+          // 鍦?network.nodes 涓煡鎵句笂娓歌妭鐐?
           auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
           if(upstreamNodeIt != network.nodes.end())
           {
-            // 获取上游节点的数据
+            // 鑾峰彇涓婃父鑺傜偣鐨勬暟鎹?
             const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
             for(const auto& paramPair : upstreamNode.parameters)
             {
@@ -142,7 +142,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
     }
 
-    // 遍历当前节点的所有参数parameters 存储了节点的属性值,比如颜色、粗糙度等
+    // 閬嶅巻褰撳墠鑺傜偣鐨勬墍鏈夊弬鏁皃arameters 瀛樺偍浜嗚妭鐐圭殑灞炴€у€?姣斿棰滆壊銆佺矖绯欏害绛?
     for(const auto& paramPair : node.parameters)
     {
       const TfToken& paramName  = paramPair.first;
@@ -174,3 +174,4 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

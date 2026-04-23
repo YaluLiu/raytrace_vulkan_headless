@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,27 +38,31 @@
 #include <pxr/base/gf/vec4f.h>
 
 
-//添加hdlight
+//娣诲姞hdlight
 #include "pxr/imaging/hdSt/light.h"
 #include <memory>
 #include <unordered_map>
 
-//添加hgi
+//娣诲姞hgi
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-using RprimFactory = HdRprim* (*)(const SdfPath&, HdRobotScene&);
+using RprimFactory = HdRprim* (*)(const SdfPath&, HdRobotRenderParam&);
 
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh, HdPrimTypeTokens->points};
 
 const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rprimFactories = {
     {HdPrimTypeTokens->mesh,
-     [](const SdfPath& rprimId, HdRobotScene& scene) -> HdRprim* { return new HdRobotMesh(rprimId, scene); }},
+     [](const SdfPath& rprimId, HdRobotRenderParam& renderParam) -> HdRprim* {
+       return new HdRobotMesh(rprimId, renderParam);
+     }},
     {HdPrimTypeTokens->points,
-     [](const SdfPath& rprimId, HdRobotScene& scene) -> HdRprim* { return new HdRobotPoints(rprimId, scene); }}};
+     [](const SdfPath& rprimId, HdRobotRenderParam& renderParam) -> HdRprim* {
+       return new HdRobotPoints(rprimId, renderParam);
+     }}};
 
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera,
@@ -170,9 +174,13 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused
 
 HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
 {
-  return HdRenderPassSharedPtr(
-      new HdRobotRenderPass(index, collection, _settingsMap, _scene, static_cast<HdRobotRenderParam*>(_renderParam.get()),
-                            _resourcePath));
+  HdRobotRenderParam* robotRenderParam = _GetRobotRenderParam();
+  if(!TF_VERIFY(robotRenderParam != nullptr))
+  {
+    return nullptr;
+  }
+
+  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, _settingsMap, *robotRenderParam, _resourcePath));
 }
 
 HdResourceRegistrySharedPtr HdRobotRenderDelegate::GetResourceRegistry() const
@@ -243,7 +251,12 @@ HdRprim* HdRobotRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath
   const auto factoryIt = _rprimFactories.find(typeId);
   if(factoryIt != _rprimFactories.end())
   {
-    return factoryIt->second(rprimId, _scene);
+    HdRobotRenderParam* robotRenderParam = _GetRobotRenderParam();
+    if(!TF_VERIFY(robotRenderParam != nullptr))
+    {
+      return nullptr;
+    }
+    return factoryIt->second(rprimId, *robotRenderParam);
   }
 
   return nullptr;
@@ -261,25 +274,31 @@ const TfTokenVector& HdRobotRenderDelegate::GetSupportedSprimTypes() const
 
 HdSprim* HdRobotRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& sprimId)
 {
+  HdRobotRenderParam* robotRenderParam = _GetRobotRenderParam();
+  if(!TF_VERIFY(robotRenderParam != nullptr))
+  {
+    return nullptr;
+  }
+
   if(typeId == HdPrimTypeTokens->camera)
   {
     return new HdRobotCamera(sprimId);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {
-    return new HdRobotMaterial(sprimId, _scene);
+    return new HdRobotMaterial(sprimId, *robotRenderParam);
   }
   else if(typeId == HdPrimTypeTokens->distantLight)
   {
-    return new HdRobotDistantLight(sprimId, _scene);
+    return new HdRobotDistantLight(sprimId, *robotRenderParam);
   }
   else if(typeId == HdPrimTypeTokens->sphereLight)
   {
-    return new HdRobotSphereLight(sprimId, _scene);
+    return new HdRobotSphereLight(sprimId, *robotRenderParam);
   }
   else if(typeId == HdPrimTypeTokens->domeLight)
   {
-    return new HdRobotDomeLight(sprimId, _scene);
+    return new HdRobotDomeLight(sprimId, *robotRenderParam);
   }
   return nullptr;
 }
@@ -365,4 +384,10 @@ void HdRobotRenderDelegate::SetDrivers(HdDriverVector const& drivers)
   TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 }
 
+HdRobotRenderParam* HdRobotRenderDelegate::_GetRobotRenderParam() const
+{
+  return _renderParam.get();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
