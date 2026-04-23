@@ -3,7 +3,7 @@
 // #include <vulkan/vulkan.h>
 
 #ifdef WIN32
-#include <handleapi.h>
+#include <windows.h>
 #endif
 #include <nvgl/extensions_gl.hpp>
 
