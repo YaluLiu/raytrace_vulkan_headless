@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,14 +22,14 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
-#include "renderScene.h"
+#include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotMaterial final : public HdMaterial
 {
 public:
-  HdRobotMaterial(const SdfPath& id, HdRobotScene& _scene);
+  HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& _scene);
 
   void Finalize(HdRenderParam* renderParam) override;
 
@@ -39,8 +39,9 @@ public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 
 public:
-  HdRobotScene& _scene;
+  HdRobotRenderParam& _scene;
   int             _mat_id;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

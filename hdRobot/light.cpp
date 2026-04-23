@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2023 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2023 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ float _AreaEllipsoid(float radiusX, float radiusY, float radiusZ)
 // Base Light
 //
 
-HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotScene& scene)
+HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotRenderParam& scene)
     : HdLight(id)
     , _scene(scene)
 {
@@ -99,7 +99,7 @@ void HdRobotLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
 }
 
 // --------Sphere Light-------------------------
-HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotScene& scene)
+HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotRenderParam& scene)
     : HdRobotLight(id, scene)
 {
   _scene.v_light[_light_id].type = 0;
@@ -146,7 +146,7 @@ void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
 }
 
 // --------Distant Light-------------------------
-HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotScene& scene)
+HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotRenderParam& scene)
     : HdRobotLight(id, scene)
 {
   _scene.v_light[_light_id].type = 1;
@@ -193,7 +193,7 @@ void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] 
 
 
 // --------Dome Light-------------------------
-HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotScene& scene)
+HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotRenderParam& scene)
     : HdRobotLight(id, scene)
 {
   _scene.v_light[_light_id].type = 2;
@@ -262,3 +262,4 @@ void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdR
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -373,7 +373,7 @@ bool _IsPrimvarEligibleForVertexData(const TfToken& name, const TfToken& role)
 }
 }  // namespace
 
-HdRobotMesh::HdRobotMesh(const SdfPath& id, HdRobotScene& scene)
+HdRobotMesh::HdRobotMesh(const SdfPath& id, HdRobotRenderParam& scene)
     : HdMesh(id)
     , _scene(scene)
 {
@@ -400,12 +400,12 @@ void HdRobotMesh::Finalize(HdRenderParam* renderParam)
 
 void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
 {
-  // primvars:displayColor 的 token
+  // primvars:displayColor 鐨?token
   TfToken displayColorToken("displayColor");
-  // 获取 primvar
+  // 鑾峰彇 primvar
   VtValue displayColorValue = GetPrimvar(sceneDelegate, displayColorToken);
 
-  // 检查类型是否正确（通常为 VtVec3fArray 或 VtVec4fArray）
+  // 妫€鏌ョ被鍨嬫槸鍚︽纭紙閫氬父涓?VtVec3fArray 鎴?VtVec4fArray锛?
   if(displayColorValue.IsHolding<VtVec3fArray>())
   {
     const VtVec3fArray& colors = displayColorValue.UncheckedGet<VtVec3fArray>();
@@ -510,7 +510,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
       {
         for(int j = 0; j < 4; ++j)
         {
-          _mesh.instanceTransforms[k][i][j] = transform[j][i];  // 按行复制
+          _mesh.instanceTransforms[k][i][j] = transform[j][i];  // 鎸夎澶嶅埗
         }
       }
     }
@@ -525,13 +525,13 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
     {
       for(int j = 0; j < 4; ++j)
       {
-        _mesh.transform[i][j] = transform[j][i];  // 按行复制
+        _mesh.transform[i][j] = transform[j][i];  // 鎸夎澶嶅埗
       }
     }
     _mesh.tlas_changed = true;
   }
 
-  //通过primvar改变颜色
+  //閫氳繃primvar鏀瑰彉棰滆壊
   if((*dirtyBits & HdChangeTracker::DirtyMaterialId) || ((*dirtyBits & HdChangeTracker::DirtyPrimvar)))
   {
     const SdfPath& materialId = sceneDelegate->GetMaterialId(id);
@@ -721,7 +721,7 @@ HdRobotMesh::PrimvarMap HdRobotMesh::_ProcessPrimvars(HdSceneDelegate*    sceneD
 {
   PrimvarMap map;
 
-  // 一次性收集所有 primvar descriptors
+  // 涓€娆℃€ф敹闆嗘墍鏈?primvar descriptors
   std::vector<HdPrimvarDescriptor> primvarDescsAll;
   primvarDescsAll.reserve(int(HdInterpolationCount) * 8);
   for(int i = 0; i < int(HdInterpolationCount); i++)
@@ -730,7 +730,7 @@ HdRobotMesh::PrimvarMap HdRobotMesh::_ProcessPrimvars(HdSceneDelegate*    sceneD
     primvarDescsAll.insert(primvarDescsAll.end(), primvarDescs.begin(), primvarDescs.end());
   }
 
-  // 过滤有效的 primvar
+  // 杩囨护鏈夋晥鐨?primvar
   std::vector<std::pair<size_t, HdPrimvarDescriptor>> validPrimvars;
   validPrimvars.reserve(primvarDescsAll.size());
 
@@ -750,7 +750,7 @@ HdRobotMesh::PrimvarMap HdRobotMesh::_ProcessPrimvars(HdSceneDelegate*    sceneD
     return map;
   }
 
-  // 使用多线程处理
+  // 浣跨敤澶氱嚎绋嬪鐞?
   const size_t numThreads = std::min(std::thread::hardware_concurrency(), static_cast<unsigned int>(validPrimvars.size()));
   const size_t chunkSize = (validPrimvars.size() + numThreads - 1) / numThreads;
 
@@ -791,7 +791,7 @@ HdRobotMesh::PrimvarMap HdRobotMesh::_ProcessPrimvars(HdSceneDelegate*    sceneD
                                     }));
   }
 
-  // 收集所有线程的结果
+  // 鏀堕泦鎵€鏈夌嚎绋嬬殑缁撴灉
   for(auto& future : futures)
   {
     auto results = future.get();
@@ -1033,3 +1033,4 @@ void HdRobotMesh::_InitRepr(const TfToken& reprName, HdDirtyBits* dirtyBits)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

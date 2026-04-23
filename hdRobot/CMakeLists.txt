@@ -15,8 +15,6 @@ add_library(
   renderParam.h
   renderPass.cpp
   renderPass.h
-  renderScene.cpp
-  renderScene.h
   material.cpp
   material.h
   light.cpp

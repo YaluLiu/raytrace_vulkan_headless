@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 #include <ray_trace_app.hpp>
-#include <renderScene.h>
+#include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,11 +55,10 @@ class HdRobotRenderPass final : public HdRenderPass
 {
 public:
   HdRobotRenderPass(HdRenderIndex*             index,
-                      const HdRprimCollection&   collection,
-                      const HdRenderSettingsMap& settings,
-                      HdRobotScene&            scene,
-                      HdRobotRenderParam*      renderParam,
-                      std::string                resourcePath);
+                    const HdRprimCollection&   collection,
+                    const HdRenderSettingsMap& settings,
+                    HdRobotRenderParam&        renderParam,
+                    std::string                resourcePath);
 
   ~HdRobotRenderPass() override;
 
@@ -74,7 +73,7 @@ private:
   const HdRenderSettingsMap& _settings;
   bool                       _isConverged;
   int                        _frame_idx = 0;
-  HdRobotScene&            _scene;
+  HdRobotRenderParam&        _renderParam;
   std::string                _resourcePath;
 
   // ----------------------------------------------------------------------------------
@@ -96,7 +95,6 @@ private:
   bool _isAppInited        = false;
   bool _reset_renderbuffer = false;
   TfTokenVector _activeRenderTags;
-  HdRobotRenderParam* _renderParam{ nullptr };
 
   RayTraceApp                           _renderApp;
   int _width  = -1;
@@ -104,3 +102,4 @@ private:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

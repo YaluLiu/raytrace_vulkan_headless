@@ -1,5 +1,5 @@
-//
-// Copyright (C) 2019-2022 Pablo Delgado Krämer
+﻿//
+// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -226,15 +226,13 @@ namespace
 HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex *index,
                                          const HdRprimCollection &collection,
                                          const HdRenderSettingsMap &settings,
-                                         HdRobotScene &scene,
-                                         HdRobotRenderParam* renderParam,
+                                         HdRobotRenderParam &renderParam,
                                          std::string resourcePath)
     : HdRenderPass(index, collection)
     , _settings(settings)
     , _isConverged(false)
-    , _scene(scene)
-    , _resourcePath(std::move(resourcePath))
     , _renderParam(renderParam)
+    , _resourcePath(std::move(resourcePath))
 {
 }
 
@@ -280,7 +278,7 @@ void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassSta
 {
   if (_UpdateActiveRenderTags(renderTags))
   {
-    for (auto &mesh : _scene.v_mesh)
+    for (auto &mesh : _renderParam.v_mesh)
     {
       mesh.tlas_changed = true;
     }
@@ -337,14 +335,14 @@ void HdRobotRenderPass::app_init_or_resize()
     EnsureDirectoryExists("media/textures");
 
     bool is_first_model = true;
-    for (auto &cur_mesh : _scene.v_mesh)
+    for (auto &cur_mesh : _renderParam.v_mesh)
     {
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       loader.m_textures.clear();
       if (is_first_model)
       {
-        const auto& texturePaths = _scene.GetTexturePaths();
+        const auto& texturePaths = _renderParam.GetTexturePaths();
         for (size_t id = 0; id < texturePaths.size(); ++id)
         {
           auto file_name = open_asset(texturePaths[id], id);
@@ -354,7 +352,7 @@ void HdRobotRenderPass::app_init_or_resize()
       }
       for (auto &mat_id : cur_mesh.scene_mat_ids)
       {
-        auto materialObj = _scene.v_mat[mat_id].toMaterialObj();
+        auto materialObj = _renderParam.v_mat[mat_id].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
       }
       // PrintLoader(loader);
@@ -376,7 +374,7 @@ void HdRobotRenderPass::app_init_or_resize()
       }
       cur_mesh.tlas_changed = true;
     }
-    vulkan.addSpheres(_scene.v_sphere);
+    vulkan.addSpheres(_renderParam.v_sphere);
     _renderApp.createBVH();
   }
   else if (_reset_renderbuffer)
@@ -464,7 +462,7 @@ void HdRobotRenderPass::app_updateLight()
   HelloVulkan &vulkan = _renderApp.getVulkan();
   vulkan.clearLights();
 
-  for (auto &cur_light : _scene.v_light)
+  for (auto &cur_light : _renderParam.v_light)
   {
     if (cur_light.valid)
     {
@@ -535,7 +533,7 @@ void HdRobotRenderPass::app_updateLidarCamera()
   }
 
   HdRobotLidarData lidarData;
-  if(!lidarEnabledBySetting || _renderParam == nullptr || !_renderParam->GetLidarCamera(&lidarData))
+  if(!lidarEnabledBySetting || !_renderParam.GetLidarCamera(&lidarData))
   {
     _renderApp.setLidarEnabled(false);
     return;
@@ -571,12 +569,12 @@ void HdRobotRenderPass::app_anim_real()
 void HdRobotRenderPass::app_update_blas()
 {
   HelloVulkan &vulkan = _renderApp.getVulkan();
-  for (size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+  for (size_t mesh_id = 0; mesh_id < _renderParam.v_mesh.size(); ++mesh_id)
   {
-    if (_scene.v_mesh[mesh_id].blas_changed)
+    if (_renderParam.v_mesh[mesh_id].blas_changed)
     {
-      _scene.v_mesh[mesh_id].blas_changed = false;
-      ConvertVmeshToLoader(_scene.v_mesh[mesh_id], vulkan.m_Loader[mesh_id]);
+      _renderParam.v_mesh[mesh_id].blas_changed = false;
+      ConvertVmeshToLoader(_renderParam.v_mesh[mesh_id], vulkan.m_Loader[mesh_id]);
       vulkan.updateBlas(mesh_id);
     }
   }
@@ -587,9 +585,9 @@ void HdRobotRenderPass::app_update_tlas()
   HelloVulkan &vulkan = _renderApp.getVulkan();
   bool update_tlas = false;
 
-  for (size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+  for (size_t mesh_id = 0; mesh_id < _renderParam.v_mesh.size(); ++mesh_id)
   {
-    auto &cur_mesh = _scene.v_mesh[mesh_id];
+    auto &cur_mesh = _renderParam.v_mesh[mesh_id];
     if (cur_mesh.tlas_changed)
     {
       update_tlas = true;
@@ -641,13 +639,13 @@ void HdRobotRenderPass::app_update_material()
 {
   HelloVulkan &vulkan = _renderApp.getVulkan();
   std::vector<MaterialUpdate> new_materials;
-  for (size_t mesh_id = 0; mesh_id < _scene.v_mesh.size(); ++mesh_id)
+  for (size_t mesh_id = 0; mesh_id < _renderParam.v_mesh.size(); ++mesh_id)
   {
-    auto &cur_mesh = _scene.v_mesh[mesh_id];
+    auto &cur_mesh = _renderParam.v_mesh[mesh_id];
     for (size_t local_mat_idx = 0; local_mat_idx < cur_mesh.scene_mat_ids.size(); ++local_mat_idx)
     {
       int global_mat_id = cur_mesh.scene_mat_ids[local_mat_idx];
-      auto &materialObj = _scene.v_mat[global_mat_id];
+      auto &materialObj = _renderParam.v_mat[global_mat_id];
       if (materialObj.material_changed)
       {
         WaveFrontMaterial new_material = ToWaveFrontMaterial(materialObj);
@@ -659,10 +657,11 @@ void HdRobotRenderPass::app_update_material()
   {
     vulkan.updateMaterialsAtRuntime(new_materials);
   }
-  for (auto &materialObj : _scene.v_mat)
+  for (auto &materialObj : _renderParam.v_mat)
   {
     materialObj.material_changed = false;
   }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
