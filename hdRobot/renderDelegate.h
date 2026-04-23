@@ -18,7 +18,6 @@
 #pragma once
 
 #include <pxr/imaging/hd/renderDelegate.h>
-#include "ray_trace_app.hpp"
 #include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

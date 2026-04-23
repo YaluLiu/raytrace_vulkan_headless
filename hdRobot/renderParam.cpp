@@ -80,6 +80,7 @@ void ConvertVmeshToLoader(const HydraMesh& mesh, ModelLoader& loader)
 
   loader.m_vertices.clear();
   loader.m_indices.clear();
+  loader.m_matIndx.clear();
 
   const auto& points    = mesh.points;
   const auto& normals   = mesh.normals;
