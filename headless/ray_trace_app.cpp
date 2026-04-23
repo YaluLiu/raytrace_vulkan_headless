@@ -302,6 +302,16 @@ void RayTraceApp::setRadarCamera(const RadarCameraInput& radarCamera)
   m_helloVk.setRadarLidarParams(radarCamera.lidarParams);
 }
 
+void RayTraceApp::setLidarEnabled(bool enabled)
+{
+  m_helloVk.setLidarEnabled(enabled);
+}
+
+bool RayTraceApp::isLidarEnabled() const
+{
+  return m_helloVk.isLidarEnabled();
+}
+
 void RayTraceApp::cleanup()
 {
   vkDeviceWaitIdle(m_helloVk.getDevice());

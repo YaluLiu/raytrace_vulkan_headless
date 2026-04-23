@@ -291,7 +291,7 @@ void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassSta
   {
     return;
   }
-  app_updateLidarCamera(mainCameraData);
+  app_updateLidarCamera();
 
   const auto &hdAovBindings = renderPassState->GetAovBindings();
   HdRobotRenderBuffer *primaryRenderBuffer = GetPrimaryRenderBuffer(hdAovBindings);
@@ -506,17 +506,16 @@ bool HdRobotRenderPass::app_updateMainCamera(const HdRenderPassStateSharedPtr& r
   return true;
 }
 
-void HdRobotRenderPass::app_updateLidarCamera(const HdRobotCameraData& fallbackCameraData)
+void HdRobotRenderPass::app_updateLidarCamera()
 {
   HdRobotLidarData lidarData;
   if(_renderParam == nullptr || !_renderParam->GetLidarCamera(&lidarData))
   {
-    lidarData.name   = fallbackCameraData.name;
-    lidarData.eye    = fallbackCameraData.position;
-    lidarData.center = fallbackCameraData.position + fallbackCameraData.forward;
-    lidarData.up     = fallbackCameraData.up;
-    lidarData.fovDeg = fallbackCameraData.vfov_deg;
+    _renderApp.setLidarEnabled(false);
+    return;
   }
+
+  _renderApp.setLidarEnabled(true);
 
   RayTraceApp::RadarCameraInput lidarCamera{};
   lidarCamera.eye         = lidarData.eye;

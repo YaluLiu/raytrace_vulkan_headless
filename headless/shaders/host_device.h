@@ -122,7 +122,7 @@ struct PushConstantRay
   uint        frameIndex;
   int         maxDepth;
   int         samplesPerFrame;
-  int         lidarPassMode;  // 0: lidar point pass, 1: main shading/composite pass
+  int         lidarPassMode;  // 0: lidar point pass, 1: main pass with lidar composite, 2: main pass without lidar
   LidarParams lidar;
 };
 

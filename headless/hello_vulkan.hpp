@@ -44,6 +44,8 @@ public:
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void setRadarCamera(const RadarCameraData& camera);
   void setRadarLidarParams(const LidarParams& params);
+  void setLidarEnabled(bool enabled);
+  bool isLidarEnabled() const { return m_enableLidar; }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
 
@@ -123,7 +125,7 @@ public:
       0,  // frame index
       6,  // max depth
       2,  // samples per frame
-      1,  // lidar pass mode (default main pass)
+      1,  // lidar pass mode (0: lidar pass, 1: main+lidar composite, 2: main without lidar)
       {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f}};
 
   // #VK_animation
@@ -324,5 +326,6 @@ private:
   bool      m_hasLastCamera{false};
   RadarCameraData m_radarCamera{};
   bool            m_hasRadarCamera{false};
+  bool            m_enableLidar{true};
   LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
 };

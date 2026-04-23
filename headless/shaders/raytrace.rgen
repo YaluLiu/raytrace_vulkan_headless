@@ -220,13 +220,16 @@ void main()
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
   imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
 
-  vec4  lidarPoint    = imageLoad(lidarPointCloudImage, pixel);
-  float lidarViewZ    = lidarPoint.a;
-  bool  hasLidarPoint = lidarViewZ > 0.0;
-  bool  lidarVisible  = (!hasPrimaryHit) || (lidarViewZ <= primaryViewZ + kLidarDepthCompositeEpsilon);
-  if(hasLidarPoint && lidarVisible)
+  if(pcRay.lidarPassMode == 1)
   {
-    outColor = lidarPoint.rgb;
+    vec4  lidarPoint    = imageLoad(lidarPointCloudImage, pixel);
+    float lidarViewZ    = lidarPoint.a;
+    bool  hasLidarPoint = lidarViewZ > 0.0;
+    bool  lidarVisible  = (!hasPrimaryHit) || (lidarViewZ <= primaryViewZ + kLidarDepthCompositeEpsilon);
+    if(hasLidarPoint && lidarVisible)
+    {
+      outColor = lidarPoint.rgb;
+    }
   }
 
   imageStore(image, pixel, vec4(outColor, 1.0));

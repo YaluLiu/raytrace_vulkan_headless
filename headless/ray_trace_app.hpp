@@ -49,6 +49,8 @@ public:
   // save local png file
   void saveFrame(std::string outputImagePath = "headless.png");
   void setRadarCamera(const RadarCameraInput& radarCamera);
+  void setLidarEnabled(bool enabled);
+  bool isLidarEnabled() const;
 
   // 
   HelloVulkan& getVulkan() { return m_helloVk; };

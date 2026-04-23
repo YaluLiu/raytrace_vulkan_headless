@@ -172,6 +172,15 @@ void HelloVulkan::setRadarLidarParams(const LidarParams& params)
   }
 }
 
+void HelloVulkan::setLidarEnabled(bool enabled)
+{
+  if(m_enableLidar != enabled)
+  {
+    m_enableLidar = enabled;
+    resetAccumulation();
+  }
+}
+
 bool HelloVulkan::shouldRenderAtDlssScale() const
 {
   return m_enableDlssRR && m_enableDlssSR && m_dlssRR.isOperational() && m_dlssSRScale < 0.999f;
