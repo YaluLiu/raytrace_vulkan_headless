@@ -129,14 +129,10 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
                 }
                 else if(paramValue.IsHolding<std::string>())
                 {
-                  std::cout << "String = " << paramValue.Get<std::string>() << std::endl;
+                  TF_UNUSED(paramValue);
                 }
               }
             }
-          }
-          else
-          {
-            std::cout << "  Warning: Upstream node not found!" << std::endl;
           }
         }
       }

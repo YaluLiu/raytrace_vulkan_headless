@@ -427,16 +427,7 @@ void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
   }
   else if(displayColorValue.IsHolding<VtVec4fArray>())
   {
-    const VtVec4fArray& colors = displayColorValue.UncheckedGet<VtVec4fArray>();
-    for(size_t i = 0; i < colors.size(); ++i)
-    {
-      const GfVec4f& c = colors[i];
-      printf("displayColor[%zu]: R: %.4f, G: %.4f, B: %.4f, A: %.4f\n", i, c[0], c[1], c[2], c[3]);
-    }
-  }
-  else
-  {
-    printf("displayColor primvar not found or not a supported type.\n");
+    // Vec4 displayColor is currently unsupported for direct fallback material extraction.
   }
 }
 

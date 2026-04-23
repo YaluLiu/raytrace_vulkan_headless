@@ -355,7 +355,6 @@ void HdRobotRenderPass::app_init_or_resize()
         auto materialObj = _renderParam.v_mat[mat_id].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
       }
-      // PrintLoader(loader);
       vulkan.loadModel(loader);
       auto instance = vulkan.m_instances.back();
       const size_t first_instance_id = vulkan.m_instances.size() - 1;
