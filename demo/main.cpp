@@ -2,6 +2,7 @@
 #include "obj_loader.h"
 #include "usd_loader.h"
 #include <array>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
@@ -15,15 +16,17 @@ namespace {
 constexpr int   kRenderWidth            = 3840;
 constexpr int   kRenderHeight           = 2160;
 constexpr int   kOutputFrameCount       = 2;
+constexpr float kMainCameraStepDeg      = 30.0f;
 const fs::path  kOutputDirectory        = "result";
-const glm::vec3 kInitialCameraEye       = {0.2f, 1.35f, 3.6f};
+const glm::vec3 kInitialCameraEye       = {1.2f, 2.5f, 10.0f};
+const glm::vec3 kInitialLidarEye        = {0.2f, 0.5f, 10.0f};
 const glm::vec3 kInitialCameraCenter    = {1.0f, 1.0f, 0.6f};
 const glm::vec3 kInitialCameraUp        = {0.0f, 1.0f, 0.0f};
 const glm::vec3 kGroundPlaneScale       = {2.f, 1.f, 2.f};
 const glm::vec3 kIdentityScale          = {1.f, 1.f, 1.f};
 const glm::vec3 kCatTranslation         = {0.0f, 0.5f, 0.0f};
 const glm::vec3 kBeautyBallTranslation  = {2.0f, 0.5f, 1.0f};
-const LidarParams kDefaultRadarParams   = {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
+const LidarParams kDefaultRadarParams   = {-120.0f, 120.0f, 1.0f, -2.0f, -20.0f, 0.5f, 2.0f, 200.0f};
 
 class DemoOpenGLContext
 {
@@ -93,6 +96,14 @@ std::string buildOutputFramePath(const fs::path& outputDir, int frameIndex)
 {
   return (outputDir / (std::to_string(frameIndex) + ".png")).string();
 }
+
+glm::vec3 rotateAroundYAxis(const glm::vec3& offset, float angleDeg)
+{
+  const float angleRad = glm::radians(angleDeg);
+  const float cosTheta = std::cos(angleRad);
+  const float sinTheta = std::sin(angleRad);
+  return {cosTheta * offset.x + sinTheta * offset.z, offset.y, -sinTheta * offset.x + cosTheta * offset.z};
+}
 }  // namespace
 
 class RayTraceAppTest
@@ -153,30 +164,30 @@ private:
 
   void renderFrames()
   {
-    m_app.render();
-    
     fs::create_directories(kOutputDirectory);
-    syncRadarCameraWithMainCamera(/*reverseEyeAndCenter=*/false);
+    setFixedRadarCameraFromMainCamera();
     m_app.render();
-    m_app.saveFrame(buildOutputFramePath(kOutputDirectory, 0));
 
-    if(kOutputFrameCount >= 2)
+    for(int frameIndex = 0; frameIndex < kOutputFrameCount; ++frameIndex)
     {
-      syncRadarCameraWithMainCamera(/*reverseEyeAndCenter=*/true);
+      updateMainCameraForFrame(frameIndex);
       m_app.render();
-      m_app.saveFrame(buildOutputFramePath(kOutputDirectory, 1));
+      m_app.saveFrame(buildOutputFramePath(kOutputDirectory, frameIndex));
     }
   }
 
-  void syncRadarCameraWithMainCamera(bool reverseEyeAndCenter)
+  void updateMainCameraForFrame(int frameIndex)
+  {
+    const glm::vec3 orbitOffset = rotateAroundYAxis(kInitialCameraEye - kInitialCameraCenter,
+                                                    static_cast<float>(frameIndex) * kMainCameraStepDeg);
+    CameraManip.setLookat(kInitialCameraCenter + orbitOffset, kInitialCameraCenter, kInitialCameraUp);
+  }
+
+  void setFixedRadarCameraFromMainCamera()
   {
     RayTraceApp::RadarCameraInput radarCamera{};
-    radarCamera.eye         = CameraManip.getEye();
+    radarCamera.eye         = kInitialLidarEye;
     radarCamera.center      = CameraManip.getCenter();
-    if(reverseEyeAndCenter)
-    {
-      std::swap(radarCamera.eye, radarCamera.center);
-    }
     radarCamera.up          = CameraManip.getUp();
     radarCamera.fovDeg      = CameraManip.getFov();
     radarCamera.lidarParams = {kDefaultRadarParams.azimuthMinDeg, kDefaultRadarParams.azimuthMaxDeg,
