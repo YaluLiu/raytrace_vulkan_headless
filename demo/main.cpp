@@ -75,7 +75,14 @@ void setEnvDefault(const char* name, const char* value)
 {
   if(std::getenv(name) == nullptr)
   {
+#ifdef _WIN32
+    if(_putenv_s(name, value) != 0)
+    {
+      throw std::runtime_error(std::string("Failed to set environment variable: ") + name);
+    }
+#else
     setenv(name, value, 0);
+#endif
   }
 }
 
@@ -201,7 +208,7 @@ private:
   void loadGroundPlane()
   {
     ObjLoader planeLoader;
-    planeLoader.loadModel(m_cwd / "media/scenes/plane.obj");
+    planeLoader.loadModel((m_cwd / "media/scenes/plane.obj").string());
     m_app.getVulkan().loadModel(planeLoader, glm::scale(glm::mat4(1.f), kGroundPlaneScale));
   }
 
@@ -209,7 +216,7 @@ private:
   {
     // 球体
     ObjLoader sphereLoader;
-    sphereLoader.loadModel(m_cwd / "media/scenes/sphere.obj");
+    sphereLoader.loadModel((m_cwd / "media/scenes/sphere.obj").string());
     m_app.getVulkan().loadModel(sphereLoader);
 
     loadGroundPlane();
@@ -220,7 +227,7 @@ private:
   {
     // cat
     UsdLoader catLoader;
-    catLoader.loadModel(m_cwd / "media/scenes/cat/cat.usdz");
+    catLoader.loadModel((m_cwd / "media/scenes/cat/cat.usdz").string());
 
     catLoader.m_textures.clear();
     catLoader.m_textures.push_back("cat.png");
@@ -231,7 +238,7 @@ private:
                                                * glm::translate(glm::mat4(1.0f), kCatTranslation));
 
     UsdLoader ballLoader;
-    ballLoader.loadModel(m_cwd / "media/scenes/beautyball/beautyball.usdz");
+    ballLoader.loadModel((m_cwd / "media/scenes/beautyball/beautyball.usdz").string());
     ballLoader.m_textures.clear();
     ballLoader.m_materials[0].textureID = 1;
 

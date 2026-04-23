@@ -82,7 +82,11 @@ foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
   target_link_libraries(${PROJNAME} optimized ${RELEASELIB})
 endforeach(RELEASELIB)
 
-target_link_libraries(${PROJNAME} EGL GL)
+if(WIN32)
+  target_link_libraries(${PROJNAME} opengl32)
+elseif(UNIX AND NOT APPLE)
+  target_link_libraries(${PROJNAME} EGL GL)
+endif()
 
 set(DLSS_RR_FOUND OFF)
 if(ENABLE_DLSS_RR)
