@@ -508,8 +508,34 @@ bool HdRobotRenderPass::app_updateMainCamera(const HdRenderPassStateSharedPtr& r
 
 void HdRobotRenderPass::app_updateLidarCamera()
 {
+  bool lidarEnabledBySetting = true;
+  if(const auto it = _settings.find(HdRobotSettingsTokens->lidarEnable); it != _settings.end())
+  {
+    const VtValue& value = it->second;
+    if(value.IsHolding<bool>())
+    {
+      lidarEnabledBySetting = value.UncheckedGet<bool>();
+    }
+    else if(value.IsHolding<int>())
+    {
+      lidarEnabledBySetting = value.UncheckedGet<int>() != 0;
+    }
+    else if(value.IsHolding<unsigned int>())
+    {
+      lidarEnabledBySetting = value.UncheckedGet<unsigned int>() != 0;
+    }
+    else if(value.IsHolding<float>())
+    {
+      lidarEnabledBySetting = value.UncheckedGet<float>() != 0.0f;
+    }
+    else if(value.IsHolding<double>())
+    {
+      lidarEnabledBySetting = value.UncheckedGet<double>() != 0.0;
+    }
+  }
+
   HdRobotLidarData lidarData;
-  if(_renderParam == nullptr || !_renderParam->GetLidarCamera(&lidarData))
+  if(!lidarEnabledBySetting || _renderParam == nullptr || !_renderParam->GetLidarCamera(&lidarData))
   {
     _renderApp.setLidarEnabled(false);
     return;

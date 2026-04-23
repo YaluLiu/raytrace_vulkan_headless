@@ -86,6 +86,8 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
       HdRenderSettingDescriptor{"Enable DLSS-SR Upscale", HdRobotSettingsTokens->dlssSREnable, VtValue(true)});
   _settingDescriptors.emplace_back(
       HdRenderSettingDescriptor{"DLSS-SR Render Scale", HdRobotSettingsTokens->dlssSRScale, VtValue(0.6f)});
+  _settingDescriptors.emplace_back(
+      HdRenderSettingDescriptor{"Enable Lidar", HdRobotSettingsTokens->lidarEnable, VtValue(true)});
 
   if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
   {
@@ -102,6 +104,10 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
   if(_settingsMap.find(HdRobotSettingsTokens->dlssSRScale) == _settingsMap.end())
   {
     _settingsMap[HdRobotSettingsTokens->dlssSRScale] = VtValue(0.6f);
+  }
+  if(_settingsMap.find(HdRobotSettingsTokens->lidarEnable) == _settingsMap.end())
+  {
+    _settingsMap[HdRobotSettingsTokens->lidarEnable] = VtValue(true);
   }
 }
 
