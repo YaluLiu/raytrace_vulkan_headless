@@ -127,10 +127,6 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
                   // std::cout << "[material] _mat_id:" << _mat_id << "," << upstreamNodePath << ","
                   //           << _scene.v_mat[_mat_id].texturePath << std::endl;
                 }
-                else if(paramValue.IsHolding<std::string>())
-                {
-                  TF_UNUSED(paramValue);
-                }
               }
             }
           }
