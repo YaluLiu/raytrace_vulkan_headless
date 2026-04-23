@@ -1,5 +1,6 @@
-const float kLidarMinStepDeg = 1e-4;
-const float kLidarRayTMin    = 0.001;
+const float kLidarMinStepDeg   = 1e-4;
+const float kLidarRayTMin      = 0.001;
+const float kLidarMinValidViewZ = 1e-6;
 
 int lidarAxisSampleCount(float minDeg, float maxDeg, float stepDeg)
 {
@@ -114,12 +115,19 @@ bool projectWorldToMainPixel(vec3 worldPos, out ivec2 screenPixel)
   return true;
 }
 
-void splatPoint(ivec2 centerPixel, float radiusPx, vec3 color)
+float computeMainViewZ(vec3 worldPos)
+{
+  vec4 viewPos = frameUni.camera.view * vec4(worldPos, 1.0);
+  return max(-viewPos.z, 0.0);
+}
+
+void splatPoint(ivec2 centerPixel, float radiusPx, vec3 color, float viewZ)
 {
   ivec2 imageExtent = imageSize(lidarPointCloudImage);
   float radius      = max(radiusPx, 0.5);
   int   radiusInt   = int(ceil(radius));
   float radiusSq    = radius * radius;
+  float encodedViewZ = max(viewZ, kLidarMinValidViewZ);
 
   for(int y = -radiusInt; y <= radiusInt; ++y)
   {
@@ -137,7 +145,13 @@ void splatPoint(ivec2 centerPixel, float radiusPx, vec3 color)
         continue;
       }
 
-      imageStore(lidarPointCloudImage, dstPixel, vec4(color, 1.0));
+      vec4 existingPoint = imageLoad(lidarPointCloudImage, dstPixel);
+      if(existingPoint.a > 0.0 && existingPoint.a <= encodedViewZ)
+      {
+        continue;
+      }
+
+      imageStore(lidarPointCloudImage, dstPixel, vec4(color, encodedViewZ));
     }
   }
 }
