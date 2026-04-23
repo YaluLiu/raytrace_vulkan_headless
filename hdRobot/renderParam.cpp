@@ -19,7 +19,6 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
-#include <iomanip>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -130,93 +129,6 @@ void ConvertVmeshToLoader(const HydraMesh& mesh, ModelLoader& loader)
   }
 
   vertexOffset += points.size();
-}
-
-void add_default_material(ModelLoader& loader)
-{
-  MaterialObj mat;
-  mat.textureID = 0;
-  loader.m_materials.emplace_back(mat);
-
-  mat.textureID = -1;
-  loader.m_materials.emplace_back(mat);
-
-  if(loader.m_materials.empty())
-  {
-    loader.m_materials.emplace_back(mat);
-  }
-}
-
-void PrintLoader(const ModelLoader& loader, int n)
-{
-  std::cout << std::fixed << std::setprecision(6);
-  std::cout << "m_indices count: " << loader.m_indices.size() << '\n';
-  std::cout << "m_matIndx count: " << loader.m_matIndx.size() << '\n';
-
-  int start        = 0;
-  int currentValue = loader.m_matIndx[0];
-  for(int i = 1; i <= static_cast<int>(loader.m_matIndx.size()); ++i)
-  {
-    if(i == static_cast<int>(loader.m_matIndx.size()) || loader.m_matIndx[i] != currentValue)
-    {
-      std::cout << start << "-" << i - 1 << ": " << currentValue;
-      if(i < static_cast<int>(loader.m_matIndx.size()))
-      {
-        std::cout << ", ";
-        currentValue = loader.m_matIndx[i];
-        start        = i;
-      }
-    }
-  }
-  std::cout << '\n';
-  TF_UNUSED(n);
-}
-
-void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader)
-{
-  if(tempLoader.m_vertices.size() != loader.m_vertices.size())
-  {
-    std::cout << "m_vertices mismatch: tempLoader=" << tempLoader.m_vertices.size() << ", loader="
-              << loader.m_vertices.size() << '\n';
-  }
-
-  bool verticesMatch = true;
-  for(size_t i = 0; i < 5; ++i)
-  {
-    const auto& v1 = tempLoader.m_vertices[i];
-    const auto& v2 = loader.m_vertices[i];
-    if(v1.pos != v2.pos || v1.nrm != v2.nrm || v1.texCoord != v2.texCoord || v1.color != v2.color)
-    {
-      std::cout << "m_vertices[" << i << "] mismatch\n";
-      verticesMatch = false;
-    }
-  }
-
-  if(tempLoader.m_indices.size() != loader.m_indices.size())
-  {
-    std::cout << "m_indices mismatch: tempLoader=" << tempLoader.m_indices.size() << ", loader="
-              << loader.m_indices.size() << '\n';
-  }
-
-  bool indicesMatch = true;
-  for(size_t i = 0; i < 5; ++i)
-  {
-    if(tempLoader.m_indices[i] != loader.m_indices[i])
-    {
-      std::cout << "m_indices[" << i << "] mismatch: tempLoader=" << tempLoader.m_indices[i]
-                << ", loader=" << loader.m_indices[i] << '\n';
-      indicesMatch = false;
-    }
-  }
-
-  if(verticesMatch && indicesMatch)
-  {
-    std::cout << "data match\n";
-  }
-  else
-  {
-    std::cout << "data mismatch\n";
-  }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

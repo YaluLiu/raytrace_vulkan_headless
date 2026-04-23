@@ -184,9 +184,6 @@ private:
   bool               _warnedMultipleLidarCameras{ false };
 };
 
-void add_default_material(ModelLoader& loader);
 void ConvertVmeshToLoader(const HydraMesh& mesh, ModelLoader& loader);
-void compareLoaders(const ModelLoader& tempLoader, const ModelLoader& loader);
-void PrintLoader(const ModelLoader& loader, int n = 5);
 
 PXR_NAMESPACE_CLOSE_SCOPE
