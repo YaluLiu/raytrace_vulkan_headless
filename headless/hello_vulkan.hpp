@@ -264,6 +264,8 @@ public:
   bool                                m_enableDlssRR{true};
   bool                                m_enableDlssSR{true};
   float                               m_dlssSRScale{0.6f};
+  bool                                m_dlssRRSizeSupported{false};
+  dlss::PerfQuality                   m_dlssRRPerfQuality{dlss::PerfQuality::Balanced};
   VkExtent2D                          m_renderSize{0, 0};
 
   // depth buffer
@@ -316,8 +318,8 @@ private:
                             int                     glMinFilter,
                             int                     glMagFilter,
                             VkExtent2D              extent = {0, 0});
-  bool       shouldRenderAtDlssScale() const;
-  VkExtent2D computeRenderSize() const;
+  dlss::PerfQuality desiredDlssPerfQuality() const;
+  VkExtent2D computeRenderSize();
   void       refreshOffscreenRenderTargetsIfNeeded();
 
   uint32_t  m_accumulatedFrames{0};

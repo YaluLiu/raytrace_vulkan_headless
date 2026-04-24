@@ -87,6 +87,28 @@ float clampDlssScale(float scale)
 {
   return std::clamp(scale, 0.1f, 1.0f);
 }
+
+dlss::PerfQuality dlssPerfQualityForScale(float scale)
+{
+  const float clamped = clampDlssScale(scale);
+  if(clamped >= 0.999f)
+  {
+    return dlss::PerfQuality::DLAA;
+  }
+  if(clamped >= 0.625f)
+  {
+    return dlss::PerfQuality::MaxQuality;
+  }
+  if(clamped >= 0.5417f)
+  {
+    return dlss::PerfQuality::Balanced;
+  }
+  if(clamped >= 0.4167f)
+  {
+    return dlss::PerfQuality::MaxPerformance;
+  }
+  return dlss::PerfQuality::UltraPerformance;
+}
 }  // namespace
 //--------------------------------------------------------------------------------------------------
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
@@ -181,22 +203,34 @@ void HelloVulkan::setLidarEnabled(bool enabled)
   }
 }
 
-bool HelloVulkan::shouldRenderAtDlssScale() const
+dlss::PerfQuality HelloVulkan::desiredDlssPerfQuality() const
 {
-  return m_enableDlssRR && m_enableDlssSR && m_dlssRR.isOperational() && m_dlssSRScale < 0.999f;
+  if(!m_enableDlssSR || m_dlssSRScale >= 0.999f)
+  {
+    return dlss::PerfQuality::DLAA;
+  }
+  return dlssPerfQualityForScale(m_dlssSRScale);
 }
 
-VkExtent2D HelloVulkan::computeRenderSize() const
+VkExtent2D HelloVulkan::computeRenderSize()
 {
-  if(!shouldRenderAtDlssScale() || m_size.width == 0 || m_size.height == 0)
+  m_dlssRRSizeSupported = false;
+
+  if(!m_enableDlssRR || !m_dlssRR.isOperational() || m_size.width == 0 || m_size.height == 0)
   {
     return m_size;
   }
 
-  const float scale = clampDlssScale(m_dlssSRScale);
-  const auto  scaledWidth = static_cast<uint32_t>(std::max(1.0f, std::round(static_cast<float>(m_size.width) * scale)));
-  const auto  scaledHeight = static_cast<uint32_t>(std::max(1.0f, std::round(static_cast<float>(m_size.height) * scale)));
-  return {std::min(scaledWidth, m_size.width), std::min(scaledHeight, m_size.height)};
+  m_dlssRRPerfQuality = desiredDlssPerfQuality();
+
+  dlss::OptimalSettings settings{};
+  if(m_dlssRR.queryOptimalSettings(m_size.width, m_size.height, m_dlssRRPerfQuality, settings))
+  {
+    m_dlssRRSizeSupported = true;
+    return {settings.renderWidth, settings.renderHeight};
+  }
+
+  return m_size;
 }
 
 void HelloVulkan::refreshOffscreenRenderTargetsIfNeeded()
@@ -617,6 +651,7 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
   eval.renderHeight = m_renderSize.height;
   eval.targetWidth = m_size.width;
   eval.targetHeight = m_size.height;
+  eval.perfQuality = m_dlssRRPerfQuality;
   eval.reset       = (m_accumulatedFrames <= 1);
   eval.frameTimeMs = 16.6667f;
   eval.worldToView = m_lastView;
@@ -634,7 +669,7 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
   static bool reportedFailure = false;
   static bool reportedSuccess = false;
   bool        dlssApplied     = false;
-  if(m_enableDlssRR && m_dlssRR.isOperational())
+  if(m_enableDlssRR && m_dlssRR.isOperational() && m_dlssRRSizeSupported)
   {
     if(!m_dlssRR.evaluate(eval))
     {

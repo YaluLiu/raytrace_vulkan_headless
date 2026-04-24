@@ -43,6 +43,95 @@ std::string joinStrings(const std::vector<std::string>& values, const char* deli
 }
 
 #if ENABLE_DLSS_RR
+using DlssdGetOptimalSettingsCallback = NVSDK_NGX_Result(NVSDK_CONV*)(NVSDK_NGX_Parameter*);
+
+NVSDK_NGX_PerfQuality_Value toNgxPerfQuality(dlss::PerfQuality quality)
+{
+  switch(quality)
+  {
+    case dlss::PerfQuality::MaxPerformance:
+      return NVSDK_NGX_PerfQuality_Value_MaxPerf;
+    case dlss::PerfQuality::Balanced:
+      return NVSDK_NGX_PerfQuality_Value_Balanced;
+    case dlss::PerfQuality::MaxQuality:
+      return NVSDK_NGX_PerfQuality_Value_MaxQuality;
+    case dlss::PerfQuality::UltraPerformance:
+      return NVSDK_NGX_PerfQuality_Value_UltraPerformance;
+    case dlss::PerfQuality::UltraQuality:
+      return NVSDK_NGX_PerfQuality_Value_UltraQuality;
+    case dlss::PerfQuality::DLAA:
+      return NVSDK_NGX_PerfQuality_Value_DLAA;
+  }
+  return NVSDK_NGX_PerfQuality_Value_Balanced;
+}
+
+const char* perfQualityName(dlss::PerfQuality quality)
+{
+  switch(quality)
+  {
+    case dlss::PerfQuality::MaxPerformance:
+      return "MaxPerformance";
+    case dlss::PerfQuality::Balanced:
+      return "Balanced";
+    case dlss::PerfQuality::MaxQuality:
+      return "MaxQuality";
+    case dlss::PerfQuality::UltraPerformance:
+      return "UltraPerformance";
+    case dlss::PerfQuality::UltraQuality:
+      return "UltraQuality";
+    case dlss::PerfQuality::DLAA:
+      return "DLAA";
+  }
+  return "Balanced";
+}
+
+NVSDK_NGX_Result queryDlssdOptimalSettings(NVSDK_NGX_Parameter* params,
+                                           unsigned int         targetWidth,
+                                           unsigned int         targetHeight,
+                                           NVSDK_NGX_PerfQuality_Value quality,
+                                           unsigned int*        optimalWidth,
+                                           unsigned int*        optimalHeight,
+                                           unsigned int*        maxWidth,
+                                           unsigned int*        maxHeight,
+                                           unsigned int*        minWidth,
+                                           unsigned int*        minHeight,
+                                           float*               sharpness)
+{
+  void* callback = nullptr;
+  NVSDK_NGX_Parameter_GetVoidPointer(params, NVSDK_NGX_Parameter_DLSSDOptimalSettingsCallback, &callback);
+  if(callback == nullptr)
+  {
+    return NVSDK_NGX_Result_FAIL_OutOfDate;
+  }
+
+  NVSDK_NGX_Parameter_SetUI(params, NVSDK_NGX_Parameter_Width, targetWidth);
+  NVSDK_NGX_Parameter_SetUI(params, NVSDK_NGX_Parameter_Height, targetHeight);
+  NVSDK_NGX_Parameter_SetI(params, NVSDK_NGX_Parameter_PerfQualityValue, quality);
+  NVSDK_NGX_Parameter_SetI(params, NVSDK_NGX_Parameter_RTXValue, false);
+
+  const auto callbackFn = reinterpret_cast<DlssdGetOptimalSettingsCallback>(callback);
+  const NVSDK_NGX_Result result = callbackFn(params);
+  if(result != NVSDK_NGX_Result_Success)
+  {
+    return result;
+  }
+
+  NVSDK_NGX_Parameter_GetUI(params, NVSDK_NGX_Parameter_OutWidth, optimalWidth);
+  NVSDK_NGX_Parameter_GetUI(params, NVSDK_NGX_Parameter_OutHeight, optimalHeight);
+
+  *maxWidth  = *optimalWidth;
+  *maxHeight = *optimalHeight;
+  *minWidth  = *optimalWidth;
+  *minHeight = *optimalHeight;
+
+  NVSDK_NGX_Parameter_GetUI(params, NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Width, maxWidth);
+  NVSDK_NGX_Parameter_GetUI(params, NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Max_Render_Height, maxHeight);
+  NVSDK_NGX_Parameter_GetUI(params, NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Width, minWidth);
+  NVSDK_NGX_Parameter_GetUI(params, NVSDK_NGX_Parameter_DLSS_Get_Dynamic_Min_Render_Height, minHeight);
+  NVSDK_NGX_Parameter_GetF(params, NVSDK_NGX_Parameter_Sharpness, sharpness);
+  return result;
+}
+
 std::string wideToAscii(const wchar_t* value)
 {
   if(value == nullptr)
@@ -59,6 +148,13 @@ std::string wideToAscii(const wchar_t* value)
   return out;
 }
 #endif
+
+std::string formatDimensions(const char* label, uint32_t width, uint32_t height)
+{
+  std::ostringstream oss;
+  oss << label << "=" << width << "x" << height;
+  return oss.str();
+}
 
 std::string formatErrorMessage(const char* prefix, int resultCode)
 {
@@ -99,6 +195,7 @@ struct DlssRR::Impl
   uint32_t featureRenderHeight{0};
   uint32_t featureTargetWidth{0};
   uint32_t featureTargetHeight{0};
+  PerfQuality featurePerfQuality{PerfQuality::Balanced};
 
   std::wstring                appDataPathWide;
   std::vector<std::wstring>   featureSearchPathsWide;
@@ -323,10 +420,63 @@ void DlssRR::shutdown()
   m_impl->featureRenderHeight = 0;
   m_impl->featureTargetWidth  = 0;
   m_impl->featureTargetHeight = 0;
+  m_impl->featurePerfQuality  = PerfQuality::Balanced;
 #endif
 
   m_impl->initialized = false;
   m_impl->operational = false;
+}
+
+bool DlssRR::queryOptimalSettings(uint32_t targetWidth, uint32_t targetHeight, PerfQuality quality, OptimalSettings& settings)
+{
+  settings = {};
+
+#if !ENABLE_DLSS_RR
+  (void)targetWidth;
+  (void)targetHeight;
+  (void)quality;
+  m_impl->lastError = "DLSS-RR is disabled at build time";
+  return false;
+#else
+  if(!m_impl->operational || !m_impl->initialized || m_impl->capabilityParams == nullptr)
+  {
+    m_impl->lastError = "DLSS-RR optimal settings query failed: feature is not operational";
+    return false;
+  }
+
+  if(targetWidth == 0 || targetHeight == 0)
+  {
+    m_impl->lastError = "DLSS-RR optimal settings query failed: invalid target dimensions";
+    return false;
+  }
+
+  unsigned int optimalWidth = 0;
+  unsigned int optimalHeight = 0;
+  unsigned int maxWidth = 0;
+  unsigned int maxHeight = 0;
+  unsigned int minWidth = 0;
+  unsigned int minHeight = 0;
+  float        sharpness = 0.0f;
+
+  const NVSDK_NGX_Result result =
+      queryDlssdOptimalSettings(m_impl->capabilityParams, targetWidth, targetHeight, toNgxPerfQuality(quality),
+                                &optimalWidth, &optimalHeight, &maxWidth, &maxHeight, &minWidth, &minHeight, &sharpness);
+  if(result != NVSDK_NGX_Result_Success || optimalWidth == 0 || optimalHeight == 0)
+  {
+    m_impl->lastError = formatErrorMessage("DLSS-RR optimal settings query failed", static_cast<int>(result)) + ", "
+                        + formatDimensions("target", targetWidth, targetHeight) + ", quality=" + perfQualityName(quality);
+    return false;
+  }
+
+  settings.renderWidth     = optimalWidth;
+  settings.renderHeight    = optimalHeight;
+  settings.minRenderWidth  = minWidth;
+  settings.minRenderHeight = minHeight;
+  settings.maxRenderWidth  = maxWidth;
+  settings.maxRenderHeight = maxHeight;
+  settings.sharpness       = sharpness;
+  return true;
+#endif
 }
 
 bool DlssRR::evaluate(const EvaluateInputs& inputs)
@@ -368,7 +518,7 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
 
   if(m_impl->featureHandle == nullptr || m_impl->featureRenderWidth != inputs.renderWidth
      || m_impl->featureRenderHeight != inputs.renderHeight || m_impl->featureTargetWidth != inputs.targetWidth
-     || m_impl->featureTargetHeight != inputs.targetHeight)
+     || m_impl->featureTargetHeight != inputs.targetHeight || m_impl->featurePerfQuality != inputs.perfQuality)
   {
     if(m_impl->featureHandle != nullptr)
     {
@@ -384,9 +534,7 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
     createParams.InHeight               = inputs.renderHeight;
     createParams.InTargetWidth          = inputs.targetWidth;
     createParams.InTargetHeight         = inputs.targetHeight;
-    createParams.InPerfQualityValue     = (inputs.renderWidth == inputs.targetWidth && inputs.renderHeight == inputs.targetHeight)
-                                              ? NVSDK_NGX_PerfQuality_Value_DLAA
-                                              : NVSDK_NGX_PerfQuality_Value_Balanced;
+    createParams.InPerfQualityValue     = toNgxPerfQuality(inputs.perfQuality);
     createParams.InFeatureCreateFlags   = NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
     createParams.InEnableOutputSubrects = false;
 
@@ -395,7 +543,10 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
 
     if(createResult != NVSDK_NGX_Result_Success || m_impl->featureHandle == nullptr)
     {
-      m_impl->lastError = formatErrorMessage("DLSS-RR feature creation failed", static_cast<int>(createResult));
+      m_impl->lastError = formatErrorMessage("DLSS-RR feature creation failed", static_cast<int>(createResult)) + ", "
+                          + formatDimensions("render", inputs.renderWidth, inputs.renderHeight) + ", "
+                          + formatDimensions("target", inputs.targetWidth, inputs.targetHeight) + ", quality="
+                          + perfQualityName(inputs.perfQuality);
       return false;
     }
 
@@ -403,6 +554,7 @@ bool DlssRR::evaluate(const EvaluateInputs& inputs)
     m_impl->featureRenderHeight = inputs.renderHeight;
     m_impl->featureTargetWidth  = inputs.targetWidth;
     m_impl->featureTargetHeight = inputs.targetHeight;
+    m_impl->featurePerfQuality  = inputs.perfQuality;
   }
 
   VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};

@@ -10,6 +10,16 @@
 
 namespace dlss {
 
+enum class PerfQuality
+{
+  MaxPerformance,
+  Balanced,
+  MaxQuality,
+  UltraPerformance,
+  UltraQuality,
+  DLAA,
+};
+
 struct ImageInput
 {
   VkImage       image{VK_NULL_HANDLE};
@@ -35,6 +45,7 @@ struct EvaluateInputs
   uint32_t        renderHeight{0};
   uint32_t        targetWidth{0};
   uint32_t        targetHeight{0};
+  PerfQuality     perfQuality{PerfQuality::Balanced};
 
   bool  reset{false};
   float jitterX{0.0f};
@@ -56,6 +67,17 @@ struct EvaluateInputs
   ImageInput specularHitDistance;
 };
 
+struct OptimalSettings
+{
+  uint32_t renderWidth{0};
+  uint32_t renderHeight{0};
+  uint32_t minRenderWidth{0};
+  uint32_t minRenderHeight{0};
+  uint32_t maxRenderWidth{0};
+  uint32_t maxRenderHeight{0};
+  float    sharpness{0.0f};
+};
+
 class DlssRR
 {
 public:
@@ -71,6 +93,7 @@ public:
   bool initialize(const InitInputs& inputs);
   void shutdown();
 
+  bool queryOptimalSettings(uint32_t targetWidth, uint32_t targetHeight, PerfQuality quality, OptimalSettings& settings);
   bool evaluate(const EvaluateInputs& inputs);
 
   bool isApiEnabled() const;
