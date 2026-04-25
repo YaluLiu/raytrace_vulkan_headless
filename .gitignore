@@ -48,6 +48,7 @@ log_*.txt
 **/spv/*.spv
 .vscode
 build/
+build_demo/
 /build/*
 /out/build/x64-Debug
 /.vs
