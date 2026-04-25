@@ -1,4 +1,5 @@
 #include <sstream>
+#include <stdexcept>
 
 #include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
@@ -18,6 +19,41 @@ bool nearlyEqual(float a, float b, float eps = 1e-5f)
 {
   return std::fabs(a - b) <= eps;
 }
+
+#ifdef _WIN32
+void* GetCurrentGlProcAddress(const char* name)
+{
+  void* proc = reinterpret_cast<void*>(wglGetProcAddress(name));
+  if(proc == nullptr || proc == reinterpret_cast<void*>(0x1) || proc == reinterpret_cast<void*>(0x2)
+     || proc == reinterpret_cast<void*>(0x3) || proc == reinterpret_cast<void*>(-1))
+  {
+    static HMODULE opengl32 = LoadLibraryA("opengl32.dll");
+    proc = opengl32 != nullptr ? reinterpret_cast<void*>(GetProcAddress(opengl32, name)) : nullptr;
+  }
+  return proc;
+}
+
+void EnsureGlInteropExtensionsLoaded()
+{
+  if(has_GL_EXT_memory_object && has_GL_EXT_memory_object_win32)
+  {
+    return;
+  }
+
+  if(wglGetCurrentContext() == nullptr)
+  {
+    throw std::runtime_error("OpenGL context is not current while creating Vulkan/OpenGL interop resources");
+  }
+
+  load_GL(GetCurrentGlProcAddress);
+  if(!has_GL_EXT_memory_object || !has_GL_EXT_memory_object_win32)
+  {
+    throw std::runtime_error("OpenGL context does not expose GL_EXT_memory_object and GL_EXT_memory_object_win32");
+  }
+}
+#else
+void EnsureGlInteropExtensionsLoaded() {}
+#endif
 
 bool lightEqual(const Light& lhs, const Light& rhs)
 {
@@ -145,6 +181,7 @@ void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
 
   if(interopTexture != nullptr)
   {
+    EnsureGlInteropExtensionsLoaded();
     interopTexture->destroy(m_allocGL);
 
     nvvk::Image           image  = m_allocGL.createImage(imageInfo);
