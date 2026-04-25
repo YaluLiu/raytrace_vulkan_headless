@@ -75,5 +75,7 @@ private:
   std::chrono::system_clock::time_point m_startTime;
 
   bool _cleaned = false;
+  bool m_helloCreated = false;
+  bool m_resourcesCreated = false;
   std::string m_pluginSearchRoot;
 };

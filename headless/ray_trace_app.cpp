@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
 #include <unordered_set>
 #include "ray_trace_app.hpp"
 
@@ -61,6 +62,29 @@ std::string buildPrefixedOutputPath(const std::string& outputImagePath, const st
   return (parentDir / (prefix + fileName)).string();
 }
 
+void addOpenGlInteropExtensions(nvvk::ContextCreateInfo& contextInfo)
+{
+  contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+
+  contextInfo.addDeviceExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+
+#ifdef _WIN32
+  contextInfo.addDeviceExtension("VK_KHR_external_memory_win32");
+  contextInfo.addDeviceExtension("VK_KHR_external_semaphore_win32");
+  contextInfo.addDeviceExtension("VK_KHR_external_fence_win32");
+#else
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+#endif
+}
+
 #if ENABLE_DLSS_RR
 bool isDlssRuntimeEnabled()
 {
@@ -91,8 +115,7 @@ void addNgxRequiredExtensions(nvvk::ContextCreateInfo& contextInfo)
     }
     if(deviceExtensions.insert(extName).second)
     {
-      // optional=false: treat DLSS-required extensions as hard requirements.
-      contextInfo.addDeviceExtension(extName, false);
+      contextInfo.addDeviceExtension(extName, true);
     }
   };
 
@@ -173,6 +196,7 @@ void RayTraceApp::setupContext()
   NVPSystem system("raytrace_vulkan_headless");
 
   defaultSearchPaths.clear();
+  addSearchPathIfExists(defaultSearchPaths, fs::current_path() / "headless");
   addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY);
   addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY / "..");
 
@@ -201,21 +225,7 @@ void RayTraceApp::setupContext()
   contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);
   contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
-  // for add vulkan->opengl ,memory_fd_extension
-  contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
-  contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
-  contextInfo.addDeviceExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
-
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
-
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
-
+  addOpenGlInteropExtensions(contextInfo);
   contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
@@ -226,10 +236,21 @@ void RayTraceApp::setupContext()
   }
 #endif
 
-  m_vkctx.initInstance(contextInfo);
+  if(!m_vkctx.initInstance(contextInfo))
+  {
+    throw std::runtime_error("Failed to initialize Vulkan instance");
+  }
+
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
-  assert(!compatibleDevices.empty());
-  m_vkctx.initDevice(compatibleDevices[0], contextInfo);
+  if(compatibleDevices.empty())
+  {
+    throw std::runtime_error("No compatible Vulkan device found for ray tracing and OpenGL interop extensions");
+  }
+
+  if(!m_vkctx.initDevice(compatibleDevices[0], contextInfo))
+  {
+    throw std::runtime_error("Failed to initialize Vulkan device");
+  }
 }
 
 void RayTraceApp::setupHelloVulkan()
@@ -241,6 +262,7 @@ void RayTraceApp::setupHelloVulkan()
   createInfo.queueIndices   = {m_vkctx.m_queueGCT.familyIndex};
   createInfo.size           = {uint32_t(m_width), uint32_t(m_height)};
   m_helloVk.create(createInfo);
+  m_helloCreated = true;
 }
 
 void RayTraceApp::createBVH()
@@ -262,6 +284,7 @@ void RayTraceApp::createBVH()
   m_helloVk.createRtDescriptorSet();
   m_helloVk.createRtPipeline();
   m_helloVk.createRtShaderBindingTable();
+  m_resourcesCreated = true;
 }
 
 void RayTraceApp::render()
@@ -314,10 +337,26 @@ bool RayTraceApp::isLidarEnabled() const
 
 void RayTraceApp::cleanup()
 {
-  vkDeviceWaitIdle(m_helloVk.getDevice());
-  m_helloVk.destroyResources();
-  m_helloVk.destroy();
-  m_vkctx.deinit();
+  if(_cleaned)
+  {
+    return;
+  }
+  _cleaned = true;
+
+  if(m_helloCreated && m_helloVk.getDevice() != VK_NULL_HANDLE)
+  {
+    vkDeviceWaitIdle(m_helloVk.getDevice());
+    if(m_resourcesCreated)
+    {
+      m_helloVk.destroyResources();
+    }
+    m_helloVk.destroy();
+  }
+
+  if(m_vkctx.m_device != VK_NULL_HANDLE || m_vkctx.m_instance != VK_NULL_HANDLE)
+  {
+    m_vkctx.deinit();
+  }
 }
 
 //-----------------------------------------------------------------------------------------------------

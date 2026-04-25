@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include "nvh/cameramanipulator.hpp"
@@ -111,6 +112,20 @@ glm::vec3 rotateAroundYAxis(const glm::vec3& offset, float angleDeg)
   const float cosTheta = std::cos(angleRad);
   const float sinTheta = std::sin(angleRad);
   return {cosTheta * offset.x + sinTheta * offset.z, offset.y, -sinTheta * offset.x + cosTheta * offset.z};
+}
+
+bool hasRenderableGeometry(const ModelLoader& loader)
+{
+  return !loader.m_vertices.empty() && !loader.m_indices.empty();
+}
+
+void setFirstMaterialTexture(ModelLoader& loader, int textureId)
+{
+  if(loader.m_materials.empty())
+  {
+    return;
+  }
+  loader.m_materials[0].textureID = textureId;
 }
 }  // namespace
 
@@ -223,27 +238,63 @@ private:
     m_app.createBVH();
   }
 
+  void loadBeautyBallFallback()
+  {
+    ObjLoader sphereLoader;
+    const fs::path spherePath = m_cwd / "media/scenes/sphere.obj";
+    sphereLoader.loadModel(spherePath.string());
+    if(!hasRenderableGeometry(sphereLoader))
+    {
+      throw std::runtime_error("Failed to load fallback sphere asset: " + spherePath.string());
+    }
+
+    m_app.getVulkan().loadModel(sphereLoader, glm::scale(glm::mat4(1.f), kIdentityScale)
+                                                  * glm::translate(glm::mat4(1.0f), kBeautyBallTranslation));
+  }
+
   void loadUsdScene()
   {
     // cat
     UsdLoader catLoader;
-    catLoader.loadModel((m_cwd / "media/scenes/cat/cat.usdz").string());
+    const fs::path catPath = m_cwd / "media/scenes/cat/cat.usdz";
+    catLoader.loadModel(catPath.string());
+    if(!hasRenderableGeometry(catLoader))
+    {
+      throw std::runtime_error("Failed to load required cat USD asset: " + catPath.string());
+    }
 
     catLoader.m_textures.clear();
-    catLoader.m_textures.push_back("cat.png");
-    catLoader.m_textures.push_back("beautyball.png");  // only support load once on start
-    catLoader.m_materials[0].textureID = 0;
+    catLoader.m_textures.push_back("asset_0.jpg");
+    setFirstMaterialTexture(catLoader, 0);
 
     m_app.getVulkan().loadModel(catLoader, glm::scale(glm::mat4(1.f), kIdentityScale)
                                                * glm::translate(glm::mat4(1.0f), kCatTranslation));
 
-    UsdLoader ballLoader;
-    ballLoader.loadModel((m_cwd / "media/scenes/beautyball/beautyball.usdz").string());
-    ballLoader.m_textures.clear();
-    ballLoader.m_materials[0].textureID = 1;
+    const fs::path beautyBallPath = m_cwd / "media/scenes/beautyball/beautyball.usdz";
+    if(fs::exists(beautyBallPath))
+    {
+      UsdLoader ballLoader;
+      ballLoader.loadModel(beautyBallPath.string());
+      if(hasRenderableGeometry(ballLoader))
+      {
+        ballLoader.m_textures.clear();
+        ballLoader.m_textures.push_back("asset_1.jpg");
+        setFirstMaterialTexture(ballLoader, 0);
 
-    m_app.getVulkan().loadModel(ballLoader, glm::scale(glm::mat4(1.f), kIdentityScale)
-                                                * glm::translate(glm::mat4(1.0f), kBeautyBallTranslation));
+        m_app.getVulkan().loadModel(ballLoader, glm::scale(glm::mat4(1.f), kIdentityScale)
+                                                    * glm::translate(glm::mat4(1.0f), kBeautyBallTranslation));
+      }
+      else
+      {
+        std::cerr << "Failed to load beautyball USD, using sphere fallback: " << beautyBallPath << std::endl;
+        loadBeautyBallFallback();
+      }
+    }
+    else
+    {
+      std::cerr << "Missing beautyball USD, using sphere fallback: " << beautyBallPath << std::endl;
+      loadBeautyBallFallback();
+    }
 
     loadGroundPlane();
 
