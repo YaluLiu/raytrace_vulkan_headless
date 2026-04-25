@@ -79,7 +79,8 @@ const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffe
 }  // namespace
 
 HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
-    : _resourcePath(resourcePath)
+    : HdRenderDelegate(settingsMap)
+    , _resourcePath(resourcePath)
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
     , _renderParam(std::make_unique<HdRobotRenderParam>())
 {

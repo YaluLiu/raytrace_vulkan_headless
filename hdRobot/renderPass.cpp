@@ -276,6 +276,7 @@ std::string HdRobotRenderPass::open_asset(const std::string &path, int idx)
 
 void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassState, const TfTokenVector &renderTags)
 {
+  _isConverged = false;
   if (_UpdateActiveRenderTags(renderTags))
   {
     for (auto &mesh : _renderParam.v_mesh)
@@ -304,8 +305,8 @@ void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassSta
     _height = static_cast<int>(primaryRenderBuffer->GetHeight());
     _reset_renderbuffer = true;
   }
-  app_init_or_resize();
   app_apply_render_settings();
+  app_init_or_resize();
   app_updateLight();
   app_anim_real();
   _renderApp.render();
@@ -315,7 +316,12 @@ void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassSta
   {
     auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
     CopyAovToRenderBuffer(app, binding.aovName, aovBuffer);
+    if (aovBuffer != nullptr)
+    {
+      aovBuffer->SetConverged(true);
+    }
   }
+  _isConverged = true;
   _frame_idx++;
 }
 
