@@ -127,6 +127,7 @@ void main()
 
   const vec3 pos      = v0.pos * barycentrics.x + v1.pos * barycentrics.y + v2.pos * barycentrics.z;
   const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
+  recordSpecularHitDistance(prd, gl_HitTEXT);
 
   const mat3 normalMatrix    = transpose(mat3(gl_WorldToObjectEXT));
   const vec3 geometricNrm    = cross(v1.pos - v0.pos, v2.pos - v0.pos);
@@ -180,7 +181,9 @@ void main()
   }
 
   vec3 albedo = clamp(mat.diffuse * textureColor, vec3(0.0), vec3(0.95));
-  if(max(albedo.x, max(albedo.y, albedo.z)) <= 1e-4)
+  vec3 pathSpecularF0 = (mat.illum >= 2) ? clamp(mat.specular, vec3(0.0), vec3(0.98)) : vec3(0.0);
+  bool firstSpecularBounce = prd.depth == 0 && max(pathSpecularF0.x, max(pathSpecularF0.y, pathSpecularF0.z)) > 1e-4;
+  if(!firstSpecularBounce && max(albedo.x, max(albedo.y, albedo.z)) <= 1e-4)
   {
     prd.done = 1;
     return;
@@ -193,7 +196,9 @@ void main()
   float u1 = rand01(prd.seed);
   float u2 = rand01(prd.seed);
   vec3  localDir  = cosineSampleHemisphere(u1, u2);
-  vec3  bounceDir = normalize(localDir.x * tangent + localDir.y * bitangent + localDir.z * worldNrm);
+  vec3  diffuseDir = normalize(localDir.x * tangent + localDir.y * bitangent + localDir.z * worldNrm);
+  float roughness = roughnessFromShininess(mat.shininess);
+  vec3  bounceDir = chooseDlssFirstBounceDirection(gl_WorldRayDirectionEXT, worldNrm, diffuseDir, roughness, firstSpecularBounce);
 
   float cosTheta = max(dot(worldNrm, bounceDir), 0.0);
   if(cosTheta <= 0.0)
@@ -202,7 +207,7 @@ void main()
     return;
   }
 
-  prd.throughput *= albedo;
+  prd.throughput *= firstSpecularBounce ? max(pathSpecularF0, vec3(0.04)) : albedo;
 
   if(nextDepth >= 2)
   {

@@ -618,6 +618,8 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
   eval.targetWidth = m_size.width;
   eval.targetHeight = m_size.height;
   eval.reset       = (m_accumulatedFrames <= 1);
+  eval.jitterX     = -m_currentJitter.x;
+  eval.jitterY     = -m_currentJitter.y;
   eval.frameTimeMs = 16.6667f;
   eval.worldToView = m_lastView;
   eval.viewToClip  = m_lastProj;

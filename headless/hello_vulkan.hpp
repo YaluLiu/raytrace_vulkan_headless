@@ -123,6 +123,8 @@ public:
   PushConstantRay m_pcRay{
       0,  // num lights
       0,  // frame index
+      0.0f,  // jitter X
+      0.0f,  // jitter Y
       6,  // max depth
       2,  // samples per frame
       1,  // lidar pass mode (0: lidar pass, 1: main+lidar composite, 2: main without lidar)
@@ -321,6 +323,7 @@ private:
   void       refreshOffscreenRenderTargetsIfNeeded();
 
   uint32_t  m_accumulatedFrames{0};
+  glm::vec2 m_currentJitter{0.0f};
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};
   bool      m_hasLastCamera{false};

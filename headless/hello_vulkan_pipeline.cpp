@@ -31,6 +31,28 @@ uint32_t lidarRayCount(const LidarParams& params)
   return static_cast<uint32_t>(std::max(azCount * elCount, 1));
 }
 
+float haltonComponent(uint32_t index, uint32_t base)
+{
+  float result = 0.0f;
+  float invBase = 1.0f / static_cast<float>(base);
+  float fraction = invBase;
+
+  while(index > 0)
+  {
+    result += static_cast<float>(index % base) * fraction;
+    index /= base;
+    fraction *= invBase;
+  }
+
+  return result;
+}
+
+glm::vec2 computeDlssJitter(uint32_t frameIndex)
+{
+  const uint32_t haltonIndex = (frameIndex % 1024u) + 1u;
+  return glm::vec2(haltonComponent(haltonIndex, 2u), haltonComponent(haltonIndex, 3u)) - glm::vec2(0.5f);
+}
+
 void insertGeneralImageBarrier(VkCommandBuffer cmdBuf, VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
                                VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
@@ -319,6 +341,9 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
   m_debug.beginLabel(cmdBuf, "Ray trace");
   m_pcRay.numLights       = static_cast<int>(m_lights.size());
   m_pcRay.frameIndex      = m_accumulatedFrames;
+  m_currentJitter         = computeDlssJitter(m_accumulatedFrames);
+  m_pcRay.jitterX         = m_currentJitter.x;
+  m_pcRay.jitterY         = m_currentJitter.y;
   m_pcRay.maxDepth        = std::max(m_pcRay.maxDepth, 1);
   m_pcRay.samplesPerFrame = std::max(m_pcRay.samplesPerFrame, 1);
   m_pcRay.lidarPassMode   = m_enableLidar ? 1 : 2;
