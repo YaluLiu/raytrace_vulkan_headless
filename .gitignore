@@ -73,6 +73,11 @@ scripts/__pycache__/
 *_annotated.*
 
 
+# ai文档和build目录
+dlss_rr*.md
+build_hydra/
+
+
 
 
 
