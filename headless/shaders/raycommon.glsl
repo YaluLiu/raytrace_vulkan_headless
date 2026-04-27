@@ -1,3 +1,5 @@
+const float kDlssInfDistance = 65504.0;
+
 struct hitPayload
 {
   vec3 radiance;
@@ -12,6 +14,27 @@ struct hitPayload
   vec4 firstHitDiffuseValid;       // xyz = diffuse albedo, w = valid flag
   vec4 firstHitSpecularPad;        // xyz = specular F0, w = has specular lobe
 };
+
+bool shouldRecordSpecularHitDistance(hitPayload payload)
+{
+  return payload.depth == 1 && payload.firstHitSpecularPad.w > 0.5 && payload.firstHitNormalSpecHitDist.w <= 0.0;
+}
+
+void recordSpecularHitDistance(inout hitPayload payload, float hitDistance)
+{
+  if(shouldRecordSpecularHitDistance(payload))
+  {
+    payload.firstHitNormalSpecHitDist.w = max(hitDistance, 0.0);
+  }
+}
+
+void recordSpecularMissDistance(inout hitPayload payload)
+{
+  if(shouldRecordSpecularHitDistance(payload))
+  {
+    payload.firstHitNormalSpecHitDist.w = kDlssInfDistance;
+  }
+}
 
 uint initRng(uvec2 pixel, uint frameIndex, uint sampleIndex)
 {
@@ -47,4 +70,21 @@ void orthonormalBasis(vec3 n, out vec3 t, out vec3 b)
     t = normalize(cross(vec3(0.0, 1.0, 0.0), n));
   }
   b = cross(n, t);
+}
+
+vec3 chooseDlssFirstBounceDirection(vec3 incomingDir, vec3 normal, vec3 diffuseDir, float roughness, bool hasSpecularLobe)
+{
+  if(!hasSpecularLobe)
+  {
+    return diffuseDir;
+  }
+
+  vec3 reflectionDir = normalize(reflect(incomingDir, normal));
+  if(dot(normal, reflectionDir) <= 0.0)
+  {
+    return diffuseDir;
+  }
+
+  vec3 glossyDir = normalize(mix(reflectionDir, diffuseDir, clamp(roughness, 0.0, 1.0)));
+  return (dot(normal, glossyDir) > 0.0) ? glossyDir : reflectionDir;
 }

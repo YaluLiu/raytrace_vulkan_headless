@@ -48,6 +48,7 @@ log_*.txt
 **/spv/*.spv
 .vscode
 build/
+build_demo/
 /build/*
 /out/build/x64-Debug
 /.vs
@@ -70,6 +71,11 @@ scripts/__pycache__/
 
 # 注释版代码文件
 *_annotated.*
+
+
+# ai文档和build目录
+dlss_rr*.md
+build_hydra/
 
 
 

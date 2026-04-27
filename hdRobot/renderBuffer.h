@@ -64,14 +64,14 @@ public:
 
   //just for test
   int  _frame_idx = 0;
-  void read_texture(GLuint textureId);
+  void read_texture(uint32_t textureId);
   void ConvertToHgiTexture();
 
 
   Hgi*  _GetHgi();
   void* _buffer = nullptr;
 
-  GLuint GetOpenGlTextureId() const
+  uint32_t GetOpenGlTextureId() const
   {
     if(!_texture)
     {

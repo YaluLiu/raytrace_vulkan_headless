@@ -25,6 +25,7 @@
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgiGL/texture.h>
 #include <pxr/imaging/hgi/types.h>
+#include <nvgl/extensions_gl.hpp>
 
 #include "renderDelegate.h"
 #include "renderBuffer.h"
@@ -387,7 +388,7 @@ VtValue HdRobotRenderBuffer::GetResource(bool /*multiSampled*/) const
   return VtValue(_texture);
 }
 
-void HdRobotRenderBuffer::read_texture(GLuint textureId)
+void HdRobotRenderBuffer::read_texture(uint32_t textureId)
 {
   if(textureId == 0 || !_buffer || _width == 0 || _height == 0)
   {

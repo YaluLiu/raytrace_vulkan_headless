@@ -72,6 +72,7 @@ void main()
   }
 
   prd.radiance += prd.throughput * envColor;
+  recordSpecularMissDistance(prd);
   if(prd.depth == 0)
   {
     prd.objId      = -1;

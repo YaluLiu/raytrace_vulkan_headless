@@ -120,6 +120,8 @@ struct PushConstantRay
 {
   int         numLights;
   uint        frameIndex;
+  float       jitterX;
+  float       jitterY;
   int         maxDepth;
   int         samplesPerFrame;
   int         lidarPassMode;  // 0: lidar point pass, 1: main pass with lidar composite, 2: main pass without lidar

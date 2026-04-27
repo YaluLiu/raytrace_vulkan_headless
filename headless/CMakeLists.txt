@@ -106,10 +106,23 @@ if(ENABLE_DLSS_RR)
             HINTS ${_DLSS_HINT_ROOTS}
             PATH_SUFFIXES include)
 
+  if(WIN32)
+    set(_DLSS_SDK_LIBRARY_NAMES nvsdk_ngx_d nvsdk_ngx nvsdk_ngx_khr_d nvsdk_ngx_s nvsdk_ngx_khr_s)
+    set(_DLSS_SDK_LIBRARY_SUFFIXES lib/Windows_x86_64/x64 lib/Windows_x86_64/khr/x64)
+    set(_DLSS_RR_DEFAULT_NGX_SUFFIX lib/Windows_x86_64/rel)
+    if(DLSS_SDK_LIBRARY MATCHES "nvsdk_ngx(_khr)?_s\\.lib$")
+      unset(DLSS_SDK_LIBRARY CACHE)
+    endif()
+  else()
+    set(_DLSS_SDK_LIBRARY_NAMES nvsdk_ngx)
+    set(_DLSS_SDK_LIBRARY_SUFFIXES lib/Linux_x86_64)
+    set(_DLSS_RR_DEFAULT_NGX_SUFFIX lib/Linux_x86_64/rel)
+  endif()
+
   find_library(DLSS_SDK_LIBRARY
-               NAMES nvsdk_ngx
+               NAMES ${_DLSS_SDK_LIBRARY_NAMES}
                HINTS ${_DLSS_HINT_ROOTS}
-               PATH_SUFFIXES lib/Linux_x86_64)
+               PATH_SUFFIXES ${_DLSS_SDK_LIBRARY_SUFFIXES})
 
   if(DLSS_SDK_INCLUDE_DIR AND DLSS_SDK_LIBRARY)
     set(DLSS_RR_FOUND ON)
@@ -121,8 +134,13 @@ if(ENABLE_DLSS_RR)
       target_link_libraries(${PROJNAME} dl)
     endif()
 
-    get_filename_component(_DLSS_SDK_LIB_DIR ${DLSS_SDK_LIBRARY} DIRECTORY)
-    set(_DLSS_RR_DEFAULT_NGX_PATH ${_DLSS_SDK_LIB_DIR}/rel)
+    set(_DLSS_RR_DEFAULT_NGX_PATH "")
+    foreach(_DLSS_HINT_ROOT ${_DLSS_HINT_ROOTS})
+      if(EXISTS "${_DLSS_HINT_ROOT}/${_DLSS_RR_DEFAULT_NGX_SUFFIX}")
+        file(TO_CMAKE_PATH "${_DLSS_HINT_ROOT}/${_DLSS_RR_DEFAULT_NGX_SUFFIX}" _DLSS_RR_DEFAULT_NGX_PATH)
+        break()
+      endif()
+    endforeach()
     if(EXISTS ${_DLSS_RR_DEFAULT_NGX_PATH})
       target_compile_definitions(${PROJNAME} PUBLIC DLSS_RR_DEFAULT_NGX_PATH="${_DLSS_RR_DEFAULT_NGX_PATH}")
     endif()
