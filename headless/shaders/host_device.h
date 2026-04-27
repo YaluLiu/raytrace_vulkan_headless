@@ -45,6 +45,12 @@ START_BINDING(RtxBindings)
   eLidarPointCloudImage   = 11, // AOV: lidar point cloud
   eDepthImage             = 12  // AOV: normalized Hydra depth
 END_BINDING();
+
+START_BINDING(LidarCompositeBindings)
+  eCompositeDenoisedImage        = 0,
+  eCompositeLidarPointCloudImage = 1,
+  eCompositeDepthImage           = 2
+END_BINDING();
 // clang-format on
 
 // Information of a obj model when referenced in a shader
@@ -121,13 +127,13 @@ struct Light
 enum RaygenPassMode
 {
   eRaygenPassLidarPointCloud       = 0,
-  eRaygenPassLowResBeautyWithLidar = 1,
+  eRaygenPassLowResBeautyWithLidar = 1,  // Legacy mode; lidar compositing now uses lidar_composite.comp.
   eRaygenPassLowResBeauty          = 2,
   eRaygenPassHighResAov            = 3
 };
 #else
 const int eRaygenPassLidarPointCloud       = 0;
-const int eRaygenPassLowResBeautyWithLidar = 1;
+const int eRaygenPassLowResBeautyWithLidar = 1;  // Legacy mode; lidar compositing now uses lidar_composite.comp.
 const int eRaygenPassLowResBeauty          = 2;
 const int eRaygenPassHighResAov            = 3;
 #endif
@@ -140,7 +146,7 @@ struct PushConstantRay
   float       jitterY;
   int         maxDepth;
   int         samplesPerFrame;
-  int         lidarPassMode;  // 0: lidar point pass, 1: main pass with lidar composite, 2: main pass without lidar
+  int         lidarPassMode;
   LidarParams lidar;
 };
 

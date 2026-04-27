@@ -99,6 +99,8 @@ public:
   void     createLidarRtPipeline();
   void     createLidarRtShaderBindingTable();
   void     renderLidarPointCloud(const VkCommandBuffer& cmdBuf);
+  void     createLidarCompositePipeline();
+  void     compositeLidar(const VkCommandBuffer& cmdBuf);
   void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
@@ -148,7 +150,7 @@ public:
       0.0f,  // jitter Y
       6,  // max depth
       2,  // samples per frame
-      1,  // lidar pass mode (0: lidar pass, 1: main+lidar composite, 2: main without lidar)
+      eRaygenPassLowResBeauty,  // lidar pass mode
       {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f}};
 
   // #VK_animation
@@ -166,6 +168,13 @@ public:
   VkDescriptorSet             m_compDescSet{VK_NULL_HANDLE};
   VkPipeline                  m_compPipeline{VK_NULL_HANDLE};
   VkPipelineLayout            m_compPipelineLayout{VK_NULL_HANDLE};
+
+  nvvk::DescriptorSetBindings m_lidarCompositeDescSetLayoutBind;
+  VkDescriptorPool            m_lidarCompositeDescPool{VK_NULL_HANDLE};
+  VkDescriptorSetLayout       m_lidarCompositeDescSetLayout{VK_NULL_HANDLE};
+  VkDescriptorSet             m_lidarCompositeDescSet{VK_NULL_HANDLE};
+  VkPipeline                  m_lidarCompositePipeline{VK_NULL_HANDLE};
+  VkPipelineLayout            m_lidarCompositePipelineLayout{VK_NULL_HANDLE};
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
@@ -352,6 +361,7 @@ private:
   VkExtent2D computeRenderSize();
   void       refreshOffscreenRenderTargetsIfNeeded();
   void       updateLidarRtDescriptorSet();
+  void       updateLidarCompositeDescriptorSet();
 
   uint32_t  m_accumulatedFrames{0};
   glm::vec2 m_currentJitter{0.0f};

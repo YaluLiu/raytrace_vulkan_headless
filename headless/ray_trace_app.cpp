@@ -287,6 +287,7 @@ void RayTraceApp::createBVH()
   m_helloVk.createLidarRtDescriptorSet();
   m_helloVk.createLidarRtPipeline();
   m_helloVk.createLidarRtShaderBindingTable();
+  m_helloVk.createLidarCompositePipeline();
   m_resourcesCreated = true;
 }
 
@@ -304,6 +305,8 @@ void RayTraceApp::render()
   m_helloVk.updateInstanceIdBuffer(cmdBuf);
   m_helloVk.raytrace(cmdBuf);
   m_helloVk.runDlssRR(cmdBuf);
+  m_helloVk.renderLidarPointCloud(cmdBuf);
+  m_helloVk.compositeLidar(cmdBuf);
 
   vkEndCommandBuffer(cmdBuf);
   m_helloVk.submitFrame();

@@ -16,21 +16,6 @@
 extern std::vector<std::string> defaultSearchPaths;
 
 namespace {
-int lidarAxisSampleCount(float minDeg, float maxDeg, float stepDeg)
-{
-  const float absStep = std::max(std::abs(stepDeg), 1e-4f);
-  const float span    = std::abs(maxDeg - minDeg);
-  const int   steps   = static_cast<int>(std::floor(span / absStep + 0.5f));
-  return std::max(steps + 1, 1);
-}
-
-uint32_t lidarRayCount(const LidarParams& params)
-{
-  const int azCount = lidarAxisSampleCount(params.azimuthMinDeg, params.azimuthMaxDeg, params.azimuthStepDeg);
-  const int elCount = lidarAxisSampleCount(params.verticalMinDeg, params.verticalMaxDeg, params.verticalStepDeg);
-  return static_cast<uint32_t>(std::max(azCount * elCount, 1));
-}
-
 float haltonComponent(uint32_t index, uint32_t base)
 {
   float result = 0.0f;

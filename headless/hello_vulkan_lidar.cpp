@@ -8,6 +8,7 @@
 #include "nvh/fileoperations.hpp"
 #include "nvvk/buffers_vk.hpp"
 #include "nvvk/descriptorsets_vk.hpp"
+#include "nvvk/pipeline_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
 
 extern std::vector<std::string> defaultSearchPaths;
@@ -295,6 +296,90 @@ void HelloVulkan::renderLidarPointCloud(const VkCommandBuffer& cmdBuf)
 
   insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                             VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+  m_debug.endLabel(cmdBuf);
+}
+
+void HelloVulkan::createLidarCompositePipeline()
+{
+  m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeDenoisedImage,
+                                               VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
+  m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeLidarPointCloudImage,
+                                               VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
+  m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeDepthImage,
+                                               VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
+
+  m_lidarCompositeDescSetLayout = m_lidarCompositeDescSetLayoutBind.createLayout(m_device);
+  m_lidarCompositeDescPool      = m_lidarCompositeDescSetLayoutBind.createPool(m_device, 1);
+  m_lidarCompositeDescSet       = nvvk::allocateDescriptorSet(m_device, m_lidarCompositeDescPool, m_lidarCompositeDescSetLayout);
+  updateLidarCompositeDescriptorSet();
+
+  VkPipelineLayoutCreateInfo createInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+  createInfo.setLayoutCount = 1;
+  createInfo.pSetLayouts    = &m_lidarCompositeDescSetLayout;
+  vkCreatePipelineLayout(m_device, &createInfo, nullptr, &m_lidarCompositePipelineLayout);
+
+  VkComputePipelineCreateInfo computePipelineCreateInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
+  computePipelineCreateInfo.layout = m_lidarCompositePipelineLayout;
+  computePipelineCreateInfo.stage =
+      nvvk::createShaderStageInfo(m_device, nvh::loadFile("spv/lidar_composite.comp.spv", true, defaultSearchPaths, true),
+                                  VK_SHADER_STAGE_COMPUTE_BIT);
+
+  vkCreateComputePipelines(m_device, {}, 1, &computePipelineCreateInfo, nullptr, &m_lidarCompositePipeline);
+  vkDestroyShaderModule(m_device, computePipelineCreateInfo.stage.module, nullptr);
+}
+
+void HelloVulkan::updateLidarCompositeDescriptorSet()
+{
+  VkDescriptorImageInfo denoisedInfo{{}, m_offscreenDenoised.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo depthInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+
+  std::array<VkWriteDescriptorSet, 3> writes{
+      m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeDenoisedImage,
+                                                  &denoisedInfo),
+      m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet,
+                                                  LidarCompositeBindings::eCompositeLidarPointCloudImage,
+                                                  &lidarPointCloudInfo),
+      m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeDepthImage,
+                                                  &depthInfo),
+  };
+  vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+}
+
+void HelloVulkan::compositeLidar(const VkCommandBuffer& cmdBuf)
+{
+  if(cmdBuf == VK_NULL_HANDLE || !m_enableLidar || m_lidarCompositePipeline == VK_NULL_HANDLE
+     || m_lidarCompositeDescSet == VK_NULL_HANDLE || m_size.width == 0 || m_size.height == 0)
+  {
+    return;
+  }
+
+  m_debug.beginLabel(cmdBuf, "Lidar composite");
+
+  insertGeneralImageBarrier(cmdBuf, m_offscreenDenoised.image,
+                            VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                            VK_ACCESS_SHADER_READ_BIT,
+                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenDepthAov.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_lidarCompositePipeline);
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_lidarCompositePipelineLayout, 0, 1,
+                          &m_lidarCompositeDescSet, 0, nullptr);
+
+  constexpr uint32_t kLocalSize = 16;
+  const uint32_t     groupX     = (m_size.width + kLocalSize - 1) / kLocalSize;
+  const uint32_t     groupY     = (m_size.height + kLocalSize - 1) / kLocalSize;
+  vkCmdDispatch(cmdBuf, groupX, groupY, 1);
+
+  insertGeneralImageBarrier(cmdBuf, m_offscreenDenoised.image, VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
   m_debug.endLabel(cmdBuf);
 }

@@ -268,6 +268,10 @@ void HelloVulkan::refreshOffscreenRenderTargetsIfNeeded()
   {
     updateLidarRtDescriptorSet();
   }
+  if(m_lidarCompositeDescSet != VK_NULL_HANDLE)
+  {
+    updateLidarCompositeDescriptorSet();
+  }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -436,6 +440,10 @@ void HelloVulkan::destroyResources()
   vkDestroyPipelineLayout(m_device, m_lidarRtPipelineLayout, nullptr);
   vkDestroyDescriptorPool(m_device, m_lidarRtDescPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_lidarRtDescSetLayout, nullptr);
+  vkDestroyPipeline(m_device, m_lidarCompositePipeline, nullptr);
+  vkDestroyPipelineLayout(m_device, m_lidarCompositePipelineLayout, nullptr);
+  vkDestroyDescriptorPool(m_device, m_lidarCompositeDescPool, nullptr);
+  vkDestroyDescriptorSetLayout(m_device, m_lidarCompositeDescSetLayout, nullptr);
 
   // #VK_compute 计算着色器相关
   if(m_compPipeline != VK_NULL_HANDLE)
@@ -484,6 +492,10 @@ void HelloVulkan::onResize(int w, int h)
   if(m_lidarRtDescSet != VK_NULL_HANDLE)
   {
     updateLidarRtDescriptorSet();
+  }
+  if(m_lidarCompositeDescSet != VK_NULL_HANDLE)
+  {
+    updateLidarCompositeDescriptorSet();
   }
   resetAccumulation();
   m_hasLastCamera = false;

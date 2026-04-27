@@ -1,0 +1,43 @@
+#version 460
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "host_device.h"
+
+const float kLidarDepthCompositeEpsilon = 1e-3;
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(set = 0, binding = eCompositeDenoisedImage, rgba32f) uniform image2D denoisedImage;
+layout(set = 0, binding = eCompositeLidarPointCloudImage, rgba32f) uniform image2D lidarPointCloudImage;
+layout(set = 0, binding = eCompositeDepthImage, r32f) uniform image2D depthImage;
+
+void main()
+{
+  ivec2 pixel       = ivec2(gl_GlobalInvocationID.xy);
+  ivec2 colorExtent = imageSize(denoisedImage);
+  if(any(greaterThanEqual(pixel, colorExtent)))
+  {
+    return;
+  }
+
+  ivec2 lidarExtent = imageSize(lidarPointCloudImage);
+  ivec2 lidarPixel  = ivec2(clamp((vec2(pixel) + vec2(0.5)) * vec2(lidarExtent) / vec2(colorExtent), vec2(0.0),
+                                  vec2(lidarExtent - ivec2(1))));
+
+  vec4 lidarPoint = imageLoad(lidarPointCloudImage, lidarPixel);
+  if(lidarPoint.a <= 0.0)
+  {
+    return;
+  }
+
+  float sceneDepth   = imageLoad(depthImage, lidarPixel).r;
+  bool  lidarVisible = lidarPoint.a <= sceneDepth + kLidarDepthCompositeEpsilon;
+  if(!lidarVisible)
+  {
+    return;
+  }
+
+  vec4 color = imageLoad(denoisedImage, pixel);
+  imageStore(denoisedImage, pixel, vec4(lidarPoint.rgb, color.a));
+}
