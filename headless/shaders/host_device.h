@@ -43,13 +43,15 @@ START_BINDING(RtxBindings)
   eSpecularHitDistImage   = 9,  // DLSS-RR: specular hit distance (optional)
   eDistanceToCameraImage  = 10, // AOV: world-space distance from camera to first hit
   eLidarPointCloudImage   = 11, // AOV: lidar point cloud
-  eDepthImage             = 12  // AOV: normalized Hydra depth
+  eDepthImage             = 12, // AOV: normalized Hydra depth
+  eLidarDepthKeyImage     = 13  // AOV: lidar normalized depth key for atomic nearest-point writes
 END_BINDING();
 
 START_BINDING(LidarCompositeBindings)
   eCompositeDenoisedImage        = 0,
   eCompositeLidarPointCloudImage = 1,
-  eCompositeDepthImage           = 2
+  eCompositeDepthImage           = 2,
+  eCompositeLidarDepthKeyImage   = 3
 END_BINDING();
 // clang-format on
 

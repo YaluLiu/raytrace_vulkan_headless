@@ -294,6 +294,8 @@ public:
   nvvk::Texture          m_offscreenLidarPointCloud;
   VkFormat               m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   interop::Texture2DVkGL m_rtLidarPointCloudGL;
+  nvvk::Texture          m_offscreenLidarPointCloudDepthKey;
+  VkFormat               m_offscreenLidarPointCloudDepthKeyFormat{VK_FORMAT_R32_UINT};
 
   interop::ResourceAllocatorGLInterop m_allocGL;
   dlss::DlssRR                        m_dlssRR;

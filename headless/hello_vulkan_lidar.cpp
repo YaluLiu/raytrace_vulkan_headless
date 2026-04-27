@@ -47,7 +47,7 @@ void HelloVulkan::createLidarRtDescriptorSet()
 {
   m_lidarRtDescSetLayoutBind.addBinding(RtxBindings::eTlas, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1,
                                         VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-  m_lidarRtDescSetLayoutBind.addBinding(RtxBindings::eLidarPointCloudImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
+  m_lidarRtDescSetLayoutBind.addBinding(RtxBindings::eLidarDepthKeyImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
                                         VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
   m_lidarRtDescPool      = m_lidarRtDescSetLayoutBind.createPool(m_device);
@@ -63,20 +63,22 @@ void HelloVulkan::createLidarRtDescriptorSet()
   VkWriteDescriptorSetAccelerationStructureKHR descASInfo{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
   descASInfo.accelerationStructureCount = 1;
   descASInfo.pAccelerationStructures    = &tlas;
-  VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo lidarDepthKeyInfo{{}, m_offscreenLidarPointCloudDepthKey.descriptor.imageView,
+                                          VK_IMAGE_LAYOUT_GENERAL};
 
   std::array<VkWriteDescriptorSet, 2> writes{
       m_lidarRtDescSetLayoutBind.makeWrite(m_lidarRtDescSet, RtxBindings::eTlas, &descASInfo),
-      m_lidarRtDescSetLayoutBind.makeWrite(m_lidarRtDescSet, RtxBindings::eLidarPointCloudImage, &lidarPointCloudInfo),
+      m_lidarRtDescSetLayoutBind.makeWrite(m_lidarRtDescSet, RtxBindings::eLidarDepthKeyImage, &lidarDepthKeyInfo),
   };
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 
 void HelloVulkan::updateLidarRtDescriptorSet()
 {
-  VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo lidarDepthKeyInfo{{}, m_offscreenLidarPointCloudDepthKey.descriptor.imageView,
+                                          VK_IMAGE_LAYOUT_GENERAL};
   VkWriteDescriptorSet  write =
-      m_lidarRtDescSetLayoutBind.makeWrite(m_lidarRtDescSet, RtxBindings::eLidarPointCloudImage, &lidarPointCloudInfo);
+      m_lidarRtDescSetLayoutBind.makeWrite(m_lidarRtDescSet, RtxBindings::eLidarDepthKeyImage, &lidarDepthKeyInfo);
   vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
 }
 
@@ -258,21 +260,34 @@ void HelloVulkan::renderLidarPointCloud(const VkCommandBuffer& cmdBuf)
                             VK_ACCESS_TRANSFER_WRITE_BIT,
                             VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                             VK_PIPELINE_STAGE_TRANSFER_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_ACCESS_TRANSFER_WRITE_BIT,
+                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                            VK_PIPELINE_STAGE_TRANSFER_BIT);
 
   VkClearColorValue       clearValue{};
   VkImageSubresourceRange clearRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
   vkCmdClearColorImage(cmdBuf, m_offscreenLidarPointCloud.image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+  VkClearColorValue clearDepthKeyValue{};
+  clearDepthKeyValue.uint32[0] = 0xffffffffu;
+  vkCmdClearColorImage(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_IMAGE_LAYOUT_GENERAL, &clearDepthKeyValue, 1,
+                       &clearRange);
 
   if(!m_enableLidar)
   {
     insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_ACCESS_TRANSFER_WRITE_BIT,
+                              VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     m_debug.endLabel(cmdBuf);
     return;
   }
 
   insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
-                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_ACCESS_TRANSFER_WRITE_BIT,
+                            VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
   std::vector<VkDescriptorSet> descSets{m_lidarRtDescSet, m_descSet};
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_lidarRtPipeline);
@@ -294,8 +309,9 @@ void HelloVulkan::renderLidarPointCloud(const VkCommandBuffer& cmdBuf)
   vkCmdTraceRaysKHR(cmdBuf, &m_lidarRtRgenRegion, &m_lidarRtMissRegion, &m_lidarRtHitRegion, &m_lidarRtCallRegion,
                     lidarRayCount(lidarPassPc.lidar), 1, 1);
 
-  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
   m_debug.endLabel(cmdBuf);
 }
@@ -307,6 +323,8 @@ void HelloVulkan::createLidarCompositePipeline()
   m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeLidarPointCloudImage,
                                                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
   m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeDepthImage,
+                                               VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
+  m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeLidarDepthKeyImage,
                                                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
 
   m_lidarCompositeDescSetLayout = m_lidarCompositeDescSetLayoutBind.createLayout(m_device);
@@ -334,8 +352,10 @@ void HelloVulkan::updateLidarCompositeDescriptorSet()
   VkDescriptorImageInfo denoisedInfo{{}, m_offscreenDenoised.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo depthInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo lidarDepthKeyInfo{{}, m_offscreenLidarPointCloudDepthKey.descriptor.imageView,
+                                          VK_IMAGE_LAYOUT_GENERAL};
 
-  std::array<VkWriteDescriptorSet, 3> writes{
+  std::array<VkWriteDescriptorSet, 4> writes{
       m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeDenoisedImage,
                                                   &denoisedInfo),
       m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet,
@@ -343,6 +363,9 @@ void HelloVulkan::updateLidarCompositeDescriptorSet()
                                                   &lidarPointCloudInfo),
       m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeDepthImage,
                                                   &depthInfo),
+      m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet,
+                                                  LidarCompositeBindings::eCompositeLidarDepthKeyImage,
+                                                  &lidarDepthKeyInfo),
   };
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
@@ -361,8 +384,11 @@ void HelloVulkan::compositeLidar(const VkCommandBuffer& cmdBuf)
                             VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-                            VK_ACCESS_SHADER_READ_BIT,
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloudDepthKey.image,
+                            VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                             VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR | VK_PIPELINE_STAGE_TRANSFER_BIT,
                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
   insertGeneralImageBarrier(cmdBuf, m_offscreenDepthAov.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
@@ -378,6 +404,9 @@ void HelloVulkan::compositeLidar(const VkCommandBuffer& cmdBuf)
   vkCmdDispatch(cmdBuf, groupX, groupY, 1);
 
   insertGeneralImageBarrier(cmdBuf, m_offscreenDenoised.image, VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+  insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT,
                             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 

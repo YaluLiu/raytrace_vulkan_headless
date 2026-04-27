@@ -427,6 +427,7 @@ void HelloVulkan::destroyResources()
   m_alloc.destroy(m_offscreenDepth);
   m_alloc.destroy(m_offscreenColor);
   m_alloc.destroy(m_offscreenDlssOutput);
+  m_alloc.destroy(m_offscreenLidarPointCloudDepthKey);
 
   // #VKRay 光线追踪相关
   m_rtBuilder.destroy();
@@ -548,6 +549,8 @@ void HelloVulkan::createOffscreenRender()
   createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat,
                        kInteropUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, &m_rtLidarPointCloudGL, GL_RGBA32F, GL_NEAREST,
                        GL_NEAREST, m_aovSize);
+  createOffscreenImage(m_offscreenLidarPointCloudDepthKey, m_offscreenLidarPointCloudDepthKeyFormat,
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr, 0, 0, 0, m_aovSize);
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo =
@@ -587,6 +590,8 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDistanceToCamera.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloud.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_LAYOUT_GENERAL);
     genCmdBuf.submitAndWait(cmdBuf);
   }
 

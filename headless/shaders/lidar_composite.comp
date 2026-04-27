@@ -5,12 +5,15 @@
 #include "host_device.h"
 
 const float kLidarDepthCompositeEpsilon = 1e-3;
+const float kLidarDepthKeyMaxF          = 16777214.0;
+const uint  kLidarEmptyDepthKey         = 0xffffffffu;
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(set = 0, binding = eCompositeDenoisedImage, rgba32f) uniform image2D denoisedImage;
 layout(set = 0, binding = eCompositeLidarPointCloudImage, rgba32f) uniform image2D lidarPointCloudImage;
 layout(set = 0, binding = eCompositeDepthImage, r32f) uniform image2D depthImage;
+layout(set = 0, binding = eCompositeLidarDepthKeyImage, r32ui) uniform uimage2D lidarPointCloudDepthKeyImage;
 
 void main()
 {
@@ -21,23 +24,25 @@ void main()
     return;
   }
 
-  ivec2 lidarExtent = imageSize(lidarPointCloudImage);
+  ivec2 lidarExtent = imageSize(lidarPointCloudDepthKeyImage);
   ivec2 lidarPixel  = ivec2(clamp((vec2(pixel) + vec2(0.5)) * vec2(lidarExtent) / vec2(colorExtent), vec2(0.0),
                                   vec2(lidarExtent - ivec2(1))));
 
-  vec4 lidarPoint = imageLoad(lidarPointCloudImage, lidarPixel);
-  if(lidarPoint.a <= 0.0)
+  uint lidarDepthKey = imageLoad(lidarPointCloudDepthKeyImage, lidarPixel).r;
+  if(lidarDepthKey == kLidarEmptyDepthKey)
   {
     return;
   }
 
+  float lidarDepth   = float(lidarDepthKey) / kLidarDepthKeyMaxF;
   float sceneDepth   = imageLoad(depthImage, lidarPixel).r;
-  bool  lidarVisible = lidarPoint.a <= sceneDepth + kLidarDepthCompositeEpsilon;
+  bool  lidarVisible = lidarDepth <= sceneDepth + kLidarDepthCompositeEpsilon;
+  imageStore(lidarPointCloudImage, lidarPixel, vec4(1.0, 0.0, 0.0, lidarDepth));
   if(!lidarVisible)
   {
     return;
   }
 
   vec4 color = imageLoad(denoisedImage, pixel);
-  imageStore(denoisedImage, pixel, vec4(lidarPoint.rgb, color.a));
+  imageStore(denoisedImage, pixel, vec4(1.0, 0.0, 0.0, color.a));
 }

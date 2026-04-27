@@ -9,7 +9,7 @@
 layout(location = 0) rayPayloadEXT hitPayload prd;
 
 layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
-layout(set = 0, binding = eLidarPointCloudImage, rgba32f) uniform image2D lidarPointCloudImage;
+layout(set = 0, binding = eLidarDepthKeyImage, r32ui) uniform uimage2D lidarPointCloudDepthKeyImage;
 layout(set = 1, binding = eFrameUniforms) uniform _FrameUniforms { FrameUniforms frameUni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 
@@ -40,5 +40,5 @@ void main()
   }
 
   float normalizedDepth = computeMainNormalizedDepth(worldHit);
-  splatPoint(screenPixel, pcRay.lidar.pointRadiusPixels, vec3(1.0, 0.0, 0.0), normalizedDepth);
+  splatPoint(screenPixel, pcRay.lidar.pointRadiusPixels, normalizedDepth);
 }
