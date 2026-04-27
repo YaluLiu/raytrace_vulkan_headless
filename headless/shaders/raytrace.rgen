@@ -53,12 +53,21 @@ layout(set = 0, binding = eLinearDepthImage, r32f) uniform image2D linearDepthIm
 layout(set = 0, binding = eSpecularHitDistImage, r32f) uniform image2D specularHitDistanceImage;
 layout(set = 0, binding = eDistanceToCameraImage, r32f) uniform image2D distanceToCameraImage;
 layout(set = 0, binding = eLidarPointCloudImage, rgba32f) uniform image2D lidarPointCloudImage;
+layout(set = 0, binding = eDepthImage, r32f) uniform image2D depthImage;
 layout(set = 1, binding = eFrameUniforms) uniform _FrameUniforms { FrameUniforms frameUni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
 // clang-format on
 
 #include "lidar_pointcloud.glsl"
 
+float normalizeDepthAov(vec4 clipPos)
+{
+  if(clipPos.w <= 1e-6)
+  {
+    return 1.0;
+  }
+  return clamp(clipPos.z / clipPos.w, 0.0, 1.0);
+}
 
 void main()
 {
@@ -149,6 +158,7 @@ void main()
   float packedRoughness    = 0.0;
   float linearDepth        = kDlssInfDistance;
   float distanceToCamera   = 0.0;
+  float normalizedDepth    = 1.0;
   vec2  motionVectorPixels = vec2(0.0);
   float specHitDistance    = max(sampleNormalHitDist.w, 0.0);
   bool  hasPrimaryHit      = sampleDiffuseValid.w > 0.5;
@@ -163,6 +173,7 @@ void main()
     float viewZ      = max(-viewPos.z, 0.0);
     primaryViewZ     = viewZ;
     linearDepth      = viewZ;
+    normalizedDepth  = normalizeDepthAov(frameUni.camera.viewProj * worldPos);
     packedNormal     = normalize(sampleNormalHitDist.xyz);
 
     float roughnessSquared = clamp(sampleWorldPosRoughness.w, 0.0, 1.0);
@@ -201,6 +212,7 @@ void main()
     packedRoughness    = 0.0;
     linearDepth        = kDlssInfDistance;
     distanceToCamera   = 0.0;
+    normalizedDepth    = 1.0;
     motionVectorPixels = vec2(0.0);
     specHitDistance    = 0.0;
     metallic           = 0.0;
@@ -211,6 +223,7 @@ void main()
   imageStore(normalRoughnessImage, pixel, vec4(packedNormal, packedRoughness));
   imageStore(motionVectorImage, pixel, vec4(motionVectorPixels, 0.0, 0.0));
   imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
+  imageStore(depthImage, pixel, vec4(normalizedDepth, 0.0, 0.0, 0.0));
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
   imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
 

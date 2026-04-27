@@ -108,7 +108,11 @@ namespace
     {
       return app.m_rtMotionVectorGL.oglId;
     }
-    if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil || name == HdRobotAovTokens->dlssRRLinearDepth)
+    if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
+    {
+      return app.m_rtDepthAovGL.oglId;
+    }
+    if (name == HdRobotAovTokens->dlssRRLinearDepth)
     {
       return app.m_rtLinearDepthGL.oglId;
     }
@@ -494,6 +498,7 @@ bool HdRobotRenderPass::app_updateMainCamera(const HdRenderPassStateSharedPtr& r
   }
 
   const HdRobotCameraData& mainCameraData = robotCamera->GetCameraData();
+  _renderApp.getVulkan().setMainCameraClipRange(mainCameraData.clipStart, mainCameraData.clipEnd);
 
   glm::vec3 camPos = mainCameraData.position;
   glm::vec3 camForward = mainCameraData.forward;
@@ -673,4 +678,3 @@ void HdRobotRenderPass::app_update_material()
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

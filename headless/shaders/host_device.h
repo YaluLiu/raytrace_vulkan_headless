@@ -42,7 +42,8 @@ START_BINDING(RtxBindings)
   eLinearDepthImage       = 8,  // DLSS-RR: linear depth
   eSpecularHitDistImage   = 9,  // DLSS-RR: specular hit distance (optional)
   eDistanceToCameraImage  = 10, // AOV: world-space distance from camera to first hit
-  eLidarPointCloudImage   = 11  // AOV: lidar point cloud
+  eLidarPointCloudImage   = 11, // AOV: lidar point cloud
+  eDepthImage             = 12  // AOV: normalized Hydra depth
 END_BINDING();
 // clang-format on
 

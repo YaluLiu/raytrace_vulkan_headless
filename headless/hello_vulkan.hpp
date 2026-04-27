@@ -42,6 +42,7 @@ public:
   void createObjDescriptionBuffer();
   void createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
+  void setMainCameraClipRange(float clipStart, float clipEnd);
   void setRadarCamera(const RadarCameraData& camera);
   void setRadarLidarParams(const LidarParams& params);
   void setLidarEnabled(bool enabled);
@@ -97,6 +98,8 @@ public:
   void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
+  float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
+  float    getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
 
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
   nvvk::RaytracingBuilderKHR                        m_rtBuilder;
@@ -249,6 +252,10 @@ public:
   VkFormat               m_offscreenLinearDepthFormat{VK_FORMAT_R32_SFLOAT};
   interop::Texture2DVkGL m_rtLinearDepthGL;
 
+  nvvk::Texture          m_offscreenDepthAov;
+  VkFormat               m_offscreenDepthAovFormat{VK_FORMAT_R32_SFLOAT};
+  interop::Texture2DVkGL m_rtDepthAovGL;
+
   nvvk::Texture          m_offscreenSpecularHitDistance;
   VkFormat               m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
   interop::Texture2DVkGL m_rtSpecularHitDistanceGL;
@@ -269,6 +276,8 @@ public:
   bool                                m_dlssRRSizeSupported{false};
   dlss::PerfQuality                   m_dlssRRPerfQuality{dlss::PerfQuality::Balanced};
   VkExtent2D                          m_renderSize{0, 0};
+  float                               m_mainCameraClipStart{0.1f};
+  float                               m_mainCameraClipEnd{1000.0f};
 
   // depth buffer
   nvvk::Texture m_offscreenDepth;

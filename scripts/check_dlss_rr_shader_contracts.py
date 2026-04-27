@@ -23,6 +23,7 @@ def main() -> None:
     hello_cpp = read("headless/hello_vulkan.cpp")
     pipeline_cpp = read("headless/hello_vulkan_pipeline.cpp")
     hello_hpp = read("headless/hello_vulkan.hpp")
+    render_pass_cpp = read("hdRobot/renderPass.cpp")
 
     require("float       jitterX;" in host_device, "PushConstantRay must expose per-frame jitterX")
     require("float       jitterY;" in host_device, "PushConstantRay must expose per-frame jitterY")
@@ -48,6 +49,20 @@ def main() -> None:
     require("normalizeViewZ" not in raygen, "linear DLSS depth must not be normalized")
     require("linearDepth      = viewZ;" in raygen, "primary-hit DLSS depth must be linear viewZ")
     require("linearDepth        = kDlssInfDistance;" in raygen, "sky DLSS depth must use kDlssInfDistance")
+    require("eDepthImage" in host_device, "Hydra depth AOV must have a descriptor binding separate from DLSS linear depth")
+    require("m_offscreenDepthAov" in hello_hpp, "Hydra depth AOV must have a separate Vulkan image")
+    require("m_rtDepthAovGL" in hello_hpp, "Hydra depth AOV must have a separate GL interop texture")
+    require("layout(set = 0, binding = eDepthImage, r32f) uniform image2D depthImage;" in raygen,
+            "raygen must write a dedicated normalized depth AOV image")
+    require("normalizedDepth" in raygen and "imageStore(depthImage" in raygen,
+            "raygen must store normalized depth separately from DLSS linear depth")
+    require("normalizeDepthAov(" in raygen, "Hydra depth AOV must be normalized")
+    require("HdAovTokens->depth || name == HdAovTokens->depthStencil" in render_pass_cpp,
+            "Hydra depth and depthStencil AOVs must be routed together")
+    require("return app.m_rtDepthAovGL.oglId;" in render_pass_cpp,
+            "Hydra depth AOV must copy from the normalized depth image")
+    require("HdRobotAovTokens->dlssRRLinearDepth" in render_pass_cpp and "return app.m_rtLinearDepthGL.oglId;" in render_pass_cpp,
+            "DLSS linear depth AOV must still copy from the linear depth image")
 
     require("const float kDlssInfDistance" in raycommon, "DLSS infinity distance must be shared by raygen/miss/hit")
     require("recordSpecularHitDistance" in raycommon, "shared helper must record secondary specular hit distance")

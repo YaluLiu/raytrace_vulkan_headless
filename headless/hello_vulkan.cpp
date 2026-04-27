@@ -168,6 +168,19 @@ void HelloVulkan::setDlssSRScale(float scale)
   }
 }
 
+void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
+{
+  const float safeStart = std::max(clipStart, 0.001f);
+  const float safeEnd   = std::max(clipEnd, safeStart + 0.001f);
+  if(std::fabs(m_mainCameraClipStart - safeStart) > 1e-6f || std::fabs(m_mainCameraClipEnd - safeEnd) > 1e-6f)
+  {
+    m_mainCameraClipStart = safeStart;
+    m_mainCameraClipEnd   = safeEnd;
+    resetAccumulation();
+    m_hasLastCamera = false;
+  }
+}
+
 void HelloVulkan::setRadarCamera(const RadarCameraData& camera)
 {
   const bool cameraChanged = !m_hasRadarCamera || !vecNearlyEqual(camera.eye, m_radarCamera.eye)
@@ -260,7 +273,8 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   const float    aspectRatio = m_size.width / static_cast<float>(m_size.height);
   FrameUniforms  frameUBO    = {};
   const auto&    view        = CameraManip.getMatrix();
-  glm::mat4      proj        = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, 0.1f, 1000.0f);
+  glm::mat4      proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, m_mainCameraClipStart,
+                                         m_mainCameraClipEnd);
 #if !ENABLE_HYDRA
   proj[1][1] *= -1;  // Vulkan坐标系Y反转
 #endif
@@ -396,6 +410,7 @@ void HelloVulkan::destroyResources()
   m_rtNormalRoughnessGL.destroy(m_allocGL);
   m_rtMotionVectorGL.destroy(m_allocGL);
   m_rtLinearDepthGL.destroy(m_allocGL);
+  m_rtDepthAovGL.destroy(m_allocGL);
   m_rtSpecularHitDistanceGL.destroy(m_allocGL);
   m_rtDistanceToCameraGL.destroy(m_allocGL);
   m_rtLidarPointCloudGL.destroy(m_allocGL);
@@ -498,6 +513,8 @@ void HelloVulkan::createOffscreenRender()
                        GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kInteropUsage, &m_rtLinearDepthGL, GL_R32F,
                        GL_NEAREST, GL_NEAREST, m_renderSize);
+  createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kInteropUsage, &m_rtDepthAovGL, GL_R32F,
+                       GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kInteropUsage,
                        &m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kInteropUsage,
@@ -537,6 +554,7 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenNormalRoughness.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenMotionVector.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLinearDepth.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepthAov.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenSpecularHitDistance.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDistanceToCamera.image, VK_IMAGE_LAYOUT_UNDEFINED,
