@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def require(path: str, needle: str, message: str) -> None:
-    text = (ROOT / path).read_text()
+    text = (ROOT / path).read_text(encoding="utf-8")
     if needle not in text:
         raise SystemExit(f"{path}: {message}")
 

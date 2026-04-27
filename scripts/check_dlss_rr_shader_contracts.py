@@ -28,6 +28,7 @@ def main() -> None:
     raycommon = read("headless/shaders/raycommon.glsl")
     hello_cpp = read("headless/hello_vulkan.cpp")
     pipeline_cpp = read("headless/hello_vulkan_pipeline.cpp")
+    lidar_cpp = read("headless/hello_vulkan_lidar.cpp")
     hello_hpp = read("headless/hello_vulkan.hpp")
     render_pass_cpp = read("hdRobot/renderPass.cpp")
 
@@ -47,7 +48,8 @@ def main() -> None:
     require("computeDlssJitter" in pipeline_cpp, "raytrace() must compute deterministic per-frame jitter")
     require("m_pcRay.jitterX" in pipeline_cpp, "raytrace() must push jitterX to raygen")
     require("m_pcRay.jitterY" in pipeline_cpp, "raytrace() must push jitterY to raygen")
-    require("eRaygenPassLowResBeautyWithLidar" in pipeline_cpp, "raytrace() must dispatch low-res beauty with named pass mode")
+    require(re.search(r"lowResPassPc\.lidarPassMode\s*=\s*eRaygenPassLowResBeauty\s*;", pipeline_cpp) is not None,
+            "raytrace() must dispatch low-res beauty with named pass mode")
     require("eRaygenPassHighResAov" in pipeline_cpp, "raytrace() must dispatch high-res AOV pass")
     require("m_aovSize.width, m_aovSize.height" in pipeline_cpp,
             "high-resolution AOV pass must dispatch at m_aovSize")
@@ -65,8 +67,10 @@ def main() -> None:
             "motion vectors must subtract the same jittered current pixel used by raygen")
     require("currPixel    = vec2(pixel) + vec2(0.5)" not in raygen,
             "motion vectors must not subtract an unjittered current pixel")
-    require("eRaygenPassLidarPointCloud" in raygen, "raygen must use named LiDAR pass mode")
-    require("eRaygenPassLowResBeautyWithLidar" in raygen, "raygen must use named low-res beauty pass mode")
+    require(re.search(r"lidarPassPc\.lidarPassMode\s*=\s*eRaygenPassLidarPointCloud\s*;", lidar_cpp) is not None,
+            "LiDAR ray dispatch must use named LiDAR pass mode")
+    require(re.search(r"imageStore\(\s*image\s*,\s*pixel\s*,\s*vec4\(\s*outColor\s*,\s*1\.0\s*\)\s*\)\s*;", raygen) is not None,
+            "raygen must write low-resolution beauty in the default scene path")
     require("eRaygenPassHighResAov" in raygen, "raygen must implement a high-resolution AOV pass")
     require("pcRay.lidarPassMode == eRaygenPassHighResAov" in raygen and "return;" in raygen,
             "high-resolution AOV pass must return before low-resolution DLSS/color stores")

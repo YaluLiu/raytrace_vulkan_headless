@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
 project(vk_raytracing_tutorial)
+include(CTest)
 
 #--------------------------------------------------------------------------------------------------
 # look for nvpro_core 1) as a sub-folder 2) at some other locations
@@ -58,6 +59,27 @@ set(DLSS_SDK_ROOT ${DLSS_SDK_ROOT} CACHE PATH "Root path of NVIDIA DLSS SDK (con
 
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 message(STATUS "ENABLE_DLSS_RR: ${ENABLE_DLSS_RR}")
+#--------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+# Contract tests
+if(BUILD_TESTING)
+  find_package(PythonInterp 3 REQUIRED)
+
+  function(add_python_contract_test test_name script_path)
+    add_test(
+      NAME ${test_name}
+      COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/${script_path}"
+    )
+    set_tests_properties(${test_name} PROPERTIES
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      LABELS "contracts;python"
+    )
+  endfunction()
+
+  add_python_contract_test(contracts.dlss_rr_shader scripts/check_dlss_rr_shader_contracts.py)
+  add_python_contract_test(contracts.dlss_rr_supported_size scripts/check_dlss_rr_supported_size.py)
+  add_python_contract_test(contracts.lidar_after_dlss scripts/check_lidar_after_dlss_contracts.py)
+endif()
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------
 # Sub examples
