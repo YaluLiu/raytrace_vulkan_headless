@@ -42,11 +42,11 @@ def main() -> None:
         "compositeLidar(const VkCommandBuffer& cmdBuf);" in hello_hpp,
         "HelloVulkan must expose a post-DLSS lidar composite pass",
     )
-    dlss_call = "m_helloVk.runDlssRR(cmdBuf);"
-    lidar_call = "m_helloVk.renderLidarPointCloud(cmdBuf);"
-    composite_call = "m_helloVk.compositeLidar(cmdBuf);"
+    dlss_call = "renderer.runDlssRR(cmdBuf);"
+    lidar_call = "renderer.renderLidarPointCloud(cmdBuf);"
+    composite_call = "renderer.compositeLidar(cmdBuf);"
     require(dlss_call in app_cpp and lidar_call in app_cpp and composite_call in app_cpp,
-            "RayTraceApp::render must run DLSS, lidar point generation, and lidar composite")
+            "RayTraceApp backend pass dispatcher must run DLSS, lidar point generation, and lidar composite")
     require(
         app_cpp.index(dlss_call) < app_cpp.index(lidar_call),
         "DLSS must run before lidar point generation",

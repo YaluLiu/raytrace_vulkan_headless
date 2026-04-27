@@ -30,6 +30,23 @@ std::vector<std::string> defaultSearchPaths;
 namespace fs = std::filesystem;
 
 namespace {
+enum class HeadlessRenderPass
+{
+  UpdateUniforms,
+  UpdateLights,
+  UpdateInstanceIds,
+  RayTrace,
+  DlssResolve,
+  LidarPointCloud,
+  LidarComposite,
+};
+
+constexpr std::array<HeadlessRenderPass, 7> kHeadlessRenderPassSequence{
+    HeadlessRenderPass::UpdateUniforms,    HeadlessRenderPass::UpdateLights, HeadlessRenderPass::UpdateInstanceIds,
+    HeadlessRenderPass::RayTrace,          HeadlessRenderPass::DlssResolve,  HeadlessRenderPass::LidarPointCloud,
+    HeadlessRenderPass::LidarComposite,
+};
+
 void addSearchPathIfExists(std::vector<std::string>& paths, const fs::path& path)
 {
   if(path.empty() || !fs::exists(path))
@@ -83,6 +100,34 @@ void addOpenGlInteropExtensions(nvvk::ContextCreateInfo& contextInfo)
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
 #endif
+}
+
+void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmdBuf, HeadlessRenderPass pass)
+{
+  switch(pass)
+  {
+    case HeadlessRenderPass::UpdateUniforms:
+      renderer.updateUniformBuffer(cmdBuf);
+      break;
+    case HeadlessRenderPass::UpdateLights:
+      renderer.updateLightBuffer(cmdBuf);
+      break;
+    case HeadlessRenderPass::UpdateInstanceIds:
+      renderer.updateInstanceIdBuffer(cmdBuf);
+      break;
+    case HeadlessRenderPass::RayTrace:
+      renderer.raytrace(cmdBuf);
+      break;
+    case HeadlessRenderPass::DlssResolve:
+      renderer.runDlssRR(cmdBuf);
+      break;
+    case HeadlessRenderPass::LidarPointCloud:
+      renderer.renderLidarPointCloud(cmdBuf);
+      break;
+    case HeadlessRenderPass::LidarComposite:
+      renderer.compositeLidar(cmdBuf);
+      break;
+  }
 }
 
 #if ENABLE_DLSS_RR
@@ -300,13 +345,10 @@ void RayTraceApp::render()
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(cmdBuf, &beginInfo);
 
-  m_helloVk.updateUniformBuffer(cmdBuf);
-  m_helloVk.updateLightBuffer(cmdBuf);
-  m_helloVk.updateInstanceIdBuffer(cmdBuf);
-  m_helloVk.raytrace(cmdBuf);
-  m_helloVk.runDlssRR(cmdBuf);
-  m_helloVk.renderLidarPointCloud(cmdBuf);
-  m_helloVk.compositeLidar(cmdBuf);
+  for(const HeadlessRenderPass pass : kHeadlessRenderPassSequence)
+  {
+    executeHeadlessRenderPass(m_helloVk, cmdBuf, pass);
+  }
 
   vkEndCommandBuffer(cmdBuf);
   m_helloVk.submitFrame();
