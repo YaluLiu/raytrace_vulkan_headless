@@ -95,6 +95,10 @@ public:
   void     createRtDescriptorSet();
   void     updateRtDescriptorSet();
   void     createRtPipeline();
+  void     createLidarRtDescriptorSet();
+  void     createLidarRtPipeline();
+  void     createLidarRtShaderBindingTable();
+  void     renderLidarPointCloud(const VkCommandBuffer& cmdBuf);
   void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
@@ -111,6 +115,14 @@ public:
   VkPipelineLayout                                  m_rtPipelineLayout{VK_NULL_HANDLE};
   VkPipeline                                        m_rtPipeline{VK_NULL_HANDLE};
 
+  nvvk::DescriptorSetBindings                       m_lidarRtDescSetLayoutBind;
+  VkDescriptorPool                                  m_lidarRtDescPool{VK_NULL_HANDLE};
+  VkDescriptorSetLayout                             m_lidarRtDescSetLayout{VK_NULL_HANDLE};
+  VkDescriptorSet                                   m_lidarRtDescSet{VK_NULL_HANDLE};
+  std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_lidarRtShaderGroups;
+  VkPipelineLayout                                  m_lidarRtPipelineLayout{VK_NULL_HANDLE};
+  VkPipeline                                        m_lidarRtPipeline{VK_NULL_HANDLE};
+
   //for sbt
   nvvk::SBTWrapper                m_sbtWrapper;
   nvvk::Buffer                    m_rtSBTBuffer;
@@ -118,6 +130,12 @@ public:
   VkStridedDeviceAddressRegionKHR m_missRegion{};
   VkStridedDeviceAddressRegionKHR m_hitRegion{};
   VkStridedDeviceAddressRegionKHR m_callRegion{};
+
+  nvvk::Buffer                    m_lidarRtSBTBuffer;
+  VkStridedDeviceAddressRegionKHR m_lidarRtRgenRegion{};
+  VkStridedDeviceAddressRegionKHR m_lidarRtMissRegion{};
+  VkStridedDeviceAddressRegionKHR m_lidarRtHitRegion{};
+  VkStridedDeviceAddressRegionKHR m_lidarRtCallRegion{};
 
   std::vector<VkAccelerationStructureInstanceKHR>    m_tlas;
   std::vector<nvvk::RaytracingBuilderKHR::BlasInput> m_blas;
@@ -333,6 +351,7 @@ private:
   dlss::PerfQuality desiredDlssPerfQuality() const;
   VkExtent2D computeRenderSize();
   void       refreshOffscreenRenderTargetsIfNeeded();
+  void       updateLidarRtDescriptorSet();
 
   uint32_t  m_accumulatedFrames{0};
   glm::vec2 m_currentJitter{0.0f};

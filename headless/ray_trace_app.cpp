@@ -284,6 +284,9 @@ void RayTraceApp::createBVH()
   m_helloVk.createRtDescriptorSet();
   m_helloVk.createRtPipeline();
   m_helloVk.createRtShaderBindingTable();
+  m_helloVk.createLidarRtDescriptorSet();
+  m_helloVk.createLidarRtPipeline();
+  m_helloVk.createLidarRtShaderBindingTable();
   m_resourcesCreated = true;
 }
 

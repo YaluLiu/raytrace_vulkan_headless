@@ -264,6 +264,10 @@ void HelloVulkan::refreshOffscreenRenderTargetsIfNeeded()
   {
     updateRtDescriptorSet();
   }
+  if(m_lidarRtDescSet != VK_NULL_HANDLE)
+  {
+    updateLidarRtDescriptorSet();
+  }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -423,10 +427,15 @@ void HelloVulkan::destroyResources()
   // #VKRay 光线追踪相关
   m_rtBuilder.destroy();
   m_sbtWrapper.destroy();
+  m_alloc.destroy(m_lidarRtSBTBuffer);
   vkDestroyPipeline(m_device, m_rtPipeline, nullptr);
   vkDestroyPipelineLayout(m_device, m_rtPipelineLayout, nullptr);
   vkDestroyDescriptorPool(m_device, m_rtDescPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_rtDescSetLayout, nullptr);
+  vkDestroyPipeline(m_device, m_lidarRtPipeline, nullptr);
+  vkDestroyPipelineLayout(m_device, m_lidarRtPipelineLayout, nullptr);
+  vkDestroyDescriptorPool(m_device, m_lidarRtDescPool, nullptr);
+  vkDestroyDescriptorSetLayout(m_device, m_lidarRtDescSetLayout, nullptr);
 
   // #VK_compute 计算着色器相关
   if(m_compPipeline != VK_NULL_HANDLE)
@@ -471,6 +480,10 @@ void HelloVulkan::onResize(int w, int h)
   {
     // 更新光线追踪输出描述符集（采样新的offscreen image）
     updateRtDescriptorSet();
+  }
+  if(m_lidarRtDescSet != VK_NULL_HANDLE)
+  {
+    updateLidarRtDescriptorSet();
   }
   resetAccumulation();
   m_hasLastCamera = false;
