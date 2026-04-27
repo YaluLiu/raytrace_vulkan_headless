@@ -1,6 +1,6 @@
-const float kLidarMinStepDeg   = 1e-4;
-const float kLidarRayTMin      = 0.001;
-const float kLidarMinValidViewZ = 1e-6;
+const float kLidarMinStepDeg    = 1e-4;
+const float kLidarRayTMin       = 0.001;
+const float kLidarMinValidDepth = 1e-6;
 
 int lidarAxisSampleCount(float minDeg, float maxDeg, float stepDeg)
 {
@@ -115,19 +115,23 @@ bool projectWorldToMainPixel(vec3 worldPos, out ivec2 screenPixel)
   return true;
 }
 
-float computeMainViewZ(vec3 worldPos)
+float computeMainNormalizedDepth(vec3 worldPos)
 {
-  vec4 viewPos = frameUni.camera.view * vec4(worldPos, 1.0);
-  return max(-viewPos.z, 0.0);
+  vec4 clipPos = frameUni.camera.viewProj * vec4(worldPos, 1.0);
+  if(clipPos.w <= 1e-6)
+  {
+    return 1.0;
+  }
+  return clamp(clipPos.z / clipPos.w, 0.0, 1.0);
 }
 
-void splatPoint(ivec2 centerPixel, float radiusPx, vec3 color, float viewZ)
+void splatPoint(ivec2 centerPixel, float radiusPx, vec3 color, float normalizedDepth)
 {
   ivec2 imageExtent = imageSize(lidarPointCloudImage);
   float radius      = max(radiusPx, 0.5);
   int   radiusInt   = int(ceil(radius));
   float radiusSq    = radius * radius;
-  float encodedViewZ = max(viewZ, kLidarMinValidViewZ);
+  float encodedDepth = max(normalizedDepth, kLidarMinValidDepth);
 
   for(int y = -radiusInt; y <= radiusInt; ++y)
   {
@@ -146,12 +150,12 @@ void splatPoint(ivec2 centerPixel, float radiusPx, vec3 color, float viewZ)
       }
 
       vec4 existingPoint = imageLoad(lidarPointCloudImage, dstPixel);
-      if(existingPoint.a > 0.0 && existingPoint.a <= encodedViewZ)
+      if(existingPoint.a > 0.0 && existingPoint.a <= encodedDepth)
       {
         continue;
       }
 
-      imageStore(lidarPointCloudImage, dstPixel, vec4(color, encodedViewZ));
+      imageStore(lidarPointCloudImage, dstPixel, vec4(color, encodedDepth));
     }
   }
 }
