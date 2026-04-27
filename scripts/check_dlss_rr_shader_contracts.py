@@ -30,6 +30,10 @@ def main() -> None:
     require("enum RaygenPassMode" in host_device, "Raygen pass modes must be named in host_device.h")
     require("eRaygenPassHighResAov" in host_device, "High-resolution AOV pass mode must exist")
     require("m_currentJitter" in hello_hpp, "HelloVulkan must retain the jitter used by the traced frame")
+    require("m_aovSize" in hello_hpp, "HelloVulkan must track full-resolution AOV size separately from DLSS render size")
+    require("m_aovSize    = m_size;" in hello_cpp, "AOV size must follow target size")
+    require("&m_rtObjectIdGL, GL_R32I, GL_LINEAR" in hello_cpp and "m_aovSize" in hello_cpp,
+            "Object ID AOV image must be created at full AOV size")
     require("computeDlssJitter" in pipeline_cpp, "raytrace() must compute deterministic per-frame jitter")
     require("m_pcRay.jitterX" in pipeline_cpp, "raytrace() must push jitterX to raygen")
     require("m_pcRay.jitterY" in pipeline_cpp, "raytrace() must push jitterY to raygen")

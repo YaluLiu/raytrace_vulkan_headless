@@ -482,6 +482,7 @@ void HelloVulkan::onResize(int w, int h)
 void HelloVulkan::createOffscreenRender()
 {
   m_renderSize = computeRenderSize();
+  m_aovSize    = m_size;
 
   constexpr VkImageUsageFlags kInteropUsage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
@@ -500,9 +501,9 @@ void HelloVulkan::createOffscreenRender()
       m_offscreenDenoised, m_offscreenDenoisedFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
       &m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, m_size);
   createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kInteropUsage, &m_rtObjectIdGL, GL_R32I, GL_LINEAR,
-                       GL_LINEAR, m_renderSize);
+                       GL_LINEAR, m_aovSize);
   createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kInteropUsage, &m_rtInstanceIdGL, GL_R32I,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
+                       GL_NEAREST, GL_NEAREST, m_aovSize);
   createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kInteropUsage, &m_rtDiffuseAlbedoGL, GL_RGBA32F,
                        GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kInteropUsage, &m_rtSpecularAlbedoGL, GL_RGBA32F,
@@ -514,13 +515,13 @@ void HelloVulkan::createOffscreenRender()
   createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kInteropUsage, &m_rtLinearDepthGL, GL_R32F,
                        GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kInteropUsage, &m_rtDepthAovGL, GL_R32F,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
+                       GL_NEAREST, GL_NEAREST, m_aovSize);
   createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kInteropUsage,
                        &m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_renderSize);
   createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kInteropUsage,
-                       &m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_renderSize);
+                       &m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_aovSize);
   createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat, kInteropUsage, &m_rtLidarPointCloudGL, GL_RGBA32F,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
+                       GL_NEAREST, GL_NEAREST, m_aovSize);
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo =

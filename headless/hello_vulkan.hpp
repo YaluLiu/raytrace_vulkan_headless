@@ -276,6 +276,7 @@ public:
   bool                                m_dlssRRSizeSupported{false};
   dlss::PerfQuality                   m_dlssRRPerfQuality{dlss::PerfQuality::Balanced};
   VkExtent2D                          m_renderSize{0, 0};
+  VkExtent2D                          m_aovSize{0, 0};
   float                               m_mainCameraClipStart{0.1f};
   float                               m_mainCameraClipEnd{1000.0f};
 
