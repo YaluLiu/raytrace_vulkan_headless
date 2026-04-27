@@ -27,6 +27,8 @@ def main() -> None:
 
     require("float       jitterX;" in host_device, "PushConstantRay must expose per-frame jitterX")
     require("float       jitterY;" in host_device, "PushConstantRay must expose per-frame jitterY")
+    require("enum RaygenPassMode" in host_device, "Raygen pass modes must be named in host_device.h")
+    require("eRaygenPassHighResAov" in host_device, "High-resolution AOV pass mode must exist")
     require("m_currentJitter" in hello_hpp, "HelloVulkan must retain the jitter used by the traced frame")
     require("computeDlssJitter" in pipeline_cpp, "raytrace() must compute deterministic per-frame jitter")
     require("m_pcRay.jitterX" in pipeline_cpp, "raytrace() must push jitterX to raygen")

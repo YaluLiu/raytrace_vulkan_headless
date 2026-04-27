@@ -117,6 +117,14 @@ struct Light
   vec3 padding;
 };
 
+enum RaygenPassMode
+{
+  eRaygenPassLidarPointCloud       = 0,
+  eRaygenPassLowResBeautyWithLidar = 1,
+  eRaygenPassLowResBeauty          = 2,
+  eRaygenPassHighResAov            = 3
+};
+
 struct PushConstantRay
 {
   int         numLights;
