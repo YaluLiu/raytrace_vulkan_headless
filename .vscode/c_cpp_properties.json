@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": [
+                "ENABLE_GL_VK_CONVERSION=0",
+                "ENABLE_DLSS_RR=1",
+                "ENABLE_DLSS_SR=1"
+            ],
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17"
+        }
+    ],
+    "version": 4
+}
