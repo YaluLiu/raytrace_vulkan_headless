@@ -79,6 +79,7 @@ if(BUILD_TESTING)
   add_python_contract_test(contracts.dlss_rr_shader scripts/check_dlss_rr_shader_contracts.py)
   add_python_contract_test(contracts.dlss_rr_supported_size scripts/check_dlss_rr_supported_size.py)
   add_python_contract_test(contracts.lidar_after_dlss scripts/check_lidar_after_dlss_contracts.py)
+  add_python_contract_test(contracts.renderer_architecture scripts/check_renderer_architecture_contracts.py)
 endif()
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------

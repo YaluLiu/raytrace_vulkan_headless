@@ -5,6 +5,8 @@ add_library(
   ${PROJNAME} SHARED
   instancer.cpp
   instancer.h
+  headlessRenderBridge.cpp
+  headlessRenderBridge.h
   renderBuffer.cpp
   renderBuffer.h
   renderDelegate.cpp

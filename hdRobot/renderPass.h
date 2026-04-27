@@ -17,19 +17,19 @@
 
 #pragma once
 
-#include <pxr/imaging/hd/renderPass.h>
+#include <glm/glm.hpp>
 #include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hd/renderPass.h>
+
+#include <memory>
 #include <string>
-#include <vector>
-#include <ray_trace_app.hpp>
-#include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotMesh;
 class MaterialNetworkCompiler;
 class HdRobotCamera;
+class HeadlessRenderBridge;
 class HdRobotRenderParam;
 struct HdRobotCameraData;
 
@@ -69,36 +69,8 @@ protected:
   void        _Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags) override;
 
 private:
-  const HdRenderSettingsMap& _settings;
-  bool                       _isConverged;
-  int                        _frame_idx = 0;
-  HdRobotRenderParam&        _renderParam;
-  std::string                _resourcePath;
-
-  // ----------------------------------------------------------------------------------
-  // for headless ray trace app
-private:
-  bool app_updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState, HdRobotCameraData* cameraData);
-  void app_updateLidarCamera();
-  void app_updateLight();
-  void app_apply_render_settings();
-  void app_init_or_resize();
-
-  void app_anim_real();
-  void app_update_blas();
-  void app_update_tlas();
-  void app_update_material();
-  bool _UpdateActiveRenderTags(const TfTokenVector& renderTags);
-  bool _IsMeshRenderTagMatched(const HydraMesh& mesh) const;
-
-  bool _isAppInited        = false;
-  bool _reset_renderbuffer = false;
-  TfTokenVector _activeRenderTags;
-
-  RayTraceApp                           _renderApp;
-  int _width  = -1;
-  int _height = -1;
+  bool                                _isConverged;
+  std::unique_ptr<HeadlessRenderBridge> _bridge;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

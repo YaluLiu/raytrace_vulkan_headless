@@ -30,7 +30,7 @@ def main() -> None:
     pipeline_cpp = read("headless/hello_vulkan_pipeline.cpp")
     lidar_cpp = read("headless/hello_vulkan_lidar.cpp")
     hello_hpp = read("headless/hello_vulkan.hpp")
-    render_pass_cpp = read("hdRobot/renderPass.cpp")
+    render_texture_export_cpp = read("hdRobot/renderTextureExport.cpp")
 
     require("float       jitterX;" in host_device, "PushConstantRay must expose per-frame jitterX")
     require("float       jitterY;" in host_device, "PushConstantRay must expose per-frame jitterY")
@@ -86,11 +86,12 @@ def main() -> None:
     require("normalizedDepth" in raygen and "imageStore(depthImage" in raygen,
             "raygen must store normalized depth separately from DLSS linear depth")
     require("normalizeDepthAov(" in raygen, "Hydra depth AOV must be normalized")
-    require("HdAovTokens->depth || name == HdAovTokens->depthStencil" in render_pass_cpp,
+    require("HdAovTokens->depth || name == HdAovTokens->depthStencil" in render_texture_export_cpp,
             "Hydra depth and depthStencil AOVs must be routed together")
-    require("return app.m_rtDepthAovGL.oglId;" in render_pass_cpp,
+    require("return app.m_rtDepthAovGL.oglId;" in render_texture_export_cpp,
             "Hydra depth AOV must copy from the normalized depth image")
-    require("HdRobotAovTokens->dlssRRLinearDepth" in render_pass_cpp and "return app.m_rtLinearDepthGL.oglId;" in render_pass_cpp,
+    require("HdRobotAovTokens->dlssRRLinearDepth" in render_texture_export_cpp
+            and "return app.m_rtLinearDepthGL.oglId;" in render_texture_export_cpp,
             "DLSS linear depth AOV must still copy from the linear depth image")
 
     require("const float kDlssInfDistance" in raycommon, "DLSS infinity distance must be shared by raygen/miss/hit")

@@ -22,7 +22,7 @@ def main() -> None:
     lidar_cpp = read("headless/hello_vulkan_lidar.cpp")
     pipeline_cpp = read("headless/hello_vulkan_pipeline.cpp")
     app_cpp = read("headless/ray_trace_app.cpp")
-    render_pass_cpp = read("hdRobot/renderPass.cpp")
+    render_texture_export_cpp = read("hdRobot/renderTextureExport.cpp")
     hello_test_cpp = read("headless/hello_vulkan_test.cpp")
 
     require("START_BINDING(LidarCompositeBindings)" in host_device, "lidar composite pass must have descriptor bindings")
@@ -82,8 +82,8 @@ def main() -> None:
         "raw lidar point-cloud AOV must be full-resolution and clearable",
     )
     require(
-        "name == HdRobotAovTokens->lidarPointCloud" in render_pass_cpp
-        and "app.m_rtLidarPointCloudGL.oglId" in render_pass_cpp,
+        "name == HdRobotAovTokens->lidarPointCloud" in render_texture_export_cpp
+        and "app.m_rtLidarPointCloudGL.oglId" in render_texture_export_cpp,
         "Hydra lidar:pointCloud AOV must continue to expose the raw point-cloud image",
     )
     require(
