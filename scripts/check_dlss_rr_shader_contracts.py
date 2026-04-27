@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -11,6 +12,11 @@ def read(relpath: str) -> str:
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def require_image_usage(source: str, texture_name: str, usage_flag: str, message: str) -> None:
+    call_pattern = rf"createOffscreenImage\(\s*{re.escape(texture_name)}\s*,(?:(?!createOffscreenImage).)*?{re.escape(usage_flag)}"
+    require(re.search(call_pattern, source, re.DOTALL) is not None, message)
 
 
 def main() -> None:
@@ -34,6 +40,10 @@ def main() -> None:
     require("m_aovSize    = m_size;" in hello_cpp, "AOV size must follow target size")
     require("&m_rtObjectIdGL, GL_R32I, GL_LINEAR" in hello_cpp and "m_aovSize" in hello_cpp,
             "Object ID AOV image must be created at full AOV size")
+    require_image_usage(hello_cpp, "m_offscreenObjectId", "VK_IMAGE_USAGE_TRANSFER_SRC_BIT",
+                        "Object ID AOV image must allow transfer readback")
+    require_image_usage(hello_cpp, "m_offscreenLidarPointCloud", "VK_IMAGE_USAGE_TRANSFER_DST_BIT",
+                        "LiDAR point cloud image must allow transfer clears")
     require("computeDlssJitter" in pipeline_cpp, "raytrace() must compute deterministic per-frame jitter")
     require("m_pcRay.jitterX" in pipeline_cpp, "raytrace() must push jitterX to raygen")
     require("m_pcRay.jitterY" in pipeline_cpp, "raytrace() must push jitterY to raygen")
