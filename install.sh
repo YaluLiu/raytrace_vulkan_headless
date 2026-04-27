@@ -171,7 +171,10 @@ function hydra(){
     echo "[hydra] DLSS_RR_APPDATA_PATH=${DLSS_RR_APPDATA_PATH}"
     echo "[hydra] DLSS_RR_STATUS_LOG=${DLSS_RR_STATUS_LOG}"
     echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"
+}
 
+function show()
+{
     /home/yalu/software/usdtweak/build/usdtweak "${hydra_scene_path}"
 }
 
