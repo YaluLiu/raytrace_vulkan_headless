@@ -71,7 +71,7 @@ float normalizeDepthAov(vec4 clipPos)
 
 void main()
 {
-  if(pcRay.lidarPassMode == 0)
+  if(pcRay.lidarPassMode == eRaygenPassLidarPointCloud)
   {
     int azCount   = lidarAxisSampleCount(pcRay.lidar.azimuthMinDeg, pcRay.lidar.azimuthMaxDeg, pcRay.lidar.azimuthStepDeg);
     int elCount   = lidarAxisSampleCount(pcRay.lidar.verticalMinDeg, pcRay.lidar.verticalMaxDeg, pcRay.lidar.verticalStepDeg);
@@ -148,9 +148,6 @@ void main()
 
   vec3 outColor = sampleColor;
 
-  imageStore(objectIdImage, pixel, ivec4(sampleObjId, 0, 0, 0));
-  imageStore(instanceIdImage, pixel, ivec4(sampleInsId, 0, 0, 0));
-
   vec3  diffuseAlbedo      = clamp(sampleDiffuseValid.xyz, vec3(0.0), vec3(1.0));
   vec3  specularAlbedo     = vec3(0.0);
   float metallic           = 0.0;
@@ -218,18 +215,28 @@ void main()
     metallic           = 0.0;
   }
 
+  if(pcRay.lidarPassMode == eRaygenPassHighResAov)
+  {
+    imageStore(objectIdImage, pixel, ivec4(sampleObjId, 0, 0, 0));
+    imageStore(instanceIdImage, pixel, ivec4(sampleInsId, 0, 0, 0));
+    imageStore(depthImage, pixel, vec4(normalizedDepth, 0.0, 0.0, 0.0));
+    imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
+    return;
+  }
+
   imageStore(diffuseAlbedoImage, pixel, vec4(diffuseAlbedo, metallic));
   imageStore(specularAlbedoImage, pixel, vec4(specularAlbedo, 0.0));
   imageStore(normalRoughnessImage, pixel, vec4(packedNormal, packedRoughness));
   imageStore(motionVectorImage, pixel, vec4(motionVectorPixels, 0.0, 0.0));
   imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
-  imageStore(depthImage, pixel, vec4(normalizedDepth, 0.0, 0.0, 0.0));
   imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
-  imageStore(distanceToCameraImage, pixel, vec4(distanceToCamera, 0.0, 0.0, 0.0));
 
-  if(pcRay.lidarPassMode == 1)
+  if(pcRay.lidarPassMode == eRaygenPassLowResBeautyWithLidar)
   {
-    vec4  lidarPoint    = imageLoad(lidarPointCloudImage, pixel);
+    ivec2 lidarExtent   = imageSize(lidarPointCloudImage);
+    ivec2 lidarPixel    = ivec2(clamp((vec2(pixel) + vec2(0.5)) * vec2(lidarExtent) / vec2(gl_LaunchSizeEXT.xy),
+                                      vec2(0.0), vec2(lidarExtent - ivec2(1))));
+    vec4  lidarPoint    = imageLoad(lidarPointCloudImage, lidarPixel);
     float lidarViewZ    = lidarPoint.a;
     bool  hasLidarPoint = lidarViewZ > 0.0;
     bool  lidarVisible  = (!hasPrimaryHit) || (lidarViewZ <= primaryViewZ + kLidarDepthCompositeEpsilon);

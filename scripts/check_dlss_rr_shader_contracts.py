@@ -51,6 +51,11 @@ def main() -> None:
             "motion vectors must subtract the same jittered current pixel used by raygen")
     require("currPixel    = vec2(pixel) + vec2(0.5)" not in raygen,
             "motion vectors must not subtract an unjittered current pixel")
+    require("eRaygenPassLidarPointCloud" in raygen, "raygen must use named LiDAR pass mode")
+    require("eRaygenPassLowResBeautyWithLidar" in raygen, "raygen must use named low-res beauty pass mode")
+    require("eRaygenPassHighResAov" in raygen, "raygen must implement a high-resolution AOV pass")
+    require("pcRay.lidarPassMode == eRaygenPassHighResAov" in raygen and "return;" in raygen,
+            "high-resolution AOV pass must return before low-resolution DLSS/color stores")
 
     require("normalizeViewZ" not in raygen, "linear DLSS depth must not be normalized")
     require("linearDepth      = viewZ;" in raygen, "primary-hit DLSS depth must be linear viewZ")

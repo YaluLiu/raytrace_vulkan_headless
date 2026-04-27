@@ -117,6 +117,7 @@ struct Light
   vec3 padding;
 };
 
+#ifdef __cplusplus
 enum RaygenPassMode
 {
   eRaygenPassLidarPointCloud       = 0,
@@ -124,6 +125,12 @@ enum RaygenPassMode
   eRaygenPassLowResBeauty          = 2,
   eRaygenPassHighResAov            = 3
 };
+#else
+const int eRaygenPassLidarPointCloud       = 0;
+const int eRaygenPassLowResBeautyWithLidar = 1;
+const int eRaygenPassLowResBeauty          = 2;
+const int eRaygenPassHighResAov            = 3;
+#endif
 
 struct PushConstantRay
 {
