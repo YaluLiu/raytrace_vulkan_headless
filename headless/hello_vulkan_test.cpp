@@ -26,10 +26,10 @@ extern std::vector<std::string> defaultSearchPaths;
 // 读取 objectId 图像到 CPU 向量 (uint32 per pixel)
 std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 {
-  std::vector<uint32_t> result(m_renderSize.width * m_renderSize.height, 0);
+  std::vector<uint32_t> result(m_aovSize.width * m_aovSize.height, 0);
 
   // 创建 staging buffer
-  VkDeviceSize       imageSize = m_renderSize.width * m_renderSize.height * sizeof(uint32_t);
+  VkDeviceSize       imageSize = m_aovSize.width * m_aovSize.height * sizeof(uint32_t);
   VkBufferCreateInfo bInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   bInfo.size  = imageSize;
   bInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -62,7 +62,7 @@ std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 
   VkBufferImageCopy region{};
   region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-  region.imageExtent      = {m_renderSize.width, m_renderSize.height, 1};
+  region.imageExtent      = {m_aovSize.width, m_aovSize.height, 1};
 
   vkCmdCopyImageToBuffer(cmd, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging, 1, &region);
 
