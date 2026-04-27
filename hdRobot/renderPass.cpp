@@ -20,6 +20,9 @@
 #include "renderPass.h"
 #include "renderBuffer.h"
 #include "renderParam.h"
+#include "renderSettings.h"
+#include "renderTextureExport.h"
+#include "sceneData.h"
 #include "instancer.h"
 #include "tokens.h"
 #include "camera.h"
@@ -27,16 +30,8 @@
 #include <pxr/imaging/hd/renderPassState.h>
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
-#include "pxr/imaging/hgiGL/texture.h"
-#include <iostream>
 #include "nvh/fileoperations.hpp"
 #include "nvh/cameramanipulator.hpp"
-#include <nvgl/extensions_gl.hpp>
-
-// open asset file
-#include <pxr/usd/ar/asset.h>
-#include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/ar/resolvedPath.h>
 
 #include <thread>
 #include <filesystem>
@@ -44,147 +39,11 @@
 #include <utility>
 #include <algorithm>
 #include <mutex>
-#include <fstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-  bool EnsureDirectoryExists(const std::string &path)
-  {
-    try
-    {
-      if (!std::filesystem::exists(path))
-      {
-        return std::filesystem::create_directories(path);
-      }
-      return true;
-    }
-    catch (const std::filesystem::filesystem_error &)
-    {
-      return false;
-    }
-  }
-
-  HdRobotRenderBuffer *GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector &bindings)
-  {
-    for (const HdRenderPassAovBinding &binding : bindings)
-    {
-      if (binding.renderBuffer != nullptr)
-      {
-        return static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
-      }
-    }
-    return nullptr;
-  }
-
-  GLuint GetAovSourceGlId(const ::HelloVulkan &app, const TfToken &name)
-  {
-    if (name == HdAovTokens->color)
-    {
-      return app.m_rtOutputGL.oglId;
-    }
-    if (name == HdAovTokens->primId)
-    {
-      return app.m_rtObjectIdGL.oglId;
-    }
-    if (name == HdAovTokens->instanceId)
-    {
-      return app.m_rtInstanceIdGL.oglId;
-    }
-    if (name == HdRobotAovTokens->dlssRRDiffuseAlbedo)
-    {
-      return app.m_rtDiffuseAlbedoGL.oglId;
-    }
-    if (name == HdRobotAovTokens->dlssRRSpecularAlbedo)
-    {
-      return app.m_rtSpecularAlbedoGL.oglId;
-    }
-    if (name == HdRobotAovTokens->dlssRRNormalRoughness)
-    {
-      return app.m_rtNormalRoughnessGL.oglId;
-    }
-    if (name == HdRobotAovTokens->dlssRRMotionVector)
-    {
-      return app.m_rtMotionVectorGL.oglId;
-    }
-    if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
-    {
-      return app.m_rtDepthAovGL.oglId;
-    }
-    if (name == HdRobotAovTokens->dlssRRLinearDepth)
-    {
-      return app.m_rtLinearDepthGL.oglId;
-    }
-    if (name == HdRobotAovTokens->dlssRRSpecularHitDistance)
-    {
-      return app.m_rtSpecularHitDistanceGL.oglId;
-    }
-    if (name == HdRobotAovTokens->distanceToCamera)
-    {
-      return app.m_rtDistanceToCameraGL.oglId;
-    }
-    if (name == HdRobotAovTokens->lidarPointCloud)
-    {
-      return app.m_rtLidarPointCloudGL.oglId;
-    }
-    return 0;
-  }
-
-  void CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobotRenderBuffer *renderBuffer)
-  {
-    if (renderBuffer == nullptr)
-    {
-      return;
-    }
-
-    const GLuint srcTextureId = GetAovSourceGlId(app, name);
-    const GLuint dstTextureId = renderBuffer->GetOpenGlTextureId();
-    if (srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId)
-    {
-      return;
-    }
-
-    const GLsizei width = static_cast<GLsizei>(renderBuffer->GetWidth());
-    const GLsizei height = static_cast<GLsizei>(renderBuffer->GetHeight());
-    if (width <= 0 || height <= 0)
-    {
-      return;
-    }
-
-    GLint srcWidth = 0;
-    GLint srcHeight = 0;
-    glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_WIDTH, &srcWidth);
-    glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_HEIGHT, &srcHeight);
-    if (srcWidth <= 0 || srcHeight <= 0)
-    {
-      return;
-    }
-
-    if (srcWidth == width && srcHeight == height)
-    {
-      glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
-      return;
-    }
-
-    GLuint readFbo = 0;
-    GLuint drawFbo = 0;
-    glCreateFramebuffers(1, &readFbo);
-    glCreateFramebuffers(1, &drawFbo);
-    glNamedFramebufferTexture(readFbo, GL_COLOR_ATTACHMENT0, srcTextureId, 0);
-    glNamedFramebufferTexture(drawFbo, GL_COLOR_ATTACHMENT0, dstTextureId, 0);
-
-    const GLenum readStatus = glCheckNamedFramebufferStatus(readFbo, GL_FRAMEBUFFER);
-    const GLenum drawStatus = glCheckNamedFramebufferStatus(drawFbo, GL_FRAMEBUFFER);
-    if (readStatus == GL_FRAMEBUFFER_COMPLETE && drawStatus == GL_FRAMEBUFFER_COMPLETE)
-    {
-      glBlitNamedFramebuffer(readFbo, drawFbo, 0, 0, srcWidth, srcHeight, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    }
-
-    glDeleteFramebuffers(1, &readFbo);
-    glDeleteFramebuffers(1, &drawFbo);
-  }
-
   WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   {
     WaveFrontMaterial result;
@@ -247,46 +106,12 @@ bool HdRobotRenderPass::IsConverged() const
   return _isConverged;
 }
 
-std::string HdRobotRenderPass::open_asset(const std::string &path, int idx)
-{
-  ArResolver &resolver = ArGetResolver();
-  ArResolvedPath resolvedPath = resolver.Resolve(path);
-  if (!resolvedPath)
-  {
-    std::cout << "[RenderPass]:" << path << "is not valid" << std::endl;
-    return "not valid";
-  }
-
-  auto asset = resolver.OpenAsset(resolvedPath);
-  if (!asset)
-  {
-    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed" << std::endl;
-    return "open failed";
-  }
-
-  std::string file_name = "asset_" + std::to_string(idx) + ".jpg";
-  std::string file_path = "media/textures/" + file_name;
-  std::ofstream file(file_path, std::ios::binary);
-  file.write(static_cast<const char *>(asset->GetBuffer().get()), asset->GetSize());
-
-  if (!file.good())
-  {
-    std::cout << "[RenderPass] write image file failed" << std::endl;
-  }
-
-  file.close();
-  return file_name;
-}
-
 void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr &renderPassState, const TfTokenVector &renderTags)
 {
   _isConverged = false;
   if (_UpdateActiveRenderTags(renderTags))
   {
-    for (auto &mesh : _renderParam.v_mesh)
-    {
-      mesh.tlas_changed = true;
-    }
+    _renderParam.MarkAllMeshesTlasDirty();
   }
 
   if (!renderPassState)
@@ -349,19 +174,15 @@ void HdRobotRenderPass::app_init_or_resize()
     EnsureDirectoryExists("media/textures");
 
     bool is_first_model = true;
-    for (auto &cur_mesh : _renderParam.v_mesh)
+    for (size_t mesh_id = 0; mesh_id < _renderParam.v_mesh.size(); ++mesh_id)
     {
+      auto& cur_mesh = _renderParam.v_mesh[mesh_id];
       ModelLoader loader;
       ConvertVmeshToLoader(cur_mesh, loader);
       loader.m_textures.clear();
       if (is_first_model)
       {
-        const auto& texturePaths = _renderParam.GetTexturePaths();
-        for (size_t id = 0; id < texturePaths.size(); ++id)
-        {
-          auto file_name = open_asset(texturePaths[id], id);
-          loader.m_textures.push_back(file_name);
-        }
+        loader.m_textures = ExportRegisteredTextures(_renderParam.GetTexturePaths());
         is_first_model = false;
       }
       for (auto &mat_id : cur_mesh.scene_mat_ids)
@@ -370,22 +191,21 @@ void HdRobotRenderPass::app_init_or_resize()
         loader.m_materials.emplace_back(materialObj);
       }
       vulkan.loadModel(loader);
-      auto instance = vulkan.m_instances.back();
-      const size_t first_instance_id = vulkan.m_instances.size() - 1;
+      const auto   instance          = vulkan.getInstance(vulkan.getInstanceCount() - 1);
+      const size_t first_instance_id = vulkan.getInstanceCount() - 1;
       const size_t authoredInstanceCount = cur_mesh.instanceTransforms.size();
       const size_t tlasSlotCount = std::max<size_t>(authoredInstanceCount, 1);
       cur_mesh.hasInstances = authoredInstanceCount > 0;
       for (size_t i = 1; i < tlasSlotCount; ++i)
       {
-        vulkan.m_instances.push_back(instance);
-        vulkan.m_instanceIds.push_back(static_cast<int>(i));
+        vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
       }
       cur_mesh.tlasIds.clear();
       for (size_t i = 0; i < tlasSlotCount; ++i)
       {
         cur_mesh.tlasIds.push_back(static_cast<int>(i + first_instance_id));
       }
-      cur_mesh.tlas_changed = true;
+      _renderParam.MarkMeshTlasDirty(mesh_id);
     }
     vulkan.addSpheres(_renderParam.v_sphere);
     _renderApp.createBVH();
@@ -400,74 +220,7 @@ void HdRobotRenderPass::app_init_or_resize()
 void HdRobotRenderPass::app_apply_render_settings()
 {
   HelloVulkan &app = _renderApp.getVulkan();
-
-  if (const auto it = _settings.find(HdRobotSettingsTokens->spp); it != _settings.end())
-  {
-    const VtValue &value = it->second;
-    if (value.IsHolding<int>())
-    {
-      app.setSamplesPerFrame(value.UncheckedGet<int>());
-    }
-    else if (value.IsHolding<unsigned int>())
-    {
-      app.setSamplesPerFrame(static_cast<int>(value.UncheckedGet<unsigned int>()));
-    }
-    else if (value.IsHolding<float>())
-    {
-      app.setSamplesPerFrame(static_cast<int>(value.UncheckedGet<float>()));
-    }
-    else if (value.IsHolding<double>())
-    {
-      app.setSamplesPerFrame(static_cast<int>(value.UncheckedGet<double>()));
-    }
-  }
-
-  if (const auto it = _settings.find(HdRobotSettingsTokens->dlssRRDenoise); it != _settings.end())
-  {
-    const VtValue &value = it->second;
-    if (value.IsHolding<bool>())
-    {
-      app.setDlssRREnabled(value.UncheckedGet<bool>());
-    }
-    else if (value.IsHolding<int>())
-    {
-      app.setDlssRREnabled(value.UncheckedGet<int>() != 0);
-    }
-  }
-
-  if (const auto it = _settings.find(HdRobotSettingsTokens->dlssSREnable); it != _settings.end())
-  {
-    const VtValue &value = it->second;
-    if (value.IsHolding<bool>())
-    {
-      app.setDlssSREnabled(value.UncheckedGet<bool>());
-    }
-    else if (value.IsHolding<int>())
-    {
-      app.setDlssSREnabled(value.UncheckedGet<int>() != 0);
-    }
-  }
-
-  if (const auto it = _settings.find(HdRobotSettingsTokens->dlssSRScale); it != _settings.end())
-  {
-    const VtValue &value = it->second;
-    if (value.IsHolding<float>())
-    {
-      app.setDlssSRScale(value.UncheckedGet<float>());
-    }
-    else if (value.IsHolding<double>())
-    {
-      app.setDlssSRScale(static_cast<float>(value.UncheckedGet<double>()));
-    }
-    else if (value.IsHolding<int>())
-    {
-      app.setDlssSRScale(static_cast<float>(value.UncheckedGet<int>()));
-    }
-    else if (value.IsHolding<unsigned int>())
-    {
-      app.setDlssSRScale(static_cast<float>(value.UncheckedGet<unsigned int>()));
-    }
-  }
+  ApplyRenderSettingsToApp(_settings, app);
 }
 
 void HdRobotRenderPass::app_updateLight()
@@ -520,31 +273,7 @@ bool HdRobotRenderPass::app_updateMainCamera(const HdRenderPassStateSharedPtr& r
 
 void HdRobotRenderPass::app_updateLidarCamera()
 {
-  bool lidarEnabledBySetting = true;
-  if(const auto it = _settings.find(HdRobotSettingsTokens->lidarEnable); it != _settings.end())
-  {
-    const VtValue& value = it->second;
-    if(value.IsHolding<bool>())
-    {
-      lidarEnabledBySetting = value.UncheckedGet<bool>();
-    }
-    else if(value.IsHolding<int>())
-    {
-      lidarEnabledBySetting = value.UncheckedGet<int>() != 0;
-    }
-    else if(value.IsHolding<unsigned int>())
-    {
-      lidarEnabledBySetting = value.UncheckedGet<unsigned int>() != 0;
-    }
-    else if(value.IsHolding<float>())
-    {
-      lidarEnabledBySetting = value.UncheckedGet<float>() != 0.0f;
-    }
-    else if(value.IsHolding<double>())
-    {
-      lidarEnabledBySetting = value.UncheckedGet<double>() != 0.0;
-    }
-  }
+  const bool lidarEnabledBySetting = GetLidarEnabledSetting(_settings);
 
   HdRobotLidarData lidarData;
   if(!lidarEnabledBySetting || !_renderParam.GetLidarCamera(&lidarData))
@@ -585,9 +314,8 @@ void HdRobotRenderPass::app_update_blas()
   HelloVulkan &vulkan = _renderApp.getVulkan();
   for (size_t mesh_id = 0; mesh_id < _renderParam.v_mesh.size(); ++mesh_id)
   {
-    if (_renderParam.v_mesh[mesh_id].blas_changed)
+    if (_renderParam.ConsumeMeshBlasDirty(mesh_id))
     {
-      _renderParam.v_mesh[mesh_id].blas_changed = false;
       ConvertVmeshToLoader(_renderParam.v_mesh[mesh_id], vulkan.m_Loader[mesh_id]);
       vulkan.updateBlas(mesh_id);
     }
@@ -602,10 +330,9 @@ void HdRobotRenderPass::app_update_tlas()
   for (size_t mesh_id = 0; mesh_id < _renderParam.v_mesh.size(); ++mesh_id)
   {
     auto &cur_mesh = _renderParam.v_mesh[mesh_id];
-    if (cur_mesh.tlas_changed)
+    if (_renderParam.ConsumeMeshTlasDirty(mesh_id))
     {
       update_tlas = true;
-      cur_mesh.tlas_changed = false;
       const bool tagMatched = _IsMeshRenderTagMatched(cur_mesh);
       const bool meshVisible = cur_mesh.visible && cur_mesh.valid && tagMatched;
       for (size_t ins_id = 0; ins_id < cur_mesh.tlasIds.size(); ++ins_id)
@@ -660,7 +387,7 @@ void HdRobotRenderPass::app_update_material()
     {
       int global_mat_id = cur_mesh.scene_mat_ids[local_mat_idx];
       auto &materialObj = _renderParam.v_mat[global_mat_id];
-      if (materialObj.material_changed)
+      if (_renderParam.IsMaterialDirty(static_cast<size_t>(global_mat_id)))
       {
         WaveFrontMaterial new_material = ToWaveFrontMaterial(materialObj);
         new_materials.push_back({static_cast<int>(mesh_id), static_cast<int>(local_mat_idx), new_material});
@@ -671,10 +398,7 @@ void HdRobotRenderPass::app_update_material()
   {
     vulkan.updateMaterialsAtRuntime(new_materials);
   }
-  for (auto &materialObj : _renderParam.v_mat)
-  {
-    materialObj.material_changed = false;
-  }
+  _renderParam.ClearAllMaterialDirty();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

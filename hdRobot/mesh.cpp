@@ -388,7 +388,7 @@ void HdRobotMesh::setValid(bool value)
   if(_scene.v_mesh[_mesh_id].valid != value)
   {
     _scene.v_mesh[_mesh_id].valid        = value;
-    _scene.v_mesh[_mesh_id].tlas_changed = true;
+    _scene.MarkMeshTlasDirty(_mesh_id);
   }
 }
 
@@ -422,7 +422,7 @@ void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
     mat.diffuse[0]         = diffuse[0];
     mat.diffuse[1]         = diffuse[1];
     mat.diffuse[2]         = diffuse[2];
-    mat.material_changed   = true;
+    _scene.MarkMaterialDirty(cur_mat_id);
     _mesh.scene_mat_ids[0] = cur_mat_id;
   }
   else if(displayColorValue.IsHolding<VtVec4fArray>())
@@ -457,7 +457,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
     if(_mesh.renderTag != newRenderTag)
     {
       _mesh.renderTag    = newRenderTag;
-      _mesh.tlas_changed = true;
+      _scene.MarkMeshTlasDirty(_mesh_id);
     }
   }
 
@@ -465,7 +465,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
   {
     _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
     _mesh.visible      = sceneDelegate->GetVisible(id);
-    _mesh.tlas_changed = true;
+    _scene.MarkMeshTlasDirty(_mesh_id);
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
@@ -506,7 +506,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
       }
     }
     _mesh.hasInstances = num_instances > 0;
-    _mesh.tlas_changed = true;
+    _scene.MarkMeshTlasDirty(_mesh_id);
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
@@ -519,7 +519,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
         _mesh.transform[i][j] = transform[j][i];  // 鎸夎澶嶅埗
       }
     }
-    _mesh.tlas_changed = true;
+    _scene.MarkMeshTlasDirty(_mesh_id);
   }
 
   //閫氳繃primvar鏀瑰彉棰滆壊
@@ -1001,7 +1001,7 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   sceneMesh.normals      = normals;
   sceneMesh.texCoords    = texCoords;
   sceneMesh.materialIds  = materialIds;
-  sceneMesh.blas_changed = true;
+  _scene.MarkMeshBlasDirty(_mesh_id);
 }
 
 HdDirtyBits HdRobotMesh::GetInitialDirtyBitsMask() const

@@ -385,7 +385,7 @@ void RayTraceApp::loadScene()
   glm::mat4 identity{1};
   for(int i = 0; i < 5; i++)
   {
-    m_helloVk.m_instances.push_back({identity, wusonId});
+    m_helloVk.addInstance(identity, wusonId);
   }
 
   // 球体

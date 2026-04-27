@@ -11,6 +11,12 @@ add_library(
   renderDelegate.h
   rendererPlugin.cpp
   rendererPlugin.h
+  sceneData.cpp
+  sceneData.h
+  renderSettings.cpp
+  renderSettings.h
+  renderTextureExport.cpp
+  renderTextureExport.h
   renderParam.cpp
   renderParam.h
   renderPass.cpp

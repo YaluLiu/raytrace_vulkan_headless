@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "hello_vulkan.hpp"
+#include "hello_vulkan_barriers.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/fileoperations.hpp"
 #include "nvvk/buffers_vk.hpp"
@@ -29,18 +30,6 @@ uint32_t lidarRayCount(const LidarParams& params)
   return static_cast<uint32_t>(std::max(azCount * elCount, 1));
 }
 
-void insertGeneralImageBarrier(VkCommandBuffer cmdBuf, VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-                               VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
-{
-  VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-  barrier.srcAccessMask       = srcAccessMask;
-  barrier.dstAccessMask       = dstAccessMask;
-  barrier.oldLayout           = VK_IMAGE_LAYOUT_GENERAL;
-  barrier.newLayout           = VK_IMAGE_LAYOUT_GENERAL;
-  barrier.image               = image;
-  barrier.subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  vkCmdPipelineBarrier(cmdBuf, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-}
 }  // namespace
 
 void HelloVulkan::createLidarRtDescriptorSet()

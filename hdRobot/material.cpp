@@ -34,6 +34,7 @@ HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene)
 void HdRobotMaterial::Finalize(HdRenderParam* renderParam)
 {
   _scene.v_mat[_mat_id].set_default();
+  _scene.MarkMaterialDirty(_mat_id);
 }
 
 HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
@@ -147,7 +148,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
           _scene.v_mat[_mat_id].diffuse[0]       = diffuse_color[0];
           _scene.v_mat[_mat_id].diffuse[1]       = diffuse_color[1];
           _scene.v_mat[_mat_id].diffuse[2]       = diffuse_color[2];
-          _scene.v_mat[_mat_id].material_changed = true;
+          _scene.MarkMaterialDirty(_mat_id);
         }
       }
       else if(paramName == "emissiveColor")
@@ -158,7 +159,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
           _scene.v_mat[_mat_id].emission[0]      = emission[0];
           _scene.v_mat[_mat_id].emission[1]      = emission[1];
           _scene.v_mat[_mat_id].emission[2]      = emission[2];
-          _scene.v_mat[_mat_id].material_changed = true;
+          _scene.MarkMaterialDirty(_mat_id);
         }
       }
     }

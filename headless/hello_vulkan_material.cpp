@@ -17,6 +17,17 @@
 
 extern std::vector<std::string> defaultSearchPaths;
 
+uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
+{
+  ObjInstance instance;
+  instance.transform = transform;
+  instance.objIndex  = objIndex;
+  m_instances.push_back(instance);
+  m_instanceIds.push_back(instanceId);
+  resetAccumulation();
+  return static_cast<uint32_t>(m_instances.size() - 1);
+}
+
 void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
 {
   for(auto& m : loader.m_materials)
@@ -53,11 +64,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   m_debug.setObjectName(model.matColorBuffer.buffer, (std::string("mat_" + objNb)));
   m_debug.setObjectName(model.matIndexBuffer.buffer, (std::string("matIdx_" + objNb)));
 
-  ObjInstance instance;
-  instance.transform = transform;
-  instance.objIndex  = static_cast<uint32_t>(m_objModel.size());
-  m_instances.push_back(instance);
-  m_instanceIds.push_back(0);
+  addInstance(transform, static_cast<uint32_t>(m_objModel.size()), 0);
 
   ObjDesc desc;
   desc.txtOffset            = txtOffset;

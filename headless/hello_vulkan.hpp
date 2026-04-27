@@ -67,6 +67,10 @@ public:
     uint32_t  objIndex{0};  // Model index reference
   };
 
+  uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
+  size_t getInstanceCount() const { return m_instances.size(); }
+  const ObjInstance& getInstance(size_t index) const { return m_instances[index]; }
+
   // Array of objects and instances in the scene
   std::vector<ModelLoader> m_Loader;     // Model on host
   std::vector<ObjModel>    m_objModel;   // Model on host
@@ -362,6 +366,7 @@ private:
   dlss::PerfQuality desiredDlssPerfQuality() const;
   VkExtent2D computeRenderSize();
   void       refreshOffscreenRenderTargetsIfNeeded();
+  void       refreshOffscreenRenderTargetDescriptors();
   void       updateLidarRtDescriptorSet();
   void       updateLidarCompositeDescriptorSet();
 

@@ -19,8 +19,6 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
-#include <iostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 int HdRobotRenderParam::RegisterTexturePath(const std::string& texturePath)
@@ -74,62 +72,69 @@ bool HdRobotRenderParam::GetLidarCamera(HdRobotLidarData* lidarData) const
   return true;
 }
 
-void ConvertVmeshToLoader(const HydraMesh& mesh, ModelLoader& loader)
+void HdRobotRenderParam::MarkAllMeshesTlasDirty()
 {
-  size_t vertexOffset = 0;
-
-  loader.m_vertices.clear();
-  loader.m_indices.clear();
-  loader.m_matIndx.clear();
-
-  const auto& points    = mesh.points;
-  const auto& normals   = mesh.normals;
-  const auto& texCoords = mesh.texCoords;
-  const auto& faces     = mesh.faces;
-  const auto& matIdx    = mesh.materialIds;
-
-  VtVec2fArray newTexCoords = texCoords;
-  if(newTexCoords.empty() || newTexCoords.size() != points.size())
+  for(auto& mesh : v_mesh)
   {
-    newTexCoords.resize(points.size());
-    for(size_t i = 0; i < points.size(); ++i)
-    {
-      newTexCoords[i].Set((points[i][0] + 1.0f) * 0.5f, (points[i][2] + 1.0f) * 0.5f);
-    }
+    mesh.tlas_changed = true;
   }
+}
 
-  if(points.size() != normals.size() || points.size() != newTexCoords.size())
+void HdRobotRenderParam::MarkMeshTlasDirty(size_t meshId)
+{
+  if(meshId < v_mesh.size())
   {
-    std::cerr << "points:" << points.size() << '\n';
-    std::cerr << "normals:" << normals.size() << '\n';
-    std::cerr << "texCoords:" << newTexCoords.size() << '\n';
-    std::cerr << "Error: points, normals, texCoords size mismatch" << '\n';
-    return;
+    v_mesh[meshId].tlas_changed = true;
   }
+}
 
-  for(size_t i = 0; i < points.size(); ++i)
+void HdRobotRenderParam::MarkMeshBlasDirty(size_t meshId)
+{
+  if(meshId < v_mesh.size())
   {
-    VertexObj vertex;
-    vertex.pos      = glm::vec3(points[i][0], points[i][1], points[i][2]);
-    vertex.nrm      = glm::vec3(normals[i][0], normals[i][1], normals[i][2]);
-    vertex.texCoord = glm::vec2(newTexCoords[i][0], 1 - newTexCoords[i][1]);
-    vertex.color    = glm::vec3(1.0f, 1.0f, 1.0f);
-    loader.m_vertices.push_back(vertex);
+    v_mesh[meshId].blas_changed = true;
   }
+}
 
-  for(const auto& face : faces)
+bool HdRobotRenderParam::ConsumeMeshTlasDirty(size_t meshId)
+{
+  if(meshId >= v_mesh.size() || !v_mesh[meshId].tlas_changed)
   {
-    loader.m_indices.push_back(static_cast<uint32_t>(face[0]) + vertexOffset);
-    loader.m_indices.push_back(static_cast<uint32_t>(face[1]) + vertexOffset);
-    loader.m_indices.push_back(static_cast<uint32_t>(face[2]) + vertexOffset);
+    return false;
   }
+  v_mesh[meshId].tlas_changed = false;
+  return true;
+}
 
-  for(const auto& matId : matIdx)
+bool HdRobotRenderParam::ConsumeMeshBlasDirty(size_t meshId)
+{
+  if(meshId >= v_mesh.size() || !v_mesh[meshId].blas_changed)
   {
-    loader.m_matIndx.push_back(static_cast<uint32_t>(matId));
+    return false;
   }
+  v_mesh[meshId].blas_changed = false;
+  return true;
+}
 
-  vertexOffset += points.size();
+void HdRobotRenderParam::MarkMaterialDirty(size_t materialId)
+{
+  if(materialId < v_mat.size())
+  {
+    v_mat[materialId].material_changed = true;
+  }
+}
+
+bool HdRobotRenderParam::IsMaterialDirty(size_t materialId) const
+{
+  return materialId < v_mat.size() && v_mat[materialId].material_changed;
+}
+
+void HdRobotRenderParam::ClearAllMaterialDirty()
+{
+  for(auto& material : v_mat)
+  {
+    material.material_changed = false;
+  }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
