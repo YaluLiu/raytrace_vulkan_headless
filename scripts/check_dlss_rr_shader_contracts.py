@@ -37,6 +37,10 @@ def main() -> None:
     require("computeDlssJitter" in pipeline_cpp, "raytrace() must compute deterministic per-frame jitter")
     require("m_pcRay.jitterX" in pipeline_cpp, "raytrace() must push jitterX to raygen")
     require("m_pcRay.jitterY" in pipeline_cpp, "raytrace() must push jitterY to raygen")
+    require("eRaygenPassLowResBeautyWithLidar" in pipeline_cpp, "raytrace() must dispatch low-res beauty with named pass mode")
+    require("eRaygenPassHighResAov" in pipeline_cpp, "raytrace() must dispatch high-res AOV pass")
+    require("m_aovSize.width, m_aovSize.height" in pipeline_cpp,
+            "high-resolution AOV pass must dispatch at m_aovSize")
     require("eval.jitterX" in hello_cpp and "-m_currentJitter.x" in hello_cpp,
             "DLSS evaluate must receive negative shader jitterX")
     require("eval.jitterY" in hello_cpp and "-m_currentJitter.y" in hello_cpp,

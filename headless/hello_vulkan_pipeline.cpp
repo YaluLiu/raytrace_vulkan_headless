@@ -352,7 +352,7 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
   m_pcRay.jitterY         = m_currentJitter.y;
   m_pcRay.maxDepth        = std::max(m_pcRay.maxDepth, 1);
   m_pcRay.samplesPerFrame = std::max(m_pcRay.samplesPerFrame, 1);
-  m_pcRay.lidarPassMode   = m_enableLidar ? 1 : 2;
+  m_pcRay.lidarPassMode   = m_enableLidar ? eRaygenPassLowResBeautyWithLidar : eRaygenPassLowResBeauty;
   std::vector<VkDescriptorSet> descSets{m_rtDescSet, m_descSet};
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipeline);
   vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_rtPipelineLayout, 0,
@@ -377,10 +377,12 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
                               VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
     PushConstantRay lidarPassPc = m_pcRay;
-    lidarPassPc.lidarPassMode   = 0;
+    lidarPassPc.lidarPassMode   = eRaygenPassLidarPointCloud;
     lidarPassPc.numLights       = 0;
     lidarPassPc.maxDepth        = 1;
     lidarPassPc.samplesPerFrame = 1;
+    lidarPassPc.jitterX         = 0.0f;
+    lidarPassPc.jitterY         = 0.0f;
     vkCmdPushConstants(cmdBuf, m_rtPipelineLayout, pushStages, 0, sizeof(PushConstantRay), &lidarPassPc);
     vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], lidarRayCount(lidarPassPc.lidar), 1, 1);
 
@@ -388,10 +390,20 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
                               VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
   }
 
-  PushConstantRay mainPassPc = m_pcRay;
-  mainPassPc.lidarPassMode   = m_enableLidar ? 1 : 2;
-  vkCmdPushConstants(cmdBuf, m_rtPipelineLayout, pushStages, 0, sizeof(PushConstantRay), &mainPassPc);
+  PushConstantRay lowResPassPc = m_pcRay;
+  lowResPassPc.lidarPassMode   = m_enableLidar ? eRaygenPassLowResBeautyWithLidar : eRaygenPassLowResBeauty;
+  vkCmdPushConstants(cmdBuf, m_rtPipelineLayout, pushStages, 0, sizeof(PushConstantRay), &lowResPassPc);
   vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_renderSize.width, m_renderSize.height, 1);
+
+  PushConstantRay aovPassPc = m_pcRay;
+  aovPassPc.lidarPassMode   = eRaygenPassHighResAov;
+  aovPassPc.numLights       = 0;
+  aovPassPc.maxDepth        = 1;
+  aovPassPc.samplesPerFrame = 1;
+  aovPassPc.jitterX         = 0.0f;
+  aovPassPc.jitterY         = 0.0f;
+  vkCmdPushConstants(cmdBuf, m_rtPipelineLayout, pushStages, 0, sizeof(PushConstantRay), &aovPassPc);
+  vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_aovSize.width, m_aovSize.height, 1);
 
   m_accumulatedFrames++;
 
