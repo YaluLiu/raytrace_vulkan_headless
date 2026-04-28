@@ -24,6 +24,7 @@ def main() -> None:
     app_cpp = read("headless/ray_trace_app.cpp")
     render_texture_export_cpp = read("hdRobot/renderTextureExport.cpp")
     hello_test_cpp = read("headless/hello_vulkan_test.cpp")
+    lidar_pointcloud = read("headless/shaders/lidar_pointcloud.glsl")
 
     require("START_BINDING(LidarCompositeBindings)" in host_device, "lidar composite pass must have descriptor bindings")
     require("eCompositeDenoisedImage" in host_device, "lidar composite must bind the denoised final image")
@@ -63,6 +64,23 @@ def main() -> None:
     require(
         "imageLoad(depthImage" in lidar_composite and "kLidarDepthCompositeEpsilon" in lidar_composite,
         "post-DLSS composite must preserve depth occlusion",
+    )
+    require(
+        "floatBitsToUint" in lidar_pointcloud and "uintBitsToFloat" in lidar_composite,
+        "lidar depth keys must preserve the exact main-camera z/w float bits used by the color depth AOV",
+    )
+    require(
+        "kLidarDepthKeyMaxF" not in lidar_pointcloud and "kLidarDepthKeyMaxF" not in lidar_composite,
+        "lidar depth occlusion must not quantize z/w through an arbitrary integer max divisor",
+    )
+    epsilon_match = re.search(r"kLidarDepthCompositeEpsilon\s*=\s*([0-9.eE+-]+)\s*;", lidar_composite)
+    require(
+        epsilon_match is not None and float(epsilon_match.group(1)) <= 1e-6,
+        "lidar depth occlusion epsilon must be near float precision for clip-space z/w",
+    )
+    require(
+        lidar_composite.index("if(!lidarVisible)") < lidar_composite.index("imageStore(lidarPointCloudImage"),
+        "raw lidar point-cloud AOV must only store depth-visible points",
     )
     require(
         "ivec2 lidarPixel" in lidar_composite and "imageSize(lidarPointCloudDepthKeyImage)" in lidar_composite,

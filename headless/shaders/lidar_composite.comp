@@ -4,8 +4,7 @@
 
 #include "host_device.h"
 
-const float kLidarDepthCompositeEpsilon = 1e-3;
-const float kLidarDepthKeyMaxF          = 16777214.0;
+const float kLidarDepthCompositeEpsilon = 1e-6;
 const uint  kLidarEmptyDepthKey         = 0xffffffffu;
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
@@ -34,15 +33,15 @@ void main()
     return;
   }
 
-  float lidarDepth   = float(lidarDepthKey) / kLidarDepthKeyMaxF;
+  float lidarDepth   = uintBitsToFloat(lidarDepthKey);
   float sceneDepth   = imageLoad(depthImage, lidarPixel).r;
   bool  lidarVisible = lidarDepth <= sceneDepth + kLidarDepthCompositeEpsilon;
-  imageStore(lidarPointCloudImage, lidarPixel, vec4(1.0, 0.0, 0.0, lidarDepth));
   if(!lidarVisible)
   {
     return;
   }
 
+  imageStore(lidarPointCloudImage, lidarPixel, vec4(1.0, 0.0, 0.0, lidarDepth));
   vec4 color = imageLoad(denoisedImage, pixel);
   imageStore(denoisedImage, pixel, vec4(1.0, 0.0, 0.0, color.a));
 }

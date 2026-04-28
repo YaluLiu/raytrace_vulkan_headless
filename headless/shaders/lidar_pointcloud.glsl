@@ -1,6 +1,5 @@
 const float kLidarMinStepDeg     = 1e-4;
 const float kLidarRayTMin        = 0.001;
-const float kLidarDepthKeyMaxF   = 16777214.0;
 
 int lidarAxisSampleCount(float minDeg, float maxDeg, float stepDeg)
 {
@@ -131,7 +130,8 @@ void splatPoint(ivec2 centerPixel, float radiusPx, float normalizedDepth)
   float radius      = max(radiusPx, 0.5);
   int   radiusInt   = int(ceil(radius));
   float radiusSq    = radius * radius;
-  uint depthKey = min(uint(clamp(normalizedDepth, 0.0, 1.0) * kLidarDepthKeyMaxF + 0.5), uint(kLidarDepthKeyMaxF));
+  // Positive 0..1 float bits are ordered, so atomicMin keeps the nearest z/w without rescaling it.
+  uint depthKey      = floatBitsToUint(clamp(normalizedDepth, 0.0, 1.0));
 
   for(int y = -radiusInt; y <= radiusInt; ++y)
   {

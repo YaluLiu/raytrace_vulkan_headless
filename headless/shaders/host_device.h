@@ -44,7 +44,7 @@ START_BINDING(RtxBindings)
   eDistanceToCameraImage  = 10, // AOV: world-space distance from camera to first hit
   eLidarPointCloudImage   = 11, // AOV: lidar point cloud
   eDepthImage             = 12, // AOV: normalized Hydra depth
-  eLidarDepthKeyImage     = 13  // AOV: lidar normalized depth key for atomic nearest-point writes
+  eLidarDepthKeyImage     = 13  // AOV: lidar normalized depth float-bit key for atomic nearest-point writes
 END_BINDING();
 
 START_BINDING(LidarCompositeBindings)
