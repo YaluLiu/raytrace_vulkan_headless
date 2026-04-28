@@ -60,7 +60,6 @@ imgui.ini
 test.rchit
 
 chatgpt/
-docs/
 graphify-out/
 output/
 
@@ -75,7 +74,6 @@ scripts/__pycache__/
 # ai文档和build目录
 dlss_rr*.md
 build_hydra/
-
 
 
 
