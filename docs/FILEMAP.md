@@ -52,6 +52,8 @@ call sites with `rg`.
   metallic-roughness closest-hit shader path and DLSS guide buffer inputs.
 - `scripts/check_normal_map_contracts.py`: Contract checks for tangent data
   propagation and normal map sampling in the triangle closest-hit shader.
+- `scripts/check_instancer_material_subset_contracts.py`: Contract checks for
+  PointInstancer TLAS propagation and material subset local/global id mapping.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -241,6 +243,12 @@ call sites with `rg`.
   `headless/shaders/raytrace.rchit`, and
   `scripts/check_normal_map_contracts.py`, then search for `tangent`,
   `bitangentSigns`, and `sampleNormalMap`.
+- Instancers or material subsets:
+  `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
+  `hdRobot/sceneData.cpp`, `hdRobot/headlessRenderBridge.cpp`, and
+  `scripts/check_instancer_material_subset_contracts.py`, then search for
+  `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
+  `materialIds`, and `tlasIds`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
