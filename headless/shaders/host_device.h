@@ -58,7 +58,7 @@ END_BINDING();
 // Information of a obj model when referenced in a shader
 struct ObjDesc
 {
-  int      txtOffset;             // Texture index offset in the array of textures
+  int txtOffset;                  // Texture index offset in the array of textures
   uint64_t vertexAddress;         // Address of the Vertex buffer
   uint64_t indexAddress;          // Address of the index buffer
   uint64_t materialAddress;       // Address of the material buffer
@@ -77,21 +77,21 @@ struct CameraUniforms
 
 struct LidarParamsUniforms
 {
-  vec4 positionAndPad;   // xyz: lidar world position, w: reserved
-  vec4 azimuthParams;    // x: minDeg, y: maxDeg, z: stepDeg, w: pointRadiusPixels
-  vec4 verticalParams;   // x: minDeg, y: maxDeg, z: stepDeg, w: maxDistance
+  vec4 positionAndPad;  // xyz: lidar world position, w: reserved
+  vec4 azimuthParams;   // x: minDeg, y: maxDeg, z: stepDeg, w: pointRadiusPixels
+  vec4 verticalParams;  // x: minDeg, y: maxDeg, z: stepDeg, w: maxDistance
 };
 
 struct LidarUniforms
 {
-  CameraUniforms      camera;
+  CameraUniforms camera;
   LidarParamsUniforms params;
 };
 
 struct FrameUniforms
 {
   CameraUniforms camera;
-  LidarUniforms  lidar;
+  LidarUniforms lidar;
 };
 
 struct LidarParams
@@ -109,16 +109,16 @@ struct LidarParams
 struct Light
 {
   // common
-  int   type;
-  int   textureID;
-  vec3  baseEmission;  // intensity * color * colorTemp * exposure
+  int type;
+  int textureID;
+  vec3 baseEmission;  // intensity * color * colorTemp * exposure
   float diffuse;
   float specular;
   // distant light
-  vec3  direction;
+  vec3 direction;
   float angle;
   // sphere light
-  vec3  position;
+  vec3 position;
   float radius;
   // dome light
   vec4 rotateQuat;  // padding for alignment
@@ -128,31 +128,32 @@ struct Light
 #ifdef __cplusplus
 enum RaygenPassMode
 {
-  eRaygenPassLidarPointCloud       = 0,
+  eRaygenPassLidarPointCloud = 0,
   eRaygenPassLowResBeautyWithLidar = 1,  // Legacy mode; lidar compositing now uses lidar_composite.comp.
-  eRaygenPassLowResBeauty          = 2,
-  eRaygenPassHighResAov            = 3
+  eRaygenPassLowResBeauty = 2,
+  eRaygenPassHighResAov = 3
 };
 #else
-const int eRaygenPassLidarPointCloud       = 0;
+const int eRaygenPassLidarPointCloud = 0;
 const int eRaygenPassLowResBeautyWithLidar = 1;  // Legacy mode; lidar compositing now uses lidar_composite.comp.
-const int eRaygenPassLowResBeauty          = 2;
-const int eRaygenPassHighResAov            = 3;
+const int eRaygenPassLowResBeauty = 2;
+const int eRaygenPassHighResAov = 3;
 #endif
 
 struct PushConstantRay
 {
-  int         numLights;
-  uint        frameIndex;
-  float       jitterX;
-  float       jitterY;
-  int         maxDepth;
-  int         samplesPerFrame;
-  int         lidarPassMode;
+  int numLights;
+  uint frameIndex;
+  float jitterX;
+  float jitterY;
+  int maxDepth;
+  int samplesPerFrame;
+  int lidarPassMode;
   LidarParams lidar;
 };
 
-struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for device
+struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for
+               // device
 {
   vec3 pos;
   vec3 nrm;
@@ -160,23 +161,36 @@ struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for devi
   vec2 texCoord;
 };
 
-struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be compressed for device
+struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
+                          // compressed for device
 {
-  vec3  ambient;
-  vec3  diffuse;
-  vec3  specular;
-  vec3  transmittance;
-  vec3  emission;
+  vec3 ambient;
+  vec3 diffuse;
+  vec3 specular;
+  vec3 transmittance;
+  vec3 emission;
+  vec3 baseColorFactor;
+  vec3 emissionFactor;
   float shininess;
   float ior;       // index of refraction
   float dissolve;  // 1 == opaque; 0 == fully transparent
-  int   illum;     // illumination model (see http://www.fileformat.info/format/material/)
-  int   textureId;
+  float metallicFactor;
+  float roughnessFactor;
+  float opacityFactor;
+  int illum;  // illumination model (see
+              // http://www.fileformat.info/format/material/)
+  int textureId;
+  int baseColorTextureId;
+  int metallicTextureId;
+  int roughnessTextureId;
+  int normalTextureId;
+  int emissionTextureId;
+  int opacityTextureId;
 };
 
 struct Sphere
 {
-  vec3  center;
+  vec3 center;
   float radius;
 };
 
@@ -190,6 +204,5 @@ const float PI = 3.1415926535897932384626433832795;
 
 #define KIND_SPHERE 0
 #define KIND_CUBE 1
-
 
 #endif

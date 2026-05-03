@@ -42,6 +42,8 @@ call sites with `rg`.
   Hydra material texture handoff without local file staging.
 - `scripts/check_hydra_entrypoint_contracts.py`: Contract checks for the
   `install.sh hydra`/`show` scene override path.
+- `scripts/check_pbr_material_contracts.py`: Contract checks for PBR material
+  fields across CPU, Hydra, and shader-facing structs.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -201,6 +203,11 @@ call sites with `rg`.
   `common/obj_loader.cpp`, then search for `GetTexturePath`,
   `ExportRegisteredTextures`, `stbi_load_from_memory`, `loadMaterial`, and
   material buffer updates.
+- PBR material struct or shader material layout:
+  `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
+  `hdRobot/headlessRenderBridge.cpp`, `headless/shaders/host_device.h`,
+  and `scripts/check_pbr_material_contracts.py`, then search for
+  `baseColorFactor`, `roughnessFactor`, and `normalTextureId`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

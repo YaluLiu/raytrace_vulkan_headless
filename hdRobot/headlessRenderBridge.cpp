@@ -1,55 +1,63 @@
 #include "headlessRenderBridge.h"
 
+#include <algorithm>
+#include <filesystem>
+#include <utility>
+
 #include "camera.h"
+#include "nvh/cameramanipulator.hpp"
 #include "renderBuffer.h"
 #include "renderSettings.h"
 #include "renderTextureExport.h"
 #include "sceneData.h"
 
-#include "nvh/cameramanipulator.hpp"
-
-#include <algorithm>
-#include <filesystem>
-#include <utility>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial& material)
+WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
 {
   WaveFrontMaterial result;
-  result.ambient       = material.ambient;
-  result.diffuse       = material.diffuse;
-  result.specular      = material.specular;
+  result.ambient = material.ambient;
+  result.diffuse = material.diffuse;
+  result.specular = material.specular;
   result.transmittance = material.transmittance;
-  result.emission      = material.emission;
-  result.shininess     = material.shininess;
-  result.ior           = material.ior;
-  result.dissolve      = material.dissolve;
-  result.illum         = material.illum;
-  result.textureId     = material.textureID;
+  result.emission = material.emission;
+  result.baseColorFactor = material.baseColorFactor;
+  result.emissionFactor = material.emissionFactor;
+  result.shininess = material.shininess;
+  result.ior = material.ior;
+  result.dissolve = material.dissolve;
+  result.metallicFactor = material.metallicFactor;
+  result.roughnessFactor = material.roughnessFactor;
+  result.opacityFactor = material.opacityFactor;
+  result.illum = material.illum;
+  result.textureId = material.textureID;
+  result.baseColorTextureId = material.baseColorTextureId;
+  result.metallicTextureId = material.metallicTextureId;
+  result.roughnessTextureId = material.roughnessTextureId;
+  result.normalTextureId = material.normalTextureId;
+  result.emissionTextureId = material.emissionTextureId;
+  result.opacityTextureId = material.opacityTextureId;
   return result;
 }
 
 TfTokenVector NormalizeRenderTags(TfTokenVector tags)
 {
-  std::sort(tags.begin(), tags.end(), [](const TfToken& a, const TfToken& b) {
-    return a.GetString() < b.GetString();
-  });
+  std::sort(tags.begin(), tags.end(), [](const TfToken &a, const TfToken &b) { return a.GetString() < b.GetString(); });
   tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
   return tags;
 }
 
-bool RenderTagsEqual(const TfTokenVector& lhs, const TfTokenVector& rhs)
+bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
 {
-  if(lhs.size() != rhs.size())
+  if (lhs.size() != rhs.size())
   {
     return false;
   }
-  for(size_t i = 0; i < lhs.size(); ++i)
+  for (size_t i = 0; i < lhs.size(); ++i)
   {
-    if(lhs[i] != rhs[i])
+    if (lhs[i] != rhs[i])
     {
       return false;
     }
@@ -58,45 +66,43 @@ bool RenderTagsEqual(const TfTokenVector& lhs, const TfTokenVector& rhs)
 }
 }  // namespace
 
-HeadlessRenderBridge::HeadlessRenderBridge(const HdRenderSettingsMap& settings,
-                                           HdRobotRenderParam&        renderParam,
-                                           std::string                resourcePath)
-    : _settings(settings)
-    , _renderParam(renderParam)
-    , _resourcePath(std::move(resourcePath))
+HeadlessRenderBridge::HeadlessRenderBridge(const HdRenderSettingsMap &settings, HdRobotRenderParam &renderParam,
+                                           std::string resourcePath)
+    : _settings(settings), _renderParam(renderParam), _resourcePath(std::move(resourcePath))
 {
 }
 
-bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
+bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPassState,
+                                       const TfTokenVector &renderTags)
 {
-  if(updateActiveRenderTags(renderTags))
+  if (updateActiveRenderTags(renderTags))
   {
     _renderParam.MarkAllMeshesTlasDirty();
   }
 
-  if(!renderPassState)
+  if (!renderPassState)
   {
     return false;
   }
 
-  const auto& hdAovBindings = renderPassState->GetAovBindings();
-  HdRobotRenderBuffer* primaryRenderBuffer = GetPrimaryRenderBuffer(hdAovBindings);
-  if(primaryRenderBuffer == nullptr)
+  const auto &hdAovBindings = renderPassState->GetAovBindings();
+  HdRobotRenderBuffer *primaryRenderBuffer = GetPrimaryRenderBuffer(hdAovBindings);
+  if (primaryRenderBuffer == nullptr)
   {
     return false;
   }
 
-  if(_width != static_cast<int>(primaryRenderBuffer->GetWidth())
-     || _height != static_cast<int>(primaryRenderBuffer->GetHeight()))
+  if (_width != static_cast<int>(primaryRenderBuffer->GetWidth()) ||
+      _height != static_cast<int>(primaryRenderBuffer->GetHeight()))
   {
-    _width             = static_cast<int>(primaryRenderBuffer->GetWidth());
-    _height            = static_cast<int>(primaryRenderBuffer->GetHeight());
+    _width = static_cast<int>(primaryRenderBuffer->GetWidth());
+    _height = static_cast<int>(primaryRenderBuffer->GetHeight());
     _resetRenderBuffer = true;
   }
 
   applyRenderSettings();
   initOrResize();
-  if(!updateMainCamera(renderPassState))
+  if (!updateMainCamera(renderPassState))
   {
     return false;
   }
@@ -106,12 +112,12 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr& renderP
   updateScene();
   _renderApp.render();
 
-  const ::HelloVulkan& app = _renderApp.getVulkan();
-  for(const HdRenderPassAovBinding& binding : hdAovBindings)
+  const ::HelloVulkan &app = _renderApp.getVulkan();
+  for (const HdRenderPassAovBinding &binding : hdAovBindings)
   {
-    auto* aovBuffer = static_cast<HdRobotRenderBuffer*>(binding.renderBuffer);
+    auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
     CopyAovToRenderBuffer(app, binding.aovName, aovBuffer);
-    if(aovBuffer != nullptr)
+    if (aovBuffer != nullptr)
     {
       aovBuffer->SetConverged(true);
     }
@@ -123,18 +129,18 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr& renderP
 
 void HeadlessRenderBridge::applyRenderSettings()
 {
-  HelloVulkan& app = _renderApp.getVulkan();
+  HelloVulkan &app = _renderApp.getVulkan();
   ApplyRenderSettingsToApp(_settings, app);
 }
 
 void HeadlessRenderBridge::initOrResize()
 {
-  HelloVulkan& vulkan = _renderApp.getVulkan();
+  HelloVulkan &vulkan = _renderApp.getVulkan();
 
-  if(!_isAppInited)
+  if (!_isAppInited)
   {
     _isAppInited = true;
-    if(!_resourcePath.empty())
+    if (!_resourcePath.empty())
     {
       _renderApp.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
     }
@@ -142,34 +148,34 @@ void HeadlessRenderBridge::initOrResize()
     _resetRenderBuffer = false;
 
     bool isFirstModel = true;
-    for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+    for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
     {
-      auto&       curMesh = _renderParam.v_mesh[meshId];
+      auto &curMesh = _renderParam.v_mesh[meshId];
       ModelLoader loader;
       ConvertVmeshToLoader(curMesh, loader);
       loader.m_textures.clear();
-      if(isFirstModel)
+      if (isFirstModel)
       {
         loader.m_textureAssets = ExportRegisteredTextures(_renderParam.GetTexturePaths());
-        isFirstModel           = false;
+        isFirstModel = false;
       }
-      for(auto& matId : curMesh.scene_mat_ids)
+      for (auto &matId : curMesh.scene_mat_ids)
       {
         auto materialObj = _renderParam.v_mat[matId].toMaterialObj();
         loader.m_materials.emplace_back(materialObj);
       }
       vulkan.loadModel(loader);
-      const auto   instance              = vulkan.getInstance(vulkan.getInstanceCount() - 1);
-      const size_t firstInstanceId       = vulkan.getInstanceCount() - 1;
+      const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
+      const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
       const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
-      const size_t tlasSlotCount         = std::max<size_t>(authoredInstanceCount, 1);
-      curMesh.hasInstances               = authoredInstanceCount > 0;
-      for(size_t i = 1; i < tlasSlotCount; ++i)
+      const size_t tlasSlotCount = std::max<size_t>(authoredInstanceCount, 1);
+      curMesh.hasInstances = authoredInstanceCount > 0;
+      for (size_t i = 1; i < tlasSlotCount; ++i)
       {
         vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
       }
       curMesh.tlasIds.clear();
-      for(size_t i = 0; i < tlasSlotCount; ++i)
+      for (size_t i = 0; i < tlasSlotCount; ++i)
       {
         curMesh.tlasIds.push_back(static_cast<int>(i + firstInstanceId));
       }
@@ -178,36 +184,36 @@ void HeadlessRenderBridge::initOrResize()
     vulkan.addSpheres(_renderParam.v_sphere);
     _renderApp.createBVH();
   }
-  else if(_resetRenderBuffer)
+  else if (_resetRenderBuffer)
   {
     _renderApp.resize(_width, _height);
     _resetRenderBuffer = false;
   }
 }
 
-bool HeadlessRenderBridge::updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState)
+bool HeadlessRenderBridge::updateMainCamera(const HdRenderPassStateSharedPtr &renderPassState)
 {
-  const HdCamera* hdCamera = renderPassState ? renderPassState->GetCamera() : nullptr;
-  if(!hdCamera)
+  const HdCamera *hdCamera = renderPassState ? renderPassState->GetCamera() : nullptr;
+  if (!hdCamera)
   {
     return false;
   }
 
-  const HdRobotCamera* robotCamera = dynamic_cast<const HdRobotCamera*>(hdCamera);
-  if(robotCamera == nullptr)
+  const HdRobotCamera *robotCamera = dynamic_cast<const HdRobotCamera *>(hdCamera);
+  if (robotCamera == nullptr)
   {
     return false;
   }
 
-  const HdRobotCameraData& mainCameraData = robotCamera->GetCameraData();
+  const HdRobotCameraData &mainCameraData = robotCamera->GetCameraData();
   _renderApp.getVulkan().setMainCameraClipRange(mainCameraData.clipStart, mainCameraData.clipEnd);
 
-  glm::vec3 camPos     = mainCameraData.position;
+  glm::vec3 camPos = mainCameraData.position;
   glm::vec3 camForward = mainCameraData.forward;
-  glm::vec3 camUp      = mainCameraData.up;
-  glm::vec3 target     = camPos + camForward;
+  glm::vec3 camUp = mainCameraData.up;
+  glm::vec3 target = camPos + camForward;
 
-  if(glm::length(glm::cross(camForward, camUp)) < 1e-6f)
+  if (glm::length(glm::cross(camForward, camUp)) < 1e-6f)
   {
     camUp = glm::vec3(0.0f, 1.0f, 0.0f);
   }
@@ -221,7 +227,7 @@ void HeadlessRenderBridge::updateLidarCamera()
   const bool lidarEnabledBySetting = GetLidarEnabledSetting(_settings);
 
   HdRobotLidarData lidarData;
-  if(!lidarEnabledBySetting || !_renderParam.GetLidarCamera(&lidarData))
+  if (!lidarEnabledBySetting || !_renderParam.GetLidarCamera(&lidarData))
   {
     _renderApp.setLidarEnabled(false);
     return;
@@ -230,31 +236,26 @@ void HeadlessRenderBridge::updateLidarCamera()
   _renderApp.setLidarEnabled(true);
 
   RayTraceApp::RadarCameraInput lidarCamera{};
-  lidarCamera.eye         = lidarData.eye;
-  lidarCamera.center      = lidarData.center;
-  lidarCamera.up          = lidarData.up;
-  lidarCamera.fovDeg      = lidarData.fovDeg;
+  lidarCamera.eye = lidarData.eye;
+  lidarCamera.center = lidarData.center;
+  lidarCamera.up = lidarData.up;
+  lidarCamera.fovDeg = lidarData.fovDeg;
   lidarCamera.lidarParams = {
-      lidarData.params.azimuthMinDeg,
-      lidarData.params.azimuthMaxDeg,
-      lidarData.params.azimuthStepDeg,
-      lidarData.params.verticalMinDeg,
-      lidarData.params.verticalMaxDeg,
-      lidarData.params.verticalStepDeg,
-      lidarData.params.pointRadiusPixels,
-      lidarData.params.maxDistance,
+      lidarData.params.azimuthMinDeg,     lidarData.params.azimuthMaxDeg,  lidarData.params.azimuthStepDeg,
+      lidarData.params.verticalMinDeg,    lidarData.params.verticalMaxDeg, lidarData.params.verticalStepDeg,
+      lidarData.params.pointRadiusPixels, lidarData.params.maxDistance,
   };
   _renderApp.setRadarCamera(lidarCamera);
 }
 
 void HeadlessRenderBridge::updateLights()
 {
-  HelloVulkan& vulkan = _renderApp.getVulkan();
+  HelloVulkan &vulkan = _renderApp.getVulkan();
   vulkan.clearLights();
 
-  for(auto& curLight : _renderParam.v_light)
+  for (auto &curLight : _renderParam.v_light)
   {
-    if(curLight.valid)
+    if (curLight.valid)
     {
       vulkan.addLight(curLight.toLight());
     }
@@ -270,10 +271,10 @@ void HeadlessRenderBridge::updateScene()
 
 void HeadlessRenderBridge::updateBlas()
 {
-  HelloVulkan& vulkan = _renderApp.getVulkan();
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  HelloVulkan &vulkan = _renderApp.getVulkan();
+  for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
-    if(_renderParam.ConsumeMeshBlasDirty(meshId))
+    if (_renderParam.ConsumeMeshBlasDirty(meshId))
     {
       ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.m_Loader[meshId]);
       vulkan.updateBlas(meshId);
@@ -283,24 +284,24 @@ void HeadlessRenderBridge::updateBlas()
 
 void HeadlessRenderBridge::updateTlas()
 {
-  HelloVulkan& vulkan     = _renderApp.getVulkan();
-  bool         updateTlas = false;
+  HelloVulkan &vulkan = _renderApp.getVulkan();
+  bool updateTlas = false;
 
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
-    auto& curMesh = _renderParam.v_mesh[meshId];
-    if(_renderParam.ConsumeMeshTlasDirty(meshId))
+    auto &curMesh = _renderParam.v_mesh[meshId];
+    if (_renderParam.ConsumeMeshTlasDirty(meshId))
     {
-      updateTlas               = true;
-      const bool tagMatched    = isMeshRenderTagMatched(curMesh);
-      const bool meshVisible   = curMesh.visible && curMesh.valid && tagMatched;
-      for(size_t instanceId = 0; instanceId < curMesh.tlasIds.size(); ++instanceId)
+      updateTlas = true;
+      const bool tagMatched = isMeshRenderTagMatched(curMesh);
+      const bool meshVisible = curMesh.visible && curMesh.valid && tagMatched;
+      for (size_t instanceId = 0; instanceId < curMesh.tlasIds.size(); ++instanceId)
       {
-        auto       tlasId        = curMesh.tlasIds[instanceId];
+        auto tlasId = curMesh.tlasIds[instanceId];
         const bool instanceValid = curMesh.hasInstances && (instanceId < curMesh.instanceTransforms.size());
-        const bool visible       = meshVisible && instanceValid;
-        glm::mat4  transform     = glm::transpose(curMesh.transform);
-        if(instanceValid)
+        const bool visible = meshVisible && instanceValid;
+        glm::mat4 transform = glm::transpose(curMesh.transform);
+        if (instanceValid)
         {
           transform = glm::transpose(curMesh.transform * curMesh.instanceTransforms[instanceId]);
         }
@@ -308,7 +309,7 @@ void HeadlessRenderBridge::updateTlas()
       }
     }
   }
-  if(updateTlas)
+  if (updateTlas)
   {
     vulkan.updateTlasEnd();
   }
@@ -316,33 +317,33 @@ void HeadlessRenderBridge::updateTlas()
 
 void HeadlessRenderBridge::updateMaterials()
 {
-  HelloVulkan&                vulkan = _renderApp.getVulkan();
+  HelloVulkan &vulkan = _renderApp.getVulkan();
   std::vector<MaterialUpdate> newMaterials;
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
-    auto& curMesh = _renderParam.v_mesh[meshId];
-    for(size_t localMatIdx = 0; localMatIdx < curMesh.scene_mat_ids.size(); ++localMatIdx)
+    auto &curMesh = _renderParam.v_mesh[meshId];
+    for (size_t localMatIdx = 0; localMatIdx < curMesh.scene_mat_ids.size(); ++localMatIdx)
     {
-      int   globalMatId = curMesh.scene_mat_ids[localMatIdx];
-      auto& materialObj = _renderParam.v_mat[globalMatId];
-      if(_renderParam.IsMaterialDirty(static_cast<size_t>(globalMatId)))
+      int globalMatId = curMesh.scene_mat_ids[localMatIdx];
+      auto &materialObj = _renderParam.v_mat[globalMatId];
+      if (_renderParam.IsMaterialDirty(static_cast<size_t>(globalMatId)))
       {
         WaveFrontMaterial newMaterial = ToWaveFrontMaterial(materialObj);
         newMaterials.push_back({static_cast<int>(meshId), static_cast<int>(localMatIdx), newMaterial});
       }
     }
   }
-  if(!newMaterials.empty())
+  if (!newMaterials.empty())
   {
     vulkan.updateMaterialsAtRuntime(newMaterials);
   }
   _renderParam.ClearAllMaterialDirty();
 }
 
-bool HeadlessRenderBridge::updateActiveRenderTags(const TfTokenVector& renderTags)
+bool HeadlessRenderBridge::updateActiveRenderTags(const TfTokenVector &renderTags)
 {
   TfTokenVector normalizedRenderTags = NormalizeRenderTags(renderTags);
-  if(RenderTagsEqual(_activeRenderTags, normalizedRenderTags))
+  if (RenderTagsEqual(_activeRenderTags, normalizedRenderTags))
   {
     return false;
   }
@@ -351,9 +352,9 @@ bool HeadlessRenderBridge::updateActiveRenderTags(const TfTokenVector& renderTag
   return true;
 }
 
-bool HeadlessRenderBridge::isMeshRenderTagMatched(const HydraMesh& mesh) const
+bool HeadlessRenderBridge::isMeshRenderTagMatched(const HydraMesh &mesh) const
 {
-  if(_activeRenderTags.empty())
+  if (_activeRenderTags.empty())
   {
     return true;
   }

@@ -1,9 +1,6 @@
 #pragma once
 
-#include "shaders/host_device.h"
-
 #include <ModelLoader.h>
-#include <glm/glm.hpp>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec3i.h>
@@ -12,9 +9,12 @@
 #include <pxr/base/vt/types.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <glm/glm.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "shaders/host_device.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -24,35 +24,46 @@ struct HydraMesh
   VtVec3fArray points;
   VtVec3fArray normals;
   VtVec2fArray texCoords;
-  VtIntArray   materialIds;
-  bool         visible   = true;
-  bool         valid     = true;
-  TfToken      renderTag = HdRenderTagTokens->geometry;
+  VtIntArray materialIds;
+  bool visible = true;
+  bool valid = true;
+  TfToken renderTag = HdRenderTagTokens->geometry;
 
   bool blas_changed = false;
   bool tlas_changed = false;
 
-  std::vector<int>       scene_mat_ids;
+  std::vector<int> scene_mat_ids;
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1.0f}};
-  bool                   hasInstances       = true;
-  glm::mat4              transform          = glm::mat4{1.0f};
-  std::vector<int>       tlasIds;
+  bool hasInstances = true;
+  glm::mat4 transform = glm::mat4{1.0f};
+  std::vector<int> tlasIds;
 };
 
 struct HydraMaterial
 {
-  glm::vec3 ambient       = glm::vec3(0.1f, 0.1f, 0.1f);
-  glm::vec3 diffuse       = glm::vec3(0.18f, 0.18f, 0.18f);
-  glm::vec3 specular      = glm::vec3(1.0f, 1.0f, 1.0f);
+  glm::vec3 ambient = glm::vec3(0.1f, 0.1f, 0.1f);
+  glm::vec3 diffuse = glm::vec3(0.18f, 0.18f, 0.18f);
+  glm::vec3 specular = glm::vec3(1.0f, 1.0f, 1.0f);
   glm::vec3 transmittance = glm::vec3(0.0f, 0.0f, 0.0f);
-  glm::vec3 emission      = glm::vec3(0.0f, 0.0f, 0.0f);
-  float     shininess     = 0.0f;
-  float     ior           = 1.0f;
-  float     dissolve      = 1.0f;
-  int       illum         = 0;
-  int       textureID     = -1;
+  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 baseColorFactor = glm::vec3(0.18f, 0.18f, 0.18f);
+  glm::vec3 emissionFactor = glm::vec3(0.0f, 0.0f, 0.0f);
+  float shininess = 0.0f;
+  float ior = 1.0f;
+  float dissolve = 1.0f;
+  float metallicFactor = 0.0f;
+  float roughnessFactor = 0.5f;
+  float opacityFactor = 1.0f;
+  int illum = 0;
+  int textureID = -1;
+  int baseColorTextureId = -1;
+  int metallicTextureId = -1;
+  int roughnessTextureId = -1;
+  int normalTextureId = -1;
+  int emissionTextureId = -1;
+  int opacityTextureId = -1;
   std::string texturePath;
-  bool        material_changed = false;
+  bool material_changed = false;
 
   void set_default();
   MaterialObj toMaterialObj() const;
@@ -60,20 +71,20 @@ struct HydraMaterial
 
 struct HydraLight
 {
-  int   type;
-  int   valid = 0;
-  vec3  baseEmission;
+  int type;
+  int valid = 0;
+  vec3 baseEmission;
   float diffuse;
   float specular;
 
-  vec3  direction;
+  vec3 direction;
   float angle;
 
-  vec3  position;
+  vec3 position;
   float radius;
 
-  vec4        rotateQuat;
-  int         textureID = -1;
+  vec4 rotateQuat;
+  int textureID = -1;
   std::string texturePath;
 
   Light toLight() const;
@@ -81,14 +92,14 @@ struct HydraLight
 
 struct TextureRegistry
 {
-  int Register(const std::string& texturePath);
-  const std::vector<std::string>& GetPaths() const;
+  int Register(const std::string &texturePath);
+  const std::vector<std::string> &GetPaths() const;
 
-private:
-  std::vector<std::string>             _texturePaths;
+ private:
+  std::vector<std::string> _texturePaths;
   std::unordered_map<std::string, int> _textureIdByPath;
 };
 
-void ConvertVmeshToLoader(const HydraMesh& mesh, ModelLoader& loader);
+void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader);
 
 PXR_NAMESPACE_CLOSE_SCOPE

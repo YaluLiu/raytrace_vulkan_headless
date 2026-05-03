@@ -44,7 +44,8 @@ def main() -> None:
         "HeadlessRenderBridge must not create the texture staging directory",
     )
     require(
-        "loader.m_textureAssets = ExportRegisteredTextures(_renderParam.GetTexturePaths())" in bridge_cpp,
+        "loader.m_textureAssets" in bridge_cpp
+        and "ExportRegisteredTextures(_renderParam.GetTexturePaths())" in bridge_cpp,
         "HeadlessRenderBridge must pass encoded Hydra textures through ModelLoader",
     )
     require(
