@@ -44,6 +44,8 @@ call sites with `rg`.
   `install.sh hydra`/`show` scene override path.
 - `scripts/check_pbr_material_contracts.py`: Contract checks for PBR material
   fields across CPU, Hydra, and shader-facing structs.
+- `scripts/check_materialx_standard_surface_contracts.py`: Contract checks for
+  MaterialX `standard_surface` input and upstream texture extraction support.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -208,6 +210,12 @@ call sites with `rg`.
   `hdRobot/headlessRenderBridge.cpp`, `headless/shaders/host_device.h`,
   and `scripts/check_pbr_material_contracts.py`, then search for
   `baseColorFactor`, `roughnessFactor`, and `normalTextureId`.
+- MaterialX standard surface parsing:
+  `hdRobot/material.cpp`, `hdRobot/renderTextureExport.cpp`,
+  `hdRobot/sceneData.h`, and
+  `scripts/check_materialx_standard_surface_contracts.py`, then search for
+  `FindUpstreamTexturePath`, `base_color`, `metalness`,
+  `specular_roughness`, and `normalTextureId`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

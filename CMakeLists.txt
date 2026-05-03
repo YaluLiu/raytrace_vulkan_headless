@@ -83,6 +83,7 @@ if(BUILD_TESTING)
   add_python_contract_test(contracts.material_texture_in_memory scripts/check_material_texture_in_memory_contracts.py)
   add_python_contract_test(contracts.hydra_entrypoint scripts/check_hydra_entrypoint_contracts.py)
   add_python_contract_test(contracts.pbr_material scripts/check_pbr_material_contracts.py)
+  add_python_contract_test(contracts.materialx_standard_surface scripts/check_materialx_standard_surface_contracts.py)
 endif()
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------

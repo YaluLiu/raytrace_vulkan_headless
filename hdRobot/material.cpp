@@ -1,13 +1,162 @@
 #include "material.h"
+
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene)
-    : HdMaterial(id)
-    , _scene(scene)
+namespace
+{
+bool IsFileParameter(const TfToken& name)
+{
+  return name == "file" || name == "filename";
+}
+
+std::string AssetPathString(const SdfAssetPath& assetPath)
+{
+  std::string texturePath = assetPath.GetResolvedPath();
+  if (texturePath.empty())
+  {
+    texturePath = assetPath.GetAssetPath();
+  }
+  return texturePath;
+}
+
+std::string TexturePathFromValue(const VtValue& value)
+{
+  if (value.IsHolding<SdfAssetPath>())
+  {
+    return AssetPathString(value.Get<SdfAssetPath>());
+  }
+  if (value.IsHolding<std::string>())
+  {
+    return value.Get<std::string>();
+  }
+  if (value.IsHolding<TfToken>())
+  {
+    return value.Get<TfToken>().GetString();
+  }
+  return {};
+}
+
+std::string FindUpstreamTexturePath(const HdMaterialNetwork2& network, const SdfPath& nodePath, int depth = 0)
+{
+  if (depth > 8)
+  {
+    return {};
+  }
+
+  const auto nodeIt = network.nodes.find(nodePath);
+  if (nodeIt == network.nodes.end())
+  {
+    return {};
+  }
+
+  const HdMaterialNode2& node = nodeIt->second;
+  for (const auto& paramPair : node.parameters)
+  {
+    if (IsFileParameter(paramPair.first))
+    {
+      std::string texturePath = TexturePathFromValue(paramPair.second);
+      if (!texturePath.empty())
+      {
+        return texturePath;
+      }
+    }
+  }
+
+  for (const auto& connPair : node.inputConnections)
+  {
+    for (const HdMaterialConnection2& connection : connPair.second)
+    {
+      std::string texturePath = FindUpstreamTexturePath(network, connection.upstreamNode, depth + 1);
+      if (!texturePath.empty())
+      {
+        return texturePath;
+      }
+    }
+  }
+
+  return {};
+}
+
+std::string FindInputTexturePath(const HdMaterialNetwork2& network, const HdMaterialNode2& node,
+                                 const TfToken& inputName)
+{
+  const auto connectionsIt = node.inputConnections.find(inputName);
+  if (connectionsIt == node.inputConnections.end())
+  {
+    return {};
+  }
+
+  for (const HdMaterialConnection2& connection : connectionsIt->second)
+  {
+    std::string texturePath = FindUpstreamTexturePath(network, connection.upstreamNode);
+    if (!texturePath.empty())
+    {
+      return texturePath;
+    }
+  }
+  return {};
+}
+
+bool ReadFloat(const VtValue& value, float* result)
+{
+  if (result == nullptr)
+  {
+    return false;
+  }
+  if (value.IsHolding<float>())
+  {
+    *result = value.Get<float>();
+    return true;
+  }
+  if (value.IsHolding<double>())
+  {
+    *result = static_cast<float>(value.Get<double>());
+    return true;
+  }
+  if (value.IsHolding<int>())
+  {
+    *result = static_cast<float>(value.Get<int>());
+    return true;
+  }
+  return false;
+}
+
+bool ReadVec3(const VtValue& value, glm::vec3* result)
+{
+  if (result == nullptr)
+  {
+    return false;
+  }
+  if (value.IsHolding<GfVec3f>())
+  {
+    const GfVec3f vec = value.Get<GfVec3f>();
+    *result = glm::vec3(vec[0], vec[1], vec[2]);
+    return true;
+  }
+  if (value.IsHolding<GfVec4f>())
+  {
+    const GfVec4f vec = value.Get<GfVec4f>();
+    *result = glm::vec3(vec[0], vec[1], vec[2]);
+    return true;
+  }
+  return false;
+}
+
+int RegisterTexture(HdRobotRenderParam& scene, const std::string& texturePath)
+{
+  if (texturePath.empty())
+  {
+    return -1;
+  }
+  return scene.RegisterTexturePath(texturePath);
+}
+}  // namespace
+
+HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene) : HdMaterial(id), _scene(scene)
 {
   std::lock_guard guard(_scene.mutex);
   _mat_id = _scene.v_mat.size();
@@ -27,105 +176,171 @@ HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
 
 void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
-  if(!TF_VERIFY(sceneDelegate))
-    return;
+  if (!TF_VERIFY(sceneDelegate)) return;
   bool pullMaterial = (*dirtyBits & DirtyBits::DirtyParams);
 
   *dirtyBits = DirtyBits::Clean;
 
-  if(!pullMaterial)
+  if (!pullMaterial)
   {
     return;
   }
 
   _scene.v_mat[_mat_id].set_default();
-  const SdfPath& id       = GetId();
+  const SdfPath& id = GetId();
   const VtValue& resource = sceneDelegate->GetMaterialResource(id);
 
-  if(!resource.IsHolding<HdMaterialNetworkMap>())
+  if (!resource.IsHolding<HdMaterialNetworkMap>())
   {
     return;
   }
 
   const HdMaterialNetworkMap& networkMap = resource.UncheckedGet<HdMaterialNetworkMap>();
-  bool                        isVolume   = false;
+  bool isVolume = false;
 
   HdMaterialNetwork2 network = HdConvertToHdMaterialNetwork2(networkMap, &isVolume);
-  if(isVolume)
+  if (isVolume)
   {
     TF_WARN("Volume %s unsupported", id.GetText());
     return;
   }
 
-  for(const auto& nodePair : network.nodes)
+  for (const auto& nodePair : network.nodes)
   {
-    const SdfPath& nodePath = nodePair.first;
     const HdMaterialNode2& node = nodePair.second;
-    for(const auto& connPair : node.inputConnections)
+    for (const auto& connPair : node.inputConnections)
     {
-      const TfToken&                            inputName   = connPair.first;
-      const std::vector<HdMaterialConnection2>& connections = connPair.second;
-
-      if(inputName == "diffuseColor")
+      const TfToken& inputName = connPair.first;
+      HydraMaterial& material = _scene.v_mat[_mat_id];
+      if (inputName == "diffuseColor" || inputName == "base_color")
       {
-        for(const auto& conn : connections)
+        const std::string texturePath = FindInputTexturePath(network, node, inputName);
+        const int textureId = RegisterTexture(_scene, texturePath);
+        if (textureId >= 0)
         {
-          const SdfPath& upstreamNodePath = conn.upstreamNode;
-          const TfToken& upstreamOutputName = conn.upstreamOutputName;
-
-          auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
-          if(upstreamNodeIt != network.nodes.end())
-          {
-            const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
-            for(const auto& paramPair : upstreamNode.parameters)
-            {
-              // sourceColorSpace:sRGB
-              // file:./textures/texture_pbr_v128.png
-              const TfToken& paramName  = paramPair.first;
-              const VtValue& paramValue = paramPair.second;
-
-              if(paramName == "file" || paramName == "filename")
-              {
-                if(paramValue.IsHolding<SdfAssetPath>())
-                {
-                  SdfAssetPath assetPath   = paramValue.Get<SdfAssetPath>();
-                  auto         texturePath = assetPath.GetResolvedPath();
-                  if(_scene.v_mat[_mat_id].texturePath != texturePath)
-                  {
-                    _scene.v_mat[_mat_id].texturePath = texturePath;  //GetResolvedPath
-                    _scene.v_mat[_mat_id].textureID   = _scene.RegisterTexturePath(texturePath);
-                  }
-                }
-              }
-            }
-          }
+          material.texturePath = texturePath;
+          material.textureID = textureId;
+          material.baseColorTextureId = textureId;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (inputName == "metalness")
+      {
+        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        if (textureId >= 0)
+        {
+          material.metallicTextureId = textureId;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (inputName == "specular_roughness")
+      {
+        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        if (textureId >= 0)
+        {
+          material.roughnessTextureId = textureId;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (inputName == "normal")
+      {
+        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        if (textureId >= 0)
+        {
+          material.normalTextureId = textureId;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (inputName == "emission" || inputName == "emissiveColor")
+      {
+        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        if (textureId >= 0)
+        {
+          material.emissionTextureId = textureId;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (inputName == "opacity")
+      {
+        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        if (textureId >= 0)
+        {
+          material.opacityTextureId = textureId;
+          _scene.MarkMaterialDirty(_mat_id);
         }
       }
     }
 
-    for(const auto& paramPair : node.parameters)
+    for (const auto& paramPair : node.parameters)
     {
-      const TfToken& paramName  = paramPair.first;
+      const TfToken& paramName = paramPair.first;
       const VtValue& paramValue = paramPair.second;
-      if(paramName == "diffuseColor")
+      if (paramName == "diffuseColor")
       {
-        if(paramValue.IsHolding<GfVec3f>())
+        glm::vec3 diffuse_color;
+        if (ReadVec3(paramValue, &diffuse_color))
         {
-          auto diffuse_color                     = paramValue.Get<GfVec3f>();
-          _scene.v_mat[_mat_id].diffuse[0]       = diffuse_color[0];
-          _scene.v_mat[_mat_id].diffuse[1]       = diffuse_color[1];
-          _scene.v_mat[_mat_id].diffuse[2]       = diffuse_color[2];
+          _scene.v_mat[_mat_id].diffuse = diffuse_color;
+          _scene.v_mat[_mat_id].baseColorFactor = diffuse_color;
           _scene.MarkMaterialDirty(_mat_id);
         }
       }
-      else if(paramName == "emissiveColor")
+      else if (paramName == "base_color")
       {
-        if(paramValue.IsHolding<GfVec3f>())
+        glm::vec3 baseColor;
+        if (ReadVec3(paramValue, &baseColor))
         {
-          auto emission                          = paramValue.Get<GfVec3f>();
-          _scene.v_mat[_mat_id].emission[0]      = emission[0];
-          _scene.v_mat[_mat_id].emission[1]      = emission[1];
-          _scene.v_mat[_mat_id].emission[2]      = emission[2];
+          _scene.v_mat[_mat_id].baseColorFactor = baseColor;
+          _scene.v_mat[_mat_id].diffuse = baseColor;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "metalness")
+      {
+        if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].metallicFactor))
+        {
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "specular_roughness")
+      {
+        if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].roughnessFactor))
+        {
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "emissiveColor")
+      {
+        glm::vec3 emission;
+        if (ReadVec3(paramValue, &emission))
+        {
+          _scene.v_mat[_mat_id].emission = emission;
+          _scene.v_mat[_mat_id].emissionFactor = emission;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "emission")
+      {
+        glm::vec3 emission;
+        float emissionScale = 0.0f;
+        if (ReadVec3(paramValue, &emission))
+        {
+          _scene.v_mat[_mat_id].emissionFactor = emission;
+          _scene.v_mat[_mat_id].emission = emission;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+        else if (ReadFloat(paramValue, &emissionScale))
+        {
+          _scene.v_mat[_mat_id].emissionFactor = glm::vec3(emissionScale);
+          _scene.v_mat[_mat_id].emission = glm::vec3(emissionScale);
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "opacity")
+      {
+        if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].opacityFactor))
+        {
+          _scene.v_mat[_mat_id].dissolve = _scene.v_mat[_mat_id].opacityFactor;
           _scene.MarkMaterialDirty(_mat_id);
         }
       }
