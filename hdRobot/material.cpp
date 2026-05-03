@@ -125,8 +125,6 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
                     _scene.v_mat[_mat_id].texturePath = texturePath;  //GetResolvedPath
                     _scene.v_mat[_mat_id].textureID   = _scene.RegisterTexturePath(texturePath);
                   }
-                  // std::cout << "[material] _mat_id:" << _mat_id << "," << upstreamNodePath << ","
-                  //           << _scene.v_mat[_mat_id].texturePath << std::endl;
                 }
               }
             }
@@ -135,7 +133,6 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
     }
 
-    // 閬嶅巻褰撳墠鑺傜偣鐨勬墍鏈夊弬鏁皃arameters 瀛樺偍浜嗚妭鐐圭殑灞炴€у€?姣斿棰滆壊銆佺矖绯欏害绛?
     for(const auto& paramPair : node.parameters)
     {
       const TfToken& paramName  = paramPair.first;
