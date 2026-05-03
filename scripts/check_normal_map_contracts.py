@@ -35,6 +35,9 @@ def main() -> None:
     for symbol in ["sampleNormalMap", "mat.normalTextureId", "normalSample", "tangentW", "bitangent"]:
         require(symbol in rchit, f"raytrace.rchit must use {symbol} for normal mapping")
 
+    require("objectToWorldNormal" in rchit, "normal map tangents must be transformed to world space")
+    require("mat3(gl_ObjectToWorldEXT)" in rchit, "normal map tangents must follow instance transforms")
+    require("vec4(objectToWorldNormal * tangentObj.xyz, tangentObj.w)" in rchit, "bitangent sign must survive tangent transform")
     require("worldNrm = sampleNormalMap" in rchit, "normal map must replace shading normal before lighting")
     require("offsetof(VertexObj, tangent) == offsetof(Vertex, tangent)" in hello_material_cpp, "Vertex tangent layout must be asserted")
     require("contracts.normal_map" in cmake, "CMake must register the normal map contract")

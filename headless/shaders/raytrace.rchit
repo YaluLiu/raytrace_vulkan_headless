@@ -237,7 +237,9 @@ void main()
   WaveFrontMaterial mat    = materials.m[matIdx];
 
   vec2 texCoord = v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z;
-  vec4 tangentW = v0.tangent * barycentrics.x + v1.tangent * barycentrics.y + v2.tangent * barycentrics.z;
+  vec4 tangentObj = v0.tangent * barycentrics.x + v1.tangent * barycentrics.y + v2.tangent * barycentrics.z;
+  mat3 objectToWorldNormal = mat3(gl_ObjectToWorldEXT);
+  vec4 tangentW = vec4(objectToWorldNormal * tangentObj.xyz, tangentObj.w);
   worldNrm = sampleNormalMap(mat, texCoord, worldNrm, tangentW);
   worldNrm = faceforward(worldNrm, gl_WorldRayDirectionEXT, worldGeoNrm);
   PbrMaterialSample pbr = samplePbrMaterial(mat, texCoord);
