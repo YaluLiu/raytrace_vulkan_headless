@@ -1,5 +1,5 @@
-﻿//
-// Copyright (C) 2019-2022 Pablo Delgado Kr盲mer
+//
+// Copyright (C) 2019-2022 Pablo Delgado Krämer
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -74,21 +74,12 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
     return;
   }
 
-  // 閬嶅巻鏉愯川缃戠粶涓殑鎵€鏈夎妭鐐?
-  // network.nodes 鏄竴涓?map,瀛樺偍浜嗘潗璐ㄧ綉缁滀腑鎵€鏈夌殑鑺傜偣
-  // key: SdfPath (鑺傜偣璺緞), value: HdMaterialNode2 (鑺傜偣鏁版嵁)
   for(const auto& nodePair : network.nodes)
   {
-    // 鑾峰彇褰撳墠鑺傜偣鐨勮矾寰?鍞竴鏍囪瘑绗?
     const SdfPath& nodePath = nodePair.first;
-    // 鑾峰彇褰撳墠鑺傜偣鐨勬暟鎹?鍖呭惈鑺傜偣绫诲瀷銆佸弬鏁般€佽繛鎺ョ瓑淇℃伅)
     const HdMaterialNode2& node = nodePair.second;
-    // 閬嶅巻褰撳墠鑺傜偣鐨勬墍鏈夎緭鍏ヨ繛鎺?
-    // inputConnections 鎻忚堪浜嗗摢浜涜緭鍏ユ槸浠庡叾浠栬妭鐐硅繛鎺ヨ繃鏉ョ殑
-    // 渚嬪: diffuseColor 鍙兘杩炴帴鍒颁竴涓汗鐞嗚妭鐐?
     for(const auto& connPair : node.inputConnections)
     {
-      // 杈撳叆绔彛鐨勫悕绉?濡?"diffuseColor", "roughness" 绛?
       const TfToken&                            inputName   = connPair.first;
       const std::vector<HdMaterialConnection2>& connections = connPair.second;
 
@@ -96,16 +87,12 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       {
         for(const auto& conn : connections)
         {
-          // 鑾峰彇涓婃父鑺傜偣鐨勮矾寰?鎻愪緵鏁版嵁鐨勮妭鐐?濡?_materials/default_002/preview/Image_Texture)
           const SdfPath& upstreamNodePath = conn.upstreamNode;
-          // 涓婃父鑺傜偣鐨勮緭鍑虹鍙ｅ悕绉?濡?"rgb", "result" 绛?
           const TfToken& upstreamOutputName = conn.upstreamOutputName;
 
-          // 鍦?network.nodes 涓煡鎵句笂娓歌妭鐐?
           auto upstreamNodeIt = network.nodes.find(upstreamNodePath);
           if(upstreamNodeIt != network.nodes.end())
           {
-            // 鑾峰彇涓婃父鑺傜偣鐨勬暟鎹?
             const HdMaterialNode2& upstreamNode = upstreamNodeIt->second;
             for(const auto& paramPair : upstreamNode.parameters)
             {
@@ -164,4 +151,3 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
