@@ -2,6 +2,7 @@
 
 BUILD_TYPE="Release"
 app_name="headless"
+DEFAULT_HYDRA_SCENE_PATH="/home/yalu/docker/assets/unit_test/anim/pao/pao.usd"
 
 function vulkan(){
     # 设置版本和目录
@@ -123,7 +124,7 @@ function hydra(){
     usd_path="/home/${USER}/software/USD"
     plugin_name="hdRobot"
     project_root="$(pwd)"
-    hydra_scene_path="${HYDRA_SCENE_PATH:-/home/yalu/docker/assets/unit_test/anim/pao/pao.usd}"
+    hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
     dlss_sdk_root="${DLSS_SDK_ROOT:-/home/yalu/dlss/DLSS}"
     dlss_feature_path="${DLSS_RR_FEATURE_PATH:-${dlss_sdk_root}/lib/Linux_x86_64/rel}"
     dlss_appdata_path="${DLSS_RR_APPDATA_PATH:-${project_root}/output/ngx}"
@@ -175,6 +176,7 @@ function hydra(){
 
 function show()
 {
+    hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
     /home/yalu/software/usdtweak/build/usdtweak "${hydra_scene_path}"
 }
 

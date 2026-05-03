@@ -40,6 +40,8 @@ call sites with `rg`.
   contract checks.
 - `scripts/check_material_texture_in_memory_contracts.py`: Contract checks for
   Hydra material texture handoff without local file staging.
+- `scripts/check_hydra_entrypoint_contracts.py`: Contract checks for the
+  `install.sh hydra`/`show` scene override path.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
