@@ -38,6 +38,8 @@ call sites with `rg`.
   checks.
 - `scripts/check_lidar_after_dlss_contracts.py`: LiDAR and DLSS interaction
   contract checks.
+- `scripts/check_material_texture_in_memory_contracts.py`: Contract checks for
+  Hydra material texture handoff without local file staging.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -132,14 +134,15 @@ call sites with `rg`.
   allocation, Hgi texture descriptor creation, GL interop, and texture format
   conversion.
 - `hdRobot/renderTextureExport.h` / `hdRobot/renderTextureExport.cpp`: Render
-  texture export surface.
+  texture export surface, including Hydra material texture asset byte export.
 - `hdRobot/utils.h` / `hdRobot/utils.cpp`: Utility functions shared by the
   Hydra plugin.
 
 ## Model And Scene Loading
 
 - `common/ModelLoader.h`: Abstract model loading interface consumed by
-  `HelloVulkan::loadModel`.
+  `HelloVulkan::loadModel`, including legacy texture filenames and in-memory
+  encoded texture assets.
 - `common/obj_loader.h` / `common/obj_loader.cpp`: OBJ loader implementation,
   vertices, indices, normals, texcoords, material assignment, and fallback
   normals.
@@ -192,8 +195,10 @@ call sites with `rg`.
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.
 - Material or texture path issues:
   `hdRobot/material.cpp`, `headless/hello_vulkan_material.cpp`,
-  `common/obj_loader.cpp`, then search for `GetTexturePath`, `loadMaterial`,
-  and material buffer updates.
+  `hdRobot/renderTextureExport.cpp`, `common/ModelLoader.h`,
+  `common/obj_loader.cpp`, then search for `GetTexturePath`,
+  `ExportRegisteredTextures`, `stbi_load_from_memory`, `loadMaterial`, and
+  material buffer updates.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

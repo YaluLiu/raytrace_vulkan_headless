@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <ModelLoader.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/renderPass.h>
 
@@ -29,8 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderBuffer;
 
-bool EnsureDirectoryExists(const std::string& path);
-std::vector<std::string> ExportRegisteredTextures(const std::vector<std::string>& texturePaths);
+std::vector<TextureAsset> ExportRegisteredTextures(const std::vector<std::string>& texturePaths);
 HdRobotRenderBuffer* GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector& bindings);
 void CopyAovToRenderBuffer(const ::HelloVulkan& app, const TfToken& name, HdRobotRenderBuffer* renderBuffer);
 

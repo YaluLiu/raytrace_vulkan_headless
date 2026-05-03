@@ -157,7 +157,6 @@ void HeadlessRenderBridge::initOrResize()
     }
     _renderApp.setup(_width, _height);
     _resetRenderBuffer = false;
-    EnsureDirectoryExists("media/textures");
 
     bool isFirstModel = true;
     for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
@@ -168,8 +167,8 @@ void HeadlessRenderBridge::initOrResize()
       loader.m_textures.clear();
       if(isFirstModel)
       {
-        loader.m_textures = ExportRegisteredTextures(_renderParam.GetTexturePaths());
-        isFirstModel      = false;
+        loader.m_textureAssets = ExportRegisteredTextures(_renderParam.GetTexturePaths());
+        isFirstModel           = false;
       }
       for(auto& matId : curMesh.scene_mat_ids)
       {

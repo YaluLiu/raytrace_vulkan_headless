@@ -1,9 +1,16 @@
 #pragma once
+#include <cstdint>
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
 #include "data_loader.h"
 #include <iostream>
+
+struct TextureAsset
+{
+  std::string          sourcePath;
+  std::vector<uint8_t> encodedBytes;
+};
 
 class ModelLoader
 {
@@ -74,11 +81,18 @@ public:
     {
       std::cout << m_textures[i] << std::endl;
     }
+    std::cout << "\n m_textureAssets size: " << m_textureAssets.size() << "\n";
+    for(size_t i = 0; i < m_textureAssets.size(); ++i)
+    {
+      std::cout << m_textureAssets[i].sourcePath << " (" << m_textureAssets[i].encodedBytes.size() << " bytes)"
+                << std::endl;
+    }
   }
   // Common member variables
   std::vector<VertexObj>   m_vertices;
   std::vector<uint32_t>    m_indices;
   std::vector<MaterialObj> m_materials;
   std::vector<std::string> m_textures;
+  std::vector<TextureAsset> m_textureAssets;
   std::vector<int32_t>     m_matIndx;
 };

@@ -40,7 +40,9 @@ public:
   void updateDescriptorSet();
   void createUniformBuffer();
   void createObjDescriptionBuffer();
-  void createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures);
+  void createTextureImages(const VkCommandBuffer&           cmdBuf,
+                           const std::vector<std::string>& textures,
+                           const std::vector<TextureAsset>& textureAssets);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void setMainCameraClipRange(float clipStart, float clipEnd);
   void setRadarCamera(const RadarCameraData& camera);

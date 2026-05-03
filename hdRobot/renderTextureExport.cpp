@@ -27,8 +27,6 @@
 #include <pxr/usd/ar/resolvedPath.h>
 #include <pxr/usd/ar/resolver.h>
 
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -88,66 +86,47 @@ GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
   return 0;
 }
 
-std::string MakeExportedTextureFilename(int idx)
+TextureAsset ExportResolvedTextureAsset(const std::string& path)
 {
-  return "asset_" + std::to_string(idx) + ".jpg";
-}
+  TextureAsset textureAsset;
+  textureAsset.sourcePath = path;
 
-std::string ExportResolvedTextureAsset(const std::string& path, int idx)
-{
   ArResolver&    resolver     = ArGetResolver();
   ArResolvedPath resolvedPath = resolver.Resolve(path);
   if(!resolvedPath)
   {
     std::cout << "[RenderPass]:" << path << "is not valid" << std::endl;
-    return "not valid";
+    return textureAsset;
   }
 
   auto asset = resolver.OpenAsset(resolvedPath);
   if(!asset)
   {
     std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed" << std::endl;
-    return "open failed";
+    return textureAsset;
   }
 
-  const std::string fileName = MakeExportedTextureFilename(idx);
-  const std::string filePath = "media/textures/" + fileName;
-  std::ofstream     file(filePath, std::ios::binary);
-  file.write(static_cast<const char*>(asset->GetBuffer().get()), asset->GetSize());
-
-  if(!file.good())
+  const auto buffer = asset->GetBuffer();
+  const auto size   = asset->GetSize();
+  if(!buffer || size == 0)
   {
-    std::cout << "[RenderPass] write image file failed" << std::endl;
+    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "empty texture asset" << std::endl;
+    return textureAsset;
   }
 
-  file.close();
-  return fileName;
+  const auto* bytes = reinterpret_cast<const uint8_t*>(buffer.get());
+  textureAsset.encodedBytes.assign(bytes, bytes + size);
+  return textureAsset;
 }
 }  // namespace
 
-bool EnsureDirectoryExists(const std::string& path)
+std::vector<TextureAsset> ExportRegisteredTextures(const std::vector<std::string>& texturePaths)
 {
-  try
-  {
-    if(!std::filesystem::exists(path))
-    {
-      return std::filesystem::create_directories(path);
-    }
-    return true;
-  }
-  catch(const std::filesystem::filesystem_error&)
-  {
-    return false;
-  }
-}
-
-std::vector<std::string> ExportRegisteredTextures(const std::vector<std::string>& texturePaths)
-{
-  std::vector<std::string> exportedTextures;
+  std::vector<TextureAsset> exportedTextures;
   exportedTextures.reserve(texturePaths.size());
-  for(size_t id = 0; id < texturePaths.size(); ++id)
+  for(const std::string& texturePath : texturePaths)
   {
-    exportedTextures.push_back(ExportResolvedTextureAsset(texturePaths[id], static_cast<int>(id)));
+    exportedTextures.push_back(ExportResolvedTextureAsset(texturePath));
   }
   return exportedTextures;
 }

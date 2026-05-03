@@ -14,6 +14,8 @@
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 
+#include <array>
+#include <limits>
 
 extern std::vector<std::string> defaultSearchPaths;
 
@@ -53,7 +55,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
 
   // 如果每个model的mat_id都是0开始，必须设置txtOffset，否则不设置
   auto txtOffset = 0;  //static_cast<uint32_t>(m_textures.size());
-  createTextureImages(cmdBuf, loader.m_textures);
+  createTextureImages(cmdBuf, loader.m_textures, loader.m_textureAssets);
   cmdBufGet.submitAndWait(cmdBuf);
 
   m_alloc.finalizeAndReleaseStaging();
@@ -79,7 +81,9 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   resetAccumulation();
 }
 
-void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures)
+void HelloVulkan::createTextureImages(const VkCommandBuffer&           cmdBuf,
+                                      const std::vector<std::string>& textures,
+                                      const std::vector<TextureAsset>& textureAssets)
 {
   VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
   samplerCreateInfo.minFilter  = VK_FILTER_LINEAR;
@@ -89,7 +93,20 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
 
   VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
-  if(textures.empty() && m_textures.empty())
+  auto uploadTexture = [&](const stbi_uc* pixels, int texWidth, int texHeight) {
+    VkDeviceSize bufferSize      = static_cast<uint64_t>(texWidth) * texHeight * sizeof(uint8_t) * 4;
+    auto         imgSize         = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+    auto         imageCreateInfo = nvvk::makeImage2DCreateInfo(imgSize, format, VK_IMAGE_USAGE_SAMPLED_BIT, true);
+
+    nvvk::Image image = m_alloc.createImage(cmdBuf, bufferSize, pixels, imageCreateInfo);
+    nvvk::cmdGenerateMipmaps(cmdBuf, image.image, format, imgSize, imageCreateInfo.mipLevels);
+    VkImageViewCreateInfo ivInfo  = nvvk::makeImageViewCreateInfo(image.image, imageCreateInfo);
+    nvvk::Texture         texture = m_alloc.createTexture(image, ivInfo, samplerCreateInfo);
+
+    m_textures.push_back(texture);
+  };
+
+  if(textures.empty() && textureAssets.empty() && m_textures.empty())
   {
     nvvk::Texture texture;
 
@@ -127,18 +144,36 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
         pixels               = reinterpret_cast<stbi_uc*>(color.data());
       }
 
-      VkDeviceSize bufferSize      = static_cast<uint64_t>(texWidth) * texHeight * sizeof(uint8_t) * 4;
-      auto         imgSize         = VkExtent2D{(uint32_t)texWidth, (uint32_t)texHeight};
-      auto         imageCreateInfo = nvvk::makeImage2DCreateInfo(imgSize, format, VK_IMAGE_USAGE_SAMPLED_BIT, true);
+      uploadTexture(pixels, texWidth, texHeight);
 
+      stbi_image_free(stbi_pixels);
+    }
+
+    for(const TextureAsset& textureAsset : textureAssets)
+    {
+      int      texWidth    = 0;
+      int      texHeight   = 0;
+      int      texChannels = 0;
+      stbi_uc* stbi_pixels = nullptr;
+      if(!textureAsset.encodedBytes.empty()
+         && textureAsset.encodedBytes.size() <= static_cast<size_t>(std::numeric_limits<int>::max()))
       {
-        nvvk::Image image = m_alloc.createImage(cmdBuf, bufferSize, pixels, imageCreateInfo);
-        nvvk::cmdGenerateMipmaps(cmdBuf, image.image, format, imgSize, imageCreateInfo.mipLevels);
-        VkImageViewCreateInfo ivInfo  = nvvk::makeImageViewCreateInfo(image.image, imageCreateInfo);
-        nvvk::Texture         texture = m_alloc.createTexture(image, ivInfo, samplerCreateInfo);
-
-        m_textures.push_back(texture);
+        stbi_pixels = stbi_load_from_memory(textureAsset.encodedBytes.data(),
+                                            static_cast<int>(textureAsset.encodedBytes.size()), &texWidth, &texHeight,
+                                            &texChannels, STBI_rgb_alpha);
       }
+
+      std::array<stbi_uc, 4> color{255u, 0u, 255u, 255u};
+
+      stbi_uc* pixels = stbi_pixels;
+      if(!stbi_pixels)
+      {
+        texWidth = texHeight = 1;
+        texChannels          = 4;
+        pixels               = reinterpret_cast<stbi_uc*>(color.data());
+      }
+
+      uploadTexture(pixels, texWidth, texHeight);
 
       stbi_image_free(stbi_pixels);
     }
