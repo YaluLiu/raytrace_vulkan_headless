@@ -92,6 +92,23 @@ PbrMaterialSample samplePbrMaterial(WaveFrontMaterial mat, vec2 texCoord)
   return pbr;
 }
 
+vec3 sampleNormalMap(WaveFrontMaterial mat, vec2 texCoord, vec3 worldNrm, vec4 tangentW)
+{
+  if(mat.normalTextureId < 0)
+  {
+    return worldNrm;
+  }
+
+  vec3 normalSample = sampleTextureRgba(mat.normalTextureId, texCoord, vec4(0.5, 0.5, 1.0, 1.0)).xyz;
+  normalSample      = normalSample * 2.0 - 1.0;
+
+  vec3 tangent   = normalize(tangentW.xyz);
+  tangent        = normalize(tangent - worldNrm * dot(worldNrm, tangent));
+  vec3 bitangent = normalize(cross(worldNrm, tangent) * tangentW.w);
+  mat3 tbn       = mat3(tangent, bitangent, worldNrm);
+  return normalize(tbn * normalSample);
+}
+
 vec3 computePbrSceneLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, PbrMaterialSample pbr)
 {
   vec3 totalLight = vec3(0.0);
@@ -193,6 +210,9 @@ void main()
   WaveFrontMaterial mat    = materials.m[matIdx];
 
   vec2 texCoord = v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z;
+  vec4 tangentW = v0.tangent * barycentrics.x + v1.tangent * barycentrics.y + v2.tangent * barycentrics.z;
+  worldNrm = sampleNormalMap(mat, texCoord, worldNrm, tangentW);
+  worldNrm = faceforward(worldNrm, gl_WorldRayDirectionEXT, worldGeoNrm);
   PbrMaterialSample pbr = samplePbrMaterial(mat, texCoord);
 
   if(prd.depth == 0)

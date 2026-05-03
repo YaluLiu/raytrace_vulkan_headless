@@ -940,6 +940,11 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
     }
   }
 
+  if(tangents.size() != points.size() || bitangentSigns.size() != points.size())
+  {
+    _CalculateTangents(faces, points, normals, texCoords, tangents, bitangentSigns);
+  }
+
   VtIntArray           materialIds(faceCount, 0);
   const HdGeomSubsets& geomSubsets = topology.GetGeomSubsets();
   HdRenderIndex&       renderIndex = sceneDelegate->GetRenderIndex();
@@ -983,6 +988,8 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   sceneMesh.points       = points;
   sceneMesh.normals      = normals;
   sceneMesh.texCoords    = texCoords;
+  sceneMesh.tangents     = tangents;
+  sceneMesh.bitangentSigns = bitangentSigns;
   sceneMesh.materialIds  = materialIds;
   _scene.MarkMeshBlasDirty(_mesh_id);
 }
@@ -1007,4 +1014,3 @@ void HdRobotMesh::_InitRepr(const TfToken& reprName, HdDirtyBits* dirtyBits)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

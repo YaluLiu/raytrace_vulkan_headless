@@ -24,6 +24,8 @@ struct HydraMesh
   VtVec3fArray points;
   VtVec3fArray normals;
   VtVec2fArray texCoords;
+  VtVec3fArray tangents;
+  VtFloatArray bitangentSigns;
   VtIntArray materialIds;
   bool visible = true;
   bool valid = true;

@@ -41,6 +41,7 @@ struct VertexObj
   glm::vec3 color;
   // 顶点纹理坐标
   glm::vec2 texCoord;
+  glm::vec4 tangent = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 };
 
 // 形状结构体，保存每个子mesh的索引信息

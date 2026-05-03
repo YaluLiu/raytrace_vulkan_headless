@@ -159,6 +159,7 @@ struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for
   vec3 nrm;
   vec3 color;
   vec2 texCoord;
+  vec4 tangent;
 };
 
 struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be

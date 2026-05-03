@@ -134,6 +134,8 @@ void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader)
   const auto &points = mesh.points;
   const auto &normals = mesh.normals;
   const auto &texCoords = mesh.texCoords;
+  const auto &tangents = mesh.tangents;
+  const auto &bitangentSigns = mesh.bitangentSigns;
   const auto &faces = mesh.faces;
   const auto &matIdx = mesh.materialIds;
 
@@ -162,6 +164,10 @@ void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader)
     vertex.pos = glm::vec3(points[i][0], points[i][1], points[i][2]);
     vertex.nrm = glm::vec3(normals[i][0], normals[i][1], normals[i][2]);
     vertex.texCoord = glm::vec2(newTexCoords[i][0], 1 - newTexCoords[i][1]);
+    if (tangents.size() == points.size() && bitangentSigns.size() == points.size())
+    {
+      vertex.tangent = glm::vec4(tangents[i][0], tangents[i][1], tangents[i][2], bitangentSigns[i]);
+    }
     vertex.color = glm::vec3(1.0f, 1.0f, 1.0f);
     loader.m_vertices.push_back(vertex);
   }

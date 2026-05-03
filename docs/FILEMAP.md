@@ -50,6 +50,8 @@ call sites with `rg`.
   usage/color-space metadata through registry, export, and Vulkan upload.
 - `scripts/check_pbr_shader_contracts.py`: Contract checks for the
   metallic-roughness closest-hit shader path and DLSS guide buffer inputs.
+- `scripts/check_normal_map_contracts.py`: Contract checks for tangent data
+  propagation and normal map sampling in the triangle closest-hit shader.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -233,6 +235,12 @@ call sites with `rg`.
   `scripts/check_pbr_shader_contracts.py`, then search for
   `samplePbrMaterial`, `computePbrDirectLighting`, `firstHitDiffuseValid`,
   and `firstHitSpecularPad`.
+- Normal map support:
+  `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
+  `common/data_loader.h`, `headless/shaders/host_device.h`,
+  `headless/shaders/raytrace.rchit`, and
+  `scripts/check_normal_map_contracts.py`, then search for `tangent`,
+  `bitangentSigns`, and `sampleNormalMap`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
