@@ -156,7 +156,7 @@ void HeadlessRenderBridge::initOrResize()
       loader.m_textures.clear();
       if (isFirstModel)
       {
-        loader.m_textureAssets = ExportRegisteredTextures(_renderParam.GetTexturePaths());
+        loader.m_textureAssets = ExportRegisteredTextures(_renderParam.GetTextureAssets());
         isFirstModel = false;
       }
       for (auto &matId : curMesh.scene_mat_ids)

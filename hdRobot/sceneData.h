@@ -92,13 +92,17 @@ struct HydraLight
 
 struct TextureRegistry
 {
-  int Register(const std::string &texturePath);
+  int Register(const std::string &texturePath, TextureUsage usage = TextureUsage::BaseColor);
   const std::vector<std::string> &GetPaths() const;
+  const std::vector<TextureAsset> &GetTextureAssets() const;
 
  private:
   std::vector<std::string> _texturePaths;
+  std::vector<TextureAsset> _textureAssets;
   std::unordered_map<std::string, int> _textureIdByPath;
 };
+
+TextureColorSpace TextureColorSpaceForUsage(TextureUsage usage);
 
 void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader);
 

@@ -146,13 +146,13 @@ bool ReadVec3(const VtValue& value, glm::vec3* result)
   return false;
 }
 
-int RegisterTexture(HdRobotRenderParam& scene, const std::string& texturePath)
+int RegisterTexture(HdRobotRenderParam& scene, const std::string& texturePath, TextureUsage usage)
 {
   if (texturePath.empty())
   {
     return -1;
   }
-  return scene.RegisterTexturePath(texturePath);
+  return scene.RegisterTexturePath(texturePath, usage);
 }
 }  // namespace
 
@@ -215,7 +215,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       if (inputName == "diffuseColor" || inputName == "base_color")
       {
         const std::string texturePath = FindInputTexturePath(network, node, inputName);
-        const int textureId = RegisterTexture(_scene, texturePath);
+        const int textureId = RegisterTexture(_scene, texturePath, TextureUsage::BaseColor);
         if (textureId >= 0)
         {
           material.texturePath = texturePath;
@@ -226,7 +226,8 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
       else if (inputName == "metalness")
       {
-        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        const int textureId =
+            RegisterTexture(_scene, FindInputTexturePath(network, node, inputName), TextureUsage::Metallic);
         if (textureId >= 0)
         {
           material.metallicTextureId = textureId;
@@ -235,7 +236,8 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
       else if (inputName == "specular_roughness")
       {
-        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        const int textureId =
+            RegisterTexture(_scene, FindInputTexturePath(network, node, inputName), TextureUsage::Roughness);
         if (textureId >= 0)
         {
           material.roughnessTextureId = textureId;
@@ -244,7 +246,8 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
       else if (inputName == "normal")
       {
-        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        const int textureId =
+            RegisterTexture(_scene, FindInputTexturePath(network, node, inputName), TextureUsage::Normal);
         if (textureId >= 0)
         {
           material.normalTextureId = textureId;
@@ -253,7 +256,8 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
       else if (inputName == "emission" || inputName == "emissiveColor")
       {
-        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        const int textureId =
+            RegisterTexture(_scene, FindInputTexturePath(network, node, inputName), TextureUsage::Emission);
         if (textureId >= 0)
         {
           material.emissionTextureId = textureId;
@@ -262,7 +266,8 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
       }
       else if (inputName == "opacity")
       {
-        const int textureId = RegisterTexture(_scene, FindInputTexturePath(network, node, inputName));
+        const int textureId =
+            RegisterTexture(_scene, FindInputTexturePath(network, node, inputName), TextureUsage::Opacity);
         if (textureId >= 0)
         {
           material.opacityTextureId = textureId;

@@ -1,16 +1,15 @@
 #include "renderTextureExport.h"
 
-#include "hello_vulkan.hpp"
-#include "renderBuffer.h"
-#include "tokens.h"
-
-#include <nvgl/extensions_gl.hpp>
-
 #include <pxr/usd/ar/asset.h>
 #include <pxr/usd/ar/resolvedPath.h>
 #include <pxr/usd/ar/resolver.h>
 
 #include <iostream>
+#include <nvgl/extensions_gl.hpp>
+
+#include "hello_vulkan.hpp"
+#include "renderBuffer.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -18,80 +17,82 @@ namespace
 {
 GLuint GetAovSourceGlId(const ::HelloVulkan& app, const TfToken& name)
 {
-  if(name == HdAovTokens->color)
+  if (name == HdAovTokens->color)
   {
     return app.m_rtOutputGL.oglId;
   }
-  if(name == HdAovTokens->primId)
+  if (name == HdAovTokens->primId)
   {
     return app.m_rtObjectIdGL.oglId;
   }
-  if(name == HdAovTokens->instanceId)
+  if (name == HdAovTokens->instanceId)
   {
     return app.m_rtInstanceIdGL.oglId;
   }
-  if(name == HdRobotAovTokens->dlssRRDiffuseAlbedo)
+  if (name == HdRobotAovTokens->dlssRRDiffuseAlbedo)
   {
     return app.m_rtDiffuseAlbedoGL.oglId;
   }
-  if(name == HdRobotAovTokens->dlssRRSpecularAlbedo)
+  if (name == HdRobotAovTokens->dlssRRSpecularAlbedo)
   {
     return app.m_rtSpecularAlbedoGL.oglId;
   }
-  if(name == HdRobotAovTokens->dlssRRNormalRoughness)
+  if (name == HdRobotAovTokens->dlssRRNormalRoughness)
   {
     return app.m_rtNormalRoughnessGL.oglId;
   }
-  if(name == HdRobotAovTokens->dlssRRMotionVector)
+  if (name == HdRobotAovTokens->dlssRRMotionVector)
   {
     return app.m_rtMotionVectorGL.oglId;
   }
-  if(name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
+  if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
   {
     return app.m_rtDepthAovGL.oglId;
   }
-  if(name == HdRobotAovTokens->dlssRRLinearDepth)
+  if (name == HdRobotAovTokens->dlssRRLinearDepth)
   {
     return app.m_rtLinearDepthGL.oglId;
   }
-  if(name == HdRobotAovTokens->dlssRRSpecularHitDistance)
+  if (name == HdRobotAovTokens->dlssRRSpecularHitDistance)
   {
     return app.m_rtSpecularHitDistanceGL.oglId;
   }
-  if(name == HdRobotAovTokens->distanceToCamera)
+  if (name == HdRobotAovTokens->distanceToCamera)
   {
     return app.m_rtDistanceToCameraGL.oglId;
   }
-  if(name == HdRobotAovTokens->lidarPointCloud)
+  if (name == HdRobotAovTokens->lidarPointCloud)
   {
     return app.m_rtLidarPointCloudGL.oglId;
   }
   return 0;
 }
 
-TextureAsset ExportResolvedTextureAsset(const std::string& path)
+TextureAsset ExportResolvedTextureAsset(const TextureAsset& registeredTexture)
 {
   TextureAsset textureAsset;
-  textureAsset.sourcePath = path;
+  textureAsset.sourcePath = registeredTexture.sourcePath;
+  textureAsset.usage = registeredTexture.usage;
+  textureAsset.colorSpace = registeredTexture.colorSpace;
 
-  ArResolver&    resolver     = ArGetResolver();
-  ArResolvedPath resolvedPath = resolver.Resolve(path);
-  if(!resolvedPath)
+  ArResolver& resolver = ArGetResolver();
+  ArResolvedPath resolvedPath = resolver.Resolve(textureAsset.sourcePath);
+  if (!resolvedPath)
   {
-    std::cout << "[RenderPass]:" << path << "is not valid" << std::endl;
+    std::cout << "[RenderPass]:" << textureAsset.sourcePath << "is not valid" << std::endl;
     return textureAsset;
   }
 
   auto asset = resolver.OpenAsset(resolvedPath);
-  if(!asset)
+  if (!asset)
   {
     std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed" << std::endl;
     return textureAsset;
   }
 
   const auto buffer = asset->GetBuffer();
-  const auto size   = asset->GetSize();
-  if(!buffer || size == 0)
+  const auto size = asset->GetSize();
+  if (!buffer || size == 0)
   {
     std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "empty texture asset" << std::endl;
     return textureAsset;
@@ -103,22 +104,22 @@ TextureAsset ExportResolvedTextureAsset(const std::string& path)
 }
 }  // namespace
 
-std::vector<TextureAsset> ExportRegisteredTextures(const std::vector<std::string>& texturePaths)
+std::vector<TextureAsset> ExportRegisteredTextures(const std::vector<TextureAsset>& registeredTextures)
 {
   std::vector<TextureAsset> exportedTextures;
-  exportedTextures.reserve(texturePaths.size());
-  for(const std::string& texturePath : texturePaths)
+  exportedTextures.reserve(registeredTextures.size());
+  for (const TextureAsset& registeredTexture : registeredTextures)
   {
-    exportedTextures.push_back(ExportResolvedTextureAsset(texturePath));
+    exportedTextures.push_back(ExportResolvedTextureAsset(registeredTexture));
   }
   return exportedTextures;
 }
 
 HdRobotRenderBuffer* GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector& bindings)
 {
-  for(const HdRenderPassAovBinding& binding : bindings)
+  for (const HdRenderPassAovBinding& binding : bindings)
   {
-    if(binding.renderBuffer != nullptr)
+    if (binding.renderBuffer != nullptr)
     {
       return static_cast<HdRobotRenderBuffer*>(binding.renderBuffer);
     }
@@ -128,38 +129,38 @@ HdRobotRenderBuffer* GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector& 
 
 void CopyAovToRenderBuffer(const ::HelloVulkan& app, const TfToken& name, HdRobotRenderBuffer* renderBuffer)
 {
-  if(renderBuffer == nullptr)
+  if (renderBuffer == nullptr)
   {
     return;
   }
 
   const GLuint srcTextureId = GetAovSourceGlId(app, name);
   const GLuint dstTextureId = renderBuffer->GetOpenGlTextureId();
-  if(srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId)
+  if (srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId)
   {
     return;
   }
 
-  const GLsizei width  = static_cast<GLsizei>(renderBuffer->GetWidth());
+  const GLsizei width = static_cast<GLsizei>(renderBuffer->GetWidth());
   const GLsizei height = static_cast<GLsizei>(renderBuffer->GetHeight());
-  if(width <= 0 || height <= 0)
+  if (width <= 0 || height <= 0)
   {
     return;
   }
 
-  GLint srcWidth  = 0;
+  GLint srcWidth = 0;
   GLint srcHeight = 0;
   glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_WIDTH, &srcWidth);
   glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_HEIGHT, &srcHeight);
-  if(srcWidth <= 0 || srcHeight <= 0)
+  if (srcWidth <= 0 || srcHeight <= 0)
   {
     return;
   }
 
-  if(srcWidth == width && srcHeight == height)
+  if (srcWidth == width && srcHeight == height)
   {
-    glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width,
-                       height, 1);
+    glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height,
+                       1);
     return;
   }
 
@@ -172,7 +173,7 @@ void CopyAovToRenderBuffer(const ::HelloVulkan& app, const TfToken& name, HdRobo
 
   const GLenum readStatus = glCheckNamedFramebufferStatus(readFbo, GL_FRAMEBUFFER);
   const GLenum drawStatus = glCheckNamedFramebufferStatus(drawFbo, GL_FRAMEBUFFER);
-  if(readStatus == GL_FRAMEBUFFER_COMPLETE && drawStatus == GL_FRAMEBUFFER_COMPLETE)
+  if (readStatus == GL_FRAMEBUFFER_COMPLETE && drawStatus == GL_FRAMEBUFFER_COMPLETE)
   {
     glBlitNamedFramebuffer(readFbo, drawFbo, 0, 0, srcWidth, srcHeight, 0, 0, width, height, GL_COLOR_BUFFER_BIT,
                            GL_NEAREST);

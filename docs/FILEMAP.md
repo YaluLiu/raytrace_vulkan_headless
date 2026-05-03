@@ -46,6 +46,8 @@ call sites with `rg`.
   fields across CPU, Hydra, and shader-facing structs.
 - `scripts/check_materialx_standard_surface_contracts.py`: Contract checks for
   MaterialX `standard_surface` input and upstream texture extraction support.
+- `scripts/check_texture_usage_contracts.py`: Contract checks for texture
+  usage/color-space metadata through registry, export, and Vulkan upload.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -216,6 +218,13 @@ call sites with `rg`.
   `scripts/check_materialx_standard_surface_contracts.py`, then search for
   `FindUpstreamTexturePath`, `base_color`, `metalness`,
   `specular_roughness`, and `normalTextureId`.
+- Texture usage or color space:
+  `common/ModelLoader.h`, `hdRobot/sceneData.h`,
+  `hdRobot/renderParam.cpp`, `hdRobot/renderTextureExport.cpp`,
+  `headless/hello_vulkan_material.cpp`, and
+  `scripts/check_texture_usage_contracts.py`, then search for
+  `TextureUsage`, `TextureColorSpaceForUsage`, `GetTextureAssets`, and
+  `VK_FORMAT_R8G8B8A8_UNORM`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

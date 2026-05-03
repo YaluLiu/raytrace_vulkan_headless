@@ -32,13 +32,15 @@ def main() -> None:
     hello_hpp = read("headless/hello_vulkan.hpp")
     render_texture_export_cpp = read("hdRobot/renderTextureExport.cpp")
 
-    require("float       jitterX;" in host_device, "PushConstantRay must expose per-frame jitterX")
-    require("float       jitterY;" in host_device, "PushConstantRay must expose per-frame jitterY")
+    require(re.search(r"\bfloat\s+jitterX\s*;", host_device) is not None,
+            "PushConstantRay must expose per-frame jitterX")
+    require(re.search(r"\bfloat\s+jitterY\s*;", host_device) is not None,
+            "PushConstantRay must expose per-frame jitterY")
     require("enum RaygenPassMode" in host_device, "Raygen pass modes must be named in host_device.h")
     require("eRaygenPassHighResAov" in host_device, "High-resolution AOV pass mode must exist")
     require("m_currentJitter" in hello_hpp, "HelloVulkan must retain the jitter used by the traced frame")
     require("m_aovSize" in hello_hpp, "HelloVulkan must track full-resolution AOV size separately from DLSS render size")
-    require("m_aovSize    = m_size;" in hello_cpp, "AOV size must follow target size")
+    require(re.search(r"m_aovSize\s*=\s*m_size\s*;", hello_cpp) is not None, "AOV size must follow target size")
     require("&m_rtObjectIdGL, GL_R32I, GL_LINEAR" in hello_cpp and "m_aovSize" in hello_cpp,
             "Object ID AOV image must be created at full AOV size")
     require_image_usage(hello_cpp, "m_offscreenObjectId", "VK_IMAGE_USAGE_TRANSFER_SRC_BIT",

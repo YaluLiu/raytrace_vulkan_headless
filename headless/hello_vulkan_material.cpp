@@ -101,10 +101,12 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
   samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
   samplerCreateInfo.maxLod = FLT_MAX;
 
-  VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+  auto formatForColorSpace = [](TextureColorSpace colorSpace)
+  { return colorSpace == TextureColorSpace::Linear ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB; };
 
-  auto uploadTexture = [&](const stbi_uc* pixels, int texWidth, int texHeight)
+  auto uploadTexture = [&](const stbi_uc* pixels, int texWidth, int texHeight, TextureColorSpace colorSpace)
   {
+    VkFormat format = formatForColorSpace(colorSpace);
     VkDeviceSize bufferSize = static_cast<uint64_t>(texWidth) * texHeight * sizeof(uint8_t) * 4;
     auto imgSize = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
     auto imageCreateInfo = nvvk::makeImage2DCreateInfo(imgSize, format, VK_IMAGE_USAGE_SAMPLED_BIT, true);
@@ -124,6 +126,7 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
     std::array<uint8_t, 4> color{255u, 255u, 255u, 255u};
     VkDeviceSize bufferSize = sizeof(color);
     auto imgSize = VkExtent2D{1, 1};
+    VkFormat format = formatForColorSpace(TextureColorSpace::SRGB);
     auto imageCreateInfo = nvvk::makeImage2DCreateInfo(imgSize, format);
 
     nvvk::Image image = m_alloc.createImage(cmdBuf, bufferSize, color.data(), imageCreateInfo);
@@ -156,7 +159,7 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
         pixels = reinterpret_cast<stbi_uc*>(color.data());
       }
 
-      uploadTexture(pixels, texWidth, texHeight);
+      uploadTexture(pixels, texWidth, texHeight, TextureColorSpace::SRGB);
 
       stbi_image_free(stbi_pixels);
     }
@@ -185,7 +188,7 @@ void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::
         pixels = reinterpret_cast<stbi_uc*>(color.data());
       }
 
-      uploadTexture(pixels, texWidth, texHeight);
+      uploadTexture(pixels, texWidth, texHeight, textureAsset.colorSpace);
 
       stbi_image_free(stbi_pixels);
     }

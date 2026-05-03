@@ -67,9 +67,36 @@ Light HydraLight::toLight() const
   return light;
 }
 
-int TextureRegistry::Register(const std::string &texturePath)
+namespace
 {
-  const auto it = _textureIdByPath.find(texturePath);
+std::string TextureRegistryKey(const std::string &texturePath, TextureUsage usage)
+{
+  return texturePath + "#" + std::to_string(static_cast<int>(usage));
+}
+}  // namespace
+
+TextureColorSpace TextureColorSpaceForUsage(TextureUsage usage)
+{
+  switch (usage)
+  {
+    case TextureUsage::Metallic:
+    case TextureUsage::Roughness:
+    case TextureUsage::Normal:
+    case TextureUsage::Opacity:
+      return TextureColorSpace::Linear;
+    case TextureUsage::Unknown:
+    case TextureUsage::BaseColor:
+    case TextureUsage::Emission:
+    case TextureUsage::Light:
+    default:
+      return TextureColorSpace::SRGB;
+  }
+}
+
+int TextureRegistry::Register(const std::string &texturePath, TextureUsage usage)
+{
+  const std::string key = TextureRegistryKey(texturePath, usage);
+  const auto it = _textureIdByPath.find(key);
   if (it != _textureIdByPath.end())
   {
     return it->second;
@@ -77,13 +104,23 @@ int TextureRegistry::Register(const std::string &texturePath)
 
   const int textureId = static_cast<int>(_texturePaths.size());
   _texturePaths.emplace_back(texturePath);
-  _textureIdByPath.emplace(texturePath, textureId);
+  TextureAsset textureAsset;
+  textureAsset.sourcePath = texturePath;
+  textureAsset.usage = usage;
+  textureAsset.colorSpace = TextureColorSpaceForUsage(usage);
+  _textureAssets.emplace_back(std::move(textureAsset));
+  _textureIdByPath.emplace(key, textureId);
   return textureId;
 }
 
 const std::vector<std::string> &TextureRegistry::GetPaths() const
 {
   return _texturePaths;
+}
+
+const std::vector<TextureAsset> &TextureRegistry::GetTextureAssets() const
+{
+  return _textureAssets;
 }
 
 void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader)

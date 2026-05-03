@@ -45,7 +45,7 @@ def main() -> None:
     )
     require(
         "loader.m_textureAssets" in bridge_cpp
-        and "ExportRegisteredTextures(_renderParam.GetTexturePaths())" in bridge_cpp,
+        and "ExportRegisteredTextures(_renderParam.GetTextureAssets())" in bridge_cpp,
         "HeadlessRenderBridge must pass encoded Hydra textures through ModelLoader",
     )
     require(
