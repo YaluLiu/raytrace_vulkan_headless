@@ -19,6 +19,8 @@ call sites with `rg`.
 - `scripts/`: Python and shell contract/regression checks.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
+- `docs/materialx-openchessset.md`: Current OpenChessSet MaterialX support
+  scope, approximations, and regression commands.
 
 ## Build And Test Routing
 
