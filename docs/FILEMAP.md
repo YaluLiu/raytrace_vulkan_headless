@@ -48,6 +48,8 @@ call sites with `rg`.
   MaterialX `standard_surface` input and upstream texture extraction support.
 - `scripts/check_texture_usage_contracts.py`: Contract checks for texture
   usage/color-space metadata through registry, export, and Vulkan upload.
+- `scripts/check_pbr_shader_contracts.py`: Contract checks for the
+  metallic-roughness closest-hit shader path and DLSS guide buffer inputs.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -225,6 +227,12 @@ call sites with `rg`.
   `scripts/check_texture_usage_contracts.py`, then search for
   `TextureUsage`, `TextureColorSpaceForUsage`, `GetTextureAssets`, and
   `VK_FORMAT_R8G8B8A8_UNORM`.
+- PBR shader lighting:
+  `headless/shaders/raytrace.rchit`, `headless/shaders/wavefront.glsl`,
+  `headless/shaders/raytrace.rgen`, and
+  `scripts/check_pbr_shader_contracts.py`, then search for
+  `samplePbrMaterial`, `computePbrDirectLighting`, `firstHitDiffuseValid`,
+  and `firstHitSpecularPad`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

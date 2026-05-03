@@ -33,13 +33,66 @@ float computeShadowBias(vec3 worldPos)
   return max(0.001, sceneScale * 0.0001);
 }
 
-float roughnessFromShininess(float shininess)
+vec4 sampleTextureRgba(int textureId, vec2 texCoord, vec4 fallbackValue)
 {
-  float n = max(shininess, 1.0);
-  return clamp(sqrt(2.0 / (n + 2.0)), 0.02, 1.0);
+  if(textureId < 0)
+  {
+    return fallbackValue;
+  }
+  return texture(textureSamplers[nonuniformEXT(uint(textureId))], texCoord);
 }
 
-vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, WaveFrontMaterial mat, vec3 textureColor)
+PbrMaterialSample samplePbrMaterial(WaveFrontMaterial mat, vec2 texCoord)
+{
+  PbrMaterialSample pbr;
+
+  vec3 baseColor = clamp(mat.diffuse, vec3(0.0), vec3(1.0));
+  if(mat.baseColorTextureId >= 0)
+  {
+    baseColor = clamp(mat.baseColorFactor * sampleTextureRgba(mat.baseColorTextureId, texCoord, vec4(1.0)).rgb,
+                      vec3(0.0), vec3(1.0));
+  }
+  else if(mat.textureId >= 0)
+  {
+    // Legacy OBJ/Hydra diffuse texture fallback.
+    baseColor = clamp(mat.diffuse * sampleTextureRgba(mat.textureId, texCoord, vec4(1.0)).rgb, vec3(0.0), vec3(1.0));
+  }
+
+  float metallic = clamp(mat.metallicFactor, 0.0, 1.0);
+  if(mat.metallicTextureId >= 0)
+  {
+    metallic = clamp(sampleTextureRgba(mat.metallicTextureId, texCoord, vec4(metallic)).r, 0.0, 1.0);
+  }
+
+  float roughness = clamp(mat.roughnessFactor, 0.02, 1.0);
+  if(mat.roughnessTextureId >= 0)
+  {
+    roughness = clamp(sampleTextureRgba(mat.roughnessTextureId, texCoord, vec4(roughness)).r, 0.02, 1.0);
+  }
+
+  vec3 emission = mat.emission;
+  if(mat.emissionTextureId >= 0)
+  {
+    emission *= sampleTextureRgba(mat.emissionTextureId, texCoord, vec4(1.0)).rgb;
+  }
+
+  float opacity = clamp(mat.opacityFactor * mat.dissolve, 0.0, 1.0);
+  if(mat.opacityTextureId >= 0)
+  {
+    opacity *= clamp(sampleTextureRgba(mat.opacityTextureId, texCoord, vec4(1.0)).r, 0.0, 1.0);
+  }
+
+  pbr.baseColor     = baseColor;
+  pbr.metallic      = metallic;
+  pbr.roughness     = roughness;
+  pbr.opacity       = opacity;
+  pbr.diffuseAlbedo = baseColor * (1.0 - metallic);
+  pbr.specularF0    = clamp(computeMetallicRoughnessSpecularF0(baseColor, metallic), vec3(0.0), vec3(0.98));
+  pbr.emission      = emission * opacity;
+  return pbr;
+}
+
+vec3 computePbrSceneLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, PbrMaterialSample pbr)
 {
   vec3 totalLight = vec3(0.0);
   int  numLights  = pcRay.numLights;
@@ -50,7 +103,7 @@ vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, WaveF
 
     if(light.type == 2)  // Dome light
     {
-      totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuse;
+      totalLight += pbr.diffuseAlbedo * light.baseEmission * light.diffuse;
       continue;
     }
 
@@ -85,11 +138,6 @@ vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, WaveF
       continue;
     }
 
-    vec3 diffuse = computeDiffuse(mat, L, worldNrm);
-    diffuse *= textureColor * light.diffuse;
-
-    vec3 specular = vec3(0.0);
-
     float shadowBias = computeShadowBias(worldPos);
     float tMin       = 0.001;
     float tMax       = max(lightDistance - shadowBias, tMin);
@@ -100,9 +148,8 @@ vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, WaveF
 
     if(!isShadowed)
     {
-      specular = computeSpecular(mat, gl_WorldRayDirectionEXT, L, worldNrm);
-      specular *= light.specular;
-      totalLight += lightEmission * (diffuse + specular);
+      vec3 brdf = computePbrDirectLighting(pbr, gl_WorldRayDirectionEXT, L, worldNrm);
+      totalLight += lightEmission * brdf * max(light.diffuse, light.specular);
     }
   }
 
@@ -145,31 +192,25 @@ void main()
   int               matIdx = matIndices.i[gl_PrimitiveID];
   WaveFrontMaterial mat    = materials.m[matIdx];
 
-  vec3 textureColor = vec3(1.0);
-  if(mat.textureId >= 0)
-  {
-    uint txtId    = mat.textureId;
-    vec2 texCoord = v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z;
-    textureColor  = texture(textureSamplers[nonuniformEXT(txtId)], texCoord).xyz;
-  }
+  vec2 texCoord = v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z;
+  PbrMaterialSample pbr = samplePbrMaterial(mat, texCoord);
 
   if(prd.depth == 0)
   {
-    vec3 diffuseAlbedo  = clamp(mat.diffuse * textureColor, vec3(0.0), vec3(1.0));
-    vec3 specularF0     = (mat.illum >= 2) ? clamp(mat.specular, vec3(0.0), vec3(0.98)) : vec3(0.0);
-    float roughness     = roughnessFromShininess(mat.shininess);
-    float roughnessSq   = roughness * roughness;
+    vec3  diffuseAlbedo = clamp(pbr.diffuseAlbedo, vec3(0.0), vec3(1.0));
+    vec3  specularF0    = pbr.specularF0;
+    float roughnessSq   = pbr.roughness * pbr.roughness;
 
     prd.objId                   = int(gl_InstanceCustomIndexEXT);
     prd.instanceId              = instanceIdBuf.instanceIds[gl_InstanceID];
     prd.firstHitWorldPosRoughness = vec4(worldPos, roughnessSq);
     prd.firstHitNormalSpecHitDist = vec4(normalize(worldNrm), 0.0);
     prd.firstHitDiffuseValid      = vec4(diffuseAlbedo, 1.0);
-    prd.firstHitSpecularPad       = vec4(specularF0, (mat.illum >= 2) ? 1.0 : 0.0);
+    prd.firstHitSpecularPad       = vec4(specularF0, max(specularF0.x, max(specularF0.y, specularF0.z)) > 1e-4 ? 1.0 : 0.0);
   }
 
-  vec3 emission = computeEmission(mat, textureColor);
-  vec3 direct   = computeDirectLighting(worldPos, worldNrm, worldGeoNrm, mat, textureColor);
+  vec3 emission = pbr.emission;
+  vec3 direct   = computePbrSceneLighting(worldPos, worldNrm, worldGeoNrm, pbr);
   prd.radiance += prd.throughput * (emission + direct);
 
   int maxDepth  = max(pcRay.maxDepth, 1);
@@ -180,8 +221,8 @@ void main()
     return;
   }
 
-  vec3 albedo = clamp(mat.diffuse * textureColor, vec3(0.0), vec3(0.95));
-  vec3 pathSpecularF0 = (mat.illum >= 2) ? clamp(mat.specular, vec3(0.0), vec3(0.98)) : vec3(0.0);
+  vec3 albedo = clamp(pbr.diffuseAlbedo, vec3(0.0), vec3(0.95));
+  vec3 pathSpecularF0 = pbr.specularF0;
   bool firstSpecularBounce = prd.depth == 0 && max(pathSpecularF0.x, max(pathSpecularF0.y, pathSpecularF0.z)) > 1e-4;
   if(!firstSpecularBounce && max(albedo.x, max(albedo.y, albedo.z)) <= 1e-4)
   {
@@ -197,7 +238,7 @@ void main()
   float u2 = rand01(prd.seed);
   vec3  localDir  = cosineSampleHemisphere(u1, u2);
   vec3  diffuseDir = normalize(localDir.x * tangent + localDir.y * bitangent + localDir.z * worldNrm);
-  float roughness = roughnessFromShininess(mat.shininess);
+  float roughness = pbr.roughness;
   vec3  bounceDir = chooseDlssFirstBounceDirection(gl_WorldRayDirectionEXT, worldNrm, diffuseDir, roughness, firstSpecularBounce);
 
   float cosTheta = max(dot(worldNrm, bounceDir), 0.0);

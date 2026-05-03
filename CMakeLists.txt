@@ -85,6 +85,7 @@ if(BUILD_TESTING)
   add_python_contract_test(contracts.pbr_material scripts/check_pbr_material_contracts.py)
   add_python_contract_test(contracts.materialx_standard_surface scripts/check_materialx_standard_surface_contracts.py)
   add_python_contract_test(contracts.texture_usage scripts/check_texture_usage_contracts.py)
+  add_python_contract_test(contracts.pbr_shader scripts/check_pbr_shader_contracts.py)
 endif()
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------
