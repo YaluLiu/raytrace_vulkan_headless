@@ -25,12 +25,17 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   result.emission = material.emission;
   result.baseColorFactor = material.baseColorFactor;
   result.emissionFactor = material.emissionFactor;
+  result.transmissionColorFactor = material.transmissionColorFactor;
+  result.subsurfaceColorFactor = material.subsurfaceColorFactor;
   result.shininess = material.shininess;
   result.ior = material.ior;
   result.dissolve = material.dissolve;
   result.metallicFactor = material.metallicFactor;
   result.roughnessFactor = material.roughnessFactor;
   result.opacityFactor = material.opacityFactor;
+  result.transmissionFactor = material.transmissionFactor;
+  result.subsurfaceFactor = material.subsurfaceFactor;
+  result.subsurfaceScale = material.subsurfaceScale;
   result.illum = material.illum;
   result.textureId = material.textureID;
   result.baseColorTextureId = material.baseColorTextureId;
@@ -39,6 +44,7 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   result.normalTextureId = material.normalTextureId;
   result.emissionTextureId = material.emissionTextureId;
   result.opacityTextureId = material.opacityTextureId;
+  result.subsurfaceTextureId = material.subsurfaceTextureId;
   return result;
 }
 

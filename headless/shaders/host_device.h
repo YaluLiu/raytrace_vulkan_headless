@@ -172,12 +172,17 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
   vec3 emission;
   vec3 baseColorFactor;
   vec3 emissionFactor;
+  vec3 transmissionColorFactor;
+  vec3 subsurfaceColorFactor;
   float shininess;
   float ior;       // index of refraction
   float dissolve;  // 1 == opaque; 0 == fully transparent
   float metallicFactor;
   float roughnessFactor;
   float opacityFactor;
+  float transmissionFactor;
+  float subsurfaceFactor;
+  float subsurfaceScale;
   int illum;  // illumination model (see
               // http://www.fileformat.info/format/material/)
   int textureId;
@@ -187,6 +192,7 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
   int normalTextureId;
   int emissionTextureId;
   int opacityTextureId;
+  int subsurfaceTextureId;
 };
 
 struct Sphere

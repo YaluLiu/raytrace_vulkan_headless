@@ -54,6 +54,8 @@ call sites with `rg`.
   propagation and normal map sampling in the triangle closest-hit shader.
 - `scripts/check_instancer_material_subset_contracts.py`: Contract checks for
   PointInstancer TLAS propagation and material subset local/global id mapping.
+- `scripts/check_materialx_advanced_inputs_contracts.py`: Contract checks for
+  conservative MaterialX transmission/subsurface parsing and shader handling.
 - `scripts/visual_regression.sh`: Image-based regression comparison helper.
 
 ## Runtime Entry Points
@@ -243,6 +245,14 @@ call sites with `rg`.
   `headless/shaders/raytrace.rchit`, and
   `scripts/check_normal_map_contracts.py`, then search for `tangent`,
   `bitangentSigns`, and `sampleNormalMap`.
+- Advanced MaterialX inputs:
+  `hdRobot/material.cpp`, `hdRobot/sceneData.h`,
+  `hdRobot/sceneData.cpp`, `common/data_loader.h`,
+  `headless/shaders/host_device.h`, `headless/shaders/raytrace.rchit`,
+  `headless/shaders/wavefront.glsl`, and
+  `scripts/check_materialx_advanced_inputs_contracts.py`, then search for
+  `transmissionFactor`, `transmissionColorFactor`, `subsurfaceFactor`,
+  `subsurfaceTextureId`, and `computeSubsurfaceWrap`.
 - Instancers or material subsets:
   `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
   `hdRobot/sceneData.cpp`, `hdRobot/headlessRenderBridge.cpp`, and

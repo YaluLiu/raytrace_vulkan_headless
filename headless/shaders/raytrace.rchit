@@ -70,6 +70,20 @@ PbrMaterialSample samplePbrMaterial(WaveFrontMaterial mat, vec2 texCoord)
     roughness = clamp(sampleTextureRgba(mat.roughnessTextureId, texCoord, vec4(roughness)).r, 0.02, 1.0);
   }
 
+  float transmission = clamp(mat.transmissionFactor, 0.0, 1.0);
+  if(transmission > 0.0)
+  {
+    baseColor = clamp(mix(baseColor, mat.transmissionColorFactor, transmission * 0.75), vec3(0.0), vec3(1.0));
+    metallic  = 0.0;
+    roughness = clamp(min(roughness, mix(roughness, 0.08, transmission)), 0.02, 1.0);
+  }
+
+  float subsurface = clamp(mat.subsurfaceFactor, 0.0, 1.0);
+  if(mat.subsurfaceTextureId >= 0)
+  {
+    subsurface *= clamp(sampleTextureRgba(mat.subsurfaceTextureId, texCoord, vec4(1.0)).r, 0.0, 1.0);
+  }
+
   vec3 emission = mat.emission;
   if(mat.emissionTextureId >= 0)
   {
@@ -86,8 +100,14 @@ PbrMaterialSample samplePbrMaterial(WaveFrontMaterial mat, vec2 texCoord)
   pbr.metallic      = metallic;
   pbr.roughness     = roughness;
   pbr.opacity       = opacity;
-  pbr.diffuseAlbedo = baseColor * (1.0 - metallic);
-  pbr.specularF0    = clamp(computeMetallicRoughnessSpecularF0(baseColor, metallic), vec3(0.0), vec3(0.98));
+  pbr.transmission  = transmission;
+  pbr.subsurface    = subsurface;
+  pbr.subsurfaceScale = mat.subsurfaceScale;
+  pbr.transmissionColor = clamp(mat.transmissionColorFactor, vec3(0.0), vec3(1.0));
+  pbr.subsurfaceColor = clamp(mat.subsurfaceColorFactor, vec3(0.0), vec3(1.0));
+  pbr.diffuseAlbedo = baseColor * (1.0 - metallic) * (1.0 - transmission * 0.35);
+  pbr.specularF0    = clamp(mix(computeMetallicRoughnessSpecularF0(baseColor, metallic), vec3(0.08), transmission),
+                           vec3(0.0), vec3(0.98));
   pbr.emission      = emission * opacity;
   return pbr;
 }
@@ -167,6 +187,13 @@ vec3 computePbrSceneLighting(vec3 worldPos, vec3 worldNrm, vec3 worldGeoNrm, Pbr
     {
       vec3 brdf = computePbrDirectLighting(pbr, gl_WorldRayDirectionEXT, L, worldNrm);
       totalLight += lightEmission * brdf * max(light.diffuse, light.specular);
+      if(pbr.subsurface > 0.0)
+      {
+        float wrap = computeSubsurfaceWrap(pbr.subsurface, pbr.subsurfaceScale);
+        float wrappedDotNL = clamp((dot(worldNrm, L) + wrap) / (1.0 + wrap), 0.0, 1.0);
+        vec3 wrapDiffuse = pbr.diffuseAlbedo * pbr.subsurfaceColor * wrappedDotNL / PI;
+        totalLight += lightEmission * wrapDiffuse * pbr.subsurface * light.diffuse;
+      }
     }
   }
 

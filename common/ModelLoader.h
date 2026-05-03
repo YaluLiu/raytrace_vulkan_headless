@@ -16,6 +16,7 @@ enum class TextureUsage
   Normal,
   Emission,
   Opacity,
+  Subsurface,
   Light
 };
 

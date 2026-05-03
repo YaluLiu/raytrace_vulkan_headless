@@ -27,9 +27,13 @@ static_assert(sizeof(VertexObj) == sizeof(Vertex));
 static_assert(offsetof(VertexObj, pos) == offsetof(Vertex, pos));
 static_assert(offsetof(VertexObj, tangent) == offsetof(Vertex, tangent));
 static_assert(offsetof(MaterialObj, baseColorFactor) == offsetof(WaveFrontMaterial, baseColorFactor));
+static_assert(offsetof(MaterialObj, transmissionColorFactor) == offsetof(WaveFrontMaterial, transmissionColorFactor));
 static_assert(offsetof(MaterialObj, roughnessFactor) == offsetof(WaveFrontMaterial, roughnessFactor));
+static_assert(offsetof(MaterialObj, transmissionFactor) == offsetof(WaveFrontMaterial, transmissionFactor));
+static_assert(offsetof(MaterialObj, subsurfaceFactor) == offsetof(WaveFrontMaterial, subsurfaceFactor));
 static_assert(offsetof(MaterialObj, textureID) == offsetof(WaveFrontMaterial, textureId));
 static_assert(offsetof(MaterialObj, normalTextureId) == offsetof(WaveFrontMaterial, normalTextureId));
+static_assert(offsetof(MaterialObj, subsurfaceTextureId) == offsetof(WaveFrontMaterial, subsurfaceTextureId));
 
 uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
 {

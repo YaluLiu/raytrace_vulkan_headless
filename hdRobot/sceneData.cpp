@@ -10,9 +10,14 @@ void HydraMaterial::set_default()
   baseColorFactor = diffuse;
   emission = glm::vec3(0.0f, 0.0f, 0.0f);
   emissionFactor = emission;
+  transmissionColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
+  subsurfaceColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
   metallicFactor = 0.0f;
   roughnessFactor = 0.5f;
   opacityFactor = 1.0f;
+  transmissionFactor = 0.0f;
+  subsurfaceFactor = 0.0f;
+  subsurfaceScale = 0.0f;
   textureID = -1;
   baseColorTextureId = -1;
   metallicTextureId = -1;
@@ -20,6 +25,7 @@ void HydraMaterial::set_default()
   normalTextureId = -1;
   emissionTextureId = -1;
   opacityTextureId = -1;
+  subsurfaceTextureId = -1;
   texturePath.clear();
   material_changed = true;
 }
@@ -34,12 +40,17 @@ MaterialObj HydraMaterial::toMaterialObj() const
   mat.emission = emission;
   mat.baseColorFactor = baseColorFactor;
   mat.emissionFactor = emissionFactor;
+  mat.transmissionColorFactor = transmissionColorFactor;
+  mat.subsurfaceColorFactor = subsurfaceColorFactor;
   mat.shininess = shininess;
   mat.ior = ior;
   mat.dissolve = dissolve;
   mat.metallicFactor = metallicFactor;
   mat.roughnessFactor = roughnessFactor;
   mat.opacityFactor = opacityFactor;
+  mat.transmissionFactor = transmissionFactor;
+  mat.subsurfaceFactor = subsurfaceFactor;
+  mat.subsurfaceScale = subsurfaceScale;
   mat.illum = illum;
   mat.textureID = textureID;
   mat.baseColorTextureId = baseColorTextureId;
@@ -48,6 +59,7 @@ MaterialObj HydraMaterial::toMaterialObj() const
   mat.normalTextureId = normalTextureId;
   mat.emissionTextureId = emissionTextureId;
   mat.opacityTextureId = opacityTextureId;
+  mat.subsurfaceTextureId = subsurfaceTextureId;
   return mat;
 }
 
@@ -83,6 +95,7 @@ TextureColorSpace TextureColorSpaceForUsage(TextureUsage usage)
     case TextureUsage::Roughness:
     case TextureUsage::Normal:
     case TextureUsage::Opacity:
+    case TextureUsage::Subsurface:
       return TextureColorSpace::Linear;
     case TextureUsage::Unknown:
     case TextureUsage::BaseColor:

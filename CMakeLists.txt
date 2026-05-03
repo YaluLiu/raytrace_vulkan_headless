@@ -88,6 +88,7 @@ if(BUILD_TESTING)
   add_python_contract_test(contracts.pbr_shader scripts/check_pbr_shader_contracts.py)
   add_python_contract_test(contracts.normal_map scripts/check_normal_map_contracts.py)
   add_python_contract_test(contracts.instancer_material_subset scripts/check_instancer_material_subset_contracts.py)
+  add_python_contract_test(contracts.materialx_advanced_inputs scripts/check_materialx_advanced_inputs_contracts.py)
 endif()
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------

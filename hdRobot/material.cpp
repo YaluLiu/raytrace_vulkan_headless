@@ -274,6 +274,27 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
           _scene.MarkMaterialDirty(_mat_id);
         }
       }
+      else if (inputName == "transmission")
+      {
+        float transmission = 0.0f;
+        const auto paramIt = node.parameters.find(inputName);
+        if (paramIt != node.parameters.end() && ReadFloat(paramIt->second, &transmission))
+        {
+          material.transmissionFactor = transmission;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (inputName == "subsurface")
+      {
+        const int textureId =
+            RegisterTexture(_scene, FindInputTexturePath(network, node, inputName), TextureUsage::Subsurface);
+        if (textureId >= 0)
+        {
+          material.subsurfaceTextureId = textureId;
+          material.subsurfaceFactor = 1.0f;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
     }
 
     for (const auto& paramPair : node.parameters)
@@ -346,6 +367,45 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
         if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].opacityFactor))
         {
           _scene.v_mat[_mat_id].dissolve = _scene.v_mat[_mat_id].opacityFactor;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "transmission")
+      {
+        if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].transmissionFactor))
+        {
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "transmission_color")
+      {
+        glm::vec3 transmissionColor;
+        if (ReadVec3(paramValue, &transmissionColor))
+        {
+          _scene.v_mat[_mat_id].transmissionColorFactor = transmissionColor;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "subsurface")
+      {
+        if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].subsurfaceFactor))
+        {
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "subsurface_color")
+      {
+        glm::vec3 subsurfaceColor;
+        if (ReadVec3(paramValue, &subsurfaceColor))
+        {
+          _scene.v_mat[_mat_id].subsurfaceColorFactor = subsurfaceColor;
+          _scene.MarkMaterialDirty(_mat_id);
+        }
+      }
+      else if (paramName == "subsurface_scale")
+      {
+        if (ReadFloat(paramValue, &_scene.v_mat[_mat_id].subsurfaceScale))
+        {
           _scene.MarkMaterialDirty(_mat_id);
         }
       }

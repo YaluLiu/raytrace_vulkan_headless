@@ -52,9 +52,14 @@ struct PbrMaterialSample
   vec3  diffuseAlbedo;
   vec3  specularF0;
   vec3  emission;
+  vec3  transmissionColor;
+  vec3  subsurfaceColor;
   float metallic;
   float roughness;
   float opacity;
+  float transmission;
+  float subsurface;
+  float subsurfaceScale;
 };
 
 vec3 computeMetallicRoughnessSpecularF0(vec3 baseColor, float metallic)
@@ -104,4 +109,9 @@ vec3 computePbrDirectLighting(PbrMaterialSample pbr, vec3 viewDir, vec3 lightDir
   vec3  specular = (d * g * f) / max(4.0 * dotNL * dotNV, 1.0e-5);
 
   return (diffuse + specular) * dotNL;
+}
+
+float computeSubsurfaceWrap(float subsurface, float subsurfaceScale)
+{
+  return clamp(subsurface * (0.35 + subsurfaceScale * 8.0), 0.0, 0.75);
 }

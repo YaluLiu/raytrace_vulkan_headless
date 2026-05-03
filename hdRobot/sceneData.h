@@ -50,12 +50,17 @@ struct HydraMaterial
   glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::vec3 baseColorFactor = glm::vec3(0.18f, 0.18f, 0.18f);
   glm::vec3 emissionFactor = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 transmissionColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
+  glm::vec3 subsurfaceColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
   float shininess = 0.0f;
   float ior = 1.0f;
   float dissolve = 1.0f;
   float metallicFactor = 0.0f;
   float roughnessFactor = 0.5f;
   float opacityFactor = 1.0f;
+  float transmissionFactor = 0.0f;
+  float subsurfaceFactor = 0.0f;
+  float subsurfaceScale = 0.0f;
   int illum = 0;
   int textureID = -1;
   int baseColorTextureId = -1;
@@ -64,6 +69,7 @@ struct HydraMaterial
   int normalTextureId = -1;
   int emissionTextureId = -1;
   int opacityTextureId = -1;
+  int subsurfaceTextureId = -1;
   std::string texturePath;
   bool material_changed = false;
 
