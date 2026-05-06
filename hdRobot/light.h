@@ -13,12 +13,13 @@ public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
+  bool    _EnsureLightSlot();
   GfVec3f _CalcBaseEmission(HdSceneDelegate* sceneDelegate, float normalizeFactor);
   void    Finalize(HdRenderParam* renderParam) override;
 
 protected:
   HdRobotRenderParam& _scene;
-  int             _light_id;
+  int                 _light_id = -1;
 };
 
 class HdRobotDistantLight final : public HdRobotLight

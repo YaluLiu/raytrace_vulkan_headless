@@ -33,11 +33,24 @@ def main() -> None:
         "Hydra render delegate must construct HdRobotSimpleLight for simpleLight sprims",
     )
     require("class HdRobotSimpleLight" in light_h, "Simple light sprim class must be declared")
+    require("_EnsureLightSlot" in light_h, "Hydra lights must expose delayed renderer light slot allocation")
+    require(
+        "GetId().IsEmpty()" in light_cpp,
+        "Fallback light sprims must not allocate renderer light slots",
+    )
+    base_ctor_start = light_cpp.index("HdRobotLight::HdRobotLight")
+    base_ctor_end = light_cpp.index("bool HdRobotLight::_EnsureLightSlot")
+    base_ctor = light_cpp[base_ctor_start:base_ctor_end]
+    require(
+        "v_light.emplace_back" not in base_ctor,
+        "Hydra light construction must not register fallback sprims into renderer light state",
+    )
     require_all(
         light_cpp,
         [
             "HdRobotSimpleLight::HdRobotSimpleLight",
             "HdRobotSimpleLight::Sync",
+            "_EnsureLightSlot()",
             "HdLightTokens->params",
             "IsHolding<GlfSimpleLight>",
             "Get<GlfSimpleLight>",
