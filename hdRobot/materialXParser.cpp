@@ -50,6 +50,7 @@ struct MaterialResolvedInput
   std::string texturePath;
   TfToken outputName;
   TfToken channel;
+  TfToken inputName;
 };
 
 struct MaterialInputRule
@@ -280,6 +281,12 @@ const std::vector<MaterialInputRule>& MaterialInputRules()
        TextureUsage::Unknown,
        ValueKind::Float,
        false},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::Unsupported,
+       {TfToken("coat_color"), TfToken("coat_roughness"), TfToken("fuzz_color"), TfToken("thin_film_thickness")},
+       TextureUsage::Unknown,
+       ValueKind::FloatOrColor3,
+       true},
   };
   return rules;
 }
@@ -534,14 +541,34 @@ bool ReadVec3(const VtValue& value, glm::vec3* result)
   return false;
 }
 
-void AddTextureBinding(MaterialXParseResult& result, const std::string& texturePath, TextureUsage usage)
+MaterialXTextureBinding MakeTextureBinding(const MaterialResolvedInput& resolved, TextureUsage usage)
 {
-  if (texturePath.empty())
+  MaterialXTextureBinding binding;
+  binding.assetPath = resolved.texturePath;
+  binding.usage = usage;
+  binding.sourceOutput = resolved.outputName;
+  binding.channel = resolved.channel;
+  binding.inputName = resolved.inputName;
+  return binding;
+}
+
+void AddTextureBinding(MaterialXParseResult& result, const MaterialResolvedInput& resolved, TextureUsage usage)
+{
+  if (resolved.texturePath.empty())
   {
     return;
   }
-  result.textures.push_back({texturePath, usage});
+  result.textures.push_back(MakeTextureBinding(resolved, usage));
   result.hasMaterialOpinion = true;
+}
+
+void AddUnsupportedTextureBinding(MaterialXParseResult& result, const MaterialResolvedInput& resolved)
+{
+  if (resolved.texturePath.empty())
+  {
+    return;
+  }
+  result.unsupportedTextures.push_back(MakeTextureBinding(resolved, TextureUsage::Unknown));
 }
 
 bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node, const MaterialInputRule& rule,
@@ -554,11 +581,16 @@ bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node
     {
       resolved->hasValue = true;
       resolved->value = paramIt->second;
+      resolved->inputName = inputName;
     }
 
     if (rule.acceptsTexture)
     {
       FindInputTexture(network, node, inputName, resolved);
+      if (resolved->hasTexture)
+      {
+        resolved->inputName = inputName;
+      }
     }
 
     if (resolved->hasValue || resolved->hasTexture)
@@ -657,7 +689,13 @@ void ApplyResolvedInput(MaterialXParseResult& result, const MaterialInputRule& r
   }
   if (resolved.hasTexture)
   {
-    AddTextureBinding(result, resolved.texturePath, rule.textureUsage);
+    if (rule.semantic == MaterialSemantic::Unsupported || rule.textureUsage == TextureUsage::Unknown)
+    {
+      AddUnsupportedTextureBinding(result, resolved);
+      return;
+    }
+
+    AddTextureBinding(result, resolved, rule.textureUsage);
     if (rule.semantic == MaterialSemantic::BaseColor)
     {
       result.material.texturePath = resolved.texturePath;

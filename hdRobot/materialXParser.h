@@ -13,12 +13,16 @@ struct MaterialXTextureBinding
 {
   std::string assetPath;
   TextureUsage usage = TextureUsage::Unknown;
+  TfToken sourceOutput;
+  TfToken channel;
+  TfToken inputName;
 };
 
 struct MaterialXParseResult
 {
   HydraMaterial material;
   std::vector<MaterialXTextureBinding> textures;
+  std::vector<MaterialXTextureBinding> unsupportedTextures;
   bool hasMaterialOpinion = false;
 };
 
