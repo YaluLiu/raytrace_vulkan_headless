@@ -14,6 +14,50 @@ enum class ShaderFamily
   MaterialXOpenPbrSurface,
 };
 
+enum class MaterialSemantic
+{
+  BaseColor,
+  Metallic,
+  Roughness,
+  Normal,
+  Emission,
+  Opacity,
+  Transmission,
+  TransmissionColor,
+  Subsurface,
+  SubsurfaceColor,
+  SubsurfaceScale,
+  Unsupported,
+};
+
+enum class ValueKind
+{
+  Float,
+  Color3,
+  TextureOnly,
+  FloatOrColor3,
+};
+
+struct MaterialResolvedInput
+{
+  bool hasValue = false;
+  VtValue value;
+  bool hasTexture = false;
+  std::string texturePath;
+  TfToken outputName;
+  TfToken channel;
+};
+
+struct MaterialInputRule
+{
+  ShaderFamily family;
+  MaterialSemantic semantic;
+  std::vector<TfToken> inputNames;
+  TextureUsage textureUsage = TextureUsage::Unknown;
+  ValueKind valueKind = ValueKind::Float;
+  bool acceptsTexture = true;
+};
+
 struct SurfaceShaderCandidate
 {
   SdfPath nodePath;
@@ -125,6 +169,115 @@ std::vector<SurfaceShaderCandidate> CollectSurfaceShaderCandidates(const HdMater
     candidates.push_back(candidate);
   }
   return candidates;
+}
+
+const std::vector<MaterialInputRule>& MaterialInputRules()
+{
+  static const std::vector<MaterialInputRule> rules = {
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::BaseColor,
+       {TfToken("base_color"), TfToken("diffuseColor")},
+       TextureUsage::BaseColor,
+       ValueKind::Color3,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Metallic,
+       {TfToken("metalness")},
+       TextureUsage::Metallic,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Roughness,
+       {TfToken("specular_roughness")},
+       TextureUsage::Roughness,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Normal,
+       {TfToken("normal"), TfToken("normalmap")},
+       TextureUsage::Normal,
+       ValueKind::TextureOnly,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Emission,
+       {TfToken("emission"), TfToken("emission_color"), TfToken("emissiveColor")},
+       TextureUsage::Emission,
+       ValueKind::FloatOrColor3,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Opacity,
+       {TfToken("opacity"), TfToken("alpha")},
+       TextureUsage::Opacity,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Transmission,
+       {TfToken("transmission")},
+       TextureUsage::Unknown,
+       ValueKind::Float,
+       false},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::TransmissionColor,
+       {TfToken("transmission_color")},
+       TextureUsage::Unknown,
+       ValueKind::Color3,
+       false},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::Subsurface,
+       {TfToken("subsurface")},
+       TextureUsage::Subsurface,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::SubsurfaceColor,
+       {TfToken("subsurface_color")},
+       TextureUsage::Subsurface,
+       ValueKind::Color3,
+       true},
+      {ShaderFamily::MaterialXStandardSurface,
+       MaterialSemantic::SubsurfaceScale,
+       {TfToken("subsurface_scale")},
+       TextureUsage::Unknown,
+       ValueKind::Float,
+       false},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::BaseColor,
+       {TfToken("base_color")},
+       TextureUsage::BaseColor,
+       ValueKind::Color3,
+       true},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::Metallic,
+       {TfToken("base_metalness"), TfToken("metalness")},
+       TextureUsage::Metallic,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::Roughness,
+       {TfToken("specular_roughness"), TfToken("base_diffuse_roughness")},
+       TextureUsage::Roughness,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::Normal,
+       {TfToken("geometry_normal"), TfToken("normal")},
+       TextureUsage::Normal,
+       ValueKind::TextureOnly,
+       true},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::Emission,
+       {TfToken("emission_color"), TfToken("emission_luminance")},
+       TextureUsage::Emission,
+       ValueKind::FloatOrColor3,
+       true},
+      {ShaderFamily::MaterialXOpenPbrSurface,
+       MaterialSemantic::Unsupported,
+       {TfToken("base_weight")},
+       TextureUsage::Unknown,
+       ValueKind::Float,
+       false},
+  };
+  return rules;
 }
 
 bool TryGetNodeSurfaceCandidate(const HdMaterialNetwork2& network, const SdfPath& nodePath, const TfToken& terminalName,
@@ -339,6 +492,12 @@ bool ReadVec3(const VtValue& value, glm::vec3* result)
     *result = glm::vec3(vec[0], vec[1], vec[2]);
     return true;
   }
+  float scalar = 0.0f;
+  if (ReadFloat(value, &scalar))
+  {
+    *result = glm::vec3(scalar);
+    return true;
+  }
   return false;
 }
 
@@ -350,6 +509,132 @@ void AddTextureBinding(MaterialXParseResult& result, const std::string& textureP
   }
   result.textures.push_back({texturePath, usage});
   result.hasMaterialOpinion = true;
+}
+
+bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node, const MaterialInputRule& rule,
+                  MaterialResolvedInput* resolved)
+{
+  for (const TfToken& inputName : rule.inputNames)
+  {
+    const auto paramIt = node.parameters.find(inputName);
+    if (paramIt != node.parameters.end())
+    {
+      resolved->hasValue = true;
+      resolved->value = paramIt->second;
+    }
+
+    if (rule.acceptsTexture)
+    {
+      const std::string texturePath = FindInputTexturePath(network, node, inputName);
+      if (!texturePath.empty())
+      {
+        resolved->hasTexture = true;
+        resolved->texturePath = texturePath;
+      }
+    }
+
+    if (resolved->hasValue || resolved->hasTexture)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+void ApplyResolvedValue(HydraMaterial& material, const MaterialInputRule& rule, const VtValue& value,
+                        bool* hasMaterialOpinion)
+{
+  float scalar = 0.0f;
+  glm::vec3 color;
+  switch (rule.semantic)
+  {
+    case MaterialSemantic::BaseColor:
+      if (ReadVec3(value, &color))
+      {
+        material.baseColorFactor = color;
+        material.diffuse = color;
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Metallic:
+      if (ReadFloat(value, &material.metallicFactor))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Roughness:
+      if (ReadFloat(value, &material.roughnessFactor))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Emission:
+      if (ReadVec3(value, &color))
+      {
+        material.emissionFactor = color;
+        material.emission = color;
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Opacity:
+      if (ReadFloat(value, &material.opacityFactor))
+      {
+        material.dissolve = material.opacityFactor;
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Transmission:
+      if (ReadFloat(value, &material.transmissionFactor))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::TransmissionColor:
+      if (ReadVec3(value, &material.transmissionColorFactor))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Subsurface:
+      if (ReadFloat(value, &material.subsurfaceFactor))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::SubsurfaceColor:
+      if (ReadVec3(value, &material.subsurfaceColorFactor))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::SubsurfaceScale:
+      if (ReadFloat(value, &material.subsurfaceScale))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
+    case MaterialSemantic::Normal:
+    case MaterialSemantic::Unsupported:
+      (void)scalar;
+      break;
+  }
+}
+
+void ApplyResolvedInput(MaterialXParseResult& result, const MaterialInputRule& rule,
+                        const MaterialResolvedInput& resolved)
+{
+  if (resolved.hasValue)
+  {
+    ApplyResolvedValue(result.material, rule, resolved.value, &result.hasMaterialOpinion);
+  }
+  if (resolved.hasTexture)
+  {
+    AddTextureBinding(result, resolved.texturePath, rule.textureUsage);
+    if (rule.semantic == MaterialSemantic::BaseColor)
+    {
+      result.material.texturePath = resolved.texturePath;
+    }
+  }
 }
 }  // namespace
 
@@ -400,165 +685,23 @@ MaterialXParseResult ParseMaterialXNetwork(const HdMaterialNetwork2& network, co
       continue;
     }
     const HdMaterialNode2& node = nodeIt->second;
-    for (const auto& connPair : node.inputConnections)
+    ShaderFamily family = IdentifyShaderFamily(node.nodeTypeId);
+    if (family == ShaderFamily::Unknown)
     {
-      const TfToken& inputName = connPair.first;
-      if (inputName == "diffuseColor" || inputName == "base_color")
-      {
-        const std::string texturePath = FindInputTexturePath(network, node, inputName);
-        AddTextureBinding(result, texturePath, TextureUsage::BaseColor);
-        if (!texturePath.empty())
-        {
-          result.material.texturePath = texturePath;
-        }
-      }
-      else if (inputName == "metalness")
-      {
-        AddTextureBinding(result, FindInputTexturePath(network, node, inputName), TextureUsage::Metallic);
-      }
-      else if (inputName == "specular_roughness")
-      {
-        AddTextureBinding(result, FindInputTexturePath(network, node, inputName), TextureUsage::Roughness);
-      }
-      else if (inputName == "normal")
-      {
-        AddTextureBinding(result, FindInputTexturePath(network, node, inputName), TextureUsage::Normal);
-      }
-      else if (inputName == "emission" || inputName == "emissiveColor")
-      {
-        AddTextureBinding(result, FindInputTexturePath(network, node, inputName), TextureUsage::Emission);
-      }
-      else if (inputName == "opacity")
-      {
-        AddTextureBinding(result, FindInputTexturePath(network, node, inputName), TextureUsage::Opacity);
-      }
-      else if (inputName == "transmission")
-      {
-        float transmission = 0.0f;
-        const auto paramIt = node.parameters.find(inputName);
-        if (paramIt != node.parameters.end() && ReadFloat(paramIt->second, &transmission))
-        {
-          result.material.transmissionFactor = transmission;
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (inputName == "subsurface")
-      {
-        AddTextureBinding(result, FindInputTexturePath(network, node, inputName), TextureUsage::Subsurface);
-      }
+      family = ShaderFamily::MaterialXStandardSurface;
     }
 
-    for (const auto& paramPair : node.parameters)
+    for (const MaterialInputRule& rule : MaterialInputRules())
     {
-      const TfToken& paramName = paramPair.first;
-      const VtValue& paramValue = paramPair.second;
-      if (paramName == "diffuseColor")
+      if (rule.family != family)
       {
-        glm::vec3 diffuse_color;
-        if (ReadVec3(paramValue, &diffuse_color))
-        {
-          result.material.diffuse = diffuse_color;
-          result.material.baseColorFactor = diffuse_color;
-          result.hasMaterialOpinion = true;
-        }
+        continue;
       }
-      else if (paramName == "base_color")
+
+      MaterialResolvedInput resolved;
+      if (ResolveInput(network, node, rule, &resolved))
       {
-        glm::vec3 baseColor;
-        if (ReadVec3(paramValue, &baseColor))
-        {
-          result.material.baseColorFactor = baseColor;
-          result.material.diffuse = baseColor;
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "metalness")
-      {
-        if (ReadFloat(paramValue, &result.material.metallicFactor))
-        {
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "specular_roughness")
-      {
-        if (ReadFloat(paramValue, &result.material.roughnessFactor))
-        {
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "emissiveColor")
-      {
-        glm::vec3 emission;
-        if (ReadVec3(paramValue, &emission))
-        {
-          result.material.emission = emission;
-          result.material.emissionFactor = emission;
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "emission")
-      {
-        glm::vec3 emission;
-        float emissionScale = 0.0f;
-        if (ReadVec3(paramValue, &emission))
-        {
-          result.material.emissionFactor = emission;
-          result.material.emission = emission;
-          result.hasMaterialOpinion = true;
-        }
-        else if (ReadFloat(paramValue, &emissionScale))
-        {
-          result.material.emissionFactor = glm::vec3(emissionScale);
-          result.material.emission = glm::vec3(emissionScale);
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "opacity")
-      {
-        if (ReadFloat(paramValue, &result.material.opacityFactor))
-        {
-          result.material.dissolve = result.material.opacityFactor;
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "transmission")
-      {
-        if (ReadFloat(paramValue, &result.material.transmissionFactor))
-        {
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "transmission_color")
-      {
-        glm::vec3 transmissionColor;
-        if (ReadVec3(paramValue, &transmissionColor))
-        {
-          result.material.transmissionColorFactor = transmissionColor;
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "subsurface")
-      {
-        if (ReadFloat(paramValue, &result.material.subsurfaceFactor))
-        {
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "subsurface_color")
-      {
-        glm::vec3 subsurfaceColor;
-        if (ReadVec3(paramValue, &subsurfaceColor))
-        {
-          result.material.subsurfaceColorFactor = subsurfaceColor;
-          result.hasMaterialOpinion = true;
-        }
-      }
-      else if (paramName == "subsurface_scale")
-      {
-        if (ReadFloat(paramValue, &result.material.subsurfaceScale))
-        {
-          result.hasMaterialOpinion = true;
-        }
+        ApplyResolvedInput(result, rule, resolved);
       }
     }
   }
