@@ -41,6 +41,73 @@ bool IsMaterialXSurfaceFamily(ShaderFamily family)
   return family == ShaderFamily::MaterialXStandardSurface || family == ShaderFamily::MaterialXOpenPbrSurface;
 }
 
+int CountKnownSurfaceInputs(const HdMaterialNode2& node, ShaderFamily family)
+{
+  std::vector<TfToken> inputNames = {
+      TfToken("base_color"),         TfToken("metalness"),       TfToken("specular_roughness"),
+      TfToken("normal"),             TfToken("emission"),        TfToken("emission_color"),
+      TfToken("opacity"),            TfToken("transmission"),    TfToken("transmission_color"),
+      TfToken("subsurface"),         TfToken("subsurface_color"), TfToken("subsurface_scale"),
+  };
+  if (family == ShaderFamily::MaterialXOpenPbrSurface)
+  {
+    inputNames.push_back(TfToken("base_metalness"));
+    inputNames.push_back(TfToken("base_diffuse_roughness"));
+    inputNames.push_back(TfToken("geometry_normal"));
+    inputNames.push_back(TfToken("emission_luminance"));
+    inputNames.push_back(TfToken("base_weight"));
+  }
+
+  int score = 0;
+  for (const TfToken& inputName : inputNames)
+  {
+    if (node.parameters.find(inputName) != node.parameters.end() ||
+        node.inputConnections.find(inputName) != node.inputConnections.end())
+    {
+      ++score;
+    }
+  }
+  return score;
+}
+
+bool IsSurfaceTerminalName(const TfToken& terminalName)
+{
+  const std::string name = terminalName.GetString();
+  return name == "mtlx:surface" || name == "surface" || name.find("surface") != std::string::npos;
+}
+
+bool IsMtlxSurfaceTerminalName(const TfToken& terminalName)
+{
+  return terminalName.GetString() == "mtlx:surface";
+}
+
+bool IsBetterSurfaceCandidate(const HdMaterialNetwork2& network, const SurfaceShaderCandidate& candidate,
+                              const SurfaceShaderCandidate& current)
+{
+  if (IsMtlxSurfaceTerminalName(candidate.terminalName) != IsMtlxSurfaceTerminalName(current.terminalName))
+  {
+    return IsMtlxSurfaceTerminalName(candidate.terminalName);
+  }
+
+  const auto candidateNodeIt = network.nodes.find(candidate.nodePath);
+  const auto currentNodeIt = network.nodes.find(current.nodePath);
+  const int candidateScore = candidateNodeIt == network.nodes.end()
+                                 ? 0
+                                 : CountKnownSurfaceInputs(candidateNodeIt->second, candidate.family);
+  const int currentScore =
+      currentNodeIt == network.nodes.end() ? 0 : CountKnownSurfaceInputs(currentNodeIt->second, current.family);
+  if (candidateScore != currentScore)
+  {
+    return candidateScore > currentScore;
+  }
+
+  if (candidate.family != current.family)
+  {
+    return candidate.family == ShaderFamily::MaterialXStandardSurface;
+  }
+  return candidate.nodePath.GetString() < current.nodePath.GetString();
+}
+
 std::vector<SurfaceShaderCandidate> CollectSurfaceShaderCandidates(const HdMaterialNetwork2& network)
 {
   std::vector<SurfaceShaderCandidate> candidates;
@@ -58,6 +125,83 @@ std::vector<SurfaceShaderCandidate> CollectSurfaceShaderCandidates(const HdMater
     candidates.push_back(candidate);
   }
   return candidates;
+}
+
+bool TryGetNodeSurfaceCandidate(const HdMaterialNetwork2& network, const SdfPath& nodePath, const TfToken& terminalName,
+                                SurfaceShaderCandidate* candidate)
+{
+  const auto nodeIt = network.nodes.find(nodePath);
+  if (nodeIt == network.nodes.end())
+  {
+    return false;
+  }
+
+  const ShaderFamily family = IdentifyShaderFamily(nodeIt->second.nodeTypeId);
+  if (!IsMaterialXSurfaceFamily(family))
+  {
+    return false;
+  }
+
+  candidate->nodePath = nodePath;
+  candidate->family = family;
+  candidate->terminalName = terminalName;
+  return true;
+}
+
+bool SelectSurfaceShaderCandidate(const HdMaterialNetwork2& network, SurfaceShaderCandidate* selected)
+{
+  bool hasSelected = false;
+  for (const auto& terminalPair : network.terminals)
+  {
+    const TfToken& terminalName = terminalPair.first;
+    if (!IsSurfaceTerminalName(terminalName))
+    {
+      continue;
+    }
+
+    SurfaceShaderCandidate candidate;
+    if (!TryGetNodeSurfaceCandidate(network, terminalPair.second.upstreamNode, terminalName, &candidate))
+    {
+      continue;
+    }
+
+    if (!hasSelected || IsBetterSurfaceCandidate(network, candidate, *selected))
+    {
+      *selected = candidate;
+      hasSelected = true;
+    }
+  }
+
+  if (hasSelected)
+  {
+    return true;
+  }
+
+  for (const SurfaceShaderCandidate& candidate : CollectSurfaceShaderCandidates(network))
+  {
+    if (!hasSelected || IsBetterSurfaceCandidate(network, candidate, *selected))
+    {
+      *selected = candidate;
+      hasSelected = true;
+    }
+  }
+  return hasSelected;
+}
+
+std::vector<SdfPath> GetMaterialNodesToParse(const HdMaterialNetwork2& network)
+{
+  SurfaceShaderCandidate selected;
+  if (SelectSurfaceShaderCandidate(network, &selected))
+  {
+    return {selected.nodePath};
+  }
+
+  std::vector<SdfPath> allNodes;
+  for (const auto& nodePair : network.nodes)
+  {
+    allNodes.push_back(nodePair.first);
+  }
+  return allNodes;
 }
 
 bool IsFileParameter(const TfToken& name)
@@ -248,12 +392,14 @@ MaterialXParseResult ParseMaterialXNetwork(const HdMaterialNetwork2& network, co
 
   // This parser intentionally targets MaterialX standard_surface and OpenPBR
   // surface shaders. Unknown shader families are skipped conservatively.
-  const std::vector<SurfaceShaderCandidate> surfaceCandidates = CollectSurfaceShaderCandidates(network);
-  (void)surfaceCandidates;
-
-  for (const auto& nodePair : network.nodes)
+  for (const SdfPath& nodePath : GetMaterialNodesToParse(network))
   {
-    const HdMaterialNode2& node = nodePair.second;
+    const auto nodeIt = network.nodes.find(nodePath);
+    if (nodeIt == network.nodes.end())
+    {
+      continue;
+    }
+    const HdMaterialNode2& node = nodeIt->second;
     for (const auto& connPair : node.inputConnections)
     {
       const TfToken& inputName = connPair.first;
