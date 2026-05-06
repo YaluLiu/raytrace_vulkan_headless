@@ -75,8 +75,9 @@ scripts/__pycache__/
 dlss_rr*.md
 build_hydra/
 
+docs/*
+!docs/FILEMAP.md
 docs/PLAN/
-
 
 
 
