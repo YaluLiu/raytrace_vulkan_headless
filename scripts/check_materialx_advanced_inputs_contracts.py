@@ -23,7 +23,7 @@ def main() -> None:
     model_loader = read("common/ModelLoader.h")
     scene_data_h = read("hdRobot/sceneData.h")
     scene_data_cpp = read("hdRobot/sceneData.cpp")
-    material_cpp = read("hdRobot/material.cpp")
+    materialx_parser_cpp = read("hdRobot/materialXParser.cpp")
     host_device = read("headless/shaders/host_device.h")
     rchit = read("headless/shaders/raytrace.rchit")
     wavefront = read("headless/shaders/wavefront.glsl")
@@ -64,7 +64,7 @@ def main() -> None:
     )
 
     require_all(
-        material_cpp,
+        materialx_parser_cpp,
         [
             'inputName == "transmission"',
             'inputName == "subsurface"',
@@ -76,7 +76,7 @@ def main() -> None:
             "TextureUsage::Subsurface",
             "material.subsurfaceTextureId = textureId",
         ],
-        "Material sync must parse advanced standard_surface inputs",
+        "MaterialX parser must parse advanced standard_surface inputs",
     )
 
     require_all(

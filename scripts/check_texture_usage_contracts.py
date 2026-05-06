@@ -22,7 +22,7 @@ def main() -> None:
     render_param_cpp = read("hdRobot/renderParam.cpp")
     render_texture_export_h = read("hdRobot/renderTextureExport.h")
     render_texture_export_cpp = read("hdRobot/renderTextureExport.cpp")
-    material_cpp = read("hdRobot/material.cpp")
+    materialx_parser_cpp = read("hdRobot/materialXParser.cpp")
     hello_material_cpp = read("headless/hello_vulkan_material.cpp")
     bridge_cpp = read("hdRobot/headlessRenderBridge.cpp")
     cmake = read("CMakeLists.txt")
@@ -53,10 +53,10 @@ def main() -> None:
     require("textureAsset.usage" in render_texture_export_cpp and "textureAsset.colorSpace" in render_texture_export_cpp, "Export must preserve usage and color space")
     require("ExportRegisteredTextures(_renderParam.GetTextureAssets())" in bridge_cpp, "Bridge must export texture metadata, not paths only")
 
-    require("TextureUsage::BaseColor" in material_cpp, "Base color textures must be registered as BaseColor")
-    require("TextureUsage::Metallic" in material_cpp, "Metallic textures must be registered as Metallic")
-    require("TextureUsage::Roughness" in material_cpp, "Roughness textures must be registered as Roughness")
-    require("TextureUsage::Normal" in material_cpp, "Normal textures must be registered as Normal")
+    require("TextureUsage::BaseColor" in materialx_parser_cpp, "Base color textures must be registered as BaseColor")
+    require("TextureUsage::Metallic" in materialx_parser_cpp, "Metallic textures must be registered as Metallic")
+    require("TextureUsage::Roughness" in materialx_parser_cpp, "Roughness textures must be registered as Roughness")
+    require("TextureUsage::Normal" in materialx_parser_cpp, "Normal textures must be registered as Normal")
 
     require("VK_FORMAT_R8G8B8A8_SRGB" in hello_material_cpp, "Texture upload must still support sRGB")
     require("VK_FORMAT_R8G8B8A8_UNORM" in hello_material_cpp, "Texture upload must support linear UNORM")

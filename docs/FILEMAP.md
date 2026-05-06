@@ -19,8 +19,8 @@ call sites with `rg`.
 - `scripts/`: Python and shell contract/regression checks.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
-- `docs/materialx-openchessset.md`: Current OpenChessSet MaterialX support
-  scope, approximations, and regression commands.
+- `docs/PLAN/materialx-rendering-plan.md`: Current OpenChessSet MaterialX
+  support scope, approximations, and regression commands.
 
 ## Build And Test Routing
 
@@ -137,8 +137,11 @@ call sites with `rg`.
 - `hdRobot/mesh.h` / `hdRobot/mesh.cpp`: Mesh sync, topology/primvar analysis,
   tangent generation, material binding, visibility, transforms, and conversion
   into renderer mesh data.
-- `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync, texture paths,
-  emission/base color handling, and renderer material data.
+- `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync lifecycle,
+  MaterialX parser invocation, texture registration, and dirty marking.
+- `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: MaterialX
+  network helper traversal, standard surface input parsing, texture binding
+  extraction, and `HydraMaterial` field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
   conversion.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
@@ -223,10 +226,11 @@ call sites with `rg`.
   and `scripts/check_pbr_material_contracts.py`, then search for
   `baseColorFactor`, `roughnessFactor`, and `normalTextureId`.
 - MaterialX standard surface parsing:
-  `hdRobot/material.cpp`, `hdRobot/renderTextureExport.cpp`,
+  `hdRobot/materialXParser.cpp`, `hdRobot/material.cpp`,
+  `hdRobot/renderTextureExport.cpp`,
   `hdRobot/sceneData.h`, and
   `scripts/check_materialx_standard_surface_contracts.py`, then search for
-  `FindUpstreamTexturePath`, `base_color`, `metalness`,
+  `ParseMaterialXNetwork`, `FindUpstreamTexturePath`, `base_color`, `metalness`,
   `specular_roughness`, and `normalTextureId`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,

@@ -25,6 +25,8 @@ add_library(
   renderPass.h
   material.cpp
   material.h
+  materialXParser.cpp
+  materialXParser.h
   light.cpp
   light.h
   camera.cpp
