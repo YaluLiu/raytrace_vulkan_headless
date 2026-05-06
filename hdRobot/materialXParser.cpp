@@ -3,10 +3,14 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/usd/sdf/assetPath.h>
 
+#include <set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+constexpr int kMaxMaterialXTraversalDepth = 32;
+
 enum class ShaderFamily
 {
   Unknown,
@@ -389,17 +393,39 @@ std::string TexturePathFromValue(const VtValue& value)
   return {};
 }
 
-std::string FindUpstreamTexturePath(const HdMaterialNetwork2& network, const SdfPath& nodePath, int depth = 0)
+bool IsChannelOutputName(const TfToken& outputName)
 {
-  if (depth > 8)
+  const std::string name = outputName.GetString();
+  return name == "r" || name == "g" || name == "b" || name == "a" || name == "x" || name == "y" || name == "z" ||
+         name == "w";
+}
+
+void SetResolvedOutputMetadata(const TfToken& outputName, MaterialResolvedInput* resolved)
+{
+  if (outputName.IsEmpty())
   {
-    return {};
+    return;
   }
+  resolved->outputName = outputName;
+  if (IsChannelOutputName(outputName))
+  {
+    resolved->channel = outputName;
+  }
+}
+
+bool ResolveUpstreamTexture(const HdMaterialNetwork2& network, const SdfPath& nodePath, const TfToken& outputName,
+                            int depth, std::set<SdfPath>* visited, MaterialResolvedInput* resolved)
+{
+  if (depth > kMaxMaterialXTraversalDepth || visited->find(nodePath) != visited->end())
+  {
+    return false;
+  }
+  visited->insert(nodePath);
 
   const auto nodeIt = network.nodes.find(nodePath);
   if (nodeIt == network.nodes.end())
   {
-    return {};
+    return false;
   }
 
   const HdMaterialNode2& node = nodeIt->second;
@@ -410,7 +436,10 @@ std::string FindUpstreamTexturePath(const HdMaterialNetwork2& network, const Sdf
       std::string texturePath = TexturePathFromValue(paramPair.second);
       if (!texturePath.empty())
       {
-        return texturePath;
+        resolved->hasTexture = true;
+        resolved->texturePath = texturePath;
+        SetResolvedOutputMetadata(outputName, resolved);
+        return true;
       }
     }
   }
@@ -419,35 +448,39 @@ std::string FindUpstreamTexturePath(const HdMaterialNetwork2& network, const Sdf
   {
     for (const HdMaterialConnection2& connection : connPair.second)
     {
-      std::string texturePath = FindUpstreamTexturePath(network, connection.upstreamNode, depth + 1);
-      if (!texturePath.empty())
+      if (ResolveUpstreamTexture(network, connection.upstreamNode, connection.upstreamOutputName, depth + 1, visited,
+                                 resolved))
       {
-        return texturePath;
+        if (resolved->outputName.IsEmpty())
+        {
+          SetResolvedOutputMetadata(outputName, resolved);
+        }
+        return true;
       }
     }
   }
 
-  return {};
+  return false;
 }
 
-std::string FindInputTexturePath(const HdMaterialNetwork2& network, const HdMaterialNode2& node,
-                                 const TfToken& inputName)
+bool FindInputTexture(const HdMaterialNetwork2& network, const HdMaterialNode2& node, const TfToken& inputName,
+                      MaterialResolvedInput* resolved)
 {
   const auto connectionsIt = node.inputConnections.find(inputName);
   if (connectionsIt == node.inputConnections.end())
   {
-    return {};
+    return false;
   }
 
   for (const HdMaterialConnection2& connection : connectionsIt->second)
   {
-    std::string texturePath = FindUpstreamTexturePath(network, connection.upstreamNode);
-    if (!texturePath.empty())
+    std::set<SdfPath> visited;
+    if (ResolveUpstreamTexture(network, connection.upstreamNode, connection.upstreamOutputName, 0, &visited, resolved))
     {
-      return texturePath;
+      return true;
     }
   }
-  return {};
+  return false;
 }
 
 bool ReadFloat(const VtValue& value, float* result)
@@ -525,12 +558,7 @@ bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node
 
     if (rule.acceptsTexture)
     {
-      const std::string texturePath = FindInputTexturePath(network, node, inputName);
-      if (!texturePath.empty())
-      {
-        resolved->hasTexture = true;
-        resolved->texturePath = texturePath;
-      }
+      FindInputTexture(network, node, inputName, resolved);
     }
 
     if (resolved->hasValue || resolved->hasTexture)
