@@ -140,8 +140,9 @@ call sites with `rg`.
 - `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync lifecycle,
   MaterialX parser invocation, texture registration, and dirty marking.
 - `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: MaterialX
-  network helper traversal, standard surface input parsing, texture binding
-  extraction, and `HydraMaterial` field mapping.
+  surface shader selection, standard surface/OpenPBR input rules, upstream
+  texture traversal, texture binding metadata, and `HydraMaterial` field
+  mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
   conversion.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
@@ -230,8 +231,9 @@ call sites with `rg`.
   `hdRobot/renderTextureExport.cpp`,
   `hdRobot/sceneData.h`, and
   `scripts/check_materialx_standard_surface_contracts.py`, then search for
-  `ParseMaterialXNetwork`, `FindUpstreamTexturePath`, `base_color`, `metalness`,
-  `specular_roughness`, and `normalTextureId`.
+  `ParseMaterialXNetwork`, `SelectSurfaceShaderCandidate`,
+  `ResolveUpstreamTexture`, `MaterialInputRule`, `base_color`,
+  `metalness`, `specular_roughness`, and `normalTextureId`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,
   `hdRobot/renderParam.cpp`, `hdRobot/renderTextureExport.cpp`,
@@ -252,7 +254,7 @@ call sites with `rg`.
   `scripts/check_normal_map_contracts.py`, then search for `tangent`,
   `bitangentSigns`, and `sampleNormalMap`.
 - Advanced MaterialX inputs:
-  `hdRobot/material.cpp`, `hdRobot/sceneData.h`,
+  `hdRobot/materialXParser.cpp`, `hdRobot/sceneData.h`,
   `hdRobot/sceneData.cpp`, `common/data_loader.h`,
   `headless/shaders/host_device.h`, `headless/shaders/raytrace.rchit`,
   `headless/shaders/wavefront.glsl`, and

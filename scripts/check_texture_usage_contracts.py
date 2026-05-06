@@ -53,10 +53,20 @@ def main() -> None:
     require("textureAsset.usage" in render_texture_export_cpp and "textureAsset.colorSpace" in render_texture_export_cpp, "Export must preserve usage and color space")
     require("ExportRegisteredTextures(_renderParam.GetTextureAssets())" in bridge_cpp, "Bridge must export texture metadata, not paths only")
 
-    require("TextureUsage::BaseColor" in materialx_parser_cpp, "Base color textures must be registered as BaseColor")
-    require("TextureUsage::Metallic" in materialx_parser_cpp, "Metallic textures must be registered as Metallic")
-    require("TextureUsage::Roughness" in materialx_parser_cpp, "Roughness textures must be registered as Roughness")
-    require("TextureUsage::Normal" in materialx_parser_cpp, "Normal textures must be registered as Normal")
+    require("MaterialInputRule" in materialx_parser_cpp, "MaterialX parser must declare texture usage in input rules")
+    require("AddTextureBinding" in materialx_parser_cpp, "MaterialX parser must centralize supported texture bindings")
+    require("AddUnsupportedTextureBinding" in materialx_parser_cpp, "MaterialX parser must record unsupported textures")
+    require("unsupportedTextures" in materialx_parser_cpp, "MaterialX parser must expose unsupported texture records")
+    for usage in ["BaseColor", "Metallic", "Roughness", "Normal", "Emission", "Opacity", "Subsurface"]:
+        require(f"TextureUsage::{usage}" in materialx_parser_cpp, f"{usage} textures must be assigned by parser rules")
+    require(
+        "rule.textureUsage" in materialx_parser_cpp and "MaterialSemantic::Unsupported" in materialx_parser_cpp,
+        "Parser must route texture usage from rules and avoid misbinding unsupported inputs",
+    )
+    require(
+        "sourceOutput" in materialx_parser_cpp and "channel" in materialx_parser_cpp and "inputName" in materialx_parser_cpp,
+        "Texture bindings must preserve usage context and channel metadata",
+    )
 
     require("VK_FORMAT_R8G8B8A8_SRGB" in hello_material_cpp, "Texture upload must still support sRGB")
     require("VK_FORMAT_R8G8B8A8_UNORM" in hello_material_cpp, "Texture upload must support linear UNORM")
