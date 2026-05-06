@@ -54,7 +54,7 @@ const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->distantLight,
     //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->domeLight,
-    //  HdPrimTypeTokens->simpleLight,  // Required for usdview domeLight creation
+    HdPrimTypeTokens->simpleLight,  // Required for usdview camera light creation
     //  HdPrimTypeTokens->extComputation
 };
 
@@ -280,6 +280,10 @@ HdSprim* HdRobotRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath
   {
     return new HdRobotSphereLight(sprimId, *robotRenderParam);
   }
+  else if(typeId == HdPrimTypeTokens->simpleLight)
+  {
+    return new HdRobotSimpleLight(sprimId, *robotRenderParam);
+  }
   else if(typeId == HdPrimTypeTokens->domeLight)
   {
     return new HdRobotDomeLight(sprimId, *robotRenderParam);
@@ -374,4 +378,3 @@ HdRobotRenderParam* HdRobotRenderDelegate::_GetRobotRenderParam() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

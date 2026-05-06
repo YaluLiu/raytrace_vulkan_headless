@@ -44,6 +44,8 @@ call sites with `rg`.
   Hydra material texture handoff without local file staging.
 - `scripts/check_hydra_entrypoint_contracts.py`: Contract checks for the
   `install.sh hydra`/`show` scene override path.
+- `scripts/check_hydra_simple_light_contracts.py`: Contract checks that
+  Hydra `simpleLight` sprims are accepted and mapped to renderer sphere lights.
 - `scripts/check_pbr_material_contracts.py`: Contract checks for PBR material
   fields across CPU, Hydra, and shader-facing structs.
 - `scripts/check_materialx_standard_surface_contracts.py`: Contract checks for

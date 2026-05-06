@@ -11,6 +11,8 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdLux/blackbody.h>
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
@@ -21,6 +23,11 @@ float _AreaEllipsoid(float radiusX, float radiusY, float radiusZ)
   float ac = powf(radiusX * radiusZ, 1.6f);
   float bc = powf(radiusY * radiusZ, 1.6f);
   return powf((ab + ac + bc) / 3.0f, 1.0f / 1.6f) * 4.0f * M_PI;
+}
+
+float _MaxRgb(const GfVec4f& color)
+{
+  return std::max(color[0], std::max(color[1], color[2]));
 }
 }  // namespace
 
@@ -123,6 +130,51 @@ void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
     _scene.v_light[_light_id].specular = specular;
     _scene.v_light[_light_id].radius = radius;
   }
+
+  *dirtyBits = HdChangeTracker::Clean;
+}
+
+// --------Simple Light-------------------------
+HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, HdRobotRenderParam& scene) : HdRobotLight(id, scene)
+{
+  _scene.v_light[_light_id].type = 0;
+}
+
+void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam,
+                              HdDirtyBits* dirtyBits)
+{
+  const SdfPath& id = GetId();
+  VtValue boxedSimpleLight = sceneDelegate->Get(id, HdLightTokens->params);
+  if(!boxedSimpleLight.IsHolding<GlfSimpleLight>())
+  {
+    TF_WARN("%s:%s does not hold GlfSimpleLight - ignoring simpleLight", id.GetText(),
+            HdLightTokens->params.GetText());
+    _scene.v_light[_light_id].valid = 0;
+    *dirtyBits = HdChangeTracker::Clean;
+    return;
+  }
+
+  const GlfSimpleLight simpleLight = boxedSimpleLight.Get<GlfSimpleLight>();
+  HydraLight&          light       = _scene.v_light[_light_id];
+  light.valid                      = simpleLight.HasIntensity() ? 1 : 0;
+  light.type                       = 0;
+
+  const GfVec4f position = simpleLight.GetPosition();
+  const GfVec4f diffuse  = simpleLight.GetDiffuse();
+  const GfVec4f specular = simpleLight.GetSpecular();
+
+  const GfMatrix4d transform = sceneDelegate->GetTransform(id);
+  const GfVec3d    worldPos  = transform.Transform(GfVec3d(position[0], position[1], position[2]));
+
+  // Keep the sphere-light approximation visible in the current shader attenuation model.
+  constexpr float kSimpleLightIntensityScale = 100.0f;
+  light.position = glm::vec3(static_cast<float>(worldPos[0]), static_cast<float>(worldPos[1]),
+                             static_cast<float>(worldPos[2]));
+  light.baseEmission = glm::vec3(diffuse[0] * kSimpleLightIntensityScale, diffuse[1] * kSimpleLightIntensityScale,
+                                 diffuse[2] * kSimpleLightIntensityScale);
+  light.diffuse      = diffuse[3];
+  light.specular     = _MaxRgb(specular);
+  light.radius       = 0.5f;
 
   *dirtyBits = HdChangeTracker::Clean;
 }

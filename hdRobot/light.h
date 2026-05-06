@@ -39,6 +39,15 @@ public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 };
 
+class HdRobotSimpleLight final : public HdRobotLight
+{
+public:
+  HdRobotSimpleLight(const SdfPath& id, HdRobotRenderParam& scene);
+
+public:
+  void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
+};
+
 class HdRobotDomeLight final : public HdRobotLight
 {
 public:
@@ -50,4 +59,3 @@ public:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
