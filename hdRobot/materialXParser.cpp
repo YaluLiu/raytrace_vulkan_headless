@@ -7,6 +7,59 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+enum class ShaderFamily
+{
+  Unknown,
+  MaterialXStandardSurface,
+  MaterialXOpenPbrSurface,
+};
+
+struct SurfaceShaderCandidate
+{
+  SdfPath nodePath;
+  ShaderFamily family = ShaderFamily::Unknown;
+  TfToken terminalName;
+  TfToken renderContext;
+};
+
+ShaderFamily IdentifyShaderFamily(const TfToken& shaderId)
+{
+  const std::string id = shaderId.GetString();
+  if (id.find("open_pbr_surface") != std::string::npos)
+  {
+    return ShaderFamily::MaterialXOpenPbrSurface;
+  }
+  if (id == "ND_standard_surface_surfaceshader" || id.find("standard_surface") != std::string::npos)
+  {
+    return ShaderFamily::MaterialXStandardSurface;
+  }
+  return ShaderFamily::Unknown;
+}
+
+bool IsMaterialXSurfaceFamily(ShaderFamily family)
+{
+  return family == ShaderFamily::MaterialXStandardSurface || family == ShaderFamily::MaterialXOpenPbrSurface;
+}
+
+std::vector<SurfaceShaderCandidate> CollectSurfaceShaderCandidates(const HdMaterialNetwork2& network)
+{
+  std::vector<SurfaceShaderCandidate> candidates;
+  for (const auto& nodePair : network.nodes)
+  {
+    const ShaderFamily family = IdentifyShaderFamily(nodePair.second.nodeTypeId);
+    if (!IsMaterialXSurfaceFamily(family))
+    {
+      continue;
+    }
+
+    SurfaceShaderCandidate candidate;
+    candidate.nodePath = nodePair.first;
+    candidate.family = family;
+    candidates.push_back(candidate);
+  }
+  return candidates;
+}
+
 bool IsFileParameter(const TfToken& name)
 {
   return name == "file" || name == "filename";
@@ -192,6 +245,11 @@ MaterialXParseResult ParseMaterialXNetwork(const HdMaterialNetwork2& network, co
 {
   MaterialXParseResult result;
   result.material = defaultMaterial;
+
+  // This parser intentionally targets MaterialX standard_surface and OpenPBR
+  // surface shaders. Unknown shader families are skipped conservatively.
+  const std::vector<SurfaceShaderCandidate> surfaceCandidates = CollectSurfaceShaderCandidates(network);
+  (void)surfaceCandidates;
 
   for (const auto& nodePair : network.nodes)
   {
