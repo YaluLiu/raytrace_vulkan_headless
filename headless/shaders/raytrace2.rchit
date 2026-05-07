@@ -136,9 +136,9 @@ void main()
   WaveFrontMaterial mat    = materials.m[matIdx];
 
   vec3 textureColor = vec3(1.0);
-  if(mat.textureId >= 0)
+  if(mat.diffuseTextureId >= 0)
   {
-    textureColor = texture(textureSamplers[nonuniformEXT(uint(mat.textureId))], vec2(0.5)).xyz;
+    textureColor = texture(textureSamplers[nonuniformEXT(uint(mat.diffuseTextureId))], vec2(0.5)).xyz;
   }
 
   if(prd.depth == 0)

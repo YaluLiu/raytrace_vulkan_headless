@@ -125,7 +125,7 @@ void setFirstMaterialTexture(ModelLoader& loader, int textureId)
   {
     return;
   }
-  loader.m_materials[0].textureID = textureId;
+  loader.m_materials[0].diffuseTextureId = textureId;
 }
 }  // namespace
 

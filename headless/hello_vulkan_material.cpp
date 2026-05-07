@@ -31,7 +31,7 @@ static_assert(offsetof(MaterialObj, transmissionColorFactor) == offsetof(WaveFro
 static_assert(offsetof(MaterialObj, roughnessFactor) == offsetof(WaveFrontMaterial, roughnessFactor));
 static_assert(offsetof(MaterialObj, transmissionFactor) == offsetof(WaveFrontMaterial, transmissionFactor));
 static_assert(offsetof(MaterialObj, subsurfaceFactor) == offsetof(WaveFrontMaterial, subsurfaceFactor));
-static_assert(offsetof(MaterialObj, textureID) == offsetof(WaveFrontMaterial, textureId));
+static_assert(offsetof(MaterialObj, diffuseTextureId) == offsetof(WaveFrontMaterial, diffuseTextureId));
 static_assert(offsetof(MaterialObj, normalTextureId) == offsetof(WaveFrontMaterial, normalTextureId));
 static_assert(offsetof(MaterialObj, subsurfaceTextureId) == offsetof(WaveFrontMaterial, subsurfaceTextureId));
 
@@ -53,6 +53,9 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
     m.ambient = glm::pow(m.ambient, glm::vec3(2.2f));
     m.diffuse = glm::pow(m.diffuse, glm::vec3(2.2f));
     m.specular = glm::pow(m.specular, glm::vec3(2.2f));
+    m.emission = glm::pow(m.emission, glm::vec3(2.2f));
+    m.baseColorFactor = glm::pow(m.baseColorFactor, glm::vec3(2.2f));
+    m.emissionFactor = glm::pow(m.emissionFactor, glm::vec3(2.2f));
   }
 
   ObjModel model;

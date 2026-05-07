@@ -46,16 +46,16 @@ PbrMaterialSample samplePbrMaterial(WaveFrontMaterial mat, vec2 texCoord)
 {
   PbrMaterialSample pbr;
 
-  vec3 baseColor = clamp(mat.diffuse, vec3(0.0), vec3(1.0));
+  vec3 baseColor = clamp(mat.baseColorFactor, vec3(0.0), vec3(1.0));
   if(mat.baseColorTextureId >= 0)
   {
     baseColor = clamp(mat.baseColorFactor * sampleTextureRgba(mat.baseColorTextureId, texCoord, vec4(1.0)).rgb,
                       vec3(0.0), vec3(1.0));
   }
-  else if(mat.textureId >= 0)
+  else if(mat.diffuseTextureId >= 0)
   {
     // Legacy OBJ/Hydra diffuse texture fallback.
-    baseColor = clamp(mat.diffuse * sampleTextureRgba(mat.textureId, texCoord, vec4(1.0)).rgb, vec3(0.0), vec3(1.0));
+    baseColor = clamp(baseColor * sampleTextureRgba(mat.diffuseTextureId, texCoord, vec4(1.0)).rgb, vec3(0.0), vec3(1.0));
   }
 
   float metallic = clamp(mat.metallicFactor, 0.0, 1.0);
@@ -84,13 +84,13 @@ PbrMaterialSample samplePbrMaterial(WaveFrontMaterial mat, vec2 texCoord)
     subsurface *= clamp(sampleTextureRgba(mat.subsurfaceTextureId, texCoord, vec4(1.0)).r, 0.0, 1.0);
   }
 
-  vec3 emission = mat.emission;
+  vec3 emission = mat.emissionFactor;
   if(mat.emissionTextureId >= 0)
   {
     emission *= sampleTextureRgba(mat.emissionTextureId, texCoord, vec4(1.0)).rgb;
   }
 
-  float opacity = clamp(mat.opacityFactor * mat.dissolve, 0.0, 1.0);
+  float opacity = clamp(mat.opacityFactor, 0.0, 1.0);
   if(mat.opacityTextureId >= 0)
   {
     opacity *= clamp(sampleTextureRgba(mat.opacityTextureId, texCoord, vec4(1.0)).r, 0.0, 1.0);

@@ -19,13 +19,16 @@ void ObjLoader::loadModel(const std::string& filename)
     m.emission      = glm::vec3(material.emission[0], material.emission[1], material.emission[2]);
     m.transmittance = glm::vec3(material.transmittance[0], material.transmittance[1], material.transmittance[2]);
     m.dissolve      = material.dissolve;
+    m.baseColorFactor = m.diffuse;
+    m.emissionFactor  = m.emission;
+    m.opacityFactor   = m.dissolve;
     m.ior           = material.ior;
     m.shininess     = material.shininess;
     m.illum         = material.illum;
     if(!material.diffuse_texname.empty())
     {
       m_textures.push_back(material.diffuse_texname);
-      m.textureID = static_cast<int>(m_textures.size()) - 1;
+      m.diffuseTextureId = static_cast<int>(m_textures.size()) - 1;
     }
 
     m_materials.emplace_back(m);

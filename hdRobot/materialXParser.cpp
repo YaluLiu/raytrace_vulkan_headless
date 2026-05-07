@@ -571,6 +571,23 @@ void AddUnsupportedTextureBinding(MaterialXParseResult& result, const MaterialRe
   result.unsupportedTextures.push_back(MakeTextureBinding(resolved, TextureUsage::Unknown));
 }
 
+void ApplyTextureOnlyFactorDefault(HydraMaterial& material, MaterialSemantic semantic)
+{
+  switch (semantic)
+  {
+    case MaterialSemantic::BaseColor:
+      material.baseColorFactor = glm::vec3(1.0f);
+      material.diffuse = material.baseColorFactor;
+      break;
+    case MaterialSemantic::Emission:
+      material.emissionFactor = glm::vec3(1.0f);
+      material.emission = material.emissionFactor;
+      break;
+    default:
+      break;
+  }
+}
+
 bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node, const MaterialInputRule& rule,
                   MaterialResolvedInput* resolved)
 {
@@ -604,7 +621,6 @@ bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node
 void ApplyResolvedValue(HydraMaterial& material, const MaterialInputRule& rule, const VtValue& value,
                         bool* hasMaterialOpinion)
 {
-  float scalar = 0.0f;
   glm::vec3 color;
   switch (rule.semantic)
   {
@@ -639,7 +655,6 @@ void ApplyResolvedValue(HydraMaterial& material, const MaterialInputRule& rule, 
     case MaterialSemantic::Opacity:
       if (ReadFloat(value, &material.opacityFactor))
       {
-        material.dissolve = material.opacityFactor;
         *hasMaterialOpinion = true;
       }
       break;
@@ -675,7 +690,6 @@ void ApplyResolvedValue(HydraMaterial& material, const MaterialInputRule& rule, 
       break;
     case MaterialSemantic::Normal:
     case MaterialSemantic::Unsupported:
-      (void)scalar;
       break;
   }
 }
@@ -696,6 +710,10 @@ void ApplyResolvedInput(MaterialXParseResult& result, const MaterialInputRule& r
     }
 
     AddTextureBinding(result, resolved, rule.textureUsage);
+    if (!resolved.hasValue)
+    {
+      ApplyTextureOnlyFactorDefault(result.material, rule.semantic);
+    }
     if (rule.semantic == MaterialSemantic::BaseColor)
     {
       result.material.texturePath = resolved.texturePath;
@@ -709,7 +727,6 @@ void ApplyMaterialXTextureId(HydraMaterial& material, TextureUsage usage, int te
   switch (usage)
   {
     case TextureUsage::BaseColor:
-      material.textureID = textureId;
       material.baseColorTextureId = textureId;
       break;
     case TextureUsage::Metallic:

@@ -187,8 +187,8 @@ call sites with `rg`.
 - PBR material struct or shader material layout:
   `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
   `hdRobot/headlessRenderBridge.cpp`, `headless/shaders/host_device.h`,
-  then search for `baseColorFactor`, `roughnessFactor`, and
-  `normalTextureId`.
+  then search for `baseColorFactor`, `emissionFactor`,
+  `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
 - MaterialX standard surface parsing:
   `hdRobot/materialXParser.cpp`, `hdRobot/material.cpp`,
   `hdRobot/renderTextureExport.cpp`,

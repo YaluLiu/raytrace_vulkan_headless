@@ -185,7 +185,7 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
   float subsurfaceScale;
   int illum;  // illumination model (see
               // http://www.fileformat.info/format/material/)
-  int textureId;
+  int diffuseTextureId;
   int baseColorTextureId;
   int metallicTextureId;
   int roughnessTextureId;

@@ -37,7 +37,7 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   result.subsurfaceFactor = material.subsurfaceFactor;
   result.subsurfaceScale = material.subsurfaceScale;
   result.illum = material.illum;
-  result.textureId = material.textureID;
+  result.diffuseTextureId = material.diffuseTextureId;
   result.baseColorTextureId = material.baseColorTextureId;
   result.metallicTextureId = material.metallicTextureId;
   result.roughnessTextureId = material.roughnessTextureId;
@@ -331,10 +331,10 @@ void HeadlessRenderBridge::updateMaterials()
     for (size_t localMatIdx = 0; localMatIdx < curMesh.scene_mat_ids.size(); ++localMatIdx)
     {
       int globalMatId = curMesh.scene_mat_ids[localMatIdx];
-      auto &materialObj = _renderParam.v_mat[globalMatId];
+      auto &material = _renderParam.v_mat[globalMatId];
       if (_renderParam.IsMaterialDirty(static_cast<size_t>(globalMatId)))
       {
-        WaveFrontMaterial newMaterial = ToWaveFrontMaterial(materialObj);
+        WaveFrontMaterial newMaterial = ToWaveFrontMaterial(material);
         newMaterials.push_back({static_cast<int>(meshId), static_cast<int>(localMatIdx), newMaterial});
       }
     }

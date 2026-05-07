@@ -8,7 +8,7 @@ struct MaterialObj
   glm::vec3 diffuse = glm::vec3(0.18f, 0.18f, 0.18f);
   glm::vec3 specular = glm::vec3(1.0f, 1.0f, 1.0f);
   glm::vec3 transmittance = glm::vec3(0.0f, 0.0f, 0.0f);
-  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.10);
+  glm::vec3 emission = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::vec3 baseColorFactor = glm::vec3(0.18f, 0.18f, 0.18f);
   glm::vec3 emissionFactor = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::vec3 transmissionColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -23,7 +23,7 @@ struct MaterialObj
   float subsurfaceFactor = 0.0f;
   float subsurfaceScale = 0.0f;
   int illum = 0;
-  int textureID = -1;
+  int diffuseTextureId = -1;
   int baseColorTextureId = -1;
   int metallicTextureId = -1;
   int roughnessTextureId = -1;

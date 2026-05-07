@@ -222,10 +222,12 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
   // Creating two materials
   MaterialObj mat;
   mat.diffuse = glm::vec3(0, 1, 1);
+  mat.baseColorFactor = mat.diffuse;
   std::vector<MaterialObj> materials;
   std::vector<int>         matIdx(nbSpheres);
   materials.emplace_back(mat);
   mat.diffuse = glm::vec3(1, 1, 0);
+  mat.baseColorFactor = mat.diffuse;
   materials.emplace_back(mat);
 
   // Assign a material to each sphere
@@ -299,10 +301,12 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
   // Creating two materials
   MaterialObj mat;
   mat.diffuse = glm::vec3(0, 1, 1);
+  mat.baseColorFactor = mat.diffuse;
   std::vector<MaterialObj> materials;
   std::vector<int>         matIdx(nbSpheres);
   materials.emplace_back(mat);
   mat.diffuse = glm::vec3(1, 1, 0);
+  mat.baseColorFactor = mat.diffuse;
   materials.emplace_back(mat);
 
   // Assign a material to each sphere

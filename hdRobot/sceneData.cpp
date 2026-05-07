@@ -18,7 +18,7 @@ void HydraMaterial::set_default()
   transmissionFactor = 0.0f;
   subsurfaceFactor = 0.0f;
   subsurfaceScale = 0.0f;
-  textureID = -1;
+  diffuseTextureId = -1;
   baseColorTextureId = -1;
   metallicTextureId = -1;
   roughnessTextureId = -1;
@@ -52,7 +52,7 @@ MaterialObj HydraMaterial::toMaterialObj() const
   mat.subsurfaceFactor = subsurfaceFactor;
   mat.subsurfaceScale = subsurfaceScale;
   mat.illum = illum;
-  mat.textureID = textureID;
+  mat.diffuseTextureId = diffuseTextureId;
   mat.baseColorTextureId = baseColorTextureId;
   mat.metallicTextureId = metallicTextureId;
   mat.roughnessTextureId = roughnessTextureId;

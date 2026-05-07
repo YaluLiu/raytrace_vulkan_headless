@@ -220,11 +220,12 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
   MaterialObj mat;
   mat.ambient   = glm::vec3(0.1f, 0.1f, 0.1f);
   mat.diffuse   = glm::vec3(0.7f, 0.7f, 0.7f);
+  mat.baseColorFactor = mat.diffuse;
   mat.specular  = glm::vec3(0.5f, 0.5f, 0.5f);
   mat.shininess = 50.0f;
   mat.dissolve  = 1.0f;
+  mat.opacityFactor = mat.dissolve;
   mat.ior       = 1.5f;
-  mat.textureID = 0;
   mat.illum     = 2;  // 默认使用Phong光照模型
 
   // 3. 获取Shader
@@ -248,6 +249,7 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
     if(diffuseInput.Get(&diffuseColor))
     {
       mat.diffuse = glm::vec3(diffuseColor[0], diffuseColor[1], diffuseColor[2]);
+      mat.baseColorFactor = mat.diffuse;
       // 环境光设为漫反射的10%
       mat.ambient = mat.diffuse * 0.1f;
     }
@@ -287,6 +289,7 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
     if(roughnessInput.Get(&roughness))
     {
       // 粗糙度[0,1] -> 高光指数[0,1000]
+      mat.roughnessFactor = std::clamp(roughness, 0.0f, 1.0f);
       mat.shininess = 64.0f * (1.0f - std::clamp(roughness, 0.0f, 1.0f));
       // mat.shininess = (1.0f - roughness) * 128.0f;
     }
@@ -300,6 +303,7 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
     if(opacityInput.Get(&opacity))
     {
       mat.dissolve = std::clamp(opacity, 0.0f, 1.0f);
+      mat.opacityFactor = mat.dissolve;
     }
   }
 
@@ -341,11 +345,13 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
               if(it == m_textures.end())
               {
                 m_textures.push_back(texturePath);
-                mat.textureID = static_cast<int>(m_textures.size() - 1);
+                mat.diffuseTextureId = static_cast<int>(m_textures.size() - 1);
+                mat.baseColorTextureId = mat.diffuseTextureId;
               }
               else
               {
-                mat.textureID = static_cast<int>(std::distance(m_textures.begin(), it));
+                mat.diffuseTextureId = static_cast<int>(std::distance(m_textures.begin(), it));
+                mat.baseColorTextureId = mat.diffuseTextureId;
               }
             }
           }

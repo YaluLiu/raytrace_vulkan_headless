@@ -62,7 +62,7 @@ struct HydraMaterial
   float subsurfaceFactor = 0.0f;
   float subsurfaceScale = 0.0f;
   int illum = 0;
-  int textureID = -1;
+  int diffuseTextureId = -1;
   int baseColorTextureId = -1;
   int metallicTextureId = -1;
   int roughnessTextureId = -1;
