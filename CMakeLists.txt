@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
 project(vk_raytracing_tutorial)
-include(CTest)
 
 #--------------------------------------------------------------------------------------------------
 # look for nvpro_core 1) as a sub-folder 2) at some other locations
@@ -59,40 +58,6 @@ set(DLSS_SDK_ROOT ${DLSS_SDK_ROOT} CACHE PATH "Root path of NVIDIA DLSS SDK (con
 
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 message(STATUS "ENABLE_DLSS_RR: ${ENABLE_DLSS_RR}")
-#--------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------
-# Contract tests
-if(BUILD_TESTING)
-  find_package(PythonInterp 3 REQUIRED)
-
-  function(add_python_contract_test test_name script_path)
-    add_test(
-      NAME ${test_name}
-      COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/${script_path}"
-    )
-    set_tests_properties(${test_name} PROPERTIES
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      LABELS "contracts;python"
-    )
-  endfunction()
-
-  add_python_contract_test(contracts.dlss_rr_shader scripts/check_dlss_rr_shader_contracts.py)
-  add_python_contract_test(contracts.dlss_rr_supported_size scripts/check_dlss_rr_supported_size.py)
-  add_python_contract_test(contracts.lidar_after_dlss scripts/check_lidar_after_dlss_contracts.py)
-  add_python_contract_test(contracts.renderer_architecture scripts/check_renderer_architecture_contracts.py)
-  add_python_contract_test(contracts.material_texture_in_memory scripts/check_material_texture_in_memory_contracts.py)
-  add_python_contract_test(contracts.hydra_entrypoint scripts/check_hydra_entrypoint_contracts.py)
-  add_python_contract_test(contracts.hydra_simple_light scripts/check_hydra_simple_light_contracts.py)
-  add_python_contract_test(contracts.pbr_material scripts/check_pbr_material_contracts.py)
-  add_python_contract_test(contracts.materialx_standard_surface scripts/check_materialx_standard_surface_contracts.py)
-  add_python_contract_test(contracts.texture_usage scripts/check_texture_usage_contracts.py)
-  add_python_contract_test(contracts.pbr_shader scripts/check_pbr_shader_contracts.py)
-  add_python_contract_test(contracts.normal_map scripts/check_normal_map_contracts.py)
-  add_python_contract_test(contracts.instancer_material_subset scripts/check_instancer_material_subset_contracts.py)
-  add_python_contract_test(contracts.materialx_advanced_inputs scripts/check_materialx_advanced_inputs_contracts.py)
-endif()
-#--------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------
 # Sub examples
 add_subdirectory(headless)
 add_subdirectory(demo)

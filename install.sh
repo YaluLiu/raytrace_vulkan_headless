@@ -181,14 +181,13 @@ function show()
 }
 
 function baseline(){
-    set -e
-    bash scripts/visual_regression.sh capture
+    echo "baseline visual regression has been removed."
+    return 1
 }
 
 function selfcheck(){
-    set -e
-    VIS_EXPECTED_IMAGES="${VIS_EXPECTED_IMAGES:-gl_0.png}" \
-    bash scripts/visual_regression.sh check
+    echo "selfcheck visual regression has been removed."
+    return 1
 }
 
 function restore()

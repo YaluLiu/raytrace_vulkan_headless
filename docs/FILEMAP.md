@@ -7,16 +7,14 @@ call sites with `rg`.
 
 ## Top-Level Structure
 
-- `CMakeLists.txt`: Root build configuration, options, Python contract tests,
-  and subdirectory registration.
-- `install.sh`: Main local build/run helper used by demo, hydra, baseline, and
-  selfcheck workflows.
+- `CMakeLists.txt`: Root build configuration, options, and subdirectory
+  registration.
+- `install.sh`: Main local build/run helper used by demo and hydra workflows.
 - `headless/`: Core headless Vulkan ray tracing library and shaders.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   headless renderer.
 - `demo/`: Standalone demo executable and USD loading helpers.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
-- `scripts/`: Python and shell contract/regression checks.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 - `docs/PLAN/materialx-rendering-plan.md`: Current OpenChessSet MaterialX
@@ -32,36 +30,6 @@ call sites with `rg`.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
 - `demo/CMakeLists.txt`: Standalone demo target.
-- `scripts/check_renderer_architecture_contracts.py`: Renderer/Hydra boundary
-  contract checks.
-- `scripts/check_dlss_rr_shader_contracts.py`: DLSS shader input contract
-  checks.
-- `scripts/check_dlss_rr_supported_size.py`: DLSS supported-size contract
-  checks.
-- `scripts/check_lidar_after_dlss_contracts.py`: LiDAR and DLSS interaction
-  contract checks.
-- `scripts/check_material_texture_in_memory_contracts.py`: Contract checks for
-  Hydra material texture handoff without local file staging.
-- `scripts/check_hydra_entrypoint_contracts.py`: Contract checks for the
-  `install.sh hydra`/`show` scene override path.
-- `scripts/check_hydra_simple_light_contracts.py`: Contract checks that
-  Hydra `simpleLight` sprims are accepted and mapped to renderer sphere lights.
-- `scripts/check_pbr_material_contracts.py`: Contract checks for PBR material
-  fields across CPU, Hydra, and shader-facing structs.
-- `scripts/check_materialx_standard_surface_contracts.py`: Contract checks for
-  MaterialX `standard_surface` input and upstream texture extraction support.
-- `scripts/check_texture_usage_contracts.py`: Contract checks for texture
-  usage/color-space metadata through registry, export, and Vulkan upload.
-- `scripts/check_pbr_shader_contracts.py`: Contract checks for the
-  metallic-roughness closest-hit shader path and DLSS guide buffer inputs.
-- `scripts/check_normal_map_contracts.py`: Contract checks for tangent data
-  propagation and normal map sampling in the triangle closest-hit shader.
-- `scripts/check_instancer_material_subset_contracts.py`: Contract checks for
-  PointInstancer TLAS propagation and material subset local/global id mapping.
-- `scripts/check_materialx_advanced_inputs_contracts.py`: Contract checks for
-  conservative MaterialX transmission/subsurface parsing and shader handling.
-- `scripts/visual_regression.sh`: Image-based regression comparison helper.
-
 ## Runtime Entry Points
 
 - `demo/main.cpp`: Demo application entry and scene setup.
@@ -104,10 +72,6 @@ call sites with `rg`.
   offscreen target refresh, jitter, evaluate calls, and fallback behavior.
 - `headless/hello_vulkan.hpp`: DLSS/offscreen state and inline setter paths
   that refresh targets or reset accumulation.
-- `scripts/check_dlss_rr_shader_contracts.py`: Contract checks for DLSS jitter
-  and shader inputs.
-- `scripts/check_dlss_rr_supported_size.py`: Contract checks for
-  `queryOptimalSettings` and supported render sizes.
 
 ## LiDAR Rendering
 
@@ -116,8 +80,6 @@ call sites with `rg`.
 - `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
 - `headless/shaders/lidar_pointcloud.glsl`: LiDAR point cloud shader.
 - `headless/shaders/lidar_composite.comp`: LiDAR composite compute shader.
-- `scripts/check_lidar_after_dlss_contracts.py`: Contract checks that guard the
-  LiDAR path after DLSS changes.
 
 ## Hydra Delegate
 
@@ -206,8 +168,7 @@ call sites with `rg`.
   `headless/hello_vulkan.cpp`, then search for `queryOptimalSettings`,
   `createDlssRR`, `evaluate`, and `DLSS_RR`.
 - LiDAR:
-  `headless/hello_vulkan_lidar.cpp`, LiDAR shader files, and
-  `scripts/check_lidar_after_dlss_contracts.py`, then search for
+  `headless/hello_vulkan_lidar.cpp` and LiDAR shader files, then search for
   `renderLidarPointCloud`, `updateLidarCamera`, and
   `updateLidarCompositeDescriptorSet`.
 - Hydra render flow:
@@ -226,48 +187,42 @@ call sites with `rg`.
 - PBR material struct or shader material layout:
   `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
   `hdRobot/headlessRenderBridge.cpp`, `headless/shaders/host_device.h`,
-  and `scripts/check_pbr_material_contracts.py`, then search for
-  `baseColorFactor`, `roughnessFactor`, and `normalTextureId`.
+  then search for `baseColorFactor`, `roughnessFactor`, and
+  `normalTextureId`.
 - MaterialX standard surface parsing:
   `hdRobot/materialXParser.cpp`, `hdRobot/material.cpp`,
   `hdRobot/renderTextureExport.cpp`,
-  `hdRobot/sceneData.h`, and
-  `scripts/check_materialx_standard_surface_contracts.py`, then search for
-  `ParseMaterialXNetwork`, `SelectSurfaceShaderCandidate`,
-  `ResolveUpstreamTexture`, `MaterialInputRule`, `base_color`,
-  `metalness`, `specular_roughness`, and `normalTextureId`.
+  `hdRobot/sceneData.h`, then search for `ParseMaterialXNetwork`,
+  `SelectSurfaceShaderCandidate`, `ResolveUpstreamTexture`,
+  `MaterialInputRule`, `base_color`, `metalness`, `specular_roughness`, and
+  `normalTextureId`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,
   `hdRobot/renderParam.cpp`, `hdRobot/renderTextureExport.cpp`,
-  `headless/hello_vulkan_material.cpp`, and
-  `scripts/check_texture_usage_contracts.py`, then search for
-  `TextureUsage`, `TextureColorSpaceForUsage`, `GetTextureAssets`, and
+  `headless/hello_vulkan_material.cpp`, then search for `TextureUsage`,
+  `TextureColorSpaceForUsage`, `GetTextureAssets`, and
   `VK_FORMAT_R8G8B8A8_UNORM`.
 - PBR shader lighting:
   `headless/shaders/raytrace.rchit`, `headless/shaders/wavefront.glsl`,
-  `headless/shaders/raytrace.rgen`, and
-  `scripts/check_pbr_shader_contracts.py`, then search for
-  `samplePbrMaterial`, `computePbrDirectLighting`, `firstHitDiffuseValid`,
-  and `firstHitSpecularPad`.
+  `headless/shaders/raytrace.rgen`, then search for `samplePbrMaterial`,
+  `computePbrDirectLighting`, `firstHitDiffuseValid`, and
+  `firstHitSpecularPad`.
 - Normal map support:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
   `common/data_loader.h`, `headless/shaders/host_device.h`,
-  `headless/shaders/raytrace.rchit`, and
-  `scripts/check_normal_map_contracts.py`, then search for `tangent`,
+  `headless/shaders/raytrace.rchit`, then search for `tangent`,
   `bitangentSigns`, and `sampleNormalMap`.
 - Advanced MaterialX inputs:
   `hdRobot/materialXParser.cpp`, `hdRobot/sceneData.h`,
   `hdRobot/sceneData.cpp`, `common/data_loader.h`,
   `headless/shaders/host_device.h`, `headless/shaders/raytrace.rchit`,
-  `headless/shaders/wavefront.glsl`, and
-  `scripts/check_materialx_advanced_inputs_contracts.py`, then search for
-  `transmissionFactor`, `transmissionColorFactor`, `subsurfaceFactor`,
-  `subsurfaceTextureId`, and `computeSubsurfaceWrap`.
+  `headless/shaders/wavefront.glsl`, then search for `transmissionFactor`,
+  `transmissionColorFactor`, `subsurfaceFactor`, `subsurfaceTextureId`, and
+  `computeSubsurfaceWrap`.
 - Instancers or material subsets:
   `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
-  `hdRobot/sceneData.cpp`, `hdRobot/headlessRenderBridge.cpp`, and
-  `scripts/check_instancer_material_subset_contracts.py`, then search for
-  `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
+  `hdRobot/sceneData.cpp`, `hdRobot/headlessRenderBridge.cpp`, then search
+  for `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
   `materialIds`, and `tlasIds`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
@@ -278,7 +233,7 @@ call sites with `rg`.
   `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:
   Root `CMakeLists.txt`, relevant subdirectory `CMakeLists.txt`,
-  `install.sh`, and the failing script or command output.
+  `install.sh`, and the failing command output.
 
 ## Graphify Anchors
 
