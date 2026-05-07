@@ -44,7 +44,7 @@ MaterialObj HydraMaterial::toMaterialObj() const
   mat.subsurfaceColorFactor = subsurfaceColorFactor;
   mat.shininess = shininess;
   mat.ior = ior;
-  mat.dissolve = dissolve;
+  mat.opaque = opaque;
   mat.metallicFactor = metallicFactor;
   mat.roughnessFactor = roughnessFactor;
   mat.opacityFactor = opacityFactor;

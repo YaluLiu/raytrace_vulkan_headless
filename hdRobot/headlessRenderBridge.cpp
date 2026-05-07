@@ -29,7 +29,7 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   result.subsurfaceColorFactor = material.subsurfaceColorFactor;
   result.shininess = material.shininess;
   result.ior = material.ior;
-  result.dissolve = material.dissolve;
+  result.opaque = material.opaque;
   result.metallicFactor = material.metallicFactor;
   result.roughnessFactor = material.roughnessFactor;
   result.opacityFactor = material.opacityFactor;

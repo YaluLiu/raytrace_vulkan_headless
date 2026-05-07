@@ -15,7 +15,7 @@ struct MaterialObj
   glm::vec3 subsurfaceColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
   float shininess = 0.f;
   float ior = 1.0f;      // index of refraction
-  float dissolve = 1.f;  // 1 == opaque; 0 == fully transparent
+  float opaque = 1.f;  // 1 == opaque; 0 == fully transparent
   float metallicFactor = 0.0f;
   float roughnessFactor = 0.5f;
   float opacityFactor = 1.0f;

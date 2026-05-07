@@ -223,8 +223,8 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
   mat.baseColorFactor = mat.diffuse;
   mat.specular  = glm::vec3(0.5f, 0.5f, 0.5f);
   mat.shininess = 50.0f;
-  mat.dissolve  = 1.0f;
-  mat.opacityFactor = mat.dissolve;
+  mat.opaque  = 1.0f;
+  mat.opacityFactor = mat.opaque;
   mat.ior       = 1.5f;
   mat.illum     = 2;  // 默认使用Phong光照模型
 
@@ -302,8 +302,8 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
     float opacity;
     if(opacityInput.Get(&opacity))
     {
-      mat.dissolve = std::clamp(opacity, 0.0f, 1.0f);
-      mat.opacityFactor = mat.dissolve;
+      mat.opaque = std::clamp(opacity, 0.0f, 1.0f);
+      mat.opacityFactor = mat.opaque;
     }
   }
 

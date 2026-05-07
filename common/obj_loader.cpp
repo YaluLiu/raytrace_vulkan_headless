@@ -18,10 +18,10 @@ void ObjLoader::loadModel(const std::string& filename)
     m.specular      = glm::vec3(material.specular[0], material.specular[1], material.specular[2]);
     m.emission      = glm::vec3(material.emission[0], material.emission[1], material.emission[2]);
     m.transmittance = glm::vec3(material.transmittance[0], material.transmittance[1], material.transmittance[2]);
-    m.dissolve      = material.dissolve;
+    m.opaque        = material.dissolve;
     m.baseColorFactor = m.diffuse;
     m.emissionFactor  = m.emission;
-    m.opacityFactor   = m.dissolve;
+    m.opacityFactor   = m.opaque;
     m.ior           = material.ior;
     m.shininess     = material.shininess;
     m.illum         = material.illum;

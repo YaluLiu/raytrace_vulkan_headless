@@ -176,7 +176,7 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
   vec3 subsurfaceColorFactor;
   float shininess;
   float ior;       // index of refraction
-  float dissolve;  // 1 == opaque; 0 == fully transparent
+  float opaque;  // 1 == opaque; 0 == fully transparent
   float metallicFactor;
   float roughnessFactor;
   float opacityFactor;
