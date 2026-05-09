@@ -135,10 +135,12 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   _renderApp.render();
 
   const ::HelloVulkan &app = _renderApp.getVulkan();
+  bool allAovsCopied = true;
   for (const HdRenderPassAovBinding &binding : hdAovBindings)
   {
     auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
     const bool copied = CopyAovToRenderBuffer(app, binding.aovName, aovBuffer, _glInteropCache);
+    allAovsCopied = allAovsCopied && copied;
     if (aovBuffer != nullptr)
     {
       aovBuffer->SetConverged(copied);
@@ -146,12 +148,16 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   }
 
   ++_frameIndex;
-  return true;
+  return allAovsCopied;
 }
 
 void HeadlessRenderBridge::applyRenderSettings()
 {
   HelloVulkan &app = _renderApp.getVulkan();
+  if (_isAppInited && RenderSettingsMayReallocateAovs(_settings, app))
+  {
+    _glInteropCache.Clear();
+  }
   ApplyRenderSettingsToApp(_settings, app);
 }
 

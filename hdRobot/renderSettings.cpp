@@ -5,10 +5,18 @@
 
 #include <pxr/base/vt/value.h>
 
+#include <algorithm>
+#include <cmath>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+float ClampDlssScale(float scale)
+{
+  return std::clamp(scale, 0.1f, 1.0f);
+}
+
 bool TryGetSettingValue(const HdRenderSettingsMap& settings, const TfToken& token, const VtValue** value)
 {
   const auto it = settings.find(token);
@@ -117,6 +125,32 @@ bool TryConvertLidarEnable(const VtValue& value, bool* out)
 }
 }  // namespace
 
+bool RenderSettingsMayReallocateAovs(const HdRenderSettingsMap& settings, const ::HelloVulkan& app)
+{
+  const VtValue* value = nullptr;
+  bool           enabled = false;
+  if(TryGetSettingValue(settings, HdRobotSettingsTokens->dlssRRDenoise, &value) && TryConvertDlssEnable(*value, &enabled)
+     && app.isDlssRREnabled() != enabled)
+  {
+    return true;
+  }
+
+  if(TryGetSettingValue(settings, HdRobotSettingsTokens->dlssSREnable, &value) && TryConvertDlssEnable(*value, &enabled)
+     && app.isDlssSREnabled() != enabled)
+  {
+    return true;
+  }
+
+  float scale = 0.0f;
+  if(TryGetSettingValue(settings, HdRobotSettingsTokens->dlssSRScale, &value) && TryConvertDlssScale(*value, &scale)
+     && std::fabs(app.getDlssSRScale() - ClampDlssScale(scale)) > 1e-6f)
+  {
+    return true;
+  }
+
+  return false;
+}
+
 void ApplyRenderSettingsToApp(const HdRenderSettingsMap& settings, ::HelloVulkan& app)
 {
   const VtValue* value = nullptr;
@@ -140,7 +174,7 @@ void ApplyRenderSettingsToApp(const HdRenderSettingsMap& settings, ::HelloVulkan
   float scale = 0.0f;
   if(TryGetSettingValue(settings, HdRobotSettingsTokens->dlssSRScale, &value) && TryConvertDlssScale(*value, &scale))
   {
-    app.setDlssSRScale(scale);
+    app.setDlssSRScale(ClampDlssScale(scale));
   }
 }
 
