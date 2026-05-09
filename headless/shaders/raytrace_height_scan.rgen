@@ -84,11 +84,11 @@ bool traceHeightScanHit(uint rayIdx, out vec3 worldHit)
 
   vec3  direction   = heightScanDirection();
   float maxDistance = max(pcRay.heightScan.maxDistance, kLidarRayTMin);
-  vec3  lidarOrigin = frameUni.lidar.params.positionAndPad.xyz;
+  vec3  heightScanOrigin = frameUni.heightScan.positionAndPad.xyz;
   vec3  scanAxisX;
   vec3  scanAxisZ;
   heightScanPlaneAxes(direction, scanAxisX, scanAxisZ);
-  vec3 origin = lidarOrigin + scanAxisX * x + scanAxisZ * z;
+  vec3 origin = heightScanOrigin + scanAxisX * x + scanAxisZ * z;
 
   prd.radiance                  = vec3(0.0);
   prd.objId                     = -1;

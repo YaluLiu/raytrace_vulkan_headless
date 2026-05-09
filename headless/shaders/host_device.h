@@ -21,7 +21,7 @@ using uint = unsigned int;
 #endif
 
 START_BINDING(SceneBindings)
-  eFrameUniforms = 0,  // Frame uniform containing main camera + lidar data
+  eFrameUniforms = 0,  // Frame uniform containing main camera and sensor data
   eObjDescs    = 1,  // Access to the object descriptions
   eTextures    = 2,  // Access to textures
   eLights      = 3,  // 灯光缓冲区
@@ -88,10 +88,17 @@ struct LidarUniforms
   LidarParamsUniforms params;
 };
 
+struct HeightScanUniforms
+{
+  CameraUniforms camera;
+  vec4 positionAndPad;  // xyz: height scan world position, w: reserved
+};
+
 struct FrameUniforms
 {
   CameraUniforms camera;
   LidarUniforms lidar;
+  HeightScanUniforms heightScan;
 };
 
 struct LidarParams

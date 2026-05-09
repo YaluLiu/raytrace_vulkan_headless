@@ -70,6 +70,16 @@ bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
   }
   return true;
 }
+
+RayTraceApp::SensorCameraInput ToHeightScanCameraInput(const HdRobotHeightScanData &heightScanData)
+{
+  RayTraceApp::SensorCameraInput camera{};
+  camera.eye    = heightScanData.eye;
+  camera.center = heightScanData.center;
+  camera.up     = heightScanData.up;
+  camera.fovDeg = heightScanData.fovDeg;
+  return camera;
+}
 }  // namespace
 
 HeadlessRenderBridge::HeadlessRenderBridge(const HdRenderSettingsMap &settings, HdRobotRenderParam &renderParam,
@@ -114,6 +124,7 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   }
 
   updateLidarCamera();
+  updateHeightScanCamera();
   updateLights();
   updateScene();
   _renderApp.render();
@@ -252,6 +263,29 @@ void HeadlessRenderBridge::updateLidarCamera()
       lidarData.params.pointRadiusPixels, lidarData.params.maxDistance,
   };
   _renderApp.setRadarCamera(lidarCamera);
+}
+
+void HeadlessRenderBridge::updateHeightScanCamera()
+{
+  HdRobotHeightScanData heightScanData;
+  if (!_renderParam.GetHeightScanCamera(&heightScanData))
+  {
+    _renderApp.setHeightScanEnabled(false);
+    return;
+  }
+
+  _renderApp.setHeightScanCamera(ToHeightScanCameraInput(heightScanData));
+
+  const HdRobotHeightScanParams &params = heightScanData.params;
+  _renderApp.setHeightScanParams({
+      params.minX,              params.maxX,
+      params.stepX,             params.minZ,
+      params.maxZ,              params.stepZ,
+      params.rayDirection.x,    params.rayDirection.y,
+      params.rayDirection.z,    params.pointRadiusPixels,
+      params.maxDistance,       0.0f,
+  });
+  _renderApp.setHeightScanEnabled(true);
 }
 
 void HeadlessRenderBridge::updateLights()

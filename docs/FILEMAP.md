@@ -94,9 +94,11 @@ call sites with `rg`.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/headlessRenderBridge.h` / `hdRobot/headlessRenderBridge.cpp`:
-  Converts Hydra frame state into `HelloVulkan` updates and render calls.
+  Converts Hydra frame state into `HelloVulkan` updates and render calls,
+  including LiDAR and height scan sensor forwarding.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object and renderer bridge ownership.
+  parameter object, LiDAR/height scan sensor state, and renderer bridge
+  ownership.
 - `hdRobot/renderSettings.h` / `hdRobot/renderSettings.cpp`: Render setting
   tokens, parsing, and application helpers.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions.
@@ -113,8 +115,8 @@ call sites with `rg`.
   surface shader selection, standard surface/OpenPBR input rules, upstream
   texture traversal, texture binding metadata, and `HydraMaterial` field
   mapping.
-- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
-  conversion.
+- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
+  conversion, and LiDAR/height scan sensor parameter reads.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: Points primitive support.
 - `hdRobot/instancer.h` / `hdRobot/instancer.cpp`: Hydra instancer support.
@@ -146,6 +148,8 @@ call sites with `rg`.
 ## Shader Files
 
 - `headless/shaders/host_device.h`: Shared host/device structs and constants.
+  `FrameUniforms` carries independent main, LiDAR, and height scan camera
+  uniform state.
 - `headless/shaders/raycommon.glsl`: Common ray tracing shader helpers.
 - `headless/shaders/raytrace.rgen`: Main ray generation shader.
 - `headless/shaders/raytrace.rchit`: Main closest-hit shader.
@@ -178,7 +182,7 @@ call sites with `rg`.
 - LiDAR:
   `headless/hello_vulkan_lidar.cpp` and LiDAR shader files, then search for
   `renderLidarPointCloud`, `renderHeightScanPointCloud`, `updateLidarCamera`,
-  and `updateLidarCompositeDescriptorSet`.
+  `updateHeightScanCamera`, and `updateLidarCompositeDescriptorSet`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
   `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,

@@ -23,6 +23,10 @@ class HdRobotRenderParam final : public HdRenderParam
   void ClearLidarCamera(const SdfPath& cameraId);
   bool GetLidarCamera(HdRobotLidarData* lidarData) const;
 
+  void UpdateHeightScanCamera(const SdfPath& cameraId, const HdRobotHeightScanData& heightScanData);
+  void ClearHeightScanCamera(const SdfPath& cameraId);
+  bool GetHeightScanCamera(HdRobotHeightScanData* heightScanData) const;
+
   void MarkAllMeshesTlasDirty();
   void MarkMeshTlasDirty(size_t meshId);
   void MarkMeshBlasDirty(size_t meshId);
@@ -47,6 +51,12 @@ class HdRobotRenderParam final : public HdRenderParam
   HdRobotLidarData _lidarCameraData;
   bool _hasLidarCamera{false};
   bool _warnedMultipleLidarCameras{false};
+
+  mutable std::mutex _heightScanMutex;
+  SdfPath _heightScanCameraId;
+  HdRobotHeightScanData _heightScanCameraData;
+  bool _hasHeightScanCamera{false};
+  bool _warnedMultipleHeightScanCameras{false};
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

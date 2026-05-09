@@ -60,6 +60,47 @@ bool HdRobotRenderParam::GetLidarCamera(HdRobotLidarData* lidarData) const
   return true;
 }
 
+void HdRobotRenderParam::UpdateHeightScanCamera(const SdfPath& cameraId,
+                                                const HdRobotHeightScanData& heightScanData)
+{
+  std::lock_guard<std::mutex> lock(_heightScanMutex);
+
+  if (_hasHeightScanCamera && _heightScanCameraId != cameraId && !_warnedMultipleHeightScanCameras)
+  {
+    TF_WARN("Multiple height scan cameras are unsupported (%s -> %s). Latest synced camera wins.",
+            _heightScanCameraId.GetText(), cameraId.GetText());
+    _warnedMultipleHeightScanCameras = true;
+  }
+
+  _heightScanCameraId = cameraId;
+  _heightScanCameraData = heightScanData;
+  _hasHeightScanCamera = true;
+}
+
+void HdRobotRenderParam::ClearHeightScanCamera(const SdfPath& cameraId)
+{
+  std::lock_guard<std::mutex> lock(_heightScanMutex);
+  if (_hasHeightScanCamera && _heightScanCameraId == cameraId)
+  {
+    _heightScanCameraId = SdfPath();
+    _heightScanCameraData = HdRobotHeightScanData();
+    _hasHeightScanCamera = false;
+    _warnedMultipleHeightScanCameras = false;
+  }
+}
+
+bool HdRobotRenderParam::GetHeightScanCamera(HdRobotHeightScanData* heightScanData) const
+{
+  std::lock_guard<std::mutex> lock(_heightScanMutex);
+  if (!_hasHeightScanCamera || heightScanData == nullptr)
+  {
+    return false;
+  }
+
+  *heightScanData = _heightScanCameraData;
+  return true;
+}
+
 void HdRobotRenderParam::MarkAllMeshesTlasDirty()
 {
   for (auto& mesh : v_mesh)

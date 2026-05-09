@@ -43,7 +43,14 @@ PXR_NAMESPACE_OPEN_SCOPE
                                                                                      "lidar:azimuthMaxDeg"))(         \
       (lidarAzimuthStepDeg, "lidar:azimuthStepDeg"))((lidarVerticalMinDeg, "lidar:verticalMinDeg"))(                 \
       (lidarVerticalMaxDeg, "lidar:verticalMaxDeg"))((lidarVerticalStepDeg, "lidar:verticalStepDeg"))(               \
-      (lidarPointRadiusPixels, "lidar:pointRadiusPixels"))((lidarMaxDistance, "lidar:maxDistance"))
+      (lidarPointRadiusPixels, "lidar:pointRadiusPixels"))((lidarMaxDistance, "lidar:maxDistance"))(                 \
+      (heightScanIsHeightScan, "heightScan:isHeightScan"))((heightScanMinX, "heightScan:minX"))(                     \
+      (heightScanMaxX, "heightScan:maxX"))((heightScanStepX, "heightScan:stepX"))((heightScanMinZ,                   \
+                                                                                    "heightScan:minZ"))(              \
+      (heightScanMaxZ, "heightScan:maxZ"))((heightScanStepZ, "heightScan:stepZ"))(                                   \
+      (heightScanRayDirection, "heightScan:rayDirection"))(                                                          \
+      (heightScanPointRadiusPixels, "heightScan:pointRadiusPixels"))((heightScanMaxDistance,                         \
+                                                                      "heightScan:maxDistance"))
 
 #define HD_ROBOT_COMMAND_TOKENS (printLicenses)
 

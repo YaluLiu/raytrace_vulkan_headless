@@ -24,6 +24,7 @@ private:
   void initOrResize();
   bool updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void updateLidarCamera();
+  void updateHeightScanCamera();
   void updateLights();
   void updateScene();
   void updateBlas();

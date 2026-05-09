@@ -46,6 +46,7 @@ public:
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void setMainCameraClipRange(float clipStart, float clipEnd);
   void setRadarCamera(const RadarCameraData& camera);
+  void setHeightScanCamera(const RadarCameraData& camera);
   void setRadarLidarParams(const LidarParams& params);
   void setLidarEnabled(bool enabled);
   bool isLidarEnabled() const { return m_enableLidar; }
@@ -88,7 +89,7 @@ public:
   VkDescriptorSetLayout       m_descSetLayout;
   VkDescriptorSet             m_descSet;
 
-  nvvk::Buffer m_bFrameUniforms;  // Device buffer of frame uniforms (camera + lidar)
+  nvvk::Buffer m_bFrameUniforms;  // Device buffer of frame uniforms (camera + sensors)
   nvvk::Buffer m_bObjDesc;  // Device buffer of the OBJ descriptions
 
   std::vector<nvvk::Texture> m_textures;  // vector of all textures of the scene
@@ -395,6 +396,8 @@ private:
   bool      m_hasLastCamera{false};
   RadarCameraData m_radarCamera{};
   bool            m_hasRadarCamera{false};
+  RadarCameraData m_heightScanCamera{};
+  bool            m_hasHeightScanCamera{false};
   bool            m_enableLidar{true};
   LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
   bool             m_enableHeightScan{true};

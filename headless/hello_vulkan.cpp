@@ -210,6 +210,22 @@ void HelloVulkan::setRadarCamera(const RadarCameraData& camera)
   }
 }
 
+void HelloVulkan::setHeightScanCamera(const RadarCameraData& camera)
+{
+  const bool cameraChanged = !m_hasHeightScanCamera || !vecNearlyEqual(camera.eye, m_heightScanCamera.eye)
+                             || !vecNearlyEqual(camera.center, m_heightScanCamera.center)
+                             || !vecNearlyEqual(camera.up, m_heightScanCamera.up)
+                             || std::fabs(camera.fov - m_heightScanCamera.fov) > 1e-5f;
+
+  m_heightScanCamera    = camera;
+  m_hasHeightScanCamera = true;
+
+  if(cameraChanged)
+  {
+    resetAccumulation();
+  }
+}
+
 void HelloVulkan::setRadarLidarParams(const LidarParams& params)
 {
   if(!lidarParamsNearlyEqual(params, m_radarLidarParams))
@@ -346,11 +362,18 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   const glm::vec3 radarCenter = m_hasRadarCamera ? m_radarCamera.center : mainCenter;
   const glm::vec3 radarUp     = m_hasRadarCamera ? m_radarCamera.up : mainUp;
   const float     radarFov    = m_hasRadarCamera ? m_radarCamera.fov : mainFov;
+  const glm::vec3 heightScanEye    = m_hasHeightScanCamera ? m_heightScanCamera.eye : radarEye;
+  const glm::vec3 heightScanCenter = m_hasHeightScanCamera ? m_heightScanCamera.center : radarCenter;
+  const glm::vec3 heightScanUp     = m_hasHeightScanCamera ? m_heightScanCamera.up : radarUp;
+  const float     heightScanFov    = m_hasHeightScanCamera ? m_heightScanCamera.fov : radarFov;
 
   glm::mat4 radarView = glm::lookAt(radarEye, radarCenter, radarUp);
   glm::mat4 radarProj = glm::perspectiveRH_ZO(glm::radians(radarFov), aspectRatio, 0.1f, 1000.0f);
+  glm::mat4 heightScanView = glm::lookAt(heightScanEye, heightScanCenter, heightScanUp);
+  glm::mat4 heightScanProj = glm::perspectiveRH_ZO(glm::radians(heightScanFov), aspectRatio, 0.1f, 1000.0f);
 #if !ENABLE_HYDRA
   radarProj[1][1] *= -1;  // Vulkan坐标系Y反转
+  heightScanProj[1][1] *= -1;
 #endif
 
   frameUBO.lidar.camera.viewProj    = radarProj * radarView;
@@ -365,6 +388,12 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
       glm::vec4(m_radarLidarParams.verticalMinDeg, m_radarLidarParams.verticalMaxDeg, m_radarLidarParams.verticalStepDeg,
                 m_radarLidarParams.maxDistance);
   frameUBO.lidar.camera.prevViewProj = frameUBO.lidar.camera.viewProj;
+  frameUBO.heightScan.camera.viewProj     = heightScanProj * heightScanView;
+  frameUBO.heightScan.camera.view         = heightScanView;
+  frameUBO.heightScan.camera.viewInverse  = glm::inverse(heightScanView);
+  frameUBO.heightScan.camera.projInverse  = glm::inverse(heightScanProj);
+  frameUBO.heightScan.camera.prevViewProj = frameUBO.heightScan.camera.viewProj;
+  frameUBO.heightScan.positionAndPad      = glm::vec4(heightScanEye, 0.0f);
 
   m_lastView      = view;
   m_lastProj      = proj;

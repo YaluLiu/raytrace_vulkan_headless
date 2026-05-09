@@ -380,6 +380,16 @@ void RayTraceApp::setRadarCamera(const RadarCameraInput& radarCamera)
   m_helloVk.setRadarLidarParams(radarCamera.lidarParams);
 }
 
+void RayTraceApp::setHeightScanCamera(const SensorCameraInput& heightScanCamera)
+{
+  HelloVulkan::RadarCameraData camera{};
+  camera.eye    = heightScanCamera.eye;
+  camera.center = heightScanCamera.center;
+  camera.up     = heightScanCamera.up;
+  camera.fov    = heightScanCamera.fovDeg;
+  m_helloVk.setHeightScanCamera(camera);
+}
+
 void RayTraceApp::setLidarEnabled(bool enabled)
 {
   m_helloVk.setLidarEnabled(enabled);
