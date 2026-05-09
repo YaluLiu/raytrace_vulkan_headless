@@ -7,8 +7,13 @@
 
 #include "glInteropCache.h"
 
+#ifndef _WIN32
+#include <GL/glx.h>
+#endif
+
 #include <cstdint>
 #include <iostream>
+#include <mutex>
 #include <type_traits>
 #include <unordered_map>
 
@@ -40,6 +45,9 @@ struct CacheKey {
 struct CacheEntry {
   GLuint memoryObject{0};
   GLuint texture{0};
+#ifdef _WIN32
+  HANDLE win32Handle{nullptr};
+#endif
 };
 
 template <typename Handle> std::uint64_t HandleValue(Handle handle) {
@@ -70,11 +78,6 @@ struct CacheKeyHash {
   }
 };
 
-std::unordered_map<CacheKey, CacheEntry, CacheKeyHash> &Cache() {
-  static std::unordered_map<CacheKey, CacheEntry, CacheKeyHash> cache;
-  return cache;
-}
-
 GLint GetGlInternalFormat(VkFormat format) {
   switch (format) {
   case VK_FORMAT_R32G32B32A32_SFLOAT:
@@ -90,26 +93,59 @@ GLint GetGlInternalFormat(VkFormat format) {
   }
 }
 
-bool RequiredGlFunctionsAvailable() {
-  if (glCreateMemoryObjectsEXT == nullptr ||
-      glDeleteMemoryObjectsEXT == nullptr || glCreateTextures == nullptr ||
-      glDeleteTextures == nullptr || glTextureStorageMem2DEXT == nullptr ||
-      glTextureParameteri == nullptr) {
-    std::cerr << "[HdRobotGlInteropCache] Missing required OpenGL external "
-                 "memory functions"
+#ifdef _WIN32
+void *GetGlProcAddress(const char *name) {
+  PROC proc = wglGetProcAddress(name);
+  if (proc != nullptr && proc != reinterpret_cast<PROC>(1) &&
+      proc != reinterpret_cast<PROC>(2) && proc != reinterpret_cast<PROC>(3) &&
+      proc != reinterpret_cast<PROC>(-1)) {
+    return reinterpret_cast<void *>(proc);
+  }
+
+  HMODULE opengl = GetModuleHandleA("opengl32.dll");
+  if (opengl == nullptr) {
+    opengl = LoadLibraryA("opengl32.dll");
+  }
+  return opengl != nullptr ? reinterpret_cast<void *>(GetProcAddress(opengl, name))
+                           : nullptr;
+}
+#else
+void *GetGlProcAddress(const char *name) {
+  return reinterpret_cast<void *>(
+      glXGetProcAddressARB(reinterpret_cast<const GLubyte *>(name)));
+}
+#endif
+
+bool EnsureGlFunctionsAvailable(bool &loaded) {
+  if (!loaded) {
+    load_GL(GetGlProcAddress);
+    loaded = true;
+  }
+
+  if (!has_GL_VERSION_4_5) {
+    std::cerr << "[HdRobotGlInteropCache] OpenGL 4.5 functions required for "
+                 "DSA texture/FBO copies are unavailable"
+              << std::endl;
+    return false;
+  }
+
+  if (!has_GL_EXT_memory_object) {
+    std::cerr << "[HdRobotGlInteropCache] GL_EXT_memory_object is unavailable"
               << std::endl;
     return false;
   }
 
 #ifdef _WIN32
-  if (glImportMemoryWin32HandleEXT == nullptr) {
-    std::cerr << "[HdRobotGlInteropCache] Missing glImportMemoryWin32HandleEXT"
+  if (!has_GL_EXT_memory_object_win32) {
+    std::cerr << "[HdRobotGlInteropCache] GL_EXT_memory_object_win32 is "
+                 "unavailable"
               << std::endl;
     return false;
   }
 #else
-  if (glImportMemoryFdEXT == nullptr) {
-    std::cerr << "[HdRobotGlInteropCache] Missing glImportMemoryFdEXT"
+  if (!has_GL_EXT_memory_object_fd) {
+    std::cerr << "[HdRobotGlInteropCache] GL_EXT_memory_object_fd is "
+                 "unavailable"
               << std::endl;
     return false;
   }
@@ -135,9 +171,39 @@ bool CheckGlError(const char *operation) {
   return false;
 }
 
+void DestroyEntry(CacheEntry &entry) {
+  if (entry.texture != 0) {
+    glDeleteTextures(1, &entry.texture);
+    entry.texture = 0;
+  }
+  if (entry.memoryObject != 0) {
+    glDeleteMemoryObjectsEXT(1, &entry.memoryObject);
+    entry.memoryObject = 0;
+  }
+#ifdef _WIN32
+  if (entry.win32Handle != nullptr) {
+    CloseHandle(entry.win32Handle);
+    entry.win32Handle = nullptr;
+  }
+#endif
+}
+
+bool SetDedicatedMemoryFlag(const HeadlessAovTexture &texture,
+                            GLuint memoryObject) {
+  if (!texture.dedicatedMemory) {
+    return true;
+  }
+
+  const GLint dedicated = GL_TRUE;
+  ClearGlErrors();
+  glMemoryObjectParameterivEXT(memoryObject, GL_DEDICATED_MEMORY_OBJECT_EXT,
+                               &dedicated);
+  return CheckGlError("glMemoryObjectParameterivEXT");
+}
+
 #ifdef _WIN32
 bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
-                            GLuint memoryObject) {
+                            CacheEntry &entry) {
   const auto getMemoryWin32Handle =
       reinterpret_cast<PFN_vkGetMemoryWin32HandleKHR>(
           vkGetDeviceProcAddr(texture.device, "vkGetMemoryWin32HandleKHR"));
@@ -162,12 +228,16 @@ bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
   }
 
   ClearGlErrors();
-  glImportMemoryWin32HandleEXT(memoryObject,
+  glImportMemoryWin32HandleEXT(entry.memoryObject,
                                static_cast<GLuint64>(texture.memorySize),
                                GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, handle);
-  const bool imported = CheckGlError("glImportMemoryWin32HandleEXT");
-  CloseHandle(handle);
-  return imported;
+  if (!CheckGlError("glImportMemoryWin32HandleEXT")) {
+    CloseHandle(handle);
+    return false;
+  }
+
+  entry.win32Handle = handle;
+  return true;
 }
 #else
 bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
@@ -217,6 +287,15 @@ CacheKey MakeCacheKey(const HeadlessAovTexture &texture) {
 }
 } // namespace
 
+struct HdRobotGlInteropCache::Impl {
+  std::mutex mutex;
+  bool glLoaded{false};
+  std::unordered_map<CacheKey, CacheEntry, CacheKeyHash> cache;
+};
+
+HdRobotGlInteropCache::HdRobotGlInteropCache()
+    : _impl(std::make_unique<Impl>()) {}
+
 HdRobotGlInteropCache::~HdRobotGlInteropCache() { Clear(); }
 
 GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
@@ -224,6 +303,8 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
   if (texture.device == VK_NULL_HANDLE || texture.image == VK_NULL_HANDLE ||
       texture.memory == VK_NULL_HANDLE || texture.memorySize == 0 ||
       texture.extent.width == 0 || texture.extent.height == 0) {
+    std::cerr << "[HdRobotGlInteropCache] Invalid AOV texture export metadata"
+              << std::endl;
     return 0;
   }
 
@@ -234,33 +315,45 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
     return 0;
   }
 
-  auto &cache = Cache();
+  std::lock_guard<std::mutex> lock(_impl->mutex);
   const CacheKey key = MakeCacheKey(texture);
-  const auto it = cache.find(key);
-  if (it != cache.end()) {
+  const auto it = _impl->cache.find(key);
+  if (it != _impl->cache.end()) {
     return it->second.texture;
   }
 
-  if (!RequiredGlFunctionsAvailable()) {
+  if (!EnsureGlFunctionsAvailable(_impl->glLoaded)) {
     return 0;
   }
 
   CacheEntry entry;
+  ClearGlErrors();
   glCreateMemoryObjectsEXT(1, &entry.memoryObject);
-  if (entry.memoryObject == 0) {
-    std::cerr << "[HdRobotGlInteropCache] glCreateMemoryObjectsEXT returned 0"
-              << std::endl;
+  if (entry.memoryObject == 0 ||
+      !CheckGlError("glCreateMemoryObjectsEXT")) {
     return 0;
   }
 
-  if (!ImportVulkanMemoryToGl(texture, entry.memoryObject)) {
-    glDeleteMemoryObjectsEXT(1, &entry.memoryObject);
+  if (!SetDedicatedMemoryFlag(texture, entry.memoryObject)) {
+    DestroyEntry(entry);
     return 0;
   }
+
+#ifdef _WIN32
+  if (!ImportVulkanMemoryToGl(texture, entry)) {
+    DestroyEntry(entry);
+    return 0;
+  }
+#else
+  if (!ImportVulkanMemoryToGl(texture, entry.memoryObject)) {
+    DestroyEntry(entry);
+    return 0;
+  }
+#endif
 
   ClearGlErrors();
   glCreateTextures(GL_TEXTURE_2D, 1, &entry.texture);
-  if (entry.texture != 0) {
+  if (entry.texture != 0 && CheckGlError("glCreateTextures")) {
     glTextureStorageMem2DEXT(
         entry.texture, 1, static_cast<GLenum>(internalFormat),
         static_cast<GLsizei>(texture.extent.width),
@@ -273,27 +366,22 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
   }
 
   if (entry.texture == 0 || !CheckGlError("glTextureStorageMem2DEXT")) {
-    if (entry.texture != 0) {
-      glDeleteTextures(1, &entry.texture);
+    if (entry.texture == 0) {
+      std::cerr << "[HdRobotGlInteropCache] glCreateTextures returned 0"
+                << std::endl;
     }
-    glDeleteMemoryObjectsEXT(1, &entry.memoryObject);
+    DestroyEntry(entry);
     return 0;
   }
 
-  cache.emplace(key, entry);
+  _impl->cache.emplace(key, entry);
   return entry.texture;
 }
 
 void HdRobotGlInteropCache::Clear() {
-  auto &cache = Cache();
-  for (const auto &cacheItem : cache) {
-    const CacheEntry &entry = cacheItem.second;
-    if (entry.texture != 0) {
-      glDeleteTextures(1, &entry.texture);
-    }
-    if (entry.memoryObject != 0) {
-      glDeleteMemoryObjectsEXT(1, &entry.memoryObject);
-    }
+  std::lock_guard<std::mutex> lock(_impl->mutex);
+  for (auto &cacheItem : _impl->cache) {
+    DestroyEntry(cacheItem.second);
   }
-  cache.clear();
+  _impl->cache.clear();
 }

@@ -88,6 +88,11 @@ HeadlessRenderBridge::HeadlessRenderBridge(const HdRenderSettingsMap &settings, 
 {
 }
 
+HeadlessRenderBridge::~HeadlessRenderBridge()
+{
+  _glInteropCache.Clear();
+}
+
 bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPassState,
                                        const TfTokenVector &renderTags)
 {
@@ -133,10 +138,10 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   for (const HdRenderPassAovBinding &binding : hdAovBindings)
   {
     auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
-    CopyAovToRenderBuffer(app, binding.aovName, aovBuffer);
+    const bool copied = CopyAovToRenderBuffer(app, binding.aovName, aovBuffer, _glInteropCache);
     if (aovBuffer != nullptr)
     {
-      aovBuffer->SetConverged(true);
+      aovBuffer->SetConverged(copied);
     }
   }
 
@@ -203,6 +208,7 @@ void HeadlessRenderBridge::initOrResize()
   }
   else if (_resetRenderBuffer)
   {
+    _glInteropCache.Clear();
     _renderApp.resize(_width, _height);
     _resetRenderBuffer = false;
   }

@@ -8,6 +8,7 @@
 #include <vector>
 
 class HelloVulkan;
+class HdRobotGlInteropCache;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -17,8 +18,8 @@ std::vector<TextureAsset>
 ExportRegisteredTextures(const std::vector<TextureAsset> &registeredTextures);
 HdRobotRenderBuffer *
 GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector &bindings);
-void CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
-                           HdRobotRenderBuffer *renderBuffer);
-void ClearAovGlInteropCache();
+bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
+                           HdRobotRenderBuffer *renderBuffer,
+                           ::HdRobotGlInteropCache &glInteropCache);
 
 PXR_NAMESPACE_CLOSE_SCOPE

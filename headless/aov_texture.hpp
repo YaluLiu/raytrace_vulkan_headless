@@ -30,4 +30,5 @@ struct HeadlessAovTexture
   VkFormat       format{VK_FORMAT_UNDEFINED};
   VkExtent2D     extent{0, 0};
   VkImageLayout  layout{VK_IMAGE_LAYOUT_GENERAL};
+  bool           dedicatedMemory{false};
 };

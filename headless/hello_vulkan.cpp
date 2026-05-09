@@ -256,6 +256,7 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
   result.format       = format;
   result.extent       = extent;
   result.layout       = texture->descriptor.imageLayout;
+  result.dedicatedMemory = true;
   return result;
 }
 

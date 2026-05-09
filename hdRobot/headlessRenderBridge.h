@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glInteropCache.h"
 #include "renderParam.h"
 
 #include <pxr/imaging/hd/renderDelegate.h>
@@ -16,6 +17,7 @@ class HeadlessRenderBridge final
 {
 public:
   HeadlessRenderBridge(const HdRenderSettingsMap& settings, HdRobotRenderParam& renderParam, std::string resourcePath);
+  ~HeadlessRenderBridge();
 
   bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
 
@@ -37,7 +39,8 @@ private:
   HdRobotRenderParam&        _renderParam;
   std::string                _resourcePath;
 
-  RayTraceApp   _renderApp;
+  RayTraceApp            _renderApp;
+  HdRobotGlInteropCache  _glInteropCache;
   bool          _isAppInited = false;
   bool          _resetRenderBuffer = false;
   TfTokenVector _activeRenderTags;
