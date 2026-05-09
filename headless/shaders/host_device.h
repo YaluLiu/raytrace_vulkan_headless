@@ -106,6 +106,22 @@ struct LidarParams
   float maxDistance;
 };
 
+struct HeightScanParams
+{
+  float minX;
+  float maxX;
+  float stepX;
+  float minZ;
+  float maxZ;
+  float stepZ;
+  float rayDirectionX;
+  float rayDirectionY;
+  float rayDirectionZ;
+  float pointRadiusPixels;
+  float maxDistance;
+  float reserved;
+};
+
 struct Light
 {
   // common
@@ -150,6 +166,7 @@ struct PushConstantRay
   int samplesPerFrame;
   int lidarPassMode;
   LidarParams lidar;
+  HeightScanParams heightScan;
 };
 
 struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for

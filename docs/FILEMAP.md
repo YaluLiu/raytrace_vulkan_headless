@@ -19,6 +19,8 @@ call sites with `rg`.
 - `docs/`: Tracked human/agent navigation and design documents.
 - `docs/PLAN/materialx-rendering-plan.md`: Current OpenChessSet MaterialX
   support scope, approximations, and regression commands.
+- `docs/HEIGHT_SCAN_SENSOR_PARAMS.md`: Proposed height scan sensor parameters,
+  host/GPU struct shapes, and implementation touch points relative to LiDAR.
 
 ## Build And Test Routing
 
@@ -76,8 +78,12 @@ call sites with `rg`.
 ## LiDAR Rendering
 
 - `headless/hello_vulkan_lidar.cpp`: LiDAR camera updates, LiDAR ray tracing,
-  point cloud rendering, composite descriptor setup, and related barriers.
+  height scan ray tracing, point cloud rendering, composite descriptor setup,
+  and related barriers.
 - `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
+- `headless/shaders/raytrace_height_scan.rgen`: Height scan ray generation
+  shader; casts default XZ-grid rays into the scene and writes the shared
+  point-cloud depth key.
 - `headless/shaders/lidar_pointcloud.glsl`: LiDAR point cloud shader.
 - `headless/shaders/lidar_composite.comp`: LiDAR composite compute shader.
 
@@ -149,6 +155,8 @@ call sites with `rg`.
 - `headless/shaders/raytrace2.rchit`: Additional closest-hit shader variant.
 - `headless/shaders/wavefront.glsl`: Wavefront helper shader code.
 - `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
+- `headless/shaders/raytrace_height_scan.rgen`: Height scan ray generation
+  shader.
 - `headless/shaders/lidar_pointcloud.glsl`: LiDAR point cloud shader.
 - `headless/shaders/lidar_composite.comp`: LiDAR composite compute shader.
 
@@ -169,8 +177,8 @@ call sites with `rg`.
   `createDlssRR`, `evaluate`, and `DLSS_RR`.
 - LiDAR:
   `headless/hello_vulkan_lidar.cpp` and LiDAR shader files, then search for
-  `renderLidarPointCloud`, `updateLidarCamera`, and
-  `updateLidarCompositeDescriptorSet`.
+  `renderLidarPointCloud`, `renderHeightScanPointCloud`, `updateLidarCamera`,
+  and `updateLidarCompositeDescriptorSet`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
   `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,

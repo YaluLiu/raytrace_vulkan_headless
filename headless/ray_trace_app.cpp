@@ -38,13 +38,15 @@ enum class HeadlessRenderPass
   RayTrace,
   DlssResolve,
   LidarPointCloud,
+  HeightScanPointCloud,
   LidarComposite,
 };
 
-constexpr std::array<HeadlessRenderPass, 7> kHeadlessRenderPassSequence{
-    HeadlessRenderPass::UpdateUniforms,    HeadlessRenderPass::UpdateLights, HeadlessRenderPass::UpdateInstanceIds,
-    HeadlessRenderPass::RayTrace,          HeadlessRenderPass::DlssResolve,  HeadlessRenderPass::LidarPointCloud,
-    HeadlessRenderPass::LidarComposite,
+constexpr std::array<HeadlessRenderPass, 8> kHeadlessRenderPassSequence{
+    HeadlessRenderPass::UpdateUniforms,        HeadlessRenderPass::UpdateLights,
+    HeadlessRenderPass::UpdateInstanceIds,     HeadlessRenderPass::RayTrace,
+    HeadlessRenderPass::DlssResolve,           HeadlessRenderPass::LidarPointCloud,
+    HeadlessRenderPass::HeightScanPointCloud,  HeadlessRenderPass::LidarComposite,
 };
 
 void addSearchPathIfExists(std::vector<std::string>& paths, const fs::path& path)
@@ -123,6 +125,9 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
       break;
     case HeadlessRenderPass::LidarPointCloud:
       renderer.renderLidarPointCloud(cmdBuf);
+      break;
+    case HeadlessRenderPass::HeightScanPointCloud:
+      renderer.renderHeightScanPointCloud(cmdBuf);
       break;
     case HeadlessRenderPass::LidarComposite:
       renderer.compositeLidar(cmdBuf);
@@ -332,6 +337,8 @@ void RayTraceApp::createBVH()
   m_helloVk.createLidarRtDescriptorSet();
   m_helloVk.createLidarRtPipeline();
   m_helloVk.createLidarRtShaderBindingTable();
+  m_helloVk.createHeightScanRtPipeline();
+  m_helloVk.createHeightScanRtShaderBindingTable();
   m_helloVk.createLidarCompositePipeline();
   m_resourcesCreated = true;
 }
@@ -381,6 +388,21 @@ void RayTraceApp::setLidarEnabled(bool enabled)
 bool RayTraceApp::isLidarEnabled() const
 {
   return m_helloVk.isLidarEnabled();
+}
+
+void RayTraceApp::setHeightScanParams(const HeightScanParams& params)
+{
+  m_helloVk.setHeightScanParams(params);
+}
+
+void RayTraceApp::setHeightScanEnabled(bool enabled)
+{
+  m_helloVk.setHeightScanEnabled(enabled);
+}
+
+bool RayTraceApp::isHeightScanEnabled() const
+{
+  return m_helloVk.isHeightScanEnabled();
 }
 
 void RayTraceApp::cleanup()

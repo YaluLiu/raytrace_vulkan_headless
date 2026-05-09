@@ -1,0 +1,143 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "raycommon.glsl"
+#include "wavefront.glsl"
+
+layout(location = 0) rayPayloadEXT hitPayload prd;
+
+layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
+layout(set = 0, binding = eLidarDepthKeyImage, r32ui) uniform uimage2D lidarPointCloudDepthKeyImage;
+layout(set = 1, binding = eFrameUniforms) uniform _FrameUniforms { FrameUniforms frameUni; };
+layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
+
+#include "lidar_pointcloud.glsl"
+
+const float kHeightScanMinStep = 1e-4;
+
+int heightScanAxisSampleCount(float minValue, float maxValue, float stepValue)
+{
+  float absStep = max(abs(stepValue), kHeightScanMinStep);
+  float span    = abs(maxValue - minValue);
+  int   steps   = int(floor(span / absStep + 0.5));
+  return max(steps + 1, 1);
+}
+
+float heightScanValueAtIndex(float minValue, float maxValue, float stepValue, int idx)
+{
+  int count = heightScanAxisSampleCount(minValue, maxValue, stepValue);
+  if(count <= 1)
+  {
+    return minValue;
+  }
+
+  float stepMag = max(abs(stepValue), kHeightScanMinStep);
+  float stepDir = (maxValue >= minValue) ? 1.0 : -1.0;
+  float value   = minValue + float(clamp(idx, 0, count - 1)) * stepDir * stepMag;
+  return clamp(value, min(minValue, maxValue), max(minValue, maxValue));
+}
+
+void heightScanRayIndexToGrid(uint rayIdx, out float x, out float z)
+{
+  int xCount = heightScanAxisSampleCount(pcRay.heightScan.minX, pcRay.heightScan.maxX, pcRay.heightScan.stepX);
+  int zCount = heightScanAxisSampleCount(pcRay.heightScan.minZ, pcRay.heightScan.maxZ, pcRay.heightScan.stepZ);
+  int total  = max(xCount * zCount, 1);
+
+  int clampedRayIdx = int(min(rayIdx, uint(total - 1)));
+  int xIdx          = clampedRayIdx % xCount;
+  int zIdx          = clampedRayIdx / xCount;
+
+  x = heightScanValueAtIndex(pcRay.heightScan.minX, pcRay.heightScan.maxX, pcRay.heightScan.stepX, xIdx);
+  z = heightScanValueAtIndex(pcRay.heightScan.minZ, pcRay.heightScan.maxZ, pcRay.heightScan.stepZ, zIdx);
+}
+
+vec3 heightScanDirection()
+{
+  vec3 direction =
+      vec3(pcRay.heightScan.rayDirectionX, pcRay.heightScan.rayDirectionY, pcRay.heightScan.rayDirectionZ);
+  if(dot(direction, direction) <= 1e-12)
+  {
+    direction = vec3(0.0, 0.0, -1.0);
+  }
+  return normalize(direction);
+}
+
+void heightScanPlaneAxes(vec3 direction, out vec3 axisX, out vec3 axisZ)
+{
+  axisX = vec3(1.0, 0.0, 0.0) - direction * dot(vec3(1.0, 0.0, 0.0), direction);
+  if(dot(axisX, axisX) <= 1e-12)
+  {
+    axisX = vec3(0.0, 1.0, 0.0) - direction * dot(vec3(0.0, 1.0, 0.0), direction);
+  }
+
+  axisX = normalize(axisX);
+  axisZ = normalize(cross(axisX, direction));
+}
+
+bool traceHeightScanHit(uint rayIdx, out vec3 worldHit)
+{
+  float x;
+  float z;
+  heightScanRayIndexToGrid(rayIdx, x, z);
+
+  vec3  direction   = heightScanDirection();
+  float maxDistance = max(pcRay.heightScan.maxDistance, kLidarRayTMin);
+  vec3  lidarOrigin = frameUni.lidar.params.positionAndPad.xyz;
+  vec3  scanAxisX;
+  vec3  scanAxisZ;
+  heightScanPlaneAxes(direction, scanAxisX, scanAxisZ);
+  vec3 origin = lidarOrigin + scanAxisX * x + scanAxisZ * z;
+
+  prd.radiance                  = vec3(0.0);
+  prd.objId                     = -1;
+  prd.instanceId                = -1;
+  prd.throughput                = vec3(1.0);
+  prd.seed                      = rayIdx * 22695477u + 1u;
+  prd.depth                     = max(pcRay.maxDepth, 1) - 1;
+  prd.done                      = 0;
+  prd.firstHitWorldPosRoughness = vec4(0.0);
+  prd.firstHitNormalSpecHitDist = vec4(0.0);
+  prd.firstHitDiffuseValid      = vec4(0.0);
+  prd.firstHitSpecularPad       = vec4(0.0);
+
+  traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, origin, kLidarRayTMin, direction, maxDistance, 0);
+
+  if(prd.firstHitDiffuseValid.w <= 0.5)
+  {
+    worldHit = vec3(0.0);
+    return false;
+  }
+
+  worldHit = prd.firstHitWorldPosRoughness.xyz;
+  return true;
+}
+
+void main()
+{
+  int xCount    = heightScanAxisSampleCount(pcRay.heightScan.minX, pcRay.heightScan.maxX, pcRay.heightScan.stepX);
+  int zCount    = heightScanAxisSampleCount(pcRay.heightScan.minZ, pcRay.heightScan.maxZ, pcRay.heightScan.stepZ);
+  int totalRays = xCount * zCount;
+  uint rayIdx   = gl_LaunchIDEXT.x + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x;
+
+  if(rayIdx >= uint(max(totalRays, 0)))
+  {
+    return;
+  }
+
+  vec3 worldHit;
+  if(!traceHeightScanHit(rayIdx, worldHit))
+  {
+    return;
+  }
+
+  ivec2 screenPixel;
+  if(!projectWorldToMainPixel(worldHit, screenPixel))
+  {
+    return;
+  }
+
+  float normalizedDepth = computeMainNormalizedDepth(worldHit);
+  splatPoint(screenPixel, pcRay.heightScan.pointRadiusPixels, normalizedDepth);
+}

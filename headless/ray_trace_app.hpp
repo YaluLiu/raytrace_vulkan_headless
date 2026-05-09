@@ -51,6 +51,9 @@ public:
   void setRadarCamera(const RadarCameraInput& radarCamera);
   void setLidarEnabled(bool enabled);
   bool isLidarEnabled() const;
+  void setHeightScanParams(const HeightScanParams& params);
+  void setHeightScanEnabled(bool enabled);
+  bool isHeightScanEnabled() const;
 
   // 
   HelloVulkan& getVulkan() { return m_helloVk; };

@@ -49,6 +49,9 @@ public:
   void setRadarLidarParams(const LidarParams& params);
   void setLidarEnabled(bool enabled);
   bool isLidarEnabled() const { return m_enableLidar; }
+  void setHeightScanParams(const HeightScanParams& params);
+  void setHeightScanEnabled(bool enabled);
+  bool isHeightScanEnabled() const { return m_enableHeightScan; }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
 
@@ -105,6 +108,9 @@ public:
   void     createLidarRtPipeline();
   void     createLidarRtShaderBindingTable();
   void     renderLidarPointCloud(const VkCommandBuffer& cmdBuf);
+  void     createHeightScanRtPipeline();
+  void     createHeightScanRtShaderBindingTable();
+  void     renderHeightScanPointCloud(const VkCommandBuffer& cmdBuf);
   void     createLidarCompositePipeline();
   void     compositeLidar(const VkCommandBuffer& cmdBuf);
   void     raytrace(const VkCommandBuffer& cmdBuf);
@@ -130,6 +136,9 @@ public:
   std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_lidarRtShaderGroups;
   VkPipelineLayout                                  m_lidarRtPipelineLayout{VK_NULL_HANDLE};
   VkPipeline                                        m_lidarRtPipeline{VK_NULL_HANDLE};
+  std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_heightScanRtShaderGroups;
+  VkPipelineLayout                                  m_heightScanRtPipelineLayout{VK_NULL_HANDLE};
+  VkPipeline                                        m_heightScanRtPipeline{VK_NULL_HANDLE};
 
   //for sbt
   nvvk::SBTWrapper                m_sbtWrapper;
@@ -145,6 +154,12 @@ public:
   VkStridedDeviceAddressRegionKHR m_lidarRtHitRegion{};
   VkStridedDeviceAddressRegionKHR m_lidarRtCallRegion{};
 
+  nvvk::Buffer                    m_heightScanRtSBTBuffer;
+  VkStridedDeviceAddressRegionKHR m_heightScanRtRgenRegion{};
+  VkStridedDeviceAddressRegionKHR m_heightScanRtMissRegion{};
+  VkStridedDeviceAddressRegionKHR m_heightScanRtHitRegion{};
+  VkStridedDeviceAddressRegionKHR m_heightScanRtCallRegion{};
+
   std::vector<VkAccelerationStructureInstanceKHR>    m_tlas;
   std::vector<nvvk::RaytracingBuilderKHR::BlasInput> m_blas;
 
@@ -157,7 +172,8 @@ public:
       6,  // max depth
       2,  // samples per frame
       eRaygenPassLowResBeauty,  // lidar pass mode
-      {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f}};
+      {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f},
+      {-10.0f, 10.0f, 0.1f, -10.0f, 10.0f, 0.1f, 0.0f, 0.0f, -1.0f, 2.0f, 200.0f, 0.0f}};
 
   // #VK_animation
   void animationInstances(float time);
@@ -381,4 +397,7 @@ private:
   bool            m_hasRadarCamera{false};
   bool            m_enableLidar{true};
   LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
+  bool             m_enableHeightScan{true};
+  HeightScanParams m_heightScanParams{-10.0f, 10.0f, 0.1f, -10.0f, 10.0f, 0.1f,
+                                      0.0f, 0.0f, -1.0f, 2.0f, 200.0f, 0.0f};
 };

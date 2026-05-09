@@ -57,6 +57,18 @@ bool lidarParamsNearlyEqual(const LidarParams& a, const LidarParams& b, float ep
          && std::fabs(a.maxDistance - b.maxDistance) <= eps;
 }
 
+bool heightScanParamsNearlyEqual(const HeightScanParams& a, const HeightScanParams& b, float eps = 1e-5f)
+{
+  return std::fabs(a.minX - b.minX) <= eps && std::fabs(a.maxX - b.maxX) <= eps
+         && std::fabs(a.stepX - b.stepX) <= eps && std::fabs(a.minZ - b.minZ) <= eps
+         && std::fabs(a.maxZ - b.maxZ) <= eps && std::fabs(a.stepZ - b.stepZ) <= eps
+         && std::fabs(a.rayDirectionX - b.rayDirectionX) <= eps
+         && std::fabs(a.rayDirectionY - b.rayDirectionY) <= eps
+         && std::fabs(a.rayDirectionZ - b.rayDirectionZ) <= eps
+         && std::fabs(a.pointRadiusPixels - b.pointRadiusPixels) <= eps
+         && std::fabs(a.maxDistance - b.maxDistance) <= eps;
+}
+
 void appendDlssStatusLog(const std::string& line)
 {
   const char* statusLogPath = std::getenv("DLSS_RR_STATUS_LOG");
@@ -208,11 +220,30 @@ void HelloVulkan::setRadarLidarParams(const LidarParams& params)
   }
 }
 
+void HelloVulkan::setHeightScanParams(const HeightScanParams& params)
+{
+  if(!heightScanParamsNearlyEqual(params, m_heightScanParams))
+  {
+    m_heightScanParams = params;
+    m_pcRay.heightScan = params;
+    resetAccumulation();
+  }
+}
+
 void HelloVulkan::setLidarEnabled(bool enabled)
 {
   if(m_enableLidar != enabled)
   {
     m_enableLidar = enabled;
+    resetAccumulation();
+  }
+}
+
+void HelloVulkan::setHeightScanEnabled(bool enabled)
+{
+  if(m_enableHeightScan != enabled)
+  {
+    m_enableHeightScan = enabled;
     resetAccumulation();
   }
 }
@@ -439,12 +470,15 @@ void HelloVulkan::destroyResources()
   m_rtBuilder.destroy();
   m_sbtWrapper.destroy();
   m_alloc.destroy(m_lidarRtSBTBuffer);
+  m_alloc.destroy(m_heightScanRtSBTBuffer);
   vkDestroyPipeline(m_device, m_rtPipeline, nullptr);
   vkDestroyPipelineLayout(m_device, m_rtPipelineLayout, nullptr);
   vkDestroyDescriptorPool(m_device, m_rtDescPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_rtDescSetLayout, nullptr);
   vkDestroyPipeline(m_device, m_lidarRtPipeline, nullptr);
   vkDestroyPipelineLayout(m_device, m_lidarRtPipelineLayout, nullptr);
+  vkDestroyPipeline(m_device, m_heightScanRtPipeline, nullptr);
+  vkDestroyPipelineLayout(m_device, m_heightScanRtPipelineLayout, nullptr);
   vkDestroyDescriptorPool(m_device, m_lidarRtDescPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_lidarRtDescSetLayout, nullptr);
   vkDestroyPipeline(m_device, m_lidarCompositePipeline, nullptr);
