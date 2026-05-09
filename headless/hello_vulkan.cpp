@@ -122,7 +122,7 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_debug.setup(m_device);
   // 查找适合的离屏深度格式
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
-  m_allocGL.init(device, physicalDevice);
+  m_sharedAlloc.init(device, physicalDevice);
   if(const char* enableDlssEnv = std::getenv("ENABLE_DLSS_RR"))
   {
     m_enableDlssRR = std::string(enableDlssEnv) != "0";
@@ -234,8 +234,7 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
     return std::nullopt;
   }
 
-  auto& allocator = const_cast<interop::ResourceAllocatorGLInterop&>(m_allocGL);
-  auto* memAlloc  = allocator.getMemoryAllocator();
+  auto* memAlloc = m_sharedAlloc.getMemoryAllocator();
   if(memAlloc == nullptr)
   {
     return std::nullopt;
@@ -531,24 +530,23 @@ void HelloVulkan::destroyResources()
     m_alloc.destroy(t);
   }
 
-  m_rtOutputGL.destroy(m_allocGL);
-  m_rtObjectIdGL.destroy(m_allocGL);
-  m_rtInstanceIdGL.destroy(m_allocGL);
-  m_rtDiffuseAlbedoGL.destroy(m_allocGL);
-  m_rtSpecularAlbedoGL.destroy(m_allocGL);
-  m_rtNormalRoughnessGL.destroy(m_allocGL);
-  m_rtMotionVectorGL.destroy(m_allocGL);
-  m_rtLinearDepthGL.destroy(m_allocGL);
-  m_rtDepthAovGL.destroy(m_allocGL);
-  m_rtSpecularHitDistanceGL.destroy(m_allocGL);
-  m_rtDistanceToCameraGL.destroy(m_allocGL);
-  m_rtLidarPointCloudGL.destroy(m_allocGL);
-  m_allocGL.deinit();
-
   m_alloc.destroy(m_offscreenDepth);
-  m_alloc.destroy(m_offscreenColor);
-  m_alloc.destroy(m_offscreenDlssOutput);
-  m_alloc.destroy(m_offscreenLidarPointCloudDepthKey);
+  m_sharedAlloc.destroy(m_offscreenColor);
+  m_sharedAlloc.destroy(m_offscreenDlssOutput);
+  m_sharedAlloc.destroy(m_offscreenDenoised);
+  m_sharedAlloc.destroy(m_offscreenObjectId);
+  m_sharedAlloc.destroy(m_offscreenInstanceId);
+  m_sharedAlloc.destroy(m_offscreenDiffuseAlbedo);
+  m_sharedAlloc.destroy(m_offscreenSpecularAlbedo);
+  m_sharedAlloc.destroy(m_offscreenNormalRoughness);
+  m_sharedAlloc.destroy(m_offscreenMotionVector);
+  m_sharedAlloc.destroy(m_offscreenLinearDepth);
+  m_sharedAlloc.destroy(m_offscreenDepthAov);
+  m_sharedAlloc.destroy(m_offscreenSpecularHitDistance);
+  m_sharedAlloc.destroy(m_offscreenDistanceToCamera);
+  m_sharedAlloc.destroy(m_offscreenLidarPointCloud);
+  m_sharedAlloc.destroy(m_offscreenLidarPointCloudDepthKey);
+  m_sharedAlloc.deinit();
 
   // #VKRay 光线追踪相关
   m_rtBuilder.destroy();
@@ -623,47 +621,34 @@ void HelloVulkan::createOffscreenRender()
   m_renderSize = computeRenderSize();
   m_aovSize    = m_size;
 
-  constexpr VkImageUsageFlags kInteropUsage =
+  constexpr VkImageUsageFlags kAovUsage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
   createOffscreenImage(m_offscreenColor, m_offscreenColorFormat,
                        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                       nullptr, 0, 0,
-                       0, m_renderSize);
+                       m_renderSize);
   createOffscreenImage(m_offscreenDlssOutput, m_offscreenDlssOutputFormat,
                        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                       nullptr, 0, 0,
-                       0, m_size);
-  createOffscreenImage(
-      m_offscreenDenoised, m_offscreenDenoisedFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-      &m_rtOutputGL, GL_RGBA32F, GL_LINEAR, GL_LINEAR, m_size);
-  createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kInteropUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                       &m_rtObjectIdGL, GL_R32I, GL_LINEAR, GL_LINEAR, m_aovSize);
-  createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kInteropUsage, &m_rtInstanceIdGL, GL_R32I,
-                       GL_NEAREST, GL_NEAREST, m_aovSize);
-  createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kInteropUsage, &m_rtDiffuseAlbedoGL, GL_RGBA32F,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
-  createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kInteropUsage, &m_rtSpecularAlbedoGL, GL_RGBA32F,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
-  createOffscreenImage(m_offscreenNormalRoughness, m_offscreenNormalRoughnessFormat, kInteropUsage, &m_rtNormalRoughnessGL,
-                       GL_RGBA32F, GL_NEAREST, GL_NEAREST, m_renderSize);
-  createOffscreenImage(m_offscreenMotionVector, m_offscreenMotionVectorFormat, kInteropUsage, &m_rtMotionVectorGL, GL_RG32F,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
-  createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kInteropUsage, &m_rtLinearDepthGL, GL_R32F,
-                       GL_NEAREST, GL_NEAREST, m_renderSize);
-  createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kInteropUsage, &m_rtDepthAovGL, GL_R32F,
-                       GL_NEAREST, GL_NEAREST, m_aovSize);
-  createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kInteropUsage,
-                       &m_rtSpecularHitDistanceGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_renderSize);
-  createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kInteropUsage,
-                       &m_rtDistanceToCameraGL, GL_R32F, GL_NEAREST, GL_NEAREST, m_aovSize);
+                       m_size);
+  createOffscreenImage(m_offscreenDenoised, m_offscreenDenoisedFormat,
+                       kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_size);
+  createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                       m_aovSize);
+  createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kAovUsage, m_aovSize);
+  createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kAovUsage, m_renderSize);
+  createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kAovUsage, m_renderSize);
+  createOffscreenImage(m_offscreenNormalRoughness, m_offscreenNormalRoughnessFormat, kAovUsage, m_renderSize);
+  createOffscreenImage(m_offscreenMotionVector, m_offscreenMotionVectorFormat, kAovUsage, m_renderSize);
+  createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kAovUsage, m_renderSize);
+  createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kAovUsage, m_aovSize);
+  createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kAovUsage, m_renderSize);
+  createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kAovUsage, m_aovSize);
   createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat,
-                       kInteropUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, &m_rtLidarPointCloudGL, GL_RGBA32F, GL_NEAREST,
-                       GL_NEAREST, m_aovSize);
+                       kAovUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_aovSize);
   createOffscreenImage(m_offscreenLidarPointCloudDepthKey, m_offscreenLidarPointCloudDepthKeyFormat,
-                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, nullptr, 0, 0, 0, m_aovSize);
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_aovSize);
   // 创建depth image和image view
   m_alloc.destroy(m_offscreenDepth);
   auto depthCreateInfo =

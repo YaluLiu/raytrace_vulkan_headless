@@ -1,5 +1,4 @@
 #include <sstream>
-#include <stdexcept>
 
 #include "hello_vulkan.hpp"
 #include "nvh/alignment.hpp"
@@ -19,41 +18,6 @@ bool nearlyEqual(float a, float b, float eps = 1e-5f)
 {
   return std::fabs(a - b) <= eps;
 }
-
-#ifdef _WIN32
-void* GetCurrentGlProcAddress(const char* name)
-{
-  void* proc = reinterpret_cast<void*>(wglGetProcAddress(name));
-  if(proc == nullptr || proc == reinterpret_cast<void*>(0x1) || proc == reinterpret_cast<void*>(0x2)
-     || proc == reinterpret_cast<void*>(0x3) || proc == reinterpret_cast<void*>(-1))
-  {
-    static HMODULE opengl32 = LoadLibraryA("opengl32.dll");
-    proc = opengl32 != nullptr ? reinterpret_cast<void*>(GetProcAddress(opengl32, name)) : nullptr;
-  }
-  return proc;
-}
-
-void EnsureGlInteropExtensionsLoaded()
-{
-  if(has_GL_EXT_memory_object && has_GL_EXT_memory_object_win32)
-  {
-    return;
-  }
-
-  if(wglGetCurrentContext() == nullptr)
-  {
-    throw std::runtime_error("OpenGL context is not current while creating Vulkan/OpenGL interop resources");
-  }
-
-  load_GL(GetCurrentGlProcAddress);
-  if(!has_GL_EXT_memory_object || !has_GL_EXT_memory_object_win32)
-  {
-    throw std::runtime_error("OpenGL context does not expose GL_EXT_memory_object and GL_EXT_memory_object_win32");
-  }
-}
-#else
-void EnsureGlInteropExtensionsLoaded() {}
-#endif
 
 bool lightEqual(const Light& lhs, const Light& rhs)
 {
@@ -166,10 +130,6 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
 void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
                                        VkFormat format,
                                        VkImageUsageFlags usage,
-                                       interop::Texture2DVkGL* interopTexture,
-                                       int glInternalFormat,
-                                       int glMinFilter,
-                                       int glMagFilter,
                                        VkExtent2D extent)
 {
   if(extent.width == 0 || extent.height == 0)
@@ -177,30 +137,12 @@ void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
     extent = m_size;
   }
 
-  auto imageInfo = nvvk::makeImage2DCreateInfo(extent, format, usage);
-
-  if(interopTexture != nullptr)
-  {
-    EnsureGlInteropExtensionsLoaded();
-    interopTexture->destroy(m_allocGL);
-
-    nvvk::Image           image  = m_allocGL.createImage(imageInfo);
-    VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageInfo);
-    VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    texture                        = m_allocGL.createTexture(image, ivInfo, sampler);
-    texture.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-    interopTexture->imgSize = extent;
-    interopTexture->texVk   = texture;
-    createTextureGL(*interopTexture, glInternalFormat, glMinFilter, glMagFilter, GL_CLAMP_TO_EDGE, m_allocGL);
-    return;
-  }
-
-  m_alloc.destroy(texture);
-  nvvk::Image           image  = m_alloc.createImage(imageInfo);
+  m_sharedAlloc.destroy(texture);
+  auto                  imageInfo = nvvk::makeImage2DCreateInfo(extent, format, usage);
+  nvvk::Image           image     = m_sharedAlloc.createImage(imageInfo);
   VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageInfo);
   VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-  texture                        = m_alloc.createTexture(image, ivInfo, sampler);
+  texture                        = m_sharedAlloc.createTexture(image, ivInfo, sampler);
   texture.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 

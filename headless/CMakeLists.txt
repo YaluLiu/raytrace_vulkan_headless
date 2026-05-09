@@ -28,6 +28,10 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../h
 # Source files for this project
 #
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
+list(REMOVE_ITEM SOURCE_FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/gl_vkpp.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_test.cpp"
+)
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_lidar.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_height_scan.cpp")
 list(REMOVE_DUPLICATES SOURCE_FILES)
@@ -84,12 +88,6 @@ endforeach(DEBUGLIB)
 foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
   target_link_libraries(${PROJNAME} optimized ${RELEASELIB})
 endforeach(RELEASELIB)
-
-if(WIN32)
-  target_link_libraries(${PROJNAME} opengl32)
-elseif(UNIX AND NOT APPLE)
-  target_link_libraries(${PROJNAME} EGL GL)
-endif()
 
 set(DLSS_RR_FOUND OFF)
 if(ENABLE_DLSS_RR)
