@@ -110,6 +110,23 @@ dlss::PerfQuality dlssPerfQualityForScale(float scale)
   }
   return dlss::PerfQuality::UltraPerformance;
 }
+
+bool requiresDedicatedImageAllocation(VkDevice device, VkImage image)
+{
+  if(device == VK_NULL_HANDLE || image == VK_NULL_HANDLE)
+  {
+    return false;
+  }
+
+  VkMemoryDedicatedRequirements  dedicatedRequirements{VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS};
+  VkMemoryRequirements2          memoryRequirements{VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+  VkImageMemoryRequirementsInfo2 imageRequirements{VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2};
+  imageRequirements.image = image;
+  memoryRequirements.pNext = &dedicatedRequirements;
+
+  vkGetImageMemoryRequirements2(device, &imageRequirements, &memoryRequirements);
+  return dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE;
+}
 }  // namespace
 //--------------------------------------------------------------------------------------------------
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
@@ -256,7 +273,7 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
   result.format       = format;
   result.extent       = extent;
   result.layout       = texture->descriptor.imageLayout;
-  result.dedicatedMemory = true;
+  result.dedicatedMemory = requiresDedicatedImageAllocation(m_device, texture->image);
   return result;
 }
 

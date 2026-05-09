@@ -116,12 +116,7 @@ void *GetGlProcAddress(const char *name) {
 }
 #endif
 
-bool EnsureGlFunctionsAvailable(bool &loaded) {
-  if (!loaded) {
-    load_GL(GetGlProcAddress);
-    loaded = true;
-  }
-
+bool RequiredGlExtensionsAvailable() {
   if (!has_GL_VERSION_4_5) {
     std::cerr << "[HdRobotGlInteropCache] OpenGL 4.5 functions required for "
                  "DSA texture/FBO copies are unavailable"
@@ -152,6 +147,22 @@ bool EnsureGlFunctionsAvailable(bool &loaded) {
 #endif
 
   return true;
+}
+
+bool EnsureGlFunctionsAvailable() {
+  static std::mutex loaderMutex;
+  static bool loaded = false;
+
+  std::lock_guard<std::mutex> lock(loaderMutex);
+  if (!loaded) {
+    load_GL(GetGlProcAddress);
+    if (!RequiredGlExtensionsAvailable()) {
+      return false;
+    }
+    loaded = true;
+  }
+
+  return RequiredGlExtensionsAvailable();
 }
 
 void ClearGlErrors() {
@@ -289,7 +300,6 @@ CacheKey MakeCacheKey(const HeadlessAovTexture &texture) {
 
 struct HdRobotGlInteropCache::Impl {
   std::mutex mutex;
-  bool glLoaded{false};
   std::unordered_map<CacheKey, CacheEntry, CacheKeyHash> cache;
 };
 
@@ -322,7 +332,7 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
     return it->second.texture;
   }
 
-  if (!EnsureGlFunctionsAvailable(_impl->glLoaded)) {
+  if (!EnsureGlFunctionsAvailable()) {
     return 0;
   }
 
