@@ -326,8 +326,6 @@ public:
   VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
   std::vector<uint32_t> readObjectIdImage();
-  void                  dumpInteropTexture(const char* filename);
-  void                  dumpLidarInteropTexture(const char* filename);
 
   // RayTrace Stucture
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);

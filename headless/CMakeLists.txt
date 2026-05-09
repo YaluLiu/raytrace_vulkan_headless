@@ -30,7 +30,6 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../h
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
 list(REMOVE_ITEM SOURCE_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/gl_vkpp.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_test.cpp"
 )
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_lidar.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_height_scan.cpp")

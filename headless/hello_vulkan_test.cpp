@@ -1,7 +1,4 @@
 #include <sstream>
-#include <cmath>
-
-
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
@@ -197,95 +194,6 @@ void HelloVulkan::createCompPipelines()
   vkCreateComputePipelines(m_device, {}, 1, &computePipelineCreateInfo, nullptr, &m_compPipeline);
 
   vkDestroyShaderModule(m_device, computePipelineCreateInfo.stage.module, nullptr);
-}
-
-
-void HelloVulkan::dumpInteropTexture(const char* filename)
-{
-  int width  = m_rtOutputGL.imgSize.width;
-  int height = m_rtOutputGL.imgSize.height;
-  glBindTexture(GL_TEXTURE_2D, m_rtOutputGL.oglId);
-  std::vector<float> pixels(width * height * 4);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-
-  std::vector<unsigned char> out_pixels(width * height * 4);
-  auto saturate = [](float v) {
-    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
-  };
-  auto acesTonemap = [&](float x) {
-    const float num = x * (2.51f * x + 0.03f);
-    const float den = x * (2.43f * x + 0.59f) + 0.14f;
-    return saturate(num / den);
-  };
-  auto toByte = [&](float v) {
-    return static_cast<unsigned char>(saturate(v) * 255.0f + 0.5f);
-  };
-
-  constexpr float kExposure   = 1.15f;
-  constexpr float kSaturation = 1.08f;
-  constexpr float kContrast   = 1.04f;
-  constexpr float kInvGamma   = 1.0f / 2.2f;
-
-  for(size_t i = 0; i < static_cast<size_t>(width) * static_cast<size_t>(height); ++i)
-  {
-    float r = pixels[i * 4 + 0] * kExposure;
-    float g = pixels[i * 4 + 1] * kExposure;
-    float b = pixels[i * 4 + 2] * kExposure;
-
-    r = r < 0.0f ? 0.0f : r;
-    g = g < 0.0f ? 0.0f : g;
-    b = b < 0.0f ? 0.0f : b;
-
-    r = acesTonemap(r);
-    g = acesTonemap(g);
-    b = acesTonemap(b);
-
-    const float luma = 0.2126f * r + 0.7152f * g + 0.0722f * b;
-    r                = luma + (r - luma) * kSaturation;
-    g                = luma + (g - luma) * kSaturation;
-    b                = luma + (b - luma) * kSaturation;
-
-    r = (r - 0.5f) * kContrast + 0.5f;
-    g = (g - 0.5f) * kContrast + 0.5f;
-    b = (b - 0.5f) * kContrast + 0.5f;
-
-    r = std::pow(saturate(r), kInvGamma);
-    g = std::pow(saturate(g), kInvGamma);
-    b = std::pow(saturate(b), kInvGamma);
-
-    out_pixels[i * 4 + 0] = toByte(r);
-    out_pixels[i * 4 + 1] = toByte(g);
-    out_pixels[i * 4 + 2] = toByte(b);
-    out_pixels[i * 4 + 3] = toByte(pixels[i * 4 + 3]);
-  }
-  stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
-}
-
-void HelloVulkan::dumpLidarInteropTexture(const char* filename)
-{
-  int width  = m_rtLidarPointCloudGL.imgSize.width;
-  int height = m_rtLidarPointCloudGL.imgSize.height;
-  glBindTexture(GL_TEXTURE_2D, m_rtLidarPointCloudGL.oglId);
-  std::vector<float> pixels(width * height * 4);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels.data());
-
-  std::vector<unsigned char> out_pixels(width * height * 4);
-  auto saturate = [](float v) {
-    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
-  };
-  auto toByte = [&](float v) {
-    return static_cast<unsigned char>(saturate(v) * 255.0f + 0.5f);
-  };
-
-  for(size_t i = 0; i < static_cast<size_t>(width) * static_cast<size_t>(height); ++i)
-  {
-    out_pixels[i * 4 + 0] = toByte(pixels[i * 4 + 0]);
-    out_pixels[i * 4 + 1] = toByte(pixels[i * 4 + 1]);
-    out_pixels[i * 4 + 2] = toByte(pixels[i * 4 + 2]);
-    out_pixels[i * 4 + 3] = 255;
-  }
-
-  stbi_write_png(filename, width, height, 4, out_pixels.data(), width * 4);
 }
 
 // 保存最终输出纹理到本地 PNG 文件

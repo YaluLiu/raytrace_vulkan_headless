@@ -9,8 +9,6 @@
 #include <unordered_set>
 #include "ray_trace_app.hpp"
 
-// opengl上下文
-#include "nvgl/contextwindow_gl.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <utility>
@@ -69,19 +67,7 @@ std::string getUsdRootFromEnvironment()
   return envValue != nullptr ? std::string(envValue) : std::string();
 }
 
-std::string buildPrefixedOutputPath(const std::string& outputImagePath, const std::string& prefix)
-{
-  const fs::path inputPath(outputImagePath);
-  const fs::path parentDir = inputPath.parent_path();
-  std::string    fileName  = inputPath.filename().string();
-  if(fileName.empty())
-  {
-    fileName = "headless.png";
-  }
-  return (parentDir / (prefix + fileName)).string();
-}
-
-void addOpenGlInteropExtensions(nvvk::ContextCreateInfo& contextInfo)
+void addExternalMemoryExtensions(nvvk::ContextCreateInfo& contextInfo)
 {
   contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
@@ -275,7 +261,7 @@ void RayTraceApp::setupContext()
   contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);
   contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
-  addOpenGlInteropExtensions(contextInfo);
+  addExternalMemoryExtensions(contextInfo);
   contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
@@ -294,7 +280,7 @@ void RayTraceApp::setupContext()
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
   if(compatibleDevices.empty())
   {
-    throw std::runtime_error("No compatible Vulkan device found for ray tracing and OpenGL interop extensions");
+    throw std::runtime_error("No compatible Vulkan device found for ray tracing and external memory extensions");
   }
 
   if(!m_vkctx.initDevice(compatibleDevices[0], contextInfo))
@@ -363,10 +349,7 @@ void RayTraceApp::render()
 
 void RayTraceApp::saveFrame(std::string outputImagePath)
 {
-  const std::string glPngName    = buildPrefixedOutputPath(outputImagePath, "gl_");
-  const std::string lidarPngName = buildPrefixedOutputPath(outputImagePath, "lidar_");
-  m_helloVk.dumpInteropTexture(glPngName.c_str());
-  m_helloVk.dumpLidarInteropTexture(lidarPngName.c_str());
+  m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
 void RayTraceApp::setRadarCamera(const RadarCameraInput& radarCamera)
