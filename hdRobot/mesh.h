@@ -58,7 +58,7 @@ private:
 private:
   HdRobotRenderParam& _scene;
   int             _mesh_id = -1;
+  int             _display_color_mat_id = -1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

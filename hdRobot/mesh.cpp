@@ -354,6 +354,38 @@ bool _IsPrimvarEligibleForVertexData(const TfToken& name, const TfToken& role)
 
   return false;
 }
+
+std::optional<GfVec4f> _GetFirstDisplayColor(const VtValue& value, const SdfPath& id)
+{
+  if(value.IsHolding<VtVec3fArray>())
+  {
+    const VtVec3fArray& colors = value.UncheckedGet<VtVec3fArray>();
+    if(colors.empty())
+    {
+      return std::nullopt;
+    }
+
+    const GfVec3f& color = colors[0];
+    return GfVec4f(color[0], color[1], color[2], 1.0f);
+  }
+
+  if(value.IsHolding<VtVec4fArray>())
+  {
+    const VtVec4fArray& colors = value.UncheckedGet<VtVec4fArray>();
+    if(colors.empty())
+    {
+      return std::nullopt;
+    }
+
+    return colors[0];
+  }
+
+  if(!value.IsEmpty())
+  {
+    TF_WARN("Unsupported displayColor primvar type for %s", id.GetText());
+  }
+  return std::nullopt;
+}
 }  // namespace
 
 HdRobotMesh::HdRobotMesh(const SdfPath& id, HdRobotRenderParam& scene)
@@ -383,35 +415,45 @@ void HdRobotMesh::Finalize(HdRenderParam* renderParam)
 
 void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
 {
-  // primvars:displayColor 鐨?token
-  TfToken displayColorToken("displayColor");
-  // 鑾峰彇 primvar
-  VtValue displayColorValue = GetPrimvar(sceneDelegate, displayColorToken);
-
-  // 妫€鏌ョ被鍨嬫槸鍚︽纭紙閫氬父涓?VtVec3fArray 鎴?VtVec4fArray锛?
-  if(displayColorValue.IsHolding<VtVec3fArray>())
+  const VtValue displayColorValue = GetPrimvar(sceneDelegate, HdTokens->displayColor);
+  const auto    displayColor      = _GetFirstDisplayColor(displayColorValue, GetId());
+  if(!displayColor.has_value())
   {
-    const VtVec3fArray& colors = displayColorValue.UncheckedGet<VtVec3fArray>();
-    assert(colors.size() == 1);
-    const GfVec3f diffuse = colors[0];
+    return;
+  }
 
-    auto& _mesh      = _scene.v_mesh[_mesh_id];
-    auto  cur_mat_id = _scene.v_mat.size();
+  int curMatId = -1;
+  {
+    std::lock_guard guard(_scene.mutex);
+    if(_display_color_mat_id < 0 || _display_color_mat_id >= static_cast<int>(_scene.v_mat.size()))
     {
-      std::lock_guard guard(_scene.mutex);
+      _display_color_mat_id = static_cast<int>(_scene.v_mat.size());
       _scene.v_mat.emplace_back(HydraMaterial());
     }
-    auto& mat              = _scene.v_mat[cur_mat_id];
-    mat.diffuse[0]         = diffuse[0];
-    mat.diffuse[1]         = diffuse[1];
-    mat.diffuse[2]         = diffuse[2];
-    _scene.MarkMaterialDirty(cur_mat_id);
-    _mesh.scene_mat_ids[0] = cur_mat_id;
+
+    curMatId = _display_color_mat_id;
+    HydraMaterial& mat = _scene.v_mat[curMatId];
+    mat.set_default();
+
+    const glm::vec3 color((*displayColor)[0], (*displayColor)[1], (*displayColor)[2]);
+    mat.diffuse         = color;
+    mat.baseColorFactor = color;
+    mat.ambient         = color * 0.1f;
+    mat.opaque          = (*displayColor)[3];
+    mat.opacityFactor   = (*displayColor)[3];
+
+    auto& mesh = _scene.v_mesh[_mesh_id];
+    if(mesh.scene_mat_ids.empty())
+    {
+      mesh.scene_mat_ids.emplace_back(curMatId);
+    }
+    else
+    {
+      mesh.scene_mat_ids[0] = curMatId;
+    }
   }
-  else if(displayColorValue.IsHolding<VtVec4fArray>())
-  {
-    // Vec4 displayColor is currently unsupported for direct fallback material extraction.
-  }
+
+  _scene.MarkMaterialDirty(static_cast<size_t>(curMatId));
 }
 
 void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, const TfToken& reprToken)
@@ -951,8 +993,9 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
 
   auto& sceneMesh = _scene.v_mesh[_mesh_id];
+  const int defaultSceneMatId = sceneMesh.scene_mat_ids.empty() ? 0 : sceneMesh.scene_mat_ids[0];
   sceneMesh.scene_mat_ids.clear();
-  sceneMesh.scene_mat_ids.emplace_back(0);
+  sceneMesh.scene_mat_ids.emplace_back(defaultSceneMatId);
 
   for(size_t i = 0; i < geomSubsets.size(); i++)
   {
