@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aov_texture.hpp"
 #include "gl_vkpp.hpp"
 #include "dlss/dlss_rr.hpp"
 
@@ -55,6 +56,7 @@ public:
   bool isHeightScanEnabled() const { return m_enableHeightScan; }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
+  std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
 
   // The OBJ model
   struct ObjModel

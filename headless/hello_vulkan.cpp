@@ -158,6 +158,108 @@ void HelloVulkan::resetAccumulation()
   m_accumulatedFrames = 0;
 }
 
+std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
+{
+  const nvvk::Texture* texture = nullptr;
+  VkFormat             format  = VK_FORMAT_UNDEFINED;
+  VkExtent2D           extent  = {0, 0};
+
+  switch(aov)
+  {
+    case HeadlessAov::Color:
+      texture = &m_offscreenDenoised;
+      format  = m_offscreenDenoisedFormat;
+      extent  = m_size;
+      break;
+    case HeadlessAov::PrimId:
+      texture = &m_offscreenObjectId;
+      format  = m_offscreenObjectIdFormat;
+      extent  = m_aovSize;
+      break;
+    case HeadlessAov::InstanceId:
+      texture = &m_offscreenInstanceId;
+      format  = m_offscreenInstanceIdFormat;
+      extent  = m_aovSize;
+      break;
+    case HeadlessAov::DlssRRDiffuseAlbedo:
+      texture = &m_offscreenDiffuseAlbedo;
+      format  = m_offscreenDiffuseAlbedoFormat;
+      extent  = m_renderSize;
+      break;
+    case HeadlessAov::DlssRRSpecularAlbedo:
+      texture = &m_offscreenSpecularAlbedo;
+      format  = m_offscreenSpecularAlbedoFormat;
+      extent  = m_renderSize;
+      break;
+    case HeadlessAov::DlssRRNormalRoughness:
+      texture = &m_offscreenNormalRoughness;
+      format  = m_offscreenNormalRoughnessFormat;
+      extent  = m_renderSize;
+      break;
+    case HeadlessAov::DlssRRMotionVector:
+      texture = &m_offscreenMotionVector;
+      format  = m_offscreenMotionVectorFormat;
+      extent  = m_renderSize;
+      break;
+    case HeadlessAov::Depth:
+      texture = &m_offscreenDepthAov;
+      format  = m_offscreenDepthAovFormat;
+      extent  = m_aovSize;
+      break;
+    case HeadlessAov::DlssRRLinearDepth:
+      texture = &m_offscreenLinearDepth;
+      format  = m_offscreenLinearDepthFormat;
+      extent  = m_renderSize;
+      break;
+    case HeadlessAov::DlssRRSpecularHitDistance:
+      texture = &m_offscreenSpecularHitDistance;
+      format  = m_offscreenSpecularHitDistanceFormat;
+      extent  = m_renderSize;
+      break;
+    case HeadlessAov::DistanceToCamera:
+      texture = &m_offscreenDistanceToCamera;
+      format  = m_offscreenDistanceToCameraFormat;
+      extent  = m_aovSize;
+      break;
+    case HeadlessAov::LidarPointCloud:
+      texture = &m_offscreenLidarPointCloud;
+      format  = m_offscreenLidarPointCloudFormat;
+      extent  = m_aovSize;
+      break;
+  }
+
+  if(texture == nullptr || texture->image == VK_NULL_HANDLE || texture->descriptor.imageView == VK_NULL_HANDLE
+     || texture->memHandle == nullptr)
+  {
+    return std::nullopt;
+  }
+
+  auto& allocator = const_cast<interop::ResourceAllocatorGLInterop&>(m_allocGL);
+  auto* memAlloc  = allocator.getMemoryAllocator();
+  if(memAlloc == nullptr)
+  {
+    return std::nullopt;
+  }
+
+  const auto memoryInfo = memAlloc->getMemoryInfo(texture->memHandle);
+  if(memoryInfo.memory == VK_NULL_HANDLE)
+  {
+    return std::nullopt;
+  }
+
+  HeadlessAovTexture result;
+  result.device       = m_device;
+  result.image        = texture->image;
+  result.imageView    = texture->descriptor.imageView;
+  result.memory       = memoryInfo.memory;
+  result.memoryOffset = memoryInfo.offset;
+  result.memorySize   = memoryInfo.size;
+  result.format       = format;
+  result.extent       = extent;
+  result.layout       = texture->descriptor.imageLayout;
+  return result;
+}
+
 void HelloVulkan::setDlssSRScale(float scale)
 {
   const float clamped = clampDlssScale(scale);

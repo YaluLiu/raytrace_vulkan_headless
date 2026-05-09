@@ -50,6 +50,9 @@ call sites with `rg`.
   renderer resources, DLSS/offscreen fields, and helper declarations.
 - `headless/hello_vulkan.cpp`: Core setup, frame rendering, resize handling,
   accumulation reset, render settings application, and DLSS/offscreen flow.
+- `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
+  descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
+  OpenGL types.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   camera/light/material/mesh update paths, and accumulation invalidation.
 - `headless/hello_vulkan_mesh.cpp`: Mesh upload, BLAS/TLAS updates, geometry
