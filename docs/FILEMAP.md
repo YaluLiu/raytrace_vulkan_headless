@@ -19,8 +19,6 @@ call sites with `rg`.
 - `docs/`: Tracked human/agent navigation and design documents.
 - `docs/PLAN/materialx-rendering-plan.md`: Current OpenChessSet MaterialX
   support scope, approximations, and regression commands.
-- `docs/HEIGHT_SCAN_SENSOR_PARAMS.md`: Proposed height scan sensor parameters,
-  host/GPU struct shapes, and implementation touch points relative to LiDAR.
 
 ## Build And Test Routing
 
