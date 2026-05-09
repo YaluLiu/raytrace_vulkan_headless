@@ -76,9 +76,13 @@ source_group("Shader Sources"  FILES ${GLSL_SOURCES})
 source_group("Shader Headers"  FILES ${GLSL_HEADERS})
 
 #--------------------------------------------------------------------------------------------------
-# Linkage 
-# 
-target_link_libraries(${PROJNAME} ${PLATFORM_LIBRARIES} nvpro_core)
+# Linkage
+#
+set(HEADLESS_PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES})
+if(OPENGL_LIBRARY)
+  list(REMOVE_ITEM HEADLESS_PLATFORM_LIBRARIES ${OPENGL_LIBRARY})
+endif()
+target_link_libraries(${PROJNAME} ${HEADLESS_PLATFORM_LIBRARIES} nvpro_core)
 
 foreach(DEBUGLIB ${LIBRARIES_DEBUG})
   target_link_libraries(${PROJNAME} debug ${DEBUGLIB})
