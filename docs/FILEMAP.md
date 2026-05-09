@@ -132,6 +132,9 @@ call sites with `rg`.
   conversion.
 - `hdRobot/renderTextureExport.h` / `hdRobot/renderTextureExport.cpp`: Render
   texture export surface, including Hydra material texture asset byte export.
+- `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
+  Vulkan external-memory import cache for headless AOV textures exposed as
+  source OpenGL textures.
 - `hdRobot/utils.h` / `hdRobot/utils.cpp`: Utility functions shared by the
   Hydra plugin.
 

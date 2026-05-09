@@ -7,6 +7,8 @@ add_library(
   instancer.h
   headlessRenderBridge.cpp
   headlessRenderBridge.h
+  glInteropCache.cpp
+  glInteropCache.h
   renderBuffer.cpp
   renderBuffer.h
   renderDelegate.cpp
