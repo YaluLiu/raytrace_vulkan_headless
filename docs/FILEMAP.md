@@ -62,8 +62,7 @@ call sites with `rg`.
 - `headless/hello_vulkan_pipeline.cpp`: Ray tracing pipeline setup and shader
   binding table related logic.
 - `headless/hello_vulkan_barriers.hpp`: Vulkan image layout/barrier helpers.
-- `headless/headless_vk.cpp`: Headless Vulkan/EGL/OpenGL context support.
-- `headless/gl_vkpp.hpp`: OpenGL/Vulkan interop helper declarations.
+- `headless/headless_vk.cpp`: Headless Vulkan/EGL context support.
 
 ## DLSS And Offscreen Rendering
 

@@ -33,17 +33,6 @@ if(MSVC)
 endif()
 
 #--------------------------------------------------------------------------------------------------
-# Package shared by all projects
-_add_package_OpenGL()
-_add_package_VulkanSDK()
-_add_package_ImGUI()
-_add_nvpro_core_lib()
-
-message(STATUS "COPY ${CMAKE_CURRENT_SOURCE_DIR}/media  to  ${OUTPUT_PATH}")
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
-
-
-#--------------------------------------------------------------------------------------------------
 # compile option
 # convert vulkan to opengl for hydra plugin
 option(ENABLE_HYDRA "Enable OpenUsd hydra plugins" OFF)
@@ -56,12 +45,28 @@ set(ENABLE_HYDRA ${ENABLE_HYDRA} CACHE BOOL "Enable OpenUsd hydra plugins")
 set(ENABLE_DLSS_RR ${ENABLE_DLSS_RR} CACHE BOOL "Enable NVIDIA NGX DLSS-RR denoiser integration")
 set(DLSS_SDK_ROOT ${DLSS_SDK_ROOT} CACHE PATH "Root path of NVIDIA DLSS SDK (contains include/ and lib/)")
 
+#--------------------------------------------------------------------------------------------------
+# Package shared by all projects
+if(ENABLE_HYDRA AND ENABLE_GL_VK_CONVERSION)
+  _add_package_OpenGL()
+else()
+  find_package(OpenGL)
+endif()
+_add_package_VulkanSDK()
+_add_package_ImGUI()
+_add_nvpro_core_lib()
+
+message(STATUS "COPY ${CMAKE_CURRENT_SOURCE_DIR}/media  to  ${OUTPUT_PATH}")
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
+
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 message(STATUS "ENABLE_DLSS_RR: ${ENABLE_DLSS_RR}")
 # Sub examples
 add_subdirectory(headless)
 add_subdirectory(demo)
-add_subdirectory(hdRobot)
+if(ENABLE_HYDRA)
+  add_subdirectory(hdRobot)
+endif()
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory
 install(DIRECTORY "media" 

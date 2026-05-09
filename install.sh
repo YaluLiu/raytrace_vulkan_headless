@@ -76,7 +76,7 @@ function demo() {
     cd build
     cmake ..  \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-        -DENABLE_GL_VK_CONVERSION=ON \
+        -DENABLE_GL_VK_CONVERSION=OFF \
         -DENABLE_HYDRA=OFF \
         -DENABLE_DLSS_RR=ON \
         -DDLSS_SDK_ROOT="${dlss_sdk_root}"
