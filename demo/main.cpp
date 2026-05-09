@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <utility>
 #include "nvh/cameramanipulator.hpp"
-#include "nvgl/contextwindow_gl.hpp"
 
 namespace fs = std::filesystem;
 
@@ -29,48 +28,6 @@ const glm::vec3 kIdentityScale          = {1.f, 1.f, 1.f};
 const glm::vec3 kCatTranslation         = {0.0f, 0.5f, 0.0f};
 const glm::vec3 kBeautyBallTranslation  = {2.0f, 0.5f, 1.0f};
 const LidarParams kDefaultRadarParams   = {-120.0f, 120.0f, 1.0f, -2.0f, -20.0f, 0.5f, 2.0f, 200.0f};
-
-class DemoOpenGLContext
-{
-public:
-  DemoOpenGLContext()
-  {
-    if(glfwInit() == GLFW_FALSE)
-    {
-      throw std::runtime_error("Failed to initialize GLFW for demo OpenGL context");
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-    m_window = glfwCreateWindow(1, 1, "raytrace-demo-hidden-gl-context", nullptr, nullptr);
-    if(m_window == nullptr)
-    {
-      glfwTerminate();
-      throw std::runtime_error("Failed to create hidden GLFW window for demo OpenGL context");
-    }
-
-    glfwMakeContextCurrent(m_window);
-    load_GL(nvgl::ContextWindow::sysGetProcAddress);
-  }
-
-  ~DemoOpenGLContext()
-  {
-    if(m_window != nullptr)
-    {
-      glfwDestroyWindow(m_window);
-      m_window = nullptr;
-    }
-    glfwTerminate();
-  }
-
-  DemoOpenGLContext(const DemoOpenGLContext&)            = delete;
-  DemoOpenGLContext& operator=(const DemoOpenGLContext&) = delete;
-
-private:
-  GLFWwindow* m_window{nullptr};
-};
 
 void setEnvDefault(const char* name, const char* value)
 {
@@ -144,7 +101,6 @@ public:
     applyDefaultDlssRuntime();
 
     m_app.setup(kRenderWidth, kRenderHeight);
-    DemoOpenGLContext glContext;
 
     loadConfiguredScene();
     addDefaultLight();
