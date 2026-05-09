@@ -75,9 +75,11 @@ call sites with `rg`.
 
 ## LiDAR Rendering
 
-- `headless/hello_vulkan_lidar.cpp`: LiDAR camera updates, LiDAR ray tracing,
-  height scan ray tracing, point cloud rendering, composite descriptor setup,
-  and related barriers.
+- `headless/hello_vulkan_lidar.cpp`: LiDAR ray tracing, shared sensor
+  point-cloud descriptor setup, point-cloud rendering, composite descriptor
+  setup, and related barriers.
+- `headless/hello_vulkan_height_scan.cpp`: Height scan ray tracing pipeline,
+  shader binding table setup, height scan ray dispatch, and related barriers.
 - `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
 - `headless/shaders/raytrace_height_scan.rgen`: Height scan ray generation
   shader; casts default XZ-grid rays into the scene and writes the shared
@@ -179,8 +181,13 @@ call sites with `rg`.
   `createDlssRR`, `evaluate`, and `DLSS_RR`.
 - LiDAR:
   `headless/hello_vulkan_lidar.cpp` and LiDAR shader files, then search for
-  `renderLidarPointCloud`, `renderHeightScanPointCloud`, `updateLidarCamera`,
-  `updateHeightScanCamera`, and `updateLidarCompositeDescriptorSet`.
+  `renderLidarPointCloud`, `updateLidarCamera`, and
+  `updateLidarCompositeDescriptorSet`.
+- Height scan:
+  `headless/hello_vulkan_height_scan.cpp`,
+  `headless/shaders/raytrace_height_scan.rgen`, then search for
+  `renderHeightScanPointCloud`, `updateHeightScanCamera`, and
+  `setHeightScanParams`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
   `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,

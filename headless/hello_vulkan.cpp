@@ -57,18 +57,6 @@ bool lidarParamsNearlyEqual(const LidarParams& a, const LidarParams& b, float ep
          && std::fabs(a.maxDistance - b.maxDistance) <= eps;
 }
 
-bool heightScanParamsNearlyEqual(const HeightScanParams& a, const HeightScanParams& b, float eps = 1e-5f)
-{
-  return std::fabs(a.minX - b.minX) <= eps && std::fabs(a.maxX - b.maxX) <= eps
-         && std::fabs(a.stepX - b.stepX) <= eps && std::fabs(a.minZ - b.minZ) <= eps
-         && std::fabs(a.maxZ - b.maxZ) <= eps && std::fabs(a.stepZ - b.stepZ) <= eps
-         && std::fabs(a.rayDirectionX - b.rayDirectionX) <= eps
-         && std::fabs(a.rayDirectionY - b.rayDirectionY) <= eps
-         && std::fabs(a.rayDirectionZ - b.rayDirectionZ) <= eps
-         && std::fabs(a.pointRadiusPixels - b.pointRadiusPixels) <= eps
-         && std::fabs(a.maxDistance - b.maxDistance) <= eps;
-}
-
 void appendDlssStatusLog(const std::string& line)
 {
   const char* statusLogPath = std::getenv("DLSS_RR_STATUS_LOG");
@@ -210,22 +198,6 @@ void HelloVulkan::setRadarCamera(const RadarCameraData& camera)
   }
 }
 
-void HelloVulkan::setHeightScanCamera(const RadarCameraData& camera)
-{
-  const bool cameraChanged = !m_hasHeightScanCamera || !vecNearlyEqual(camera.eye, m_heightScanCamera.eye)
-                             || !vecNearlyEqual(camera.center, m_heightScanCamera.center)
-                             || !vecNearlyEqual(camera.up, m_heightScanCamera.up)
-                             || std::fabs(camera.fov - m_heightScanCamera.fov) > 1e-5f;
-
-  m_heightScanCamera    = camera;
-  m_hasHeightScanCamera = true;
-
-  if(cameraChanged)
-  {
-    resetAccumulation();
-  }
-}
-
 void HelloVulkan::setRadarLidarParams(const LidarParams& params)
 {
   if(!lidarParamsNearlyEqual(params, m_radarLidarParams))
@@ -236,30 +208,11 @@ void HelloVulkan::setRadarLidarParams(const LidarParams& params)
   }
 }
 
-void HelloVulkan::setHeightScanParams(const HeightScanParams& params)
-{
-  if(!heightScanParamsNearlyEqual(params, m_heightScanParams))
-  {
-    m_heightScanParams = params;
-    m_pcRay.heightScan = params;
-    resetAccumulation();
-  }
-}
-
 void HelloVulkan::setLidarEnabled(bool enabled)
 {
   if(m_enableLidar != enabled)
   {
     m_enableLidar = enabled;
-    resetAccumulation();
-  }
-}
-
-void HelloVulkan::setHeightScanEnabled(bool enabled)
-{
-  if(m_enableHeightScan != enabled)
-  {
-    m_enableHeightScan = enabled;
     resetAccumulation();
   }
 }
