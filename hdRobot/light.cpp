@@ -198,7 +198,7 @@ void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
   }
 
   // Keep the sphere-light approximation visible in the current shader attenuation model.
-  constexpr float kSimpleLightIntensityScale = 100.0f;
+  constexpr float kSimpleLightIntensityScale = 1.0f;
   light.position = glm::vec3(static_cast<float>(worldPos[0]), static_cast<float>(worldPos[1]),
                              static_cast<float>(worldPos[2]));
   light.baseEmission = glm::vec3(diffuse[0] * kSimpleLightIntensityScale, diffuse[1] * kSimpleLightIntensityScale,
