@@ -113,10 +113,10 @@ call sites with `rg`.
   into renderer mesh data.
 - `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync lifecycle,
   MaterialX parser invocation, texture registration, and dirty marking.
-- `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: MaterialX
-  surface shader selection, standard surface/OpenPBR input rules, upstream
-  texture traversal, texture binding metadata, and `HydraMaterial` field
-  mapping.
+- `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: USD Preview
+  Surface plus MaterialX surface shader selection, standard surface/OpenPBR
+  input rules, upstream texture and primvar-reader traversal, texture binding
+  metadata, and `HydraMaterial` field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
   conversion, and LiDAR/height scan sensor parameter reads.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
@@ -146,7 +146,8 @@ call sites with `rg`.
   vertices, indices, normals, texcoords, material assignment, and fallback
   normals.
 - `demo/usd_loader.h` / `demo/usd_loader.cpp`: USD scene loading helper for the
-  demo path.
+  demo path, including `UsdShadeMaterial` to `UsdPreviewSurface` parsing and
+  mesh `displayColor` primvar fallback for primvar-driven base color.
 - `demo/main.cpp`: Example scene composition and model loading calls.
 - `headless/ray_trace_app.cpp`: Default headless scene loading.
 
@@ -211,13 +212,13 @@ call sites with `rg`.
   `hdRobot/headlessRenderBridge.cpp`, `headless/shaders/host_device.h`,
   then search for `baseColorFactor`, `emissionFactor`,
   `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
-- MaterialX standard surface parsing:
+- USD Preview/MaterialX surface parsing:
   `hdRobot/materialXParser.cpp`, `hdRobot/material.cpp`,
   `hdRobot/renderTextureExport.cpp`,
   `hdRobot/sceneData.h`, then search for `ParseMaterialXNetwork`,
   `SelectSurfaceShaderCandidate`, `ResolveUpstreamTexture`,
-  `MaterialInputRule`, `base_color`, `metalness`, `specular_roughness`, and
-  `normalTextureId`.
+  `ResolveUpstreamPrimvar`, `MaterialInputRule`, `UsdPreviewSurface`,
+  `base_color`, `metalness`, `specular_roughness`, and `normalTextureId`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,
   `hdRobot/renderParam.cpp`, `hdRobot/renderTextureExport.cpp`,

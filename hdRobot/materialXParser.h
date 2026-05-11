@@ -23,6 +23,7 @@ struct MaterialXParseResult
   HydraMaterial material;
   std::vector<MaterialXTextureBinding> textures;
   std::vector<MaterialXTextureBinding> unsupportedTextures;
+  TfToken baseColorPrimvarName;
   bool hasMaterialOpinion = false;
 };
 

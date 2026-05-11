@@ -49,6 +49,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
     return;
   }
 
+  _baseColorPrimvarName = TfToken();
   _scene.v_mat[_mat_id].set_default();
   const SdfPath& id = GetId();
   const VtValue& resource = sceneDelegate->GetMaterialResource(id);
@@ -71,6 +72,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   MaterialXParseResult result = ParseMaterialXNetwork(network, _scene.v_mat[_mat_id]);
   HydraMaterial& material = _scene.v_mat[_mat_id];
   material = result.material;
+  _baseColorPrimvarName = result.baseColorPrimvarName;
 
   for (const MaterialXTextureBinding& binding : result.textures)
   {

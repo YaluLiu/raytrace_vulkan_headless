@@ -28,6 +28,7 @@ protected:
 private:
   void _AnalyzePrimvars(HdSceneDelegate* sceneDelegate, bool& foundNormals, bool& indexingAllowed);
   void GetDisplayColor(HdSceneDelegate* sceneDelegate);
+  bool ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, const TfToken& primvarName, int sourceSceneMatId);
 
   struct ProcessedPrimvar
   {

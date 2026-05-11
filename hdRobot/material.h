@@ -23,8 +23,8 @@ public:
 
 public:
   HdRobotRenderParam& _scene;
-  int             _mat_id;
+  int                  _mat_id;
+  TfToken              _baseColorPrimvarName;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -415,16 +415,37 @@ void HdRobotMesh::Finalize(HdRenderParam* renderParam)
 
 void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
 {
-  const VtValue displayColorValue = GetPrimvar(sceneDelegate, HdTokens->displayColor);
+  ApplyDisplayColorMaterial(sceneDelegate, HdTokens->displayColor, -1);
+}
+
+bool HdRobotMesh::ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, const TfToken& primvarName,
+                                            int sourceSceneMatId)
+{
+  if(primvarName.IsEmpty())
+  {
+    return false;
+  }
+
+  const VtValue displayColorValue = GetPrimvar(sceneDelegate, primvarName);
   const auto    displayColor      = _GetFirstDisplayColor(displayColorValue, GetId());
   if(!displayColor.has_value())
   {
-    return;
+    return false;
   }
 
   int curMatId = -1;
   {
     std::lock_guard guard(_scene.mutex);
+    HydraMaterial materialTemplate;
+    if(sourceSceneMatId >= 0 && sourceSceneMatId < static_cast<int>(_scene.v_mat.size()))
+    {
+      materialTemplate = _scene.v_mat[sourceSceneMatId];
+    }
+    else
+    {
+      materialTemplate.set_default();
+    }
+
     if(_display_color_mat_id < 0 || _display_color_mat_id >= static_cast<int>(_scene.v_mat.size()))
     {
       _display_color_mat_id = static_cast<int>(_scene.v_mat.size());
@@ -433,7 +454,7 @@ void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
 
     curMatId = _display_color_mat_id;
     HydraMaterial& mat = _scene.v_mat[curMatId];
-    mat.set_default();
+    mat = materialTemplate;
 
     const glm::vec3 color((*displayColor)[0], (*displayColor)[1], (*displayColor)[2]);
     mat.diffuse         = color;
@@ -454,6 +475,7 @@ void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
   }
 
   _scene.MarkMaterialDirty(static_cast<size_t>(curMatId));
+  return true;
 }
 
 void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits, const TfToken& reprToken)
@@ -559,7 +581,11 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
 
     if(materialPrim)
     {
-      _mesh.scene_mat_ids[0] = materialPrim->_mat_id;
+      if(materialPrim->_baseColorPrimvarName.IsEmpty()
+         || !ApplyDisplayColorMaterial(sceneDelegate, materialPrim->_baseColorPrimvarName, materialPrim->_mat_id))
+      {
+        _mesh.scene_mat_ids[0] = materialPrim->_mat_id;
+      }
     }
     else
     {

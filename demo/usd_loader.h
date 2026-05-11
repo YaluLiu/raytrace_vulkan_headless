@@ -14,6 +14,7 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/materialBindingAPI.h>  // 添加缺失的头文件
+#include <map>
 #include <vector>
 #include <string>
 
@@ -29,6 +30,10 @@ public:
   void loadTexCoords(pxr::UsdGeomMesh& mesh);
   void loadIndices(pxr::UsdGeomMesh& mesh);
   void loadMaterial(const pxr::UsdPrim& prim);
+  bool applyMaterialColorPrimvar(const pxr::UsdPrim& prim,
+                                 const pxr::TfToken& primvarName,
+                                 int sourceMaterialIndex,
+                                 int* materialIndex);
 
   //计算法线，当d没有的时候
   void computeVertexNormals();
@@ -36,4 +41,5 @@ public:
 
   // 材质路径到索引的映射（避免重复加载）
   std::map<pxr::SdfPath, int> m_materialIndexMap;
+  std::map<pxr::SdfPath, pxr::TfToken> m_materialBaseColorPrimvars;
 };

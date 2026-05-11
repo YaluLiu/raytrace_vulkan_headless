@@ -1,8 +1,144 @@
 #include "usd_loader.h"
+#include <algorithm>
 #include <iostream>
 #include <format>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace
+{
+MaterialObj MakeDefaultUsdMaterial()
+{
+  MaterialObj mat;
+  mat.ambient         = glm::vec3(0.1f, 0.1f, 0.1f);
+  mat.diffuse         = glm::vec3(0.7f, 0.7f, 0.7f);
+  mat.baseColorFactor = mat.diffuse;
+  mat.specular        = glm::vec3(0.5f, 0.5f, 0.5f);
+  mat.shininess       = 50.0f;
+  mat.opaque          = 1.0f;
+  mat.opacityFactor   = mat.opaque;
+  mat.ior             = 1.5f;
+  mat.illum           = 2;
+  return mat;
+}
+
+bool ReadInputVec3(const UsdShadeInput& input, glm::vec3* result)
+{
+  if(!input || result == nullptr)
+  {
+    return false;
+  }
+
+  GfVec3f color;
+  if(input.Get(&color))
+  {
+    *result = glm::vec3(color[0], color[1], color[2]);
+    return true;
+  }
+  return false;
+}
+
+bool ReadInputFloat(const UsdShadeInput& input, float* result)
+{
+  if(!input || result == nullptr)
+  {
+    return false;
+  }
+  return input.Get(result);
+}
+
+std::string GetAssetPathString(const SdfAssetPath& assetPath)
+{
+  std::string path = assetPath.GetResolvedPath();
+  if(path.empty())
+  {
+    path = assetPath.GetAssetPath();
+  }
+  return path;
+}
+
+std::string ReadUsdTextureFile(const UsdShadeShader& shader)
+{
+  if(!shader)
+  {
+    return {};
+  }
+
+  TfToken id;
+  shader.GetIdAttr().Get(&id);
+  if(id != TfToken("UsdUVTexture"))
+  {
+    return {};
+  }
+
+  const UsdShadeInput fileInput = shader.GetInput(TfToken("file"));
+  if(!fileInput)
+  {
+    return {};
+  }
+
+  SdfAssetPath textureAsset;
+  if(!fileInput.Get(&textureAsset))
+  {
+    return {};
+  }
+  return GetAssetPathString(textureAsset);
+}
+
+TfToken ReadPrimvarReaderName(const UsdShadeShader& shader)
+{
+  if(!shader)
+  {
+    return TfToken();
+  }
+
+  TfToken id;
+  shader.GetIdAttr().Get(&id);
+  const std::string shaderId = id.GetString();
+  if(shaderId.find("UsdPrimvarReader") == std::string::npos)
+  {
+    return TfToken();
+  }
+
+  const UsdShadeInput varnameInput = shader.GetInput(TfToken("varname"));
+  if(!varnameInput)
+  {
+    return TfToken();
+  }
+
+  std::string varname;
+  if(varnameInput.Get(&varname) && !varname.empty())
+  {
+    return TfToken(varname);
+  }
+
+  TfToken varnameToken;
+  if(varnameInput.Get(&varnameToken))
+  {
+    return varnameToken;
+  }
+  return TfToken();
+}
+
+bool GetConnectedShader(const UsdShadeInput& input, UsdShadeShader* shader)
+{
+  if(!input || shader == nullptr)
+  {
+    return false;
+  }
+
+  UsdShadeConnectableAPI source;
+  TfToken                outputName;
+  UsdShadeAttributeType  sourceType;
+  if(!input.GetConnectedSource(&source, &outputName, &sourceType))
+  {
+    return false;
+  }
+
+  *shader = UsdShadeShader(source);
+  return static_cast<bool>(*shader);
+}
+}  // namespace
 
 void printRedError(const std::string& message)
 {
@@ -210,29 +346,24 @@ void UsdLoader::loadIndices(UsdGeomMesh& mesh)
 
 void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
 {
-  // 1. 检查是否是Shader类型
-  if(!prim.IsA<pxr::UsdShadeShader>())
+  UsdShadeShader shader;
+  if(prim.IsA<UsdShadeMaterial>())
+  {
+    UsdShadeMaterial material(prim);
+    shader = material.ComputeSurfaceSource();
+  }
+  else if(prim.IsA<UsdShadeShader>())
+  {
+    shader = UsdShadeShader(prim);
+  }
+  else
   {
     return;
   }
 
-  // 2. 创建默认材质
-  MaterialObj mat;
-  mat.ambient   = glm::vec3(0.1f, 0.1f, 0.1f);
-  mat.diffuse   = glm::vec3(0.7f, 0.7f, 0.7f);
-  mat.baseColorFactor = mat.diffuse;
-  mat.specular  = glm::vec3(0.5f, 0.5f, 0.5f);
-  mat.shininess = 50.0f;
-  mat.opaque  = 1.0f;
-  mat.opacityFactor = mat.opaque;
-  mat.ior       = 1.5f;
-  mat.illum     = 2;  // 默认使用Phong光照模型
+  MaterialObj mat = MakeDefaultUsdMaterial();
 
-  // 3. 获取Shader
-  pxr::UsdShadeShader shader(prim);
-
-  // 4. 检查是否是PreviewSurface
-  pxr::TfToken idToken;
+  TfToken idToken;
   shader.GetIdAttr().Get(&idToken);
   if(idToken != pxr::TfToken("UsdPreviewSurface"))
   {
@@ -240,26 +371,22 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
     return;
   }
 
-  // 5. 解析材质属性
-  // 漫反射颜色
-  pxr::UsdShadeInput diffuseInput = shader.GetInput(pxr::TfToken("diffuseColor"));
+  UsdShadeInput diffuseInput = shader.GetInput(TfToken("diffuseColor"));
   if(diffuseInput)
   {
-    pxr::GfVec3f diffuseColor;
-    if(diffuseInput.Get(&diffuseColor))
+    glm::vec3 diffuseColor;
+    if(ReadInputVec3(diffuseInput, &diffuseColor))
     {
-      mat.diffuse = glm::vec3(diffuseColor[0], diffuseColor[1], diffuseColor[2]);
+      mat.diffuse = diffuseColor;
       mat.baseColorFactor = mat.diffuse;
-      // 环境光设为漫反射的10%
       mat.ambient = mat.diffuse * 0.1f;
     }
   }
 
-  // 镜面反射颜色
-  pxr::UsdShadeInput specularInput = shader.GetInput(pxr::TfToken("specularColor"));
+  UsdShadeInput specularInput = shader.GetInput(TfToken("specularColor"));
   if(!specularInput)
   {
-    specularInput = shader.GetInput(pxr::TfToken("specular"));
+    specularInput = shader.GetInput(TfToken("specular"));
   }
   if(specularInput)
   {
@@ -281,89 +408,100 @@ void UsdLoader::loadMaterial(const pxr::UsdPrim& prim)
     }
   }
 
-  // 粗糙度转换为高光指数
-  pxr::UsdShadeInput roughnessInput = shader.GetInput(pxr::TfToken("roughness"));
-  if(roughnessInput)
+  UsdShadeInput metallicInput = shader.GetInput(TfToken("metallic"));
+  ReadInputFloat(metallicInput, &mat.metallicFactor);
+
+  UsdShadeInput roughnessInput = shader.GetInput(TfToken("roughness"));
+  float roughness;
+  if(ReadInputFloat(roughnessInput, &roughness))
   {
-    float roughness;
-    if(roughnessInput.Get(&roughness))
-    {
-      // 粗糙度[0,1] -> 高光指数[0,1000]
-      mat.roughnessFactor = std::clamp(roughness, 0.0f, 1.0f);
-      mat.shininess = 64.0f * (1.0f - std::clamp(roughness, 0.0f, 1.0f));
-      // mat.shininess = (1.0f - roughness) * 128.0f;
-    }
+    mat.roughnessFactor = std::clamp(roughness, 0.0f, 1.0f);
+    mat.shininess = 64.0f * (1.0f - std::clamp(roughness, 0.0f, 1.0f));
   }
 
-  // 透明度
-  pxr::UsdShadeInput opacityInput = shader.GetInput(pxr::TfToken("opacity"));
-  if(opacityInput)
+  UsdShadeInput opacityInput = shader.GetInput(TfToken("opacity"));
+  float opacity;
+  if(ReadInputFloat(opacityInput, &opacity))
   {
-    float opacity;
-    if(opacityInput.Get(&opacity))
-    {
-      mat.opaque = std::clamp(opacity, 0.0f, 1.0f);
-      mat.opacityFactor = mat.opaque;
-    }
+    mat.opaque = std::clamp(opacity, 0.0f, 1.0f);
+    mat.opacityFactor = mat.opaque;
   }
 
-  // 折射率
-  pxr::UsdShadeInput iorInput = shader.GetInput(pxr::TfToken("ior"));
-  if(iorInput)
+  UsdShadeInput iorInput = shader.GetInput(TfToken("ior"));
+  ReadInputFloat(iorInput, &mat.ior);
+
+  UsdShadeInput emissiveInput = shader.GetInput(TfToken("emissiveColor"));
+  glm::vec3 emissionColor;
+  if(ReadInputVec3(emissiveInput, &emissionColor))
   {
-    float ior;
-    if(iorInput.Get(&ior))
-    {
-      mat.ior = ior;
-    }
+    mat.emission = emissionColor;
+    mat.emissionFactor = emissionColor;
   }
 
-  // 6. 处理纹理连接
-  pxr::UsdShadeInput diffuseTextureInput = shader.GetInput(pxr::TfToken("diffuseColor"));
-  if(diffuseTextureInput)
+  UsdShadeShader diffuseSource;
+  if(GetConnectedShader(diffuseInput, &diffuseSource))
   {
-    pxr::UsdShadeConnectableAPI source;
-    pxr::TfToken                outputName;
-    pxr::UsdShadeAttributeType  sourceType;
-
-    if(diffuseTextureInput.GetConnectedSource(&source, &outputName, &sourceType))
+    const std::string texturePath = ReadUsdTextureFile(diffuseSource);
+    if(!texturePath.empty())
     {
-      pxr::UsdShadeShader textureShader(source);
-      if(textureShader)
+      auto it = std::find(m_textures.begin(), m_textures.end(), texturePath);
+      if(it == m_textures.end())
       {
-        pxr::UsdShadeInput fileInput = textureShader.GetInput(pxr::TfToken("file"));
-        if(fileInput)
-        {
-          pxr::SdfAssetPath textureAsset;
-          if(fileInput.Get(&textureAsset))
-          {
-            std::string texturePath = textureAsset.GetAssetPath();
-            if(!texturePath.empty())
-            {
-              // 检查纹理是否已加载
-              auto it = std::find(m_textures.begin(), m_textures.end(), texturePath);
-              if(it == m_textures.end())
-              {
-                m_textures.push_back(texturePath);
-                mat.diffuseTextureId = static_cast<int>(m_textures.size() - 1);
-                mat.baseColorTextureId = mat.diffuseTextureId;
-              }
-              else
-              {
-                mat.diffuseTextureId = static_cast<int>(std::distance(m_textures.begin(), it));
-                mat.baseColorTextureId = mat.diffuseTextureId;
-              }
-            }
-          }
-        }
+        m_textures.push_back(texturePath);
+        mat.diffuseTextureId = static_cast<int>(m_textures.size() - 1);
       }
+      else
+      {
+        mat.diffuseTextureId = static_cast<int>(std::distance(m_textures.begin(), it));
+      }
+      mat.baseColorTextureId = mat.diffuseTextureId;
+      mat.baseColorFactor = glm::vec3(1.0f);
+      mat.diffuse = mat.baseColorFactor;
+    }
+
+    const TfToken primvarName = ReadPrimvarReaderName(diffuseSource);
+    if(!primvarName.IsEmpty())
+    {
+      m_materialBaseColorPrimvars[prim.GetPath()] = primvarName;
     }
   }
 
-  // 7. 存储材质
   m_materials.push_back(mat);
 }
 
+bool UsdLoader::applyMaterialColorPrimvar(const pxr::UsdPrim& prim,
+                                          const pxr::TfToken& primvarName,
+                                          int sourceMaterialIndex,
+                                          int* materialIndex)
+{
+  if(primvarName.IsEmpty() || materialIndex == nullptr || sourceMaterialIndex < 0
+     || sourceMaterialIndex >= static_cast<int>(m_materials.size()))
+  {
+    return false;
+  }
+
+  UsdGeomPrimvar colorPrimvar = UsdGeomPrimvarsAPI(prim).GetPrimvar(primvarName);
+  if(!colorPrimvar)
+  {
+    return false;
+  }
+
+  VtArray<GfVec3f> colors;
+  if(!colorPrimvar.Get(&colors) || colors.empty())
+  {
+    return false;
+  }
+
+  MaterialObj mat = m_materials[sourceMaterialIndex];
+  const GfVec3f color = colors[0];
+  mat.diffuse = glm::vec3(color[0], color[1], color[2]);
+  mat.baseColorFactor = mat.diffuse;
+  mat.ambient = mat.diffuse * 0.1f;
+
+  m_materials.push_back(mat);
+  *materialIndex = static_cast<int>(m_materials.size() - 1);
+  return true;
+}
 
 void UsdLoader::loadModel(const std::string& filename)
 {
@@ -381,6 +519,8 @@ void UsdLoader::loadModel(const std::string& filename)
   m_materials.clear();
   m_textures.clear();
   m_matIndx.clear();
+  m_materialIndexMap.clear();
+  m_materialBaseColorPrimvars.clear();
 
   // 第一遍遍历：加载几何和材质
   for(const auto& prim : stage->Traverse())
@@ -397,7 +537,7 @@ void UsdLoader::loadModel(const std::string& filename)
       loadTexCoords(mesh);
       loadNormals(mesh);
     }
-    if(prim.IsA<UsdShadeShader>())
+    if(prim.IsA<UsdShadeMaterial>())
     {
       loadMaterial(prim);
       m_materialIndexMap[prim.GetPath()] = static_cast<int>(m_materials.size() - 1);
@@ -420,6 +560,11 @@ void UsdLoader::loadModel(const std::string& filename)
         if(it != m_materialIndexMap.end())
         {
           materialIndex = it->second;
+          const auto primvarIt = m_materialBaseColorPrimvars.find(materialPath);
+          if(primvarIt != m_materialBaseColorPrimvars.end())
+          {
+            applyMaterialColorPrimvar(prim, primvarIt->second, it->second, &materialIndex);
+          }
         }
       }
 

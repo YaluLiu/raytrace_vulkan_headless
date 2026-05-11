@@ -14,6 +14,7 @@ constexpr int kMaxMaterialXTraversalDepth = 32;
 enum class ShaderFamily
 {
   Unknown,
+  UsdPreviewSurface,
   MaterialXStandardSurface,
   MaterialXOpenPbrSurface,
 };
@@ -48,6 +49,8 @@ struct MaterialResolvedInput
   VtValue value;
   bool hasTexture = false;
   std::string texturePath;
+  bool hasPrimvar = false;
+  TfToken primvarName;
   TfToken outputName;
   TfToken channel;
   TfToken inputName;
@@ -74,6 +77,10 @@ struct SurfaceShaderCandidate
 ShaderFamily IdentifyShaderFamily(const TfToken& shaderId)
 {
   const std::string id = shaderId.GetString();
+  if (id == "UsdPreviewSurface")
+  {
+    return ShaderFamily::UsdPreviewSurface;
+  }
   if (id.find("open_pbr_surface") != std::string::npos)
   {
     return ShaderFamily::MaterialXOpenPbrSurface;
@@ -87,7 +94,8 @@ ShaderFamily IdentifyShaderFamily(const TfToken& shaderId)
 
 bool IsMaterialXSurfaceFamily(ShaderFamily family)
 {
-  return family == ShaderFamily::MaterialXStandardSurface || family == ShaderFamily::MaterialXOpenPbrSurface;
+  return family == ShaderFamily::UsdPreviewSurface || family == ShaderFamily::MaterialXStandardSurface ||
+         family == ShaderFamily::MaterialXOpenPbrSurface;
 }
 
 int CountKnownSurfaceInputs(const HdMaterialNode2& node, ShaderFamily family)
@@ -98,6 +106,11 @@ int CountKnownSurfaceInputs(const HdMaterialNode2& node, ShaderFamily family)
       TfToken("opacity"),            TfToken("transmission"),    TfToken("transmission_color"),
       TfToken("subsurface"),         TfToken("subsurface_color"), TfToken("subsurface_scale"),
   };
+  if (family == ShaderFamily::UsdPreviewSurface)
+  {
+    inputNames = {TfToken("diffuseColor"), TfToken("metallic"), TfToken("roughness"), TfToken("normal"),
+                  TfToken("emissiveColor"), TfToken("opacity"), TfToken("ior"), TfToken("occlusion")};
+  }
   if (family == ShaderFamily::MaterialXOpenPbrSurface)
   {
     inputNames.push_back(TfToken("base_metalness"));
@@ -179,6 +192,42 @@ std::vector<SurfaceShaderCandidate> CollectSurfaceShaderCandidates(const HdMater
 const std::vector<MaterialInputRule>& MaterialInputRules()
 {
   static const std::vector<MaterialInputRule> rules = {
+      {ShaderFamily::UsdPreviewSurface,
+       MaterialSemantic::BaseColor,
+       {TfToken("diffuseColor")},
+       TextureUsage::BaseColor,
+       ValueKind::Color3,
+       true},
+      {ShaderFamily::UsdPreviewSurface,
+       MaterialSemantic::Metallic,
+       {TfToken("metallic")},
+       TextureUsage::Metallic,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::UsdPreviewSurface,
+       MaterialSemantic::Roughness,
+       {TfToken("roughness")},
+       TextureUsage::Roughness,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::UsdPreviewSurface,
+       MaterialSemantic::Normal,
+       {TfToken("normal")},
+       TextureUsage::Normal,
+       ValueKind::TextureOnly,
+       true},
+      {ShaderFamily::UsdPreviewSurface,
+       MaterialSemantic::Emission,
+       {TfToken("emissiveColor")},
+       TextureUsage::Emission,
+       ValueKind::Color3,
+       true},
+      {ShaderFamily::UsdPreviewSurface,
+       MaterialSemantic::Opacity,
+       {TfToken("opacity")},
+       TextureUsage::Opacity,
+       ValueKind::Float,
+       true},
       {ShaderFamily::MaterialXStandardSurface,
        MaterialSemantic::BaseColor,
        {TfToken("base_color"), TfToken("diffuseColor")},
@@ -373,6 +422,30 @@ bool IsFileParameter(const TfToken& name)
   return name == "file" || name == "filename";
 }
 
+bool IsPrimvarReaderNode(const HdMaterialNode2& node)
+{
+  const std::string id = node.nodeTypeId.GetString();
+  return id.find("UsdPrimvarReader") != std::string::npos || id.find("geompropvalue") != std::string::npos;
+}
+
+bool IsPrimvarNameParameter(const TfToken& name)
+{
+  return name == "varname" || name == "geomprop";
+}
+
+TfToken PrimvarNameFromValue(const VtValue& value)
+{
+  if (value.IsHolding<TfToken>())
+  {
+    return value.Get<TfToken>();
+  }
+  if (value.IsHolding<std::string>())
+  {
+    return TfToken(value.Get<std::string>());
+  }
+  return TfToken();
+}
+
 std::string AssetPathString(const SdfAssetPath& assetPath)
 {
   std::string texturePath = assetPath.GetResolvedPath();
@@ -470,6 +543,53 @@ bool ResolveUpstreamTexture(const HdMaterialNetwork2& network, const SdfPath& no
   return false;
 }
 
+bool ResolveUpstreamPrimvar(const HdMaterialNetwork2& network, const SdfPath& nodePath, int depth,
+                            std::set<SdfPath>* visited, MaterialResolvedInput* resolved)
+{
+  if (depth > kMaxMaterialXTraversalDepth || visited->find(nodePath) != visited->end())
+  {
+    return false;
+  }
+  visited->insert(nodePath);
+
+  const auto nodeIt = network.nodes.find(nodePath);
+  if (nodeIt == network.nodes.end())
+  {
+    return false;
+  }
+
+  const HdMaterialNode2& node = nodeIt->second;
+  if (IsPrimvarReaderNode(node))
+  {
+    for (const auto& paramPair : node.parameters)
+    {
+      if (IsPrimvarNameParameter(paramPair.first))
+      {
+        const TfToken primvarName = PrimvarNameFromValue(paramPair.second);
+        if (!primvarName.IsEmpty())
+        {
+          resolved->hasPrimvar = true;
+          resolved->primvarName = primvarName;
+          return true;
+        }
+      }
+    }
+  }
+
+  for (const auto& connPair : node.inputConnections)
+  {
+    for (const HdMaterialConnection2& connection : connPair.second)
+    {
+      if (ResolveUpstreamPrimvar(network, connection.upstreamNode, depth + 1, visited, resolved))
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool FindInputTexture(const HdMaterialNetwork2& network, const HdMaterialNode2& node, const TfToken& inputName,
                       MaterialResolvedInput* resolved)
 {
@@ -483,6 +603,26 @@ bool FindInputTexture(const HdMaterialNetwork2& network, const HdMaterialNode2& 
   {
     std::set<SdfPath> visited;
     if (ResolveUpstreamTexture(network, connection.upstreamNode, connection.upstreamOutputName, 0, &visited, resolved))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FindInputPrimvar(const HdMaterialNetwork2& network, const HdMaterialNode2& node, const TfToken& inputName,
+                      MaterialResolvedInput* resolved)
+{
+  const auto connectionsIt = node.inputConnections.find(inputName);
+  if (connectionsIt == node.inputConnections.end())
+  {
+    return false;
+  }
+
+  for (const HdMaterialConnection2& connection : connectionsIt->second)
+  {
+    std::set<SdfPath> visited;
+    if (ResolveUpstreamPrimvar(network, connection.upstreamNode, 0, &visited, resolved))
     {
       return true;
     }
@@ -608,9 +748,13 @@ bool ResolveInput(const HdMaterialNetwork2& network, const HdMaterialNode2& node
       {
         resolved->inputName = inputName;
       }
+      if (!resolved->hasTexture && FindInputPrimvar(network, node, inputName, resolved))
+      {
+        resolved->inputName = inputName;
+      }
     }
 
-    if (resolved->hasValue || resolved->hasTexture)
+    if (resolved->hasValue || resolved->hasTexture || resolved->hasPrimvar)
     {
       return true;
     }
@@ -719,6 +863,11 @@ void ApplyResolvedInput(MaterialXParseResult& result, const MaterialInputRule& r
       result.material.texturePath = resolved.texturePath;
     }
   }
+  if (resolved.hasPrimvar && rule.semantic == MaterialSemantic::BaseColor)
+  {
+    result.baseColorPrimvarName = resolved.primvarName;
+    result.hasMaterialOpinion = true;
+  }
 }
 }  // namespace
 
@@ -758,8 +907,9 @@ MaterialXParseResult ParseMaterialXNetwork(const HdMaterialNetwork2& network, co
   MaterialXParseResult result;
   result.material = defaultMaterial;
 
-  // This parser intentionally targets MaterialX standard_surface and OpenPBR
-  // surface shaders. Unknown shader families are skipped conservatively.
+  // This parser intentionally targets UsdPreviewSurface plus MaterialX
+  // standard_surface and OpenPBR surface shaders. Unknown shader families are
+  // skipped conservatively.
   for (const SdfPath& nodePath : GetMaterialNodesToParse(network))
   {
     const auto nodeIt = network.nodes.find(nodePath);
