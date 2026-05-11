@@ -1,8 +1,11 @@
 #include "materialXParser.h"
 
+#include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/usd/sdf/assetPath.h>
 
+#include <algorithm>
+#include <cmath>
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -15,8 +18,13 @@ enum class ShaderFamily
 {
   Unknown,
   UsdPreviewSurface,
+  MaterialXSurface,
   MaterialXStandardSurface,
   MaterialXOpenPbrSurface,
+  MaterialXOrenNayarDiffuseBsdf,
+  MaterialXConductorBsdf,
+  MaterialXDielectricBsdf,
+  MaterialXUniformEdf,
 };
 
 enum class MaterialSemantic
@@ -32,6 +40,7 @@ enum class MaterialSemantic
   Subsurface,
   SubsurfaceColor,
   SubsurfaceScale,
+  Ior,
   Unsupported,
 };
 
@@ -81,6 +90,10 @@ ShaderFamily IdentifyShaderFamily(const TfToken& shaderId)
   {
     return ShaderFamily::UsdPreviewSurface;
   }
+  if (id == "ND_surface")
+  {
+    return ShaderFamily::MaterialXSurface;
+  }
   if (id.find("open_pbr_surface") != std::string::npos)
   {
     return ShaderFamily::MaterialXOpenPbrSurface;
@@ -89,13 +102,41 @@ ShaderFamily IdentifyShaderFamily(const TfToken& shaderId)
   {
     return ShaderFamily::MaterialXStandardSurface;
   }
+  if (id.find("oren_nayar_diffuse_bsdf") != std::string::npos)
+  {
+    return ShaderFamily::MaterialXOrenNayarDiffuseBsdf;
+  }
+  if (id.find("conductor_bsdf") != std::string::npos)
+  {
+    return ShaderFamily::MaterialXConductorBsdf;
+  }
+  if (id.find("dielectric_bsdf") != std::string::npos)
+  {
+    return ShaderFamily::MaterialXDielectricBsdf;
+  }
+  if (id.find("uniform_edf") != std::string::npos)
+  {
+    return ShaderFamily::MaterialXUniformEdf;
+  }
   return ShaderFamily::Unknown;
 }
 
-bool IsMaterialXSurfaceFamily(ShaderFamily family)
+bool IsTerminalSurfaceFamily(ShaderFamily family)
 {
   return family == ShaderFamily::UsdPreviewSurface || family == ShaderFamily::MaterialXStandardSurface ||
-         family == ShaderFamily::MaterialXOpenPbrSurface;
+         family == ShaderFamily::MaterialXOpenPbrSurface || family == ShaderFamily::MaterialXSurface;
+}
+
+bool IsMaterialXClosureFamily(ShaderFamily family)
+{
+  return family == ShaderFamily::MaterialXOrenNayarDiffuseBsdf || family == ShaderFamily::MaterialXConductorBsdf ||
+         family == ShaderFamily::MaterialXDielectricBsdf || family == ShaderFamily::MaterialXUniformEdf;
+}
+
+bool IsParseableMaterialFamily(ShaderFamily family)
+{
+  return family == ShaderFamily::UsdPreviewSurface || family == ShaderFamily::MaterialXStandardSurface ||
+         family == ShaderFamily::MaterialXOpenPbrSurface || IsMaterialXClosureFamily(family);
 }
 
 int CountKnownSurfaceInputs(const HdMaterialNode2& node, ShaderFamily family)
@@ -106,7 +147,11 @@ int CountKnownSurfaceInputs(const HdMaterialNode2& node, ShaderFamily family)
       TfToken("opacity"),            TfToken("transmission"),    TfToken("transmission_color"),
       TfToken("subsurface"),         TfToken("subsurface_color"), TfToken("subsurface_scale"),
   };
-  if (family == ShaderFamily::UsdPreviewSurface)
+  if (family == ShaderFamily::MaterialXSurface)
+  {
+    inputNames = {TfToken("bsdf"), TfToken("edf"), TfToken("opacity"), TfToken("thin_walled")};
+  }
+  else if (family == ShaderFamily::UsdPreviewSurface)
   {
     inputNames = {TfToken("diffuseColor"), TfToken("metallic"), TfToken("roughness"), TfToken("normal"),
                   TfToken("emissiveColor"), TfToken("opacity"), TfToken("ior"), TfToken("occlusion")};
@@ -165,7 +210,15 @@ bool IsBetterSurfaceCandidate(const HdMaterialNetwork2& network, const SurfaceSh
 
   if (candidate.family != current.family)
   {
-    return candidate.family == ShaderFamily::MaterialXStandardSurface;
+    if (candidate.family == ShaderFamily::MaterialXStandardSurface)
+    {
+      return true;
+    }
+    if (current.family == ShaderFamily::MaterialXStandardSurface)
+    {
+      return false;
+    }
+    return candidate.family == ShaderFamily::MaterialXSurface;
   }
   return candidate.nodePath.GetString() < current.nodePath.GetString();
 }
@@ -176,7 +229,7 @@ std::vector<SurfaceShaderCandidate> CollectSurfaceShaderCandidates(const HdMater
   for (const auto& nodePair : network.nodes)
   {
     const ShaderFamily family = IdentifyShaderFamily(nodePair.second.nodeTypeId);
-    if (!IsMaterialXSurfaceFamily(family))
+    if (!IsTerminalSurfaceFamily(family))
     {
       continue;
     }
@@ -336,6 +389,48 @@ const std::vector<MaterialInputRule>& MaterialInputRules()
        TextureUsage::Unknown,
        ValueKind::FloatOrColor3,
        true},
+      {ShaderFamily::MaterialXOrenNayarDiffuseBsdf,
+       MaterialSemantic::BaseColor,
+       {TfToken("color")},
+       TextureUsage::BaseColor,
+       ValueKind::Color3,
+       true},
+      {ShaderFamily::MaterialXOrenNayarDiffuseBsdf,
+       MaterialSemantic::Roughness,
+       {TfToken("roughness")},
+       TextureUsage::Roughness,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXConductorBsdf,
+       MaterialSemantic::Roughness,
+       {TfToken("roughness")},
+       TextureUsage::Roughness,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXDielectricBsdf,
+       MaterialSemantic::Roughness,
+       {TfToken("roughness")},
+       TextureUsage::Roughness,
+       ValueKind::Float,
+       true},
+      {ShaderFamily::MaterialXDielectricBsdf,
+       MaterialSemantic::TransmissionColor,
+       {TfToken("color"), TfToken("tint")},
+       TextureUsage::Unknown,
+       ValueKind::Color3,
+       false},
+      {ShaderFamily::MaterialXDielectricBsdf,
+       MaterialSemantic::Ior,
+       {TfToken("ior")},
+       TextureUsage::Unknown,
+       ValueKind::Float,
+       false},
+      {ShaderFamily::MaterialXUniformEdf,
+       MaterialSemantic::Emission,
+       {TfToken("color")},
+       TextureUsage::Emission,
+       ValueKind::Color3,
+       true},
   };
   return rules;
 }
@@ -350,7 +445,7 @@ bool TryGetNodeSurfaceCandidate(const HdMaterialNetwork2& network, const SdfPath
   }
 
   const ShaderFamily family = IdentifyShaderFamily(nodeIt->second.nodeTypeId);
-  if (!IsMaterialXSurfaceFamily(family))
+  if (!IsTerminalSurfaceFamily(family))
   {
     return false;
   }
@@ -401,11 +496,76 @@ bool SelectSurfaceShaderCandidate(const HdMaterialNetwork2& network, SurfaceShad
   return hasSelected;
 }
 
+void CollectConnectedClosureNodes(const HdMaterialNetwork2& network, const SdfPath& nodePath, int depth,
+                                  std::set<SdfPath>* visited, std::vector<SdfPath>* nodes)
+{
+  if (depth > kMaxMaterialXTraversalDepth || visited->find(nodePath) != visited->end())
+  {
+    return;
+  }
+  visited->insert(nodePath);
+
+  const auto nodeIt = network.nodes.find(nodePath);
+  if (nodeIt == network.nodes.end())
+  {
+    return;
+  }
+
+  const ShaderFamily family = IdentifyShaderFamily(nodeIt->second.nodeTypeId);
+  if (IsParseableMaterialFamily(family) && family != ShaderFamily::MaterialXSurface)
+  {
+    nodes->push_back(nodePath);
+    return;
+  }
+
+  for (const auto& connPair : nodeIt->second.inputConnections)
+  {
+    for (const HdMaterialConnection2& connection : connPair.second)
+    {
+      CollectConnectedClosureNodes(network, connection.upstreamNode, depth + 1, visited, nodes);
+    }
+  }
+}
+
+std::vector<SdfPath> GetMaterialXSurfaceNodesToParse(const HdMaterialNetwork2& network, const SdfPath& surfaceNodePath)
+{
+  const auto nodeIt = network.nodes.find(surfaceNodePath);
+  if (nodeIt == network.nodes.end())
+  {
+    return {};
+  }
+
+  std::vector<SdfPath> nodes;
+  std::set<SdfPath> visited;
+  const std::vector<TfToken> closureInputs = {TfToken("bsdf"), TfToken("edf")};
+  for (const TfToken& closureInput : closureInputs)
+  {
+    const auto connIt = nodeIt->second.inputConnections.find(closureInput);
+    if (connIt == nodeIt->second.inputConnections.end())
+    {
+      continue;
+    }
+    for (const HdMaterialConnection2& connection : connIt->second)
+    {
+      CollectConnectedClosureNodes(network, connection.upstreamNode, 0, &visited, &nodes);
+    }
+  }
+  return nodes;
+}
+
 std::vector<SdfPath> GetMaterialNodesToParse(const HdMaterialNetwork2& network)
 {
   SurfaceShaderCandidate selected;
   if (SelectSurfaceShaderCandidate(network, &selected))
   {
+    if (selected.family == ShaderFamily::MaterialXSurface)
+    {
+      const std::vector<SdfPath> closureNodes = GetMaterialXSurfaceNodesToParse(network, selected.nodePath);
+      if (!closureNodes.empty())
+      {
+        return closureNodes;
+      }
+    }
     return {selected.nodePath};
   }
 
@@ -651,6 +811,12 @@ bool ReadFloat(const VtValue& value, float* result)
     *result = static_cast<float>(value.Get<int>());
     return true;
   }
+  if (value.IsHolding<GfVec2f>())
+  {
+    const GfVec2f vec = value.Get<GfVec2f>();
+    *result = vec[0];
+    return true;
+  }
   return false;
 }
 
@@ -679,6 +845,115 @@ bool ReadVec3(const VtValue& value, glm::vec3* result)
     return true;
   }
   return false;
+}
+
+bool ReadParameterFloat(const HdMaterialNode2& node, const TfToken& name, float* result)
+{
+  const auto paramIt = node.parameters.find(name);
+  if (paramIt == node.parameters.end())
+  {
+    return false;
+  }
+  return ReadFloat(paramIt->second, result);
+}
+
+bool ReadParameterVec3(const HdMaterialNode2& node, const TfToken& name, glm::vec3* result)
+{
+  const auto paramIt = node.parameters.find(name);
+  if (paramIt == node.parameters.end())
+  {
+    return false;
+  }
+  return ReadVec3(paramIt->second, result);
+}
+
+glm::vec3 ClampColor(const glm::vec3& value)
+{
+  return glm::vec3(std::clamp(value.x, 0.0f, 1.0f), std::clamp(value.y, 0.0f, 1.0f),
+                   std::clamp(value.z, 0.0f, 1.0f));
+}
+
+glm::vec3 ComputeConductorF0(const glm::vec3& ior, const glm::vec3& extinction)
+{
+  glm::vec3 result(0.9f);
+  for (int i = 0; i < 3; ++i)
+  {
+    const float n = std::max(ior[i], 0.0f);
+    const float k = std::max(extinction[i], 0.0f);
+    const float numerator = (n - 1.0f) * (n - 1.0f) + k * k;
+    const float denominator = (n + 1.0f) * (n + 1.0f) + k * k;
+    result[i] = denominator > 0.0f ? numerator / denominator : 0.9f;
+  }
+  return ClampColor(result);
+}
+
+void ApplyMaterialXClosureDefaults(MaterialXParseResult& result, const HdMaterialNode2& node, ShaderFamily family)
+{
+  HydraMaterial& material = result.material;
+
+  switch (family)
+  {
+    case ShaderFamily::MaterialXOrenNayarDiffuseBsdf:
+      material.metallicFactor = 0.0f;
+      result.hasMaterialOpinion = true;
+      break;
+    case ShaderFamily::MaterialXConductorBsdf:
+    {
+      material.metallicFactor = 1.0f;
+      material.roughnessFactor = 0.1f;
+
+      glm::vec3 ior;
+      glm::vec3 extinction;
+      if (ReadParameterVec3(node, TfToken("ior"), &ior) && ReadParameterVec3(node, TfToken("extinction"), &extinction))
+      {
+        material.baseColorFactor = ComputeConductorF0(ior, extinction);
+        material.diffuse = material.baseColorFactor;
+        material.specular = material.baseColorFactor;
+      }
+
+      float roughness = 0.0f;
+      if (ReadParameterFloat(node, TfToken("roughness"), &roughness))
+      {
+        material.roughnessFactor = std::clamp(roughness, 0.02f, 1.0f);
+      }
+      result.hasMaterialOpinion = true;
+      break;
+    }
+    case ShaderFamily::MaterialXDielectricBsdf:
+    {
+      material.metallicFactor = 0.0f;
+      material.transmissionFactor = 1.0f;
+      material.transmissionColorFactor = glm::vec3(1.0f);
+      material.baseColorFactor = glm::vec3(1.0f);
+      material.diffuse = material.baseColorFactor;
+
+      float ior = 0.0f;
+      if (ReadParameterFloat(node, TfToken("ior"), &ior))
+      {
+        material.ior = ior;
+      }
+      float roughness = 0.0f;
+      if (ReadParameterFloat(node, TfToken("roughness"), &roughness))
+      {
+        material.roughnessFactor = std::clamp(roughness, 0.02f, 1.0f);
+      }
+      result.hasMaterialOpinion = true;
+      break;
+    }
+    case ShaderFamily::MaterialXUniformEdf:
+    {
+      glm::vec3 emission;
+      if (ReadParameterVec3(node, TfToken("color"), &emission))
+      {
+        material.emissionFactor = emission;
+        material.emission = emission;
+        result.hasMaterialOpinion = true;
+      }
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 MaterialXTextureBinding MakeTextureBinding(const MaterialResolvedInput& resolved, TextureUsage usage)
@@ -832,6 +1107,12 @@ void ApplyResolvedValue(HydraMaterial& material, const MaterialInputRule& rule, 
         *hasMaterialOpinion = true;
       }
       break;
+    case MaterialSemantic::Ior:
+      if (ReadFloat(value, &material.ior))
+      {
+        *hasMaterialOpinion = true;
+      }
+      break;
     case MaterialSemantic::Normal:
     case MaterialSemantic::Unsupported:
       break;
@@ -907,9 +1188,9 @@ MaterialXParseResult ParseMaterialXNetwork(const HdMaterialNetwork2& network, co
   MaterialXParseResult result;
   result.material = defaultMaterial;
 
-  // This parser intentionally targets UsdPreviewSurface plus MaterialX
-  // standard_surface and OpenPBR surface shaders. Unknown shader families are
-  // skipped conservatively.
+  // This parser targets UsdPreviewSurface, MaterialX standard_surface/OpenPBR,
+  // and a small set of MaterialX BSDF/EDF closures used by asset-library scenes.
+  // Unknown shader families are skipped conservatively.
   for (const SdfPath& nodePath : GetMaterialNodesToParse(network))
   {
     const auto nodeIt = network.nodes.find(nodePath);
@@ -921,8 +1202,10 @@ MaterialXParseResult ParseMaterialXNetwork(const HdMaterialNetwork2& network, co
     ShaderFamily family = IdentifyShaderFamily(node.nodeTypeId);
     if (family == ShaderFamily::Unknown)
     {
-      family = ShaderFamily::MaterialXStandardSurface;
+      continue;
     }
+
+    ApplyMaterialXClosureDefaults(result, node, family);
 
     for (const MaterialInputRule& rule : MaterialInputRules())
     {

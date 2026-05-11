@@ -114,9 +114,10 @@ call sites with `rg`.
 - `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync lifecycle,
   MaterialX parser invocation, texture registration, and dirty marking.
 - `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: USD Preview
-  Surface plus MaterialX surface shader selection, standard surface/OpenPBR
-  input rules, upstream texture and primvar-reader traversal, texture binding
-  metadata, and `HydraMaterial` field mapping.
+  Surface plus MaterialX surface selection, `ND_surface` closure traversal,
+  standard surface/OpenPBR and selected BSDF/EDF input rules, upstream texture
+  and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
+  field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
   conversion, and LiDAR/height scan sensor parameter reads.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
