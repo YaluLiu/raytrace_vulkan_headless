@@ -20,6 +20,9 @@ std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name) {
   if (name == HdAovTokens->color) {
     return HeadlessAov::Color;
   }
+  if (name == HdRobotAovTokens->dlssRRRawColor) {
+    return HeadlessAov::DlssRRRawColor;
+  }
   if (name == HdAovTokens->primId) {
     return HeadlessAov::PrimId;
   }

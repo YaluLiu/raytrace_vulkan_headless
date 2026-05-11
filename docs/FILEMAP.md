@@ -71,7 +71,8 @@ call sites with `rg`.
 - `headless/dlss/dlss_rr.cpp`: NGX runtime setup, optimal settings query,
   validation, resource wrapping, and DLSS evaluation.
 - `headless/hello_vulkan.cpp`: Integration point for DLSS sizing,
-  offscreen target refresh, jitter, evaluate calls, and fallback behavior.
+  offscreen target refresh, jitter, evaluate calls, fallback behavior, and
+  raw DLSS color AOV selection.
 - `headless/hello_vulkan.hpp`: DLSS/offscreen state and inline setter paths
   that refresh targets or reset accumulation.
 
@@ -131,7 +132,8 @@ call sites with `rg`.
   allocation, Hgi texture descriptor creation, GL interop, and texture format
   conversion.
 - `hdRobot/renderTextureExport.h` / `hdRobot/renderTextureExport.cpp`: Render
-  texture export surface, including Hydra material texture asset byte export.
+  texture export surface, including Hydra material texture asset byte export
+  and debug AOV token to headless texture mapping.
 - `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
   Vulkan external-memory import cache for headless AOV textures exposed as
   source OpenGL textures.

@@ -188,6 +188,11 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
       format  = m_offscreenDenoisedFormat;
       extent  = m_size;
       break;
+    case HeadlessAov::DlssRRRawColor:
+      texture = &m_offscreenColor;
+      format  = m_offscreenColorFormat;
+      extent  = m_renderSize;
+      break;
     case HeadlessAov::PrimId:
       texture = &m_offscreenObjectId;
       format  = m_offscreenObjectIdFormat;

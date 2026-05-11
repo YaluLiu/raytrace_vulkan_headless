@@ -6,6 +6,7 @@
 enum class HeadlessAov
 {
   Color,
+  DlssRRRawColor,
   PrimId,
   InstanceId,
   DlssRRDiffuseAlbedo,

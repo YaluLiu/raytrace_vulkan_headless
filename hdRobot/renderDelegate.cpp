@@ -202,7 +202,8 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& na
   {
     return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
   }
-  else if(name == HdRobotAovTokens->dlssRRDiffuseAlbedo || name == HdRobotAovTokens->dlssRRSpecularAlbedo
+  else if(name == HdRobotAovTokens->dlssRRRawColor || name == HdRobotAovTokens->dlssRRDiffuseAlbedo
+          || name == HdRobotAovTokens->dlssRRSpecularAlbedo
           || name == HdRobotAovTokens->dlssRRNormalRoughness || name == HdRobotAovTokens->lidarPointCloud)
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f)));

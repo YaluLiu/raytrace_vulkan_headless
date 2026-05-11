@@ -34,6 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
       (debugThinWalled, "debug:thinWalled"))((debugDoubleSided, "debug:doubleSided"))(                                \
       (distanceToCamera, "distance_to_camera"))(                                                                        \
       (lidarPointCloud, "lidar:pointCloud"))(                                                                           \
+      (dlssRRRawColor, "dlssRR:rawColor"))(                                                                             \
       (dlssRRDiffuseAlbedo, "dlssRR:diffuseAlbedo"))((dlssRRSpecularAlbedo, "dlssRR:specularAlbedo"))(                \
       (dlssRRNormalRoughness, "dlssRR:normalRoughness"))((dlssRRMotionVector, "dlssRR:motionVector"))(                \
       (dlssRRLinearDepth, "dlssRR:linearDepth"))((dlssRRSpecularHitDistance, "dlssRR:specularHitDistance"))
