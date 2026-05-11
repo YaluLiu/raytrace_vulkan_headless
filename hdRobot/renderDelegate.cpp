@@ -198,7 +198,7 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& na
   {
     return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
   }
-  else if(name == HdAovTokens->primId || name == HdAovTokens->elementId || name == HdAovTokens->instanceId)
+  else if(name == HdAovTokens->primId || name == HdAovTokens->instanceId)
   {
     return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
   }

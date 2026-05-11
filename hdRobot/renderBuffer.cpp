@@ -52,11 +52,7 @@ HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
 {
   HgiTextureUsage usage = 0;
 
-  const bool isIdAov = (nameToken == HdAovTokens->primId) || (nameToken == HdAovTokens->instanceId) ||
-#if PXR_VERSION >= 2408
-                       (nameToken == HdAovTokens->elementId) ||
-#endif
-                       false;
+  const bool isIdAov = (nameToken == HdAovTokens->primId) || (nameToken == HdAovTokens->instanceId);
 
   switch(format)
   {

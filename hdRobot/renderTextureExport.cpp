@@ -148,6 +148,11 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
 
   const std::optional<HeadlessAov> aov = GetHeadlessAov(name);
   if (!aov) {
+#if PXR_VERSION >= 2408
+    if (name == HdAovTokens->elementId) {
+      return true;
+    }
+#endif
     std::cerr << "[RenderTextureExport] Unsupported AOV token "
               << name.GetString() << std::endl;
     return false;
