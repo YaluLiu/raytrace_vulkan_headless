@@ -194,7 +194,27 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
 
   if(!m_lights.empty())
   {
-    vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, sizeof(Light) * m_lights.size(), m_lights.data());
+    const VkDeviceSize lightBufferSize = sizeof(Light) * m_lights.size();
+
+    VkBufferMemoryBarrier preBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    preBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    preBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    preBarrier.buffer        = m_bLights.buffer;
+    preBarrier.offset        = 0;
+    preBarrier.size          = lightBufferSize;
+    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                         nullptr, 1, &preBarrier, 0, nullptr);
+
+    vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, lightBufferSize, m_lights.data());
+
+    VkBufferMemoryBarrier postBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    postBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    postBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    postBarrier.buffer        = m_bLights.buffer;
+    postBarrier.offset        = 0;
+    postBarrier.size          = lightBufferSize;
+    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
+                         nullptr, 1, &postBarrier, 0, nullptr);
   }
 }
 

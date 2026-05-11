@@ -190,8 +190,12 @@ void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
   const GfVec4f diffuse  = simpleLight.GetDiffuse();
   const GfVec4f specular = simpleLight.GetSpecular();
 
-  const GfMatrix4d transform = sceneDelegate->GetTransform(id);
-  const GfVec3d    worldPos  = transform.Transform(GfVec3d(position[0], position[1], position[2]));
+  const GfMatrix4d transform = simpleLight.GetTransform();
+  GfVec3d          worldPos(position[0], position[1], position[2]);
+  if(simpleLight.IsCameraSpaceLight())
+  {
+    worldPos = transform.Transform(worldPos);
+  }
 
   // Keep the sphere-light approximation visible in the current shader attenuation model.
   constexpr float kSimpleLightIntensityScale = 100.0f;
