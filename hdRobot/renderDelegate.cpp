@@ -67,7 +67,7 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
     , _renderParam(std::make_unique<HdRobotRenderParam>())
 {
-  _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(4)});
+  _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(1)});
   _settingDescriptors.emplace_back(
       HdRenderSettingDescriptor{"Enable DLSS-RR Denoise", HdRobotSettingsTokens->dlssRRDenoise, VtValue(true)});
   _settingDescriptors.emplace_back(
@@ -75,11 +75,11 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
   _settingDescriptors.emplace_back(
       HdRenderSettingDescriptor{"DLSS-SR Render Scale", HdRobotSettingsTokens->dlssSRScale, VtValue(0.6f)});
   _settingDescriptors.emplace_back(
-      HdRenderSettingDescriptor{"Enable Lidar", HdRobotSettingsTokens->lidarEnable, VtValue(true)});
+      HdRenderSettingDescriptor{"Enable Lidar", HdRobotSettingsTokens->lidarEnable, VtValue(false)});
 
   if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
   {
-    _settingsMap[HdRobotSettingsTokens->spp] = VtValue(4);
+    _settingsMap[HdRobotSettingsTokens->spp] = VtValue(1);
   }
   if(_settingsMap.find(HdRobotSettingsTokens->dlssRRDenoise) == _settingsMap.end())
   {
@@ -95,7 +95,7 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
   }
   if(_settingsMap.find(HdRobotSettingsTokens->lidarEnable) == _settingsMap.end())
   {
-    _settingsMap[HdRobotSettingsTokens->lidarEnable] = VtValue(true);
+    _settingsMap[HdRobotSettingsTokens->lidarEnable] = VtValue(false);
   }
 }
 

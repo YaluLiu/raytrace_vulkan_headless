@@ -181,7 +181,7 @@ void ApplyRenderSettingsToApp(const HdRenderSettingsMap& settings, ::HelloVulkan
 bool GetLidarEnabledSetting(const HdRenderSettingsMap& settings)
 {
   const VtValue* value = nullptr;
-  bool           enabled = true;
+  bool           enabled = false;
   if(TryGetSettingValue(settings, HdRobotSettingsTokens->lidarEnable, &value))
   {
     TryConvertLidarEnable(*value, &enabled);
