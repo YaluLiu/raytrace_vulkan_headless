@@ -1,13 +1,10 @@
 #include "ray_trace_app.hpp"
 #include "obj_loader.h"
 #include "usd_loader.h"
-#include <array>
 #include <cmath>
-#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
-#include <utility>
 #include "nvh/cameramanipulator.hpp"
 
 namespace fs = std::filesystem;
@@ -28,35 +25,6 @@ const glm::vec3 kIdentityScale          = {1.f, 1.f, 1.f};
 const glm::vec3 kCatTranslation         = {0.0f, 0.5f, 0.0f};
 const glm::vec3 kBeautyBallTranslation  = {2.0f, 0.5f, 1.0f};
 const LidarParams kDefaultRadarParams   = {-120.0f, 120.0f, 1.0f, -2.0f, -20.0f, 0.5f, 2.0f, 200.0f};
-
-void setEnvDefault(const char* name, const char* value)
-{
-  if(std::getenv(name) == nullptr)
-  {
-#ifdef _WIN32
-    if(_putenv_s(name, value) != 0)
-    {
-      throw std::runtime_error(std::string("Failed to set environment variable: ") + name);
-    }
-#else
-    setenv(name, value, 0);
-#endif
-  }
-}
-
-void applyDefaultDlssRuntime()
-{
-  static constexpr std::array<std::pair<const char*, const char*>, 3> kDefaults = {{
-      {"ENABLE_DLSS_RR", "1"},
-      {"ENABLE_DLSS_SR", "1"},
-      {"DLSS_SR_SCALE", "1"},
-  }};
-
-  for(const auto& [name, value] : kDefaults)
-  {
-    setEnvDefault(name, value);
-  }
-}
 
 std::string buildOutputFramePath(const fs::path& outputDir, int frameIndex)
 {
@@ -98,8 +66,6 @@ public:
 
   void run()
   {
-    applyDefaultDlssRuntime();
-
     m_app.setup(kRenderWidth, kRenderHeight);
 
     loadConfiguredScene();

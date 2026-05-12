@@ -54,21 +54,6 @@ bash install.sh hydra
 
 可以运行基于 headless 编译的 hydra 插件
 
-运行 `hydra` 前，需要先从下面地址下载并准备 NVIDIA DLSS SDK：
-
-- [NVIDIA/DLSS](https://github.com/NVIDIA/DLSS)
-
-然后通过 `DLSS_SDK_ROOT` 指定给安装脚本：
-
-```bash
-DLSS_SDK_ROOT=/path/to/DLSS bash install.sh hydra
-```
-
-`DLSS_SDK_ROOT` 目录中需要包含：
-
-- `include/nvsdk_ngx_vk.h`
-- `lib/Linux_x86_64/libnvsdk_ngx.a`
-
 可以用 `HYDRA_SCENE_PATH` 覆盖 `install.sh hydra` 默认打开的 Hydra 场景：
 
 ```bash

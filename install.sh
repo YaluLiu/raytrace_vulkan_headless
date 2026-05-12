@@ -53,54 +53,18 @@ function format(){
 function demo() {
     set -e
     project_root="$(pwd)"
-    dlss_sdk_root="${DLSS_SDK_ROOT:-/home/yalu/dlss/DLSS}"
-    dlss_feature_path="${DLSS_RR_FEATURE_PATH:-${dlss_sdk_root}/lib/Linux_x86_64/rel}"
-    dlss_appdata_path="${DLSS_RR_APPDATA_PATH:-${project_root}/output/ngx}"
-    dlss_status_log="${DLSS_RR_STATUS_LOG:-${project_root}/output/dlss_rr_demo_status.log}"
 
-    if [ ! -f "${dlss_sdk_root}/include/nvsdk_ngx_vk.h" ] || [ ! -f "${dlss_sdk_root}/lib/Linux_x86_64/libnvsdk_ngx.a" ]; then
-        echo "[demo] DLSS SDK is incomplete: ${dlss_sdk_root}"
-        echo "[demo] required files:"
-        echo "       ${dlss_sdk_root}/include/nvsdk_ngx_vk.h"
-        echo "       ${dlss_sdk_root}/lib/Linux_x86_64/libnvsdk_ngx.a"
-        return 1
-    fi
-
-    if [ ! -d "${dlss_feature_path}" ]; then
-        echo "[demo] warning: DLSS runtime feature path does not exist: ${dlss_feature_path}"
-    fi
-
-    mkdir -p "${project_root}/output" "${dlss_appdata_path}" "${project_root}/result"
-    : > "${dlss_status_log}"
+    mkdir -p "${project_root}/output" "${project_root}/result"
 
     cd build
     cmake ..  \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
         -DENABLE_GL_VK_CONVERSION=OFF \
-        -DENABLE_HYDRA=OFF \
-        -DENABLE_DLSS_RR=ON \
-        -DDLSS_SDK_ROOT="${dlss_sdk_root}"
+        -DENABLE_HYDRA=OFF
     make -j20
     cd ..
 
-    export ENABLE_DLSS_RR="${ENABLE_DLSS_RR:-1}"
-    export ENABLE_DLSS_SR="${ENABLE_DLSS_SR:-1}"
-    export DLSS_SR_SCALE="${DLSS_SR_SCALE:-1}"
-    export DLSS_RR_FEATURE_PATH="${dlss_feature_path}"
-    export DLSS_RR_APPDATA_PATH="${dlss_appdata_path}"
-    export DLSS_RR_STATUS_LOG="${dlss_status_log}"
-    export DLSS_SDK_ROOT="${dlss_sdk_root}"
-    export __NGX_LOG_PATH_OVERRIDE="${dlss_appdata_path}"
-    export __NGX_LOG_LEVEL="${__NGX_LOG_LEVEL:-0}"
-
     find "${project_root}/result" -maxdepth 1 -type f -name "gl_*.png" -delete
-
-    echo "[demo] ENABLE_DLSS_RR=${ENABLE_DLSS_RR}"
-    echo "[demo] ENABLE_DLSS_SR=${ENABLE_DLSS_SR}"
-    echo "[demo] DLSS_SR_SCALE=${DLSS_SR_SCALE}"
-    echo "[demo] DLSS_RR_FEATURE_PATH=${DLSS_RR_FEATURE_PATH}"
-    echo "[demo] DLSS_RR_APPDATA_PATH=${DLSS_RR_APPDATA_PATH}"
-    echo "[demo] DLSS_RR_STATUS_LOG=${DLSS_RR_STATUS_LOG}"
 
     build/bin/${BUILD_TYPE}/vk_${app_name}_KHR_app
     # build/bin/${BUILD_TYPE}/libheadless_app
@@ -125,52 +89,23 @@ function hydra(){
     plugin_name="hdRobot"
     project_root="$(pwd)"
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
-    dlss_sdk_root="${DLSS_SDK_ROOT:-/home/yalu/dlss/DLSS}"
-    dlss_feature_path="${DLSS_RR_FEATURE_PATH:-${dlss_sdk_root}/lib/Linux_x86_64/rel}"
-    dlss_appdata_path="${DLSS_RR_APPDATA_PATH:-${project_root}/output/ngx}"
-    dlss_status_log="${DLSS_RR_STATUS_LOG:-${project_root}/output/dlss_rr_status.log}"
 
-    if [ ! -f "${dlss_sdk_root}/include/nvsdk_ngx_vk.h" ] || [ ! -f "${dlss_sdk_root}/lib/Linux_x86_64/libnvsdk_ngx.a" ]; then
-        echo "[hydra] DLSS SDK is incomplete: ${dlss_sdk_root}"
-        echo "[hydra] required files:"
-        echo "        ${dlss_sdk_root}/include/nvsdk_ngx_vk.h"
-        echo "        ${dlss_sdk_root}/lib/Linux_x86_64/libnvsdk_ngx.a"
-        return 1
-    fi
-
-    if [ ! -d "${dlss_feature_path}" ]; then
-        echo "[hydra] warning: DLSS runtime feature path does not exist: ${dlss_feature_path}"
-    fi
-
-    mkdir -p "${project_root}/output" "${dlss_appdata_path}"
-    : > "${dlss_status_log}"
+    mkdir -p "${project_root}/output"
 
     cd build
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
         -DENABLE_GL_VK_CONVERSION=ON \
         -DENABLE_HYDRA=ON \
-        -DENABLE_DLSS_RR=ON \
-        -DDLSS_SDK_ROOT="${dlss_sdk_root}" \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
     
     cmake --build . --target ${plugin_name} --config Release -j20
     cmake --install . --component ${plugin_name}
     cd ..
 
-    export ENABLE_DLSS_RR="${ENABLE_DLSS_RR:-1}"
     export RT_SPP="${RT_SPP:-4}"
-    export DLSS_RR_FEATURE_PATH="${dlss_feature_path}"
-    export DLSS_RR_APPDATA_PATH="${dlss_appdata_path}"
-    export DLSS_RR_STATUS_LOG="${dlss_status_log}"
-    export __NGX_LOG_PATH_OVERRIDE="${dlss_appdata_path}"
-    export __NGX_LOG_LEVEL="${__NGX_LOG_LEVEL:-0}"
 
-    echo "[hydra] ENABLE_DLSS_RR=${ENABLE_DLSS_RR}"
     echo "[hydra] RT_SPP=${RT_SPP}"
-    echo "[hydra] DLSS_RR_FEATURE_PATH=${DLSS_RR_FEATURE_PATH}"
-    echo "[hydra] DLSS_RR_APPDATA_PATH=${DLSS_RR_APPDATA_PATH}"
-    echo "[hydra] DLSS_RR_STATUS_LOG=${DLSS_RR_STATUS_LOG}"
     echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"
 }
 

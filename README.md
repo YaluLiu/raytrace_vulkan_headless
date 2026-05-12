@@ -55,21 +55,6 @@ bash install.sh hydra
 
 Runs the Hydra plugin based on headless mode.
 
-Before running `hydra`, download and prepare the NVIDIA DLSS SDK from:
-
-- [NVIDIA/DLSS](https://github.com/NVIDIA/DLSS)
-
-Then pass the SDK root to `install.sh` with `DLSS_SDK_ROOT`:
-
-```bash
-DLSS_SDK_ROOT=/path/to/DLSS bash install.sh hydra
-```
-
-`DLSS_SDK_ROOT` should contain:
-
-- `include/nvsdk_ngx_vk.h`
-- `lib/Linux_x86_64/libnvsdk_ngx.a`
-
 You can override the default Hydra scene used by `install.sh hydra`:
 
 ```bash

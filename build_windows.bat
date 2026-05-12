@@ -14,7 +14,6 @@ rem
 rem Environment overrides:
 rem   BUILD_ROOT      Build directory prefix. Defaults to build.
 rem   CONFIG          CMake configuration. Defaults to Release.
-rem   DLSS_SDK_ROOT   DLSS SDK root. Defaults to D:\dev_env\DLSS.
 rem   INSTALL_PREFIX  USD plugin install directory. Defaults to D:\dev_env\usd\plugin\usd.
 rem   DEMO_EXE        Demo executable to run after build. Defaults to ..\bin_x64\%CONFIG%\vk_headless_KHR.exe.
 
@@ -46,7 +45,6 @@ exit /b %errorlevel%
 :set_defaults
 if not defined BUILD_ROOT set "BUILD_ROOT=build"
 if not defined CONFIG set "CONFIG=Release"
-if not defined DLSS_SDK_ROOT set "DLSS_SDK_ROOT=D:\dev_env\DLSS"
 if not defined INSTALL_PREFIX set "INSTALL_PREFIX=D:\dev_env\usd\plugin\usd"
 if not defined DEMO_EXE set "DEMO_EXE=%~dp0..\bin_x64\%CONFIG%\vk_headless_KHR.exe"
 exit /b 0
@@ -103,17 +101,13 @@ exit /b 0
 call cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
   -DENABLE_GL_VK_CONVERSION=ON ^
   -DENABLE_HYDRA=ON ^
-  -DENABLE_DLSS_RR=ON ^
-  -DDLSS_SDK_ROOT="%DLSS_SDK_ROOT%" ^
   -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%"
 exit /b %errorlevel%
 
 :configure_demo
 call cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
   -DENABLE_GL_VK_CONVERSION=ON ^
-  -DENABLE_HYDRA=OFF ^
-  -DENABLE_DLSS_RR=ON ^
-  -DDLSS_SDK_ROOT="%DLSS_SDK_ROOT%"
+  -DENABLE_HYDRA=OFF
 exit /b %errorlevel%
 
 :build_targets
@@ -144,7 +138,6 @@ echo.
 echo Defaults:
 echo   BUILD_ROOT=build
 echo   CONFIG=Release
-echo   DLSS_SDK_ROOT=D:\dev_env\DLSS
 echo   INSTALL_PREFIX=D:\dev_env\usd\plugin\usd
 echo   DEMO_EXE=..\bin_x64\%%CONFIG%%\vk_headless_KHR.exe
 exit /b 0
