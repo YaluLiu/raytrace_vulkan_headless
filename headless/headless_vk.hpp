@@ -32,7 +32,6 @@ public:
   virtual void createCommandBuffers();
   virtual void submitFrame();
 
-  // Getters
   VkInstance                          getInstance() { return m_instance; }
   VkDevice                            getDevice() { return m_device; }
   VkPhysicalDevice                    getPhysicalDevice() { return m_physicalDevice; }
@@ -44,7 +43,6 @@ public:
   uint32_t                            getCurFrame() const { return m_imageIndex; }
 
 protected:
-  // Vulkan low level
   VkInstance       m_instance{};
   VkDevice         m_device{};
   VkPhysicalDevice m_physicalDevice{};
@@ -52,21 +50,17 @@ protected:
   uint32_t         m_graphicsQueueIndex{VK_QUEUE_FAMILY_IGNORED};
   VkCommandPool    m_cmdPool{VK_NULL_HANDLE};
 
-  // Drawing/Surface
-  std::vector<VkCommandBuffer> m_commandBuffers;                 // Command buffer per nb element in Swapchain
-  std::vector<VkFence>         m_waitFences;                     // Fences per nb element in Swapchain
-  VkPipelineCache              m_pipelineCache{VK_NULL_HANDLE};  // Cache for pipeline/shaders
+  std::vector<VkCommandBuffer> m_commandBuffers;
+  std::vector<VkFence>         m_waitFences;
+  VkPipelineCache              m_pipelineCache{VK_NULL_HANDLE};
 
-  // image size
   VkExtent2D m_size;
-  // cmd-buffer-size
   uint32_t m_imageIndex = 0;
   uint32_t m_imageCount = 1;
 
-  // for save color_image to local png file
   uint32_t        getMemoryType(uint32_t typeBits, const VkMemoryPropertyFlags& properties) const;
   VkCommandBuffer createTempCmdBuffer();
   void            submitTempCmdBuffer(VkCommandBuffer cmdBuffer);
 };
 
-}  // namespace nvvkhl
+}

@@ -4,8 +4,6 @@
 
 cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
 
-#--------------------------------------------------------------------------------------------------
-# Project setting
 get_filename_component(PROJNAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 set(PROJNAME lib${PROJNAME})
 project(${PROJNAME} LANGUAGES C CXX)
@@ -13,20 +11,14 @@ message(STATUS "-------------------------------")
 message(STATUS "Processing Project ${PROJNAME}:")
 
 
-#--------------------------------------------------------------------------------------------------
-# C++ target and defines
 set(CMAKE_CXX_STANDARD 20)
 add_library(${PROJNAME})
 
-#------------------------------------------------------------------------------------------------
 # replace _add_project_definitions,because add_definitions can not send to Caller
 # _add_project_definitions(${PROJNAME})
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../headless")
 
-#--------------------------------------------------------------------------------------------------
-# Source files for this project
-#
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_lidar.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_height_scan.cpp")
@@ -37,8 +29,6 @@ list(APPEND COMMON_SOURCE_FILES ${EXTRA_COMMON})
 include_directories(${TUTO_KHR_DIR}/common)
 
 
-#--------------------------------------------------------------------------------------------------
-# GLSL to SPIR-V custom build
 compile_glsl_directory(
 	SRC "${CMAKE_CURRENT_SOURCE_DIR}/shaders" 
 	DST "${CMAKE_CURRENT_SOURCE_DIR}/spv" 
@@ -47,24 +37,16 @@ compile_glsl_directory(
 	)
 
 
-#--------------------------------------------------------------------------------------------------
-# Sources
 target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${HEADER_FILES} ${DLSS_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${COMMON_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${PACKAGE_SOURCE_FILES})
 target_sources(${PROJNAME} PUBLIC ${GLSL_SOURCES} ${GLSL_HEADERS})
 
-#--------------------------------------------------------------------------------------------------
-# include
-#
 target_include_directories(${PROJNAME} PUBLIC
   ${PROJECT_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/common
 )
 
-#--------------------------------------------------------------------------------------------------
-# Sub-folders in Visual Studio
-#
 source_group("Common"       FILES ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
 source_group("Sources"      FILES ${SOURCE_FILES})
 source_group("DLSS"         FILES ${DLSS_SOURCE_FILES})
@@ -72,9 +54,6 @@ source_group("Headers"      FILES ${HEADER_FILES})
 source_group("Shader Sources"  FILES ${GLSL_SOURCES})
 source_group("Shader Headers"  FILES ${GLSL_HEADERS})
 
-#--------------------------------------------------------------------------------------------------
-# Linkage
-#
 set(HEADLESS_PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES})
 if(OPENGL_LIBRARY)
   list(REMOVE_ITEM HEADLESS_PLATFORM_LIBRARIES ${OPENGL_LIBRARY})
@@ -149,9 +128,7 @@ if(ENABLE_DLSS_RR)
     message(WARNING "ENABLE_DLSS_RR is ON but NVIDIA DLSS SDK was not found. Building with DLSS-RR disabled.")
   endif()
 endif()
-#--------------------------------------------------------------------------------------------------
-# option
-#
+
 target_compile_definitions(${PROJNAME} PUBLIC
   $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
   $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
@@ -164,9 +141,7 @@ target_compile_definitions(${PROJNAME} PUBLIC
   $<$<BOOL:${DLSS_RR_FOUND}>:ENABLE_DLSS_RR=1>
   $<$<NOT:$<BOOL:${DLSS_RR_FOUND}>>:ENABLE_DLSS_RR=0>
 )
-#--------------------------------------------------------------------------------------------------
-# copies binaries that need to be put next to the exe files (ZLib, etc.)
-#
+
 _finalize_target( ${PROJNAME} )
 
 

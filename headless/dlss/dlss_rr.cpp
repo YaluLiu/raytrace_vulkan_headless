@@ -172,7 +172,7 @@ bool isValidInputImage(const dlss::ImageInput& image)
   return image.image != VK_NULL_HANDLE && image.view != VK_NULL_HANDLE && image.format != VK_FORMAT_UNDEFINED;
 }
 
-}  // namespace
+}
 
 namespace dlss {
 
@@ -637,4 +637,4 @@ const std::string& DlssRR::getLastError() const
   return m_impl->lastError;
 }
 
-}  // namespace dlss
+}

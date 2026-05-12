@@ -3,7 +3,6 @@
 
 #ifdef __cplusplus
 #include <glm/glm.hpp>
-// GLSL Type
 using vec2 = glm::vec2;
 using vec3 = glm::vec3;
 using vec4 = glm::vec4;
@@ -22,10 +21,10 @@ using uint = unsigned int;
 
 START_BINDING(SceneBindings)
   eFrameUniforms = 0,  // Frame uniform containing main camera and sensor data
-  eObjDescs    = 1,  // Access to the object descriptions
-  eTextures    = 2,  // Access to textures
-  eLights      = 3,  // 灯光缓冲区
-  eInstanceIds = 4,   // 新增：实例ID缓冲区
+  eObjDescs    = 1,
+  eTextures    = 2,
+  eLights      = 3,
+  eInstanceIds = 4,
   eImplicit    = 5
 END_BINDING();
 
@@ -55,23 +54,21 @@ START_BINDING(LidarCompositeBindings)
 END_BINDING();
 // clang-format on
 
-// Information of a obj model when referenced in a shader
 struct ObjDesc
 {
-  int txtOffset;                  // Texture index offset in the array of textures
-  uint64_t vertexAddress;         // Address of the Vertex buffer
-  uint64_t indexAddress;          // Address of the index buffer
-  uint64_t materialAddress;       // Address of the material buffer
-  uint64_t materialIndexAddress;  // Address of the triangle material index buffer
+  int txtOffset;
+  uint64_t vertexAddress;
+  uint64_t indexAddress;
+  uint64_t materialAddress;
+  uint64_t materialIndexAddress;
 };
 
-// Uniform buffer set at each frame
 struct CameraUniforms
 {
-  mat4 viewProj;      // Camera view * projection
-  mat4 view;          // Camera view matrix
-  mat4 viewInverse;   // Camera inverse view matrix
-  mat4 projInverse;   // Camera inverse projection matrix
+  mat4 viewProj;
+  mat4 view;
+  mat4 viewInverse;
+  mat4 projInverse;
   mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
@@ -131,20 +128,16 @@ struct HeightScanParams
 
 struct Light
 {
-  // common
   int type;
   int textureID;
   vec3 baseEmission;  // intensity * color * colorTemp * exposure
   float diffuse;
   float specular;
-  // distant light
   vec3 direction;
   float angle;
-  // sphere light
   vec3 position;
   float radius;
-  // dome light
-  vec4 rotateQuat;  // padding for alignment
+  vec4 rotateQuat;
   vec3 padding;
 };
 
@@ -176,8 +169,7 @@ struct PushConstantRay
   HeightScanParams heightScan;
 };
 
-struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for
-               // device
+struct Vertex
 {
   vec3 pos;
   vec3 nrm;
@@ -186,8 +178,7 @@ struct Vertex  // See ObjLoader, copy of VertexObj, could be compressed for
   vec4 tangent;
 };
 
-struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
-                          // compressed for device
+struct WaveFrontMaterial
 {
   vec3 ambient;
   vec3 diffuse;
@@ -199,7 +190,7 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
   vec3 transmissionColorFactor;
   vec3 subsurfaceColorFactor;
   float shininess;
-  float ior;       // index of refraction
+  float ior;
   float opaque;  // 1 == opaque; 0 == fully transparent
   float metallicFactor;
   float roughnessFactor;
@@ -207,8 +198,7 @@ struct WaveFrontMaterial  // See ObjLoader, copy of MaterialObj, could be
   float transmissionFactor;
   float subsurfaceFactor;
   float subsurfaceScale;
-  int illum;  // illumination model (see
-              // http://www.fileformat.info/format/material/)
+  int illum;
   int diffuseTextureId;
   int baseColorTextureId;
   int metallicTextureId;

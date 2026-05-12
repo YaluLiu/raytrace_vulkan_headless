@@ -48,7 +48,7 @@ bool heightScanParamsNearlyEqual(const HeightScanParams& a, const HeightScanPara
          && std::fabs(a.maxDistance - b.maxDistance) <= eps;
 }
 
-}  // namespace
+}
 
 void HelloVulkan::setHeightScanCamera(const RadarCameraData& camera)
 {

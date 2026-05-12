@@ -191,7 +191,7 @@ void addNgxRequiredExtensions(nvvk::ContextCreateInfo& contextInfo)
 #endif
 }
 #endif
-}  // namespace
+}
 
 RayTraceApp::RayTraceApp() {}
 
@@ -313,7 +313,6 @@ void RayTraceApp::createBVH()
   m_helloVk.createObjDescriptionBuffer();
   m_helloVk.updateDescriptorSet();
 
-  // 光线追踪相关
   m_helloVk.initRayTracing();
   m_helloVk.createBottomLevelAS();
   m_helloVk.createTopLevelAS();
@@ -422,22 +421,16 @@ void RayTraceApp::cleanup()
   }
 }
 
-//-----------------------------------------------------------------------------------------------------
-// for demo local test
-//
 void RayTraceApp::loadScene()
 {
-  // 平面
   ObjLoader planeLoader;
   planeLoader.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true));
   m_helloVk.loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
 
-  // wuson
   ObjLoader wusonLoader;
   wusonLoader.loadModel(nvh::findFile("media/scenes/wuson.obj", defaultSearchPaths, true));
   m_helloVk.loadModel(wusonLoader);
 
-  // 多个wuson实例
   uint32_t  wusonId = 1;
   glm::mat4 identity{1};
   for(int i = 0; i < 5; i++)
@@ -445,12 +438,10 @@ void RayTraceApp::loadScene()
     m_helloVk.addInstance(identity, wusonId);
   }
 
-  // 球体
   ObjLoader sphereLoader;
   sphereLoader.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
   m_helloVk.loadModel(sphereLoader);
 
-  //
   m_startTime = std::chrono::system_clock::now();
 }
 

@@ -102,7 +102,7 @@ void main()
     prd.firstHitDiffuseValid      = vec4(0.0);
     prd.firstHitSpecularPad       = vec4(0.04, 0.04, 0.04, 0.0);
 
-    traceRayEXT(topLevelAS,  // acceleration structure
+    traceRayEXT(topLevelAS,
                 gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, origin.xyz, 0.001, direction.xyz, 10000.0, 0);
 
     sampleColor += prd.radiance;

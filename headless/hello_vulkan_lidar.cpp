@@ -30,7 +30,7 @@ uint32_t lidarRayCount(const LidarParams& params)
   return static_cast<uint32_t>(std::max(azCount * elCount, 1));
 }
 
-}  // namespace
+}
 
 void HelloVulkan::createLidarRtDescriptorSet()
 {

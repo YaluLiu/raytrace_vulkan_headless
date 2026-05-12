@@ -16,8 +16,8 @@ hitAttributeEXT vec2 attribs;
 layout(location = 0) rayPayloadInEXT hitPayload prd;
 layout(location = 1) rayPayloadEXT bool isShadowed;
 
-layout(buffer_reference, scalar) buffer Materials {WaveFrontMaterial m[]; }; // Array of all materials on an object
-layout(buffer_reference, scalar) buffer MatIndices {int i[]; }; // Material ID for each primitive
+layout(buffer_reference, scalar) buffer Materials {WaveFrontMaterial m[]; };
+layout(buffer_reference, scalar) buffer MatIndices {int i[]; };
 
 layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 1, binding = eObjDescs, scalar) buffer ObjDesc_ { ObjDesc i[]; } objDesc;
@@ -49,7 +49,7 @@ vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, WaveFrontMaterial mat, 
   {
     Light light = lightBuf.lights[i];
 
-    if(light.type == 2)  // Dome light
+    if(light.type == 2)
     {
       totalLight += mat.diffuse * textureColor * light.baseEmission * light.diffuse;
       continue;
@@ -60,7 +60,7 @@ vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, WaveFrontMaterial mat, 
     float distanceAttenuation = 1.0;
     vec3  lightEmission       = vec3(0.0);
 
-    if(light.type == 0)  // Sphere light
+    if(light.type == 0)
     {
       vec3 lDir     = light.position.xyz - worldPos;
       lightDistance = length(lDir);
@@ -69,7 +69,7 @@ vec3 computeDirectLighting(vec3 worldPos, vec3 worldNrm, WaveFrontMaterial mat, 
       L             = normalize(lDir);
       lightEmission = light.baseEmission * distanceAttenuation;
     }
-    else if(light.type == 1)  // Distant light
+    else if(light.type == 1)
     {
       L                   = normalize(light.direction.xyz);
       distanceAttenuation = light.angle;

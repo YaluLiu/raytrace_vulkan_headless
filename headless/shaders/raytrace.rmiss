@@ -3,7 +3,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-#extension GL_EXT_scalar_block_layout : enable  // 添加这一行
+#extension GL_EXT_scalar_block_layout : enable
 
 #include "raycommon.glsl"
 #include "wavefront.glsl"
@@ -39,17 +39,15 @@ void main()
   {
     Light light = lightBuf.lights[i];
 
-    if(light.type == 2)  // Dome light
+    if(light.type == 2)
     {
       vec3 lightEmission = vec3(0.0);
       if(light.textureID >= 0)
       {
         uint txtId = light.textureID;
 
-        // 应用旋转到射线方向
         vec3 rotatedDir = rotateByQuaternion(rayDir, light.rotateQuat);
 
-        // 计算球面坐标 UV
         float theta = acos(clamp(rotatedDir.y, -1.0, 1.0));
         float phi   = atan(rotatedDir.z, rotatedDir.x);
 

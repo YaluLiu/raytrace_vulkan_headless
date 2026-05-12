@@ -2,7 +2,6 @@
 
 vec3 computeDiffuse(WaveFrontMaterial mat, vec3 lightDir, vec3 normal)
 {
-  // Lambertian
   float dotNL = max(dot(normal, lightDir), 0.0);
   vec3  c     = mat.diffuse * dotNL;
   if(mat.illum >= 1)

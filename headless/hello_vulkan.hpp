@@ -10,7 +10,6 @@
 #include "nvvk/resourceallocator_vk.hpp"
 #include "shaders/host_device.h"
 
-// #VKRay
 #include "nvvk/raytraceKHR_vk.hpp"
 #include "nvvk/sbtwrapper_vk.hpp"
 
@@ -57,48 +56,44 @@ public:
   void destroyResources();
   std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
 
-  // The OBJ model
   struct ObjModel
   {
     uint32_t     nbIndices{0};
     uint32_t     nbVertices{0};
-    nvvk::Buffer vertexBuffer;    // Device buffer of all 'Vertex'
-    nvvk::Buffer indexBuffer;     // Device buffer of the indices forming triangles
-    nvvk::Buffer matColorBuffer;  // Device buffer of array of 'Wavefront material'
-    nvvk::Buffer matIndexBuffer;  // Device buffer of array of 'Wavefront material'
+    nvvk::Buffer vertexBuffer;
+    nvvk::Buffer indexBuffer;
+    nvvk::Buffer matColorBuffer;
+    nvvk::Buffer matIndexBuffer;
   };
 
   struct ObjInstance
   {
-    glm::mat4 transform;    // Matrix of the instance
-    uint32_t  objIndex{0};  // Model index reference
+    glm::mat4 transform;
+    uint32_t  objIndex{0};
   };
 
   uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
   size_t getInstanceCount() const { return m_instances.size(); }
   const ObjInstance& getInstance(size_t index) const { return m_instances[index]; }
 
-  // Array of objects and instances in the scene
-  std::vector<ModelLoader> m_Loader;     // Model on host
-  std::vector<ObjModel>    m_objModel;   // Model on host
-  std::vector<ObjDesc>     m_objDesc;    // Model description for device access
-  std::vector<ObjInstance> m_instances;  // Scene model instances
+  std::vector<ModelLoader> m_Loader;
+  std::vector<ObjModel>    m_objModel;
+  std::vector<ObjDesc>     m_objDesc;
+  std::vector<ObjInstance> m_instances;
 
-  // Graphic pipeline
   nvvk::DescriptorSetBindings m_descSetLayoutBind;
   VkDescriptorPool            m_descPool;
   VkDescriptorSetLayout       m_descSetLayout;
   VkDescriptorSet             m_descSet;
 
-  nvvk::Buffer m_bFrameUniforms;  // Device buffer of frame uniforms (camera + sensors)
-  nvvk::Buffer m_bObjDesc;  // Device buffer of the OBJ descriptions
+  nvvk::Buffer m_bFrameUniforms;
+  nvvk::Buffer m_bObjDesc;
 
-  std::vector<nvvk::Texture> m_textures;  // vector of all textures of the scene
+  std::vector<nvvk::Texture> m_textures;
 
-  nvvk::ResourceAllocatorDma m_alloc;  // Allocator for buffer, images, acceleration structures
-  nvvk::DebugUtil            m_debug;  // Utility to name objects
+  nvvk::ResourceAllocatorDma m_alloc;
+  nvvk::DebugUtil            m_debug;
 
-  // #VKRay
   void     initRayTracing();
   auto     objectToVkGeometryKHR(const ObjModel& model);
   void     createBottomLevelAS();
@@ -144,7 +139,6 @@ public:
   VkPipelineLayout                                  m_heightScanRtPipelineLayout{VK_NULL_HANDLE};
   VkPipeline                                        m_heightScanRtPipeline{VK_NULL_HANDLE};
 
-  //for sbt
   nvvk::SBTWrapper                m_sbtWrapper;
   nvvk::Buffer                    m_rtSBTBuffer;
   VkStridedDeviceAddressRegionKHR m_rgenRegion{};
@@ -179,11 +173,9 @@ public:
       {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f},
       {-10.0f, 10.0f, 0.1f, -10.0f, 10.0f, 0.1f, 0.0f, 0.0f, -1.0f, 2.0f, 200.0f, 0.0f}};
 
-  // #VK_animation
   void animationInstances(float time);
   void animationObject(float time);
 
-  // #VK_compute
   void createCompDescriptors();
   void updateCompDescriptors(nvvk::Buffer& vertex);
   void createCompPipelines();
@@ -206,7 +198,6 @@ public:
 
   void saveOffscreenColorToFile(const char* filename);
 
-  // DLSS-RR
   void createDlssRR();
   void runDlssRR(const VkCommandBuffer& cmdBuf);
   void setDlssRREnabled(bool enabled)
@@ -261,11 +252,8 @@ public:
   }
   int getSamplesPerFrame() const { return m_pcRay.samplesPerFrame; }
 
-
-  // #Post - Draw the rendered image on a quad using a tonemapper
   void createOffscreenRender();
 
-  // color
   nvvk::Texture          m_offscreenColor;
   VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   nvvk::Texture          m_offscreenDlssOutput;
@@ -273,15 +261,12 @@ public:
   nvvk::Texture          m_offscreenDenoised;
   VkFormat               m_offscreenDenoisedFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
 
-  // primId
-  nvvk::Texture          m_offscreenObjectId;  // VK_FORMAT_R32_SINT
+  nvvk::Texture          m_offscreenObjectId;
   VkFormat               m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
 
-  // instanceId
   nvvk::Texture          m_offscreenInstanceId;
   VkFormat               m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
 
-  // DLSS-RR input buffers
   nvvk::Texture          m_offscreenDiffuseAlbedo;
   VkFormat               m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
 
@@ -323,22 +308,19 @@ public:
   float                                         m_mainCameraClipStart{0.1f};
   float                                         m_mainCameraClipEnd{1000.0f};
 
-  // depth buffer
   nvvk::Texture m_offscreenDepth;
   VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
   std::vector<uint32_t> readObjectIdImage();
 
-  // RayTrace Stucture
   void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);
   void updateTlasEnd();
   void updateBlas(uint32_t mesh_Id);
   void updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 
-  // hydra plugin
-  std::vector<Light> m_lights;       // for hydra Light
-  std::vector<int>   m_instanceIds;  // for hydra store instance Ids
+  std::vector<Light> m_lights;
+  std::vector<int>   m_instanceIds;
   std::vector<Light> m_uploadedLights;
   nvvk::Buffer       m_bInstanceIds;
   nvvk::Buffer       m_bLights;
@@ -350,12 +332,11 @@ public:
   void createInstanceIdBuffer();
   void updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf);
 
-  // for sphere cloud
-  std::vector<Sphere> m_spheres;                // All spheres
-  nvvk::Buffer        m_spheresBuffer;          // Buffer holding the spheres
-  nvvk::Buffer        m_spheresAabbBuffer;      // Buffer of all Aabb
-  nvvk::Buffer        m_spheresMatColorBuffer;  // Multiple materials
-  nvvk::Buffer        m_spheresMatIndexBuffer;  // Define which sphere uses which material
+  std::vector<Sphere> m_spheres;
+  nvvk::Buffer        m_spheresBuffer;
+  nvvk::Buffer        m_spheresAabbBuffer;
+  nvvk::Buffer        m_spheresMatColorBuffer;
+  nvvk::Buffer        m_spheresMatIndexBuffer;
 
   void createSpheres(uint32_t nbSpheres);
   void addSpheres(std::vector<Sphere> vector);

@@ -98,17 +98,14 @@ One important point is that we need to set the TLAS build flags to allow updates
 This is absolutely needed, since otherwise the TLAS cannot be updated.
 
 ~~~~ C++
-//--------------------------------------------------------------------------------------------------
-//
-//
 void HelloVulkan::createTopLevelAS()
 {
   m_tlas.reserve(m_instances.size());
   for(const HelloVulkan::ObjInstance& inst : m_instances)
   {
     VkAccelerationStructureInstanceKHR rayInst{};
-    rayInst.transform                      = nvvk::toTransformMatrixKHR(inst.transform);  // Position of the instance
-    rayInst.instanceCustomIndex            = inst.objIndex;                               // gl_InstanceCustomIndexEXT
+    rayInst.transform                      = nvvk::toTransformMatrixKHR(inst.transform);
+    rayInst.instanceCustomIndex            = inst.objIndex;
     rayInst.accelerationStructureReference = m_rtBuilder.getBlasDeviceAddress(inst.objIndex);
     rayInst.flags                          = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
     rayInst.mask                           = 0xFF;       //  Only be hit if rayMask & instance.mask != 0
@@ -166,7 +163,7 @@ In this chapter, we will animate a sphere. In `main.cpp`, set up the scene like 
 Because we now have a new instance, we have to adjust the calculation of the number of Wuson models in `HelloVulkan::animationInstances()`.
 
 ~~~~ C++
-  const int32_t nbWuson     = static_cast<int32_t>(m_instances.size() - 2); // All except sphere and plane
+  const int32_t nbWuson     = static_cast<int32_t>(m_instances.size() - 2);
 ~~~~
 
 ### Compute Shader
@@ -219,7 +216,6 @@ to set the animation time.
 ~~~~ C++
 void HelloVulkan::createCompPipelines()
 {
-  // pushing time
   VkPushConstantRange push_constants = {VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float)};
 
   VkPipelineLayoutCreateInfo createInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -246,7 +242,6 @@ void HelloVulkan::createCompPipelines()
 Finally, destroy the resources in `HelloVulkan::destroyResources()`:
 
 ~~~~ C++
-  // #VK_compute
   vkDestroyPipeline(m_device, m_compPipeline, nullptr);
   vkDestroyPipelineLayout(m_device, m_compPipelineLayout, nullptr);
   vkDestroyDescriptorPool(m_device, m_compDescPool, nullptr);
@@ -283,7 +278,6 @@ void main()
 {
   Vertex v0 = vertices.v[gl_GlobalInvocationID.x];
 
-  // Compute vertex position
   const float PI       = 3.14159265;
   const float signY    = (v0.pos.y >= 0 ? 1 : -1);
   const float radius   = length(v0.pos.xz);
@@ -291,7 +285,6 @@ void main()
   const float s        = sin(argument);
   v0.pos.y             = signY * abs(s) * 0.5;
 
-  // Compute normal
   if(radius == 0.0f)
   {
     v0.nrm = vec3(0.0f, signY, 0.0f);
@@ -362,32 +355,27 @@ In the rendering loop, **before** the call to `animationInstances`, call the obj
 In `nvvk::RaytracingBuilder` in `raytrace_vkpp.hpp`, we can add a function to update a BLAS whose vertex buffer was previously updated. This function is very similar to the one used for instances, but in this case, there is no buffer transfer to do.
 
 ~~~~ C++
-//--------------------------------------------------------------------------------------------------
 // Refit BLAS number blasIdx from updated buffer contents.
-//
 void nvvk::RaytracingBuilderKHR::updateBlas(uint32_t blasIdx, BlasInput& blas, VkBuildAccelerationStructureFlagsKHR flags)
 {
   assert(size_t(blasIdx) < m_blas.size());
 
-  // Preparing all build information, acceleration is filled later
   VkAccelerationStructureBuildGeometryInfoKHR buildInfos{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
   buildInfos.flags                    = flags;
   buildInfos.geometryCount            = (uint32_t)blas.asGeometry.size();
   buildInfos.pGeometries              = blas.asGeometry.data();
-  buildInfos.mode                     = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;  // UPDATE
+  buildInfos.mode                     = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
   buildInfos.type                     = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-  buildInfos.srcAccelerationStructure = m_blas[blasIdx].accel;  // UPDATE
+  buildInfos.srcAccelerationStructure = m_blas[blasIdx].accel;
   buildInfos.dstAccelerationStructure = m_blas[blasIdx].accel;
 
-  // Find size to build on the device
   std::vector<uint32_t> maxPrimCount(blas.asBuildOffsetInfo.size());
   for(auto tt = 0; tt < blas.asBuildOffsetInfo.size(); tt++)
-    maxPrimCount[tt] = blas.asBuildOffsetInfo[tt].primitiveCount;  // Number of primitives/triangles
+    maxPrimCount[tt] = blas.asBuildOffsetInfo[tt].primitiveCount;
   VkAccelerationStructureBuildSizesInfoKHR sizeInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
   vkGetAccelerationStructureBuildSizesKHR(m_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfos,
                                           maxPrimCount.data(), &sizeInfo);
 
-  // Allocate the scratch buffer and setting the scratch info
   nvvk::Buffer scratchBuffer =
       m_alloc->createBuffer(sizeInfo.buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
   VkBufferDeviceAddressInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
@@ -399,7 +387,6 @@ void nvvk::RaytracingBuilderKHR::updateBlas(uint32_t blasIdx, BlasInput& blas, V
   for(size_t i = 0; i < blas.asBuildOffsetInfo.size(); i++)
     pBuildOffset[i] = &blas.asBuildOffsetInfo[i];
 
-  // Update the instance buffer on the device side and build the TLAS
   nvvk::CommandPool genCmdBuf(m_device, m_queueIndex);
   VkCommandBuffer   cmdBuf = genCmdBuf.createCommandBuffer();
 
@@ -430,13 +417,11 @@ acceleration structure build should prioritize build time over trace performance
 ~~~~ C++
 void HelloVulkan::createBottomLevelAS()
 {
-  // BLAS - Storing each primitive in a geometry
   m_blas.reserve(m_objModel.size());
   for(const auto& obj : m_objModel)
   {
     auto blas = objectToVkGeometryKHR(obj);
 
-    // We could add more geometry in each BLAS, but we add only one for now
     m_blas.push_back(blas);
   }
   m_rtBuilder.buildBlas(m_blas, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR

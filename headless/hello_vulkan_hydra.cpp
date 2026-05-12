@@ -32,20 +32,15 @@ bool lightEqual(const Light& lhs, const Light& rhs)
          && nearlyEqual(lhs.rotateQuat.z, rhs.rotateQuat.z) && nearlyEqual(lhs.rotateQuat.w, rhs.rotateQuat.w);
 }
 
-}  // namespace
+}
 
-//--------------------------------------------------------------------------------------------------
-// update material
-//--------------------------------------------------------------------------------------------------
 void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial)
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
   VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
 
-  // 计算偏移量
   VkDeviceSize offset = materialIndex * sizeof(WaveFrontMaterial);
 
-  // 确保缓冲区可见性
   VkBufferMemoryBarrier barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
   barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
   barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -56,10 +51,8 @@ void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, con
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
 
-  // 更新材质数据
   vkCmdUpdateBuffer(cmdBuf, m_objModel[modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial), &newMaterial);
 
-  // 确保更新后的数据对着色器可见
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -72,14 +65,12 @@ void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, con
 
 void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
 {
-  // 用一个命令池/命令缓冲，减少同步消耗
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
   VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
 
   std::vector<VkBufferMemoryBarrier> preBarriers;
   std::vector<VkBufferMemoryBarrier> postBarriers;
 
-  // 1. 先加所有Barrier，保证并行性
   for(const auto& upd : updates)
   {
     VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
@@ -97,14 +88,12 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, static_cast<uint32_t>(preBarriers.size()),
                        preBarriers.data(), 0, nullptr);
 
-  // 2. 更新所有材质
   for(const auto& upd : updates)
   {
     VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
     vkCmdUpdateBuffer(cmdBuf, m_objModel[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial), &upd.newMaterial);
   }
 
-  // 3. 再加所有postBarrier，保证对shader可见
   for(const auto& upd : updates)
   {
     VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
@@ -122,7 +111,6 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
                        nullptr, static_cast<uint32_t>(postBarriers.size()), postBarriers.data(), 0, nullptr);
 
-  // 4. 提交命令
   cmdGen.submitAndWait(cmdBuf);
   resetFrameHistory();
 }
@@ -146,9 +134,6 @@ void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
   texture.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
-//--------------------------------------------------------------------------------------------------
-// 灯光管理函数
-//
 void HelloVulkan::addLight(const Light& light)
 {
   m_lights.push_back(light);
@@ -161,7 +146,6 @@ void HelloVulkan::clearLights()
 
 void HelloVulkan::createLightBuffer()
 {
-  // 创建灯光缓冲区（初始支持100个灯光）
   size_t maxLights  = 100;
   size_t bufferSize = sizeof(Light) * maxLights;
 
@@ -220,7 +204,7 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
 
 void HelloVulkan::createInstanceIdBuffer()
 {
-  size_t maxInstances = std::max(size_t(1000), m_instanceIds.size() * 2);  // 预留空间
+  size_t maxInstances = std::max(size_t(1000), m_instanceIds.size() * 2);
   size_t bufferSize   = sizeof(int) * maxInstances;
 
   m_bInstanceIds = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,

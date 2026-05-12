@@ -33,7 +33,7 @@ auto HelloVulkan::objectToVkGeometryKHR(const ObjModel& model)
   uint32_t maxPrimitiveCount = model.nbIndices / 3;
 
   VkAccelerationStructureGeometryTrianglesDataKHR triangles{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
-  triangles.vertexFormat             = VK_FORMAT_R32G32B32_SFLOAT;  // 顶点为vec3
+  triangles.vertexFormat             = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = vertexAddress;
   triangles.vertexStride             = sizeof(VertexObj);
   triangles.indexType                = VK_INDEX_TYPE_UINT32;
@@ -75,7 +75,7 @@ auto HelloVulkan::sphereToVkGeometryKHR()
 
   VkAccelerationStructureBuildRangeInfoKHR offset{};
   offset.firstVertex     = 0;
-  offset.primitiveCount  = (uint32_t)m_spheres.size();  // Nb aabb
+  offset.primitiveCount  = (uint32_t)m_spheres.size();
   offset.primitiveOffset = 0;
   offset.transformOffset = 0;
 
@@ -95,7 +95,6 @@ void HelloVulkan::createBottomLevelAS()
     m_blas.emplace_back(blas);
   }
 
-  // Spheres
   {
     auto blas = sphereToVkGeometryKHR();
     m_blas.emplace_back(blas);
@@ -123,11 +122,11 @@ void HelloVulkan::createTopLevelAS()
   // Add the blas containing all implicit objects
   {
     VkAccelerationStructureInstanceKHR rayInst{};
-    rayInst.transform                      = nvvk::toTransformMatrixKHR(glm::mat4(1));  // (identity)
+    rayInst.transform                      = nvvk::toTransformMatrixKHR(glm::mat4(1));
     rayInst.instanceCustomIndex            = nbObj;  // nbObj == last object == implicit
     rayInst.accelerationStructureReference = m_rtBuilder.getBlasDeviceAddress(static_cast<uint32_t>(m_objModel.size()));
     rayInst.flags                          = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-    rayInst.mask                           = 0xFF;       //  Only be hit if rayMask & instance.mask != 0
+    rayInst.mask                           = 0xFF;
     rayInst.instanceShaderBindingTableRecordOffset = 1;  // We will use the same hit group for all objects
     m_tlas.emplace_back(rayInst);
   }
@@ -171,14 +170,8 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
   resetFrameHistory();
 }
 
-
-//--------------------------------------------------------------------------------------------------
-// Creating all spheres
-//
-
 void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
 {
-  // All spheres
   uint32_t nbSpheres = v_sphere.size();
   if(nbSpheres == 0)
   {
@@ -194,21 +187,6 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
     m_spheres[i] = std::move(s);
   }
 
-  // std::random_device                    rd{};
-  // std::mt19937                          gen{rd()};
-  // std::normal_distribution<float>       xzd{0.f, 5.f};
-  // std::normal_distribution<float>       yd{6.f, 3.f};
-  // std::uniform_real_distribution<float> radd{.05f, .2f};
-
-  // for(uint32_t i = 0; i < nbSpheres; i++)
-  // {
-  //   Sphere s;
-  //   s.center     = glm::vec3(xzd(gen), yd(gen), xzd(gen));
-  //   s.radius     = radd(gen);
-  //   m_spheres[i] = std::move(s);
-  // }
-
-  // Axis aligned bounding box of each sphere
   std::vector<Aabb> aabbs;
   aabbs.reserve(nbSpheres);
   for(const auto& s : m_spheres)
@@ -219,7 +197,6 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
     aabbs.emplace_back(aabb);
   }
 
-  // Creating two materials
   MaterialObj mat;
   mat.diffuse = glm::vec3(0, 1, 1);
   mat.baseColorFactor = mat.diffuse;
@@ -230,13 +207,11 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
   mat.baseColorFactor = mat.diffuse;
   materials.emplace_back(mat);
 
-  // Assign a material to each sphere
   for(size_t i = 0; i < m_spheres.size(); i++)
   {
     matIdx[i] = i % 2;
   }
 
-  // Creating all buffers
   using vkBU = VkBufferUsageFlagBits;
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
   auto              cmdBuf = genCmdBuf.createCommandBuffer();
@@ -250,14 +225,11 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
       m_alloc.createBuffer(cmdBuf, materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
   genCmdBuf.submitAndWait(cmdBuf);
 
-  // Debug information
   m_debug.setObjectName(m_spheresBuffer.buffer, "spheres");
   m_debug.setObjectName(m_spheresAabbBuffer.buffer, "spheresAabb");
   m_debug.setObjectName(m_spheresMatColorBuffer.buffer, "spheresMat");
   m_debug.setObjectName(m_spheresMatIndexBuffer.buffer, "spheresMatIdx");
 
-
-  // Adding an extra instance to get access to the material buffers
   ObjDesc objDesc{};
   objDesc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, m_spheresMatColorBuffer.buffer);
   objDesc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, m_spheresMatIndexBuffer.buffer);
@@ -277,7 +249,6 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
   std::normal_distribution<float>       yd{6.f, 3.f};
   std::uniform_real_distribution<float> radd{.05f, .2f};
 
-  // All spheres
   m_spheres.resize(nbSpheres);
   for(uint32_t i = 0; i < nbSpheres; i++)
   {
@@ -287,7 +258,6 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
     m_spheres[i] = std::move(s);
   }
 
-  // Axis aligned bounding box of each sphere
   std::vector<Aabb> aabbs;
   aabbs.reserve(nbSpheres);
   for(const auto& s : m_spheres)
@@ -298,7 +268,6 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
     aabbs.emplace_back(aabb);
   }
 
-  // Creating two materials
   MaterialObj mat;
   mat.diffuse = glm::vec3(0, 1, 1);
   mat.baseColorFactor = mat.diffuse;
@@ -309,13 +278,11 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
   mat.baseColorFactor = mat.diffuse;
   materials.emplace_back(mat);
 
-  // Assign a material to each sphere
   for(size_t i = 0; i < m_spheres.size(); i++)
   {
     matIdx[i] = i % 2;
   }
 
-  // Creating all buffers
   using vkBU = VkBufferUsageFlagBits;
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
   auto              cmdBuf = genCmdBuf.createCommandBuffer();
@@ -329,14 +296,11 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
       m_alloc.createBuffer(cmdBuf, materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
   genCmdBuf.submitAndWait(cmdBuf);
 
-  // Debug information
   m_debug.setObjectName(m_spheresBuffer.buffer, "spheres");
   m_debug.setObjectName(m_spheresAabbBuffer.buffer, "spheresAabb");
   m_debug.setObjectName(m_spheresMatColorBuffer.buffer, "spheresMat");
   m_debug.setObjectName(m_spheresMatIndexBuffer.buffer, "spheresMatIdx");
 
-
-  // Adding an extra instance to get access to the material buffers
   ObjDesc objDesc{};
   objDesc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, m_spheresMatColorBuffer.buffer);
   objDesc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, m_spheresMatIndexBuffer.buffer);
