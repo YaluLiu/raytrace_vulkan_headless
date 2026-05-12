@@ -117,6 +117,8 @@ public:
   void     compositeLidar(const VkCommandBuffer& cmdBuf);
   void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
+  // Reset DLSS temporal history in addition to progressive accumulation.
+  void     resetFrameHistory();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
   float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
   float    getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
@@ -224,7 +226,7 @@ public:
         m_dlssRR.shutdown();
       }
       refreshOffscreenRenderTargetsIfNeeded();
-      resetAccumulation();
+      resetFrameHistory();
     }
   }
   bool isDlssRREnabled() const { return m_enableDlssRR; }
@@ -234,7 +236,7 @@ public:
     {
       m_enableDlssSR = enabled;
       refreshOffscreenRenderTargetsIfNeeded();
-      resetAccumulation();
+      resetFrameHistory();
     }
   }
   bool isDlssSREnabled() const { return m_enableDlssSR; }
@@ -373,6 +375,9 @@ private:
   void       updateLidarCompositeDescriptorSet();
 
   uint32_t  m_accumulatedFrames{0};
+  uint32_t  m_frameIndex{0};  // Monotonic jitter/RNG frame index; not reset by camera motion.
+  bool      m_dlssResetRequested{true};
+  bool      m_dlssHasHistory{false};
   glm::vec2 m_currentJitter{0.0f};
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};

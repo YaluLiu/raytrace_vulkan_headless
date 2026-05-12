@@ -67,7 +67,7 @@ void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, con
                        nullptr, 1, &barrier, 0, nullptr);
 
   cmdGen.submitAndWait(cmdBuf);
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
@@ -124,7 +124,7 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
 
   // 4. 提交命令
   cmdGen.submitAndWait(cmdBuf);
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
@@ -188,7 +188,7 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
 
   if(changed)
   {
-    resetAccumulation();
+    resetFrameHistory();
     m_uploadedLights = m_lights;
   }
 

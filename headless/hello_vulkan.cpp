@@ -166,13 +166,21 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
       m_pcRay.samplesPerFrame = std::clamp(static_cast<int>(spp), 1, 64);
     }
   }
-  resetAccumulation();
+  m_frameIndex = 0;
+  resetFrameHistory();
   m_hasLastCamera = false;
 }
 
 void HelloVulkan::resetAccumulation()
 {
   m_accumulatedFrames = 0;
+}
+
+void HelloVulkan::resetFrameHistory()
+{
+  resetAccumulation();
+  m_dlssResetRequested = true;
+  m_dlssHasHistory     = false;
 }
 
 std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
@@ -289,7 +297,7 @@ void HelloVulkan::setDlssSRScale(float scale)
   {
     m_dlssSRScale = clamped;
     refreshOffscreenRenderTargetsIfNeeded();
-    resetAccumulation();
+    resetFrameHistory();
   }
 }
 
@@ -301,7 +309,7 @@ void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
   {
     m_mainCameraClipStart = safeStart;
     m_mainCameraClipEnd   = safeEnd;
-    resetAccumulation();
+    resetFrameHistory();
     m_hasLastCamera = false;
   }
 }
@@ -632,7 +640,7 @@ void HelloVulkan::onResize(int w, int h)
   createOffscreenRender();
   refreshOffscreenRenderTargetDescriptors();
     // 更新光线追踪输出描述符集（采样新的offscreen image）
-  resetAccumulation();
+  resetFrameHistory();
   m_hasLastCamera = false;
 }
 
@@ -716,7 +724,7 @@ void HelloVulkan::createOffscreenRender()
     genCmdBuf.submitAndWait(cmdBuf);
   }
 
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 void HelloVulkan::createDlssRR()
@@ -761,6 +769,7 @@ void HelloVulkan::createDlssRR()
   }
 
   logDlssInfo(std::string("[DLSS-RR] enabled: appDataPath=") + init.applicationDataPath);
+  resetFrameHistory();
   refreshOffscreenRenderTargetsIfNeeded();
 }
 
@@ -805,7 +814,7 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
   eval.targetWidth = m_size.width;
   eval.targetHeight = m_size.height;
   eval.perfQuality = m_dlssRRPerfQuality;
-  eval.reset       = (m_accumulatedFrames <= 1);
+  eval.reset       = m_dlssResetRequested || !m_dlssHasHistory;
   eval.jitterX     = -m_currentJitter.x;
   eval.jitterY     = -m_currentJitter.y;
   eval.frameTimeMs = 16.6667f;
@@ -839,6 +848,8 @@ void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
     {
       reportedFailure = false;
       dlssApplied     = true;
+      m_dlssResetRequested = false;
+      m_dlssHasHistory     = true;
       if(!reportedSuccess)
       {
         logDlssInfo("[DLSS-RR] evaluate active");

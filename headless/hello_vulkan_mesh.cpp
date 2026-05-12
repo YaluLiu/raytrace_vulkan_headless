@@ -146,7 +146,7 @@ void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible
 void HelloVulkan::updateTlasEnd()
 {
   m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 void HelloVulkan::updateBlas(uint32_t mesh_Id)
@@ -168,7 +168,7 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
   genCmdBuf.submitAndWait(cmdBuf);
   m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
                          VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 
@@ -266,7 +266,7 @@ void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
   ObjInstance instance{};
   instance.objIndex = static_cast<uint32_t>(m_objModel.size());
   m_instances.emplace_back(instance);
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 void HelloVulkan::createSpheres(uint32_t nbSpheres)
@@ -345,5 +345,5 @@ void HelloVulkan::createSpheres(uint32_t nbSpheres)
   ObjInstance instance{};
   instance.objIndex = static_cast<uint32_t>(m_objModel.size());
   m_instances.emplace_back(instance);
-  resetAccumulation();
+  resetFrameHistory();
 }

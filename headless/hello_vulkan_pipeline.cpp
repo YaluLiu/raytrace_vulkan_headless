@@ -320,8 +320,8 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
 {
   m_debug.beginLabel(cmdBuf, "Ray trace");
   m_pcRay.numLights       = static_cast<int>(m_lights.size());
-  m_pcRay.frameIndex      = m_accumulatedFrames;
-  m_currentJitter         = computeDlssJitter(m_accumulatedFrames);
+  m_pcRay.frameIndex      = m_frameIndex;
+  m_currentJitter         = computeDlssJitter(m_frameIndex);
   m_pcRay.jitterX         = m_currentJitter.x;
   m_pcRay.jitterY         = m_currentJitter.y;
   m_pcRay.maxDepth        = std::max(m_pcRay.maxDepth, 1);
@@ -352,6 +352,7 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
   vkCmdTraceRaysKHR(cmdBuf, &regions[0], &regions[1], &regions[2], &regions[3], m_aovSize.width, m_aovSize.height, 1);
 
   m_accumulatedFrames++;
+  m_frameIndex++;
 
   m_debug.endLabel(cmdBuf);
 }

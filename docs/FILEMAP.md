@@ -49,7 +49,8 @@ call sites with `rg`.
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` state, public controls,
   renderer resources, DLSS/offscreen fields, and helper declarations.
 - `headless/hello_vulkan.cpp`: Core setup, frame rendering, resize handling,
-  accumulation reset, render settings application, and DLSS/offscreen flow.
+  accumulation reset, DLSS history reset requests, render settings
+  application, and DLSS/offscreen flow.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
   OpenGL types.
@@ -74,7 +75,7 @@ call sites with `rg`.
   offscreen target refresh, jitter, evaluate calls, fallback behavior, and
   raw DLSS color AOV selection.
 - `headless/hello_vulkan.hpp`: DLSS/offscreen state and inline setter paths
-  that refresh targets or reset accumulation.
+  that refresh targets, reset accumulation, or request DLSS history reset.
 
 ## LiDAR Rendering
 
@@ -178,7 +179,7 @@ call sites with `rg`.
 - Frame rendering or accumulation:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `hdRobot/headlessRenderBridge.cpp`, then search for `RenderFrame`,
-  `resetAccumulation`, and `applyRenderSettings`.
+  `resetAccumulation`, `resetFrameHistory`, and `applyRenderSettings`.
 - Resize or render target size:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/ray_trace_app.cpp`, then search for `onResize`,
@@ -265,8 +266,9 @@ call sites with `rg`.
 
 The graph report currently identifies these high-connectivity anchors:
 
-- `resetAccumulation()`
 - `RenderFrame()`
+- `resetFrameHistory()`
+- `resetAccumulation()`
 - `loadModel()`
 - `setupContext()`
 - `refreshOffscreenRenderTargetsIfNeeded()`

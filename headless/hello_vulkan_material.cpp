@@ -42,7 +42,7 @@ uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex,
   instance.objIndex = objIndex;
   m_instances.push_back(instance);
   m_instanceIds.push_back(instanceId);
-  resetAccumulation();
+  resetFrameHistory();
   return static_cast<uint32_t>(m_instances.size() - 1);
 }
 
@@ -99,7 +99,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   m_objModel.emplace_back(model);
   m_objDesc.emplace_back(desc);
   m_Loader.emplace_back(loader);
-  resetAccumulation();
+  resetFrameHistory();
 }
 
 void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures,
