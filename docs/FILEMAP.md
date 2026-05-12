@@ -42,6 +42,10 @@ call sites with `rg`.
 - `hdRobot/headlessRenderBridge.cpp`: Bridge between Hydra scene data and
   `HelloVulkan` frame execution.
 
+Naming note: `RayTraceApp` and `ray_trace_app.*` are legacy app-layer names kept
+for this branch; their current implementation is raster-oriented. Rename them in
+a separate cleanup if the public surface can absorb the churn.
+
 ## Headless Vulkan Renderer
 
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` state, public controls,
