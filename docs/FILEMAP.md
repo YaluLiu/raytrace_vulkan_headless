@@ -23,10 +23,9 @@ call sites with `rg`.
 ## Build And Test Routing
 
 - `CMakeLists.txt`: Start here for project-wide options such as
-  `ENABLE_HYDRA`, `ENABLE_GL_VK_CONVERSION`, `ENABLE_DLSS_RR`, and
-  `DLSS_SDK_ROOT`.
+  `ENABLE_HYDRA` and `ENABLE_GL_VK_CONVERSION`.
 - `headless/CMakeLists.txt`: Headless renderer library sources, shader
-  compilation, DLSS SDK discovery, and renderer compile definitions.
+  compilation, and renderer compile definitions.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
 - `demo/CMakeLists.txt`: Standalone demo target.
@@ -47,10 +46,9 @@ call sites with `rg`.
 ## Headless Vulkan Renderer
 
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` state, public controls,
-  renderer resources, DLSS/offscreen fields, and helper declarations.
+  renderer resources, offscreen fields, and helper declarations.
 - `headless/hello_vulkan.cpp`: Core setup, frame rendering, resize handling,
-  accumulation reset, DLSS history reset requests, render settings
-  application, and DLSS/offscreen flow.
+  accumulation reset, render settings application, and offscreen target flow.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
   OpenGL types.
@@ -65,17 +63,16 @@ call sites with `rg`.
 - `headless/hello_vulkan_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `headless/headless_vk.cpp`: Headless Vulkan offline app context support.
 
-## DLSS And Offscreen Rendering
+## Offscreen Rendering
 
-- `headless/dlss/dlss_rr.hpp`: DLSS-RR wrapper API, input structs, quality
-  enums, and operational state surface.
-- `headless/dlss/dlss_rr.cpp`: NGX runtime setup, optimal settings query,
-  validation, resource wrapping, and DLSS evaluation.
-- `headless/hello_vulkan.cpp`: Integration point for DLSS sizing,
-  offscreen target refresh, jitter, evaluate calls, fallback behavior, and
-  raw DLSS color AOV selection.
-- `headless/hello_vulkan.hpp`: DLSS/offscreen state and inline setter paths
-  that refresh targets, reset accumulation, or request DLSS history reset.
+- `headless/aov_texture.hpp`: Public headless AOV contract, currently
+  `color`, `depth`, `primId`, and `instanceId`.
+- `headless/hello_vulkan.cpp`: Offscreen target allocation, resize refresh,
+  AOV texture export, and direct color/depth/id target selection.
+- `headless/hello_vulkan.hpp`: Offscreen color/depth/id texture state and
+  public AOV access surface. Legacy DLSS wrapper sources under
+  `headless/dlss/` are no longer part of the build and are scheduled for
+  deletion in the rasterization refactor.
 
 ## LiDAR Rendering
 
@@ -185,10 +182,10 @@ call sites with `rg`.
   `headless/ray_trace_app.cpp`, then search for `onResize`,
   `refreshOffscreenRenderTargetsIfNeeded`, `computeRenderSize`, and
   `initOrResize`.
-- DLSS-RR:
-  `headless/dlss/dlss_rr.cpp`, `headless/dlss/dlss_rr.hpp`,
-  `headless/hello_vulkan.cpp`, then search for `queryOptimalSettings`,
-  `createDlssRR`, `evaluate`, and `DLSS_RR`.
+- Offscreen AOV export:
+  `headless/aov_texture.hpp`, `headless/hello_vulkan.cpp`,
+  `hdRobot/renderTextureExport.cpp`, then search for `GetAovTexture`,
+  `HeadlessAov`, and `ExportRenderTexture`.
 - LiDAR:
   `headless/hello_vulkan_lidar.cpp` and LiDAR shader files, then search for
   `renderLidarPointCloud`, `updateLidarCamera`, and
