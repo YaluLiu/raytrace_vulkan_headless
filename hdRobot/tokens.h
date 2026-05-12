@@ -7,8 +7,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_ROBOT_SETTINGS_TOKENS                                                                                     \
   ((spp, "spp"))((maxBounces, "max-bounces"))((rrBounceOffset, "rr-bounce-offset"))(                                   \
       (rrInvMinTermProb, "rr-inv-min-term-prob"))((nextEventEstimation, "next-event-estimation"))(                     \
-      (progressiveAccumulation, "progressive-accumulation"))((dlssRRDenoise, "dlss-rr-denoise"))(                       \
-      (dlssSREnable, "dlss-sr-enable"))((dlssSRScale, "dlss-sr-scale"))((lidarEnable, "lidar-enable"))(                \
+      (progressiveAccumulation, "progressive-accumulation"))((lidarEnable, "lidar-enable"))(                           \
       (filterImportanceSampling, "filter-importance-sampling"))((depthOfField, "depth-of-field"))(                     \
       (lightIntensityMultiplier, "light-intensity-multiplier"))((mediumStackSize, "medium-stack-size"))(               \
       (maxVolumeWalkLength, "max-volume-walk-length"))((jitteredSampling, "jittered-sampling"))(                       \
@@ -26,18 +25,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_ROBOT_NODE_CONTEXT_TOKENS (mdl)(mtlx)
 
 #define HD_ROBOT_NODE_METADATA_TOKENS (subIdentifier)
-
-#define HD_ROBOT_AOV_TOKENS                                                                                          \
-  ((debugNee, "debug:nee"))((debugBarycentrics, "debug:barycentrics"))((debugTexcoords, "debug:texcoords"))(           \
-      (debugBounces, "debug:bounces"))((debugClockCycles, "debug:clock_cycles"))((debugOpacity, "debug:opacity"))(     \
-      (debugTangents, "debug:tangents"))((debugBitangents, "debug:bitangents"))(                                       \
-      (debugThinWalled, "debug:thinWalled"))((debugDoubleSided, "debug:doubleSided"))(                                \
-      (distanceToCamera, "distance_to_camera"))(                                                                        \
-      (lidarPointCloud, "lidar:pointCloud"))(                                                                           \
-      (dlssRRRawColor, "dlssRR:rawColor"))(                                                                             \
-      (dlssRRDiffuseAlbedo, "dlssRR:diffuseAlbedo"))((dlssRRSpecularAlbedo, "dlssRR:specularAlbedo"))(                \
-      (dlssRRNormalRoughness, "dlssRR:normalRoughness"))((dlssRRMotionVector, "dlssRR:motionVector"))(                \
-      (dlssRRLinearDepth, "dlssRR:linearDepth"))((dlssRRSpecularHitDistance, "dlssRR:specularHitDistance"))
 
 #define HD_ROBOT_CAMERA_PARAM_TOKENS                                                                                \
   ((lidarIsLidar, "lidar:isLidar"))((lidarAzimuthMinDeg, "lidar:azimuthMinDeg"))((lidarAzimuthMaxDeg,                \
@@ -62,7 +49,6 @@ TF_DECLARE_PUBLIC_TOKENS(HdRobotDiscoveryTypes, HD_ROBOT_DISCOVERY_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotRenderContexts, HD_ROBOT_RENDER_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeContexts, HD_ROBOT_NODE_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeMetadata, HD_ROBOT_NODE_METADATA_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdRobotAovTokens, HD_ROBOT_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotCameraParamTokens, HD_ROBOT_CAMERA_PARAM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotCommandTokens, HD_ROBOT_COMMAND_TOKENS);
 

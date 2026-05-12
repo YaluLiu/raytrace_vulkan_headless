@@ -69,29 +69,11 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
 {
   _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(1)});
   _settingDescriptors.emplace_back(
-      HdRenderSettingDescriptor{"Enable DLSS-RR Denoise", HdRobotSettingsTokens->dlssRRDenoise, VtValue(true)});
-  _settingDescriptors.emplace_back(
-      HdRenderSettingDescriptor{"Enable DLSS-SR Upscale", HdRobotSettingsTokens->dlssSREnable, VtValue(true)});
-  _settingDescriptors.emplace_back(
-      HdRenderSettingDescriptor{"DLSS-SR Render Scale", HdRobotSettingsTokens->dlssSRScale, VtValue(0.6f)});
-  _settingDescriptors.emplace_back(
       HdRenderSettingDescriptor{"Enable Lidar", HdRobotSettingsTokens->lidarEnable, VtValue(false)});
 
   if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
   {
     _settingsMap[HdRobotSettingsTokens->spp] = VtValue(1);
-  }
-  if(_settingsMap.find(HdRobotSettingsTokens->dlssRRDenoise) == _settingsMap.end())
-  {
-    _settingsMap[HdRobotSettingsTokens->dlssRRDenoise] = VtValue(true);
-  }
-  if(_settingsMap.find(HdRobotSettingsTokens->dlssSREnable) == _settingsMap.end())
-  {
-    _settingsMap[HdRobotSettingsTokens->dlssSREnable] = VtValue(true);
-  }
-  if(_settingsMap.find(HdRobotSettingsTokens->dlssSRScale) == _settingsMap.end())
-  {
-    _settingsMap[HdRobotSettingsTokens->dlssSRScale] = VtValue(0.6f);
   }
   if(_settingsMap.find(HdRobotSettingsTokens->lidarEnable) == _settingsMap.end())
   {
@@ -201,21 +183,6 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& na
   else if(name == HdAovTokens->primId || name == HdAovTokens->instanceId)
   {
     return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
-  }
-  else if(name == HdRobotAovTokens->dlssRRRawColor || name == HdRobotAovTokens->dlssRRDiffuseAlbedo
-          || name == HdRobotAovTokens->dlssRRSpecularAlbedo
-          || name == HdRobotAovTokens->dlssRRNormalRoughness || name == HdRobotAovTokens->lidarPointCloud)
-  {
-    return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f)));
-  }
-  else if(name == HdRobotAovTokens->dlssRRMotionVector)
-  {
-    return HdAovDescriptor(HdFormatFloat32Vec2, true, VtValue(GfVec2f(0.0f)));
-  }
-  else if(name == HdRobotAovTokens->distanceToCamera || name == HdRobotAovTokens->dlssRRLinearDepth
-          || name == HdRobotAovTokens->dlssRRSpecularHitDistance)
-  {
-    return HdAovDescriptor(HdFormatFloat32, true, VtValue(0.0f));
   }
 
   return HdAovDescriptor();

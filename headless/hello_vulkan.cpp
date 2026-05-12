@@ -192,11 +192,6 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
       format  = m_offscreenDenoisedFormat;
       extent  = m_size;
       break;
-    case HeadlessAov::DlssRRRawColor:
-      texture = &m_offscreenColor;
-      format  = m_offscreenColorFormat;
-      extent  = m_renderSize;
-      break;
     case HeadlessAov::PrimId:
       texture = &m_offscreenObjectId;
       format  = m_offscreenObjectIdFormat;
@@ -207,49 +202,9 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
       format  = m_offscreenInstanceIdFormat;
       extent  = m_aovSize;
       break;
-    case HeadlessAov::DlssRRDiffuseAlbedo:
-      texture = &m_offscreenDiffuseAlbedo;
-      format  = m_offscreenDiffuseAlbedoFormat;
-      extent  = m_renderSize;
-      break;
-    case HeadlessAov::DlssRRSpecularAlbedo:
-      texture = &m_offscreenSpecularAlbedo;
-      format  = m_offscreenSpecularAlbedoFormat;
-      extent  = m_renderSize;
-      break;
-    case HeadlessAov::DlssRRNormalRoughness:
-      texture = &m_offscreenNormalRoughness;
-      format  = m_offscreenNormalRoughnessFormat;
-      extent  = m_renderSize;
-      break;
-    case HeadlessAov::DlssRRMotionVector:
-      texture = &m_offscreenMotionVector;
-      format  = m_offscreenMotionVectorFormat;
-      extent  = m_renderSize;
-      break;
     case HeadlessAov::Depth:
       texture = &m_offscreenDepthAov;
       format  = m_offscreenDepthAovFormat;
-      extent  = m_aovSize;
-      break;
-    case HeadlessAov::DlssRRLinearDepth:
-      texture = &m_offscreenLinearDepth;
-      format  = m_offscreenLinearDepthFormat;
-      extent  = m_renderSize;
-      break;
-    case HeadlessAov::DlssRRSpecularHitDistance:
-      texture = &m_offscreenSpecularHitDistance;
-      format  = m_offscreenSpecularHitDistanceFormat;
-      extent  = m_renderSize;
-      break;
-    case HeadlessAov::DistanceToCamera:
-      texture = &m_offscreenDistanceToCamera;
-      format  = m_offscreenDistanceToCameraFormat;
-      extent  = m_aovSize;
-      break;
-    case HeadlessAov::LidarPointCloud:
-      texture = &m_offscreenLidarPointCloud;
-      format  = m_offscreenLidarPointCloudFormat;
       extent  = m_aovSize;
       break;
   }

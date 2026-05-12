@@ -6,18 +6,9 @@
 enum class HeadlessAov
 {
   Color,
-  DlssRRRawColor,
   PrimId,
   InstanceId,
-  DlssRRDiffuseAlbedo,
-  DlssRRSpecularAlbedo,
-  DlssRRNormalRoughness,
-  DlssRRMotionVector,
   Depth,
-  DlssRRLinearDepth,
-  DlssRRSpecularHitDistance,
-  DistanceToCamera,
-  LidarPointCloud,
 };
 
 struct HeadlessAovTexture

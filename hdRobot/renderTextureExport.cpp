@@ -20,41 +20,14 @@ std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name) {
   if (name == HdAovTokens->color) {
     return HeadlessAov::Color;
   }
-  if (name == HdRobotAovTokens->dlssRRRawColor) {
-    return HeadlessAov::DlssRRRawColor;
-  }
   if (name == HdAovTokens->primId) {
     return HeadlessAov::PrimId;
   }
   if (name == HdAovTokens->instanceId) {
     return HeadlessAov::InstanceId;
   }
-  if (name == HdRobotAovTokens->dlssRRDiffuseAlbedo) {
-    return HeadlessAov::DlssRRDiffuseAlbedo;
-  }
-  if (name == HdRobotAovTokens->dlssRRSpecularAlbedo) {
-    return HeadlessAov::DlssRRSpecularAlbedo;
-  }
-  if (name == HdRobotAovTokens->dlssRRNormalRoughness) {
-    return HeadlessAov::DlssRRNormalRoughness;
-  }
-  if (name == HdRobotAovTokens->dlssRRMotionVector) {
-    return HeadlessAov::DlssRRMotionVector;
-  }
   if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil) {
     return HeadlessAov::Depth;
-  }
-  if (name == HdRobotAovTokens->dlssRRLinearDepth) {
-    return HeadlessAov::DlssRRLinearDepth;
-  }
-  if (name == HdRobotAovTokens->dlssRRSpecularHitDistance) {
-    return HeadlessAov::DlssRRSpecularHitDistance;
-  }
-  if (name == HdRobotAovTokens->distanceToCamera) {
-    return HeadlessAov::DistanceToCamera;
-  }
-  if (name == HdRobotAovTokens->lidarPointCloud) {
-    return HeadlessAov::LidarPointCloud;
   }
   return std::nullopt;
 }
