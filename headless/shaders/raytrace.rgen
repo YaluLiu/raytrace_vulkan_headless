@@ -7,36 +7,6 @@
 #include "raycommon.glsl"
 #include "wavefront.glsl"
 
-const float kFloatMinValue = 1e-15;
-
-float positiveRcp(float x)
-{
-  return 1.0 / max(x, kFloatMinValue);
-}
-
-vec3 reinhardMax(vec3 color)
-{
-  float maxChannel = max(max(color.x, color.y), color.z);
-  return (maxChannel > 0.0) ? (color / (1.0 + maxChannel)) : vec3(0.0);
-}
-
-vec3 environmentTermRtg(vec3 f0, float noV, float alphaRoughness)
-{
-  vec4 x = vec4(1.0, noV, noV * noV, noV * noV * noV);
-  vec4 y = vec4(1.0, alphaRoughness, alphaRoughness * alphaRoughness, alphaRoughness * alphaRoughness * alphaRoughness);
-
-  vec2 m1x = vec2(0.99044 * x.x - 1.28514 * x.y, 1.29678 * x.x - 0.755907 * x.y);
-  vec3 m2x = vec3(1.0 * x.x + 2.92338 * x.y + 59.4188 * x.w, 20.3225 * x.x - 27.0302 * x.y + 222.592 * x.w,
-                  121.563 * x.x + 626.13 * x.y + 316.627 * x.w);
-  vec2 m3x = vec2(0.0365463 * x.x + 3.32707 * x.y, 9.0632 * x.x - 9.04756 * x.y);
-  vec3 m4x = vec3(1.0 * x.x + 3.59685 * x.z - 1.36772 * x.w, 9.04401 * x.x - 16.3174 * x.z + 9.22949 * x.w,
-                  5.56589 * x.x + 19.7886 * x.z - 20.2123 * x.w);
-
-  float bias  = dot(m1x, y.xy) * positiveRcp(dot(m2x, y.xyw));
-  float scale = dot(m3x, y.xy) * positiveRcp(dot(m4x, y.xyw));
-  return clamp(f0 * scale + vec3(bias), vec3(0.0), vec3(1.0));
-}
-
 // clang-format off
 layout(location = 0) rayPayloadEXT hitPayload prd;
 
@@ -44,12 +14,6 @@ layout(set = 0, binding = eTlas) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = eOutImage, rgba32f) uniform image2D image;
 layout(set = 0, binding = eObjIdImage, r32i) uniform iimage2D objectIdImage;
 layout(set = 0, binding = eInsIdImage, r32i) uniform iimage2D instanceIdImage;
-layout(set = 0, binding = eDiffuseAlbedoImage, rgba32f) uniform image2D diffuseAlbedoImage;
-layout(set = 0, binding = eSpecularAlbedoImage, rgba32f) uniform image2D specularAlbedoImage;
-layout(set = 0, binding = eNormalRoughnessImage, rgba32f) uniform image2D normalRoughnessImage;
-layout(set = 0, binding = eMotionVectorImage, rg32f) uniform image2D motionVectorImage;
-layout(set = 0, binding = eLinearDepthImage, r32f) uniform image2D linearDepthImage;
-layout(set = 0, binding = eSpecularHitDistImage, r32f) uniform image2D specularHitDistanceImage;
 layout(set = 0, binding = eDepthImage, r32f) uniform image2D depthImage;
 layout(set = 1, binding = eFrameUniforms) uniform _FrameUniforms { FrameUniforms frameUni; };
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; };
@@ -75,9 +39,7 @@ void main()
   int  sampleObjId             = -1;
   int  sampleInsId             = -1;
   vec4 sampleWorldPosRoughness = vec4(0.0);
-  vec4 sampleNormalHitDist     = vec4(0.0);
   vec4 sampleDiffuseValid      = vec4(0.0);
-  vec4 sampleSpecular          = vec4(0.04, 0.04, 0.04, 0.0);
 
   for(int sampleIdx = 0; sampleIdx < spp; ++sampleIdx)
   {
@@ -110,9 +72,7 @@ void main()
       sampleObjId             = prd.objId;
       sampleInsId             = prd.instanceId;
       sampleWorldPosRoughness = prd.firstHitWorldPosRoughness;
-      sampleNormalHitDist     = prd.firstHitNormalSpecHitDist;
       sampleDiffuseValid      = prd.firstHitDiffuseValid;
-      sampleSpecular          = prd.firstHitSpecularPad;
     }
   }
 
@@ -120,66 +80,13 @@ void main()
 
   vec3 outColor = sampleColor;
 
-  vec3  diffuseAlbedo      = clamp(sampleDiffuseValid.xyz, vec3(0.0), vec3(1.0));
-  vec3  specularAlbedo     = vec3(0.0);
-  float metallic           = 0.0;
-  vec3  packedNormal       = vec3(0.0);
-  float packedRoughness    = 0.0;
-  float linearDepth        = kDlssInfDistance;
   float normalizedDepth    = 1.0;
-  vec2  motionVectorPixels = vec2(0.0);
-  float specHitDistance    = max(sampleNormalHitDist.w, 0.0);
   bool  hasPrimaryHit      = sampleDiffuseValid.w > 0.5;
 
   if(hasPrimaryHit)
   {
-    vec3 cameraPos   = (frameUni.camera.viewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
     vec4 worldPos    = vec4(sampleWorldPosRoughness.xyz, 1.0);
-    vec4  viewPos    = frameUni.camera.view * worldPos;
-    float viewZ      = max(-viewPos.z, 0.0);
-    linearDepth      = viewZ;
     normalizedDepth  = normalizeDepthAov(frameUni.camera.viewProj * worldPos);
-    packedNormal     = normalize(sampleNormalHitDist.xyz);
-
-    float roughnessSquared = clamp(sampleWorldPosRoughness.w, 0.0, 1.0);
-    float alphaRoughness   = sqrt(roughnessSquared);
-    packedRoughness        = alphaRoughness;
-
-    vec3  toEye = normalize(cameraPos - worldPos.xyz);
-    float noV   = max(dot(packedNormal, toEye), 0.0);
-    vec3  f0    = clamp(sampleSpecular.xyz, vec3(0.0), vec3(0.98));
-    if(sampleSpecular.w > 0.5)
-    {
-      specularAlbedo = environmentTermRtg(f0, noV, roughnessSquared);
-      // OBJ path does not provide metallic explicitly; approximate it from specular F0.
-      float f0Max = max(f0.x, max(f0.y, f0.z));
-      metallic    = clamp((f0Max - 0.04) / 0.96, 0.0, 1.0);
-    }
-    else
-    {
-      specularAlbedo = vec3(0.0);
-      metallic       = 0.0;
-    }
-
-    vec4  prevClip     = frameUni.camera.prevViewProj * worldPos;
-    float invW         = abs(prevClip.w) > 1e-6 ? (1.0 / prevClip.w) : 0.0;
-    vec2  prevNdc      = prevClip.xy * invW;
-    vec2  prevPixel    = (prevNdc * 0.5 + 0.5) * vec2(gl_LaunchSizeEXT.xy);
-    vec2  currPixel    = pixelCenter + cameraJitter;
-    motionVectorPixels = prevPixel - currPixel;
-  }
-  else
-  {
-    vec3 skyGuide      = reinhardMax(max(outColor, vec3(0.0)));
-    diffuseAlbedo      = skyGuide;
-    specularAlbedo     = vec3(0.0);
-    packedNormal       = vec3(0.0);
-    packedRoughness    = 0.0;
-    linearDepth        = kDlssInfDistance;
-    normalizedDepth    = 1.0;
-    motionVectorPixels = vec2(0.0);
-    specHitDistance    = 0.0;
-    metallic           = 0.0;
   }
 
   if(pcRay.lidarPassMode == eRaygenPassHighResAov)
@@ -189,13 +96,6 @@ void main()
     imageStore(depthImage, pixel, vec4(normalizedDepth, 0.0, 0.0, 0.0));
     return;
   }
-
-  imageStore(diffuseAlbedoImage, pixel, vec4(diffuseAlbedo, metallic));
-  imageStore(specularAlbedoImage, pixel, vec4(specularAlbedo, 0.0));
-  imageStore(normalRoughnessImage, pixel, vec4(packedNormal, packedRoughness));
-  imageStore(motionVectorImage, pixel, vec4(motionVectorPixels, 0.0, 0.0));
-  imageStore(linearDepthImage, pixel, vec4(linearDepth, 0.0, 0.0, 0.0));
-  imageStore(specularHitDistanceImage, pixel, vec4(specHitDistance, 0.0, 0.0, 0.0));
 
   imageStore(image, pixel, vec4(outColor, 1.0));
 }

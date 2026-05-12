@@ -34,19 +34,13 @@ START_BINDING(RtxBindings)
   eOutImage               = 1,  // Ray tracer output image (color)
   eObjIdImage             = 2,  // ObjectId output
   eInsIdImage             = 3,  // InstanceId output
-  eDiffuseAlbedoImage     = 4,  // DLSS-RR: diffuse albedo input
-  eSpecularAlbedoImage    = 5,  // DLSS-RR: specular albedo input
-  eNormalRoughnessImage   = 6,  // DLSS-RR: packed normal+roughness
-  eMotionVectorImage      = 7,  // DLSS-RR: motion vector
-  eLinearDepthImage       = 8,  // DLSS-RR: linear depth
-  eSpecularHitDistImage   = 9,  // DLSS-RR: specular hit distance (optional)
-  eLidarPointCloudImage   = 10, // AOV: lidar point cloud
-  eDepthImage             = 11, // AOV: normalized Hydra depth
-  eLidarDepthKeyImage     = 12  // AOV: lidar normalized depth float-bit key for atomic nearest-point writes
+  eLidarPointCloudImage   = 4,  // AOV: lidar point cloud
+  eDepthImage             = 5,  // AOV: normalized Hydra depth
+  eLidarDepthKeyImage     = 6   // AOV: lidar normalized depth float-bit key for atomic nearest-point writes
 END_BINDING();
 
 START_BINDING(LidarCompositeBindings)
-  eCompositeDenoisedImage        = 0,
+  eCompositeColorImage           = 0,
   eCompositeLidarPointCloudImage = 1,
   eCompositeDepthImage           = 2,
   eCompositeLidarDepthKeyImage   = 3

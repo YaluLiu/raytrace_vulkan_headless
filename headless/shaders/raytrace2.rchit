@@ -116,7 +116,6 @@ void main()
   Materials  materials   = Materials(objResource.materialAddress);
 
   vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-  recordSpecularHitDistance(prd, gl_HitTEXT);
 
   Sphere instance = allSpheres.i[gl_PrimitiveID];
 
@@ -186,7 +185,7 @@ void main()
   vec3  localDir  = cosineSampleHemisphere(u1, u2);
   vec3  diffuseDir = normalize(localDir.x * tangent + localDir.y * bitangent + localDir.z * worldNrm);
   float roughness = roughnessFromShininess(mat.shininess);
-  vec3  bounceDir = chooseDlssFirstBounceDirection(gl_WorldRayDirectionEXT, worldNrm, diffuseDir, roughness, firstSpecularBounce);
+  vec3  bounceDir = chooseFirstBounceDirection(gl_WorldRayDirectionEXT, worldNrm, diffuseDir, roughness, firstSpecularBounce);
 
   float cosTheta = max(dot(worldNrm, bounceDir), 0.0);
   if(cosTheta <= 0.0)

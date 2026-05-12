@@ -307,7 +307,7 @@ void HelloVulkan::renderLidarPointCloud(const VkCommandBuffer& cmdBuf)
 
 void HelloVulkan::createLidarCompositePipeline()
 {
-  m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeDenoisedImage,
+  m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeColorImage,
                                                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
   m_lidarCompositeDescSetLayoutBind.addBinding(LidarCompositeBindings::eCompositeLidarPointCloudImage,
                                                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -345,7 +345,7 @@ void HelloVulkan::updateLidarCompositeDescriptorSet()
                                           VK_IMAGE_LAYOUT_GENERAL};
 
   std::array<VkWriteDescriptorSet, 4> writes{
-      m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeDenoisedImage,
+      m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeColorImage,
                                                   &colorInfo),
       m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet,
                                                   LidarCompositeBindings::eCompositeLidarPointCloudImage,

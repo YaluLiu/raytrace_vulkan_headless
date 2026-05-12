@@ -226,26 +226,8 @@ public:
   nvvk::Texture          m_offscreenInstanceId;
   VkFormat               m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
 
-  nvvk::Texture          m_offscreenDiffuseAlbedo;
-  VkFormat               m_offscreenDiffuseAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-
-  nvvk::Texture          m_offscreenSpecularAlbedo;
-  VkFormat               m_offscreenSpecularAlbedoFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-
-  nvvk::Texture          m_offscreenNormalRoughness;
-  VkFormat               m_offscreenNormalRoughnessFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-
-  nvvk::Texture          m_offscreenMotionVector;
-  VkFormat               m_offscreenMotionVectorFormat{VK_FORMAT_R32G32_SFLOAT};
-
-  nvvk::Texture          m_offscreenLinearDepth;
-  VkFormat               m_offscreenLinearDepthFormat{VK_FORMAT_R32_SFLOAT};
-
   nvvk::Texture          m_offscreenDepthAov;
   VkFormat               m_offscreenDepthAovFormat{VK_FORMAT_R32_SFLOAT};
-
-  nvvk::Texture          m_offscreenSpecularHitDistance;
-  VkFormat               m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
 
   nvvk::Texture          m_offscreenLidarPointCloud;
   VkFormat               m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};

@@ -218,7 +218,6 @@ void main()
 
   const vec3 pos      = v0.pos * barycentrics.x + v1.pos * barycentrics.y + v2.pos * barycentrics.z;
   const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
-  recordSpecularHitDistance(prd, gl_HitTEXT);
 
   const mat3 normalMatrix    = transpose(mat3(gl_WorldToObjectEXT));
   const vec3 geometricNrm    = cross(v1.pos - v0.pos, v2.pos - v0.pos);
@@ -288,7 +287,7 @@ void main()
   vec3  localDir  = cosineSampleHemisphere(u1, u2);
   vec3  diffuseDir = normalize(localDir.x * tangent + localDir.y * bitangent + localDir.z * worldNrm);
   float roughness = pbr.roughness;
-  vec3  bounceDir = chooseDlssFirstBounceDirection(gl_WorldRayDirectionEXT, worldNrm, diffuseDir, roughness, firstSpecularBounce);
+  vec3  bounceDir = chooseFirstBounceDirection(gl_WorldRayDirectionEXT, worldNrm, diffuseDir, roughness, firstSpecularBounce);
 
   float cosTheta = max(dot(worldNrm, bounceDir), 0.0);
   if(cosTheta <= 0.0)

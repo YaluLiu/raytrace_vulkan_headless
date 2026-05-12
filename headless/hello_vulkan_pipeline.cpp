@@ -33,7 +33,7 @@ float haltonComponent(uint32_t index, uint32_t base)
   return result;
 }
 
-glm::vec2 computeDlssJitter(uint32_t frameIndex)
+glm::vec2 computeTemporalJitter(uint32_t frameIndex)
 {
   const uint32_t haltonIndex = (frameIndex % 1024u) + 1u;
   return glm::vec2(haltonComponent(haltonIndex, 2u), haltonComponent(haltonIndex, 3u)) - glm::vec2(0.5f);
@@ -48,18 +48,6 @@ void HelloVulkan::createRtDescriptorSet()
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eOutImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eObjIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eInsIdImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eDiffuseAlbedoImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eSpecularAlbedoImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eNormalRoughnessImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eMotionVectorImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eLinearDepthImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eSpecularHitDistImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eLidarPointCloudImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eDepthImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
@@ -81,13 +69,7 @@ void HelloVulkan::createRtDescriptorSet()
   VkDescriptorImageInfo imageInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo idInfo{{}, m_offscreenObjectId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo InstanceIdInfo{{}, m_offscreenInstanceId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo diffuseInfo{{}, m_offscreenDiffuseAlbedo.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo specularInfo{{}, m_offscreenSpecularAlbedo.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo normalRoughnessInfo{{}, m_offscreenNormalRoughness.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo motionInfo{{}, m_offscreenMotionVector.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo linearDepthInfo{{}, m_offscreenLinearDepth.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo depthAovInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo specHitDistanceInfo{{}, m_offscreenSpecularHitDistance.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   std::vector<VkWriteDescriptorSet> writes;
@@ -95,12 +77,6 @@ void HelloVulkan::createRtDescriptorSet()
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &imageInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eObjIdImage, &idInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eInsIdImage, &InstanceIdInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDiffuseAlbedoImage, &diffuseInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eSpecularAlbedoImage, &specularInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eNormalRoughnessImage, &normalRoughnessInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eMotionVectorImage, &motionInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLinearDepthImage, &linearDepthInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eSpecularHitDistImage, &specHitDistanceInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLidarPointCloudImage, &lidarPointCloudInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDepthImage, &depthAovInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
@@ -111,25 +87,13 @@ void HelloVulkan::updateRtDescriptorSet()
   VkDescriptorImageInfo colorInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo idInfo{{}, m_offscreenObjectId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo InsIdInfo{{}, m_offscreenInstanceId.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo diffuseInfo{{}, m_offscreenDiffuseAlbedo.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo specularInfo{{}, m_offscreenSpecularAlbedo.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo normalRoughnessInfo{{}, m_offscreenNormalRoughness.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo motionInfo{{}, m_offscreenMotionVector.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo linearDepthInfo{{}, m_offscreenLinearDepth.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo depthAovInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo specHitDistanceInfo{{}, m_offscreenSpecularHitDistance.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   std::vector<VkWriteDescriptorSet> writes;
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eOutImage, &colorInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eObjIdImage, &idInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eInsIdImage, &InsIdInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDiffuseAlbedoImage, &diffuseInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eSpecularAlbedoImage, &specularInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eNormalRoughnessImage, &normalRoughnessInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eMotionVectorImage, &motionInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLinearDepthImage, &linearDepthInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eSpecularHitDistImage, &specHitDistanceInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLidarPointCloudImage, &lidarPointCloudInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDepthImage, &depthAovInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
@@ -300,7 +264,7 @@ void HelloVulkan::raytrace(const VkCommandBuffer& cmdBuf)
   m_debug.beginLabel(cmdBuf, "Ray trace");
   m_pcRay.numLights       = static_cast<int>(m_lights.size());
   m_pcRay.frameIndex      = m_frameIndex;
-  m_currentJitter         = computeDlssJitter(m_frameIndex);
+  m_currentJitter         = computeTemporalJitter(m_frameIndex);
   m_pcRay.jitterX         = m_currentJitter.x;
   m_pcRay.jitterY         = m_currentJitter.y;
   m_pcRay.maxDepth        = std::max(m_pcRay.maxDepth, 1);

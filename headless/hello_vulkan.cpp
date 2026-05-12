@@ -387,13 +387,7 @@ void HelloVulkan::destroyResources()
   m_sharedAlloc.destroy(m_offscreenColor);
   m_sharedAlloc.destroy(m_offscreenObjectId);
   m_sharedAlloc.destroy(m_offscreenInstanceId);
-  m_sharedAlloc.destroy(m_offscreenDiffuseAlbedo);
-  m_sharedAlloc.destroy(m_offscreenSpecularAlbedo);
-  m_sharedAlloc.destroy(m_offscreenNormalRoughness);
-  m_sharedAlloc.destroy(m_offscreenMotionVector);
-  m_sharedAlloc.destroy(m_offscreenLinearDepth);
   m_sharedAlloc.destroy(m_offscreenDepthAov);
-  m_sharedAlloc.destroy(m_offscreenSpecularHitDistance);
   m_sharedAlloc.destroy(m_offscreenLidarPointCloud);
   m_sharedAlloc.destroy(m_offscreenLidarPointCloudDepthKey);
   m_sharedAlloc.deinit();
@@ -469,13 +463,7 @@ void HelloVulkan::createOffscreenRender()
   createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                        m_aovSize);
   createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kAovUsage, m_aovSize);
-  createOffscreenImage(m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat, kAovUsage, m_renderSize);
-  createOffscreenImage(m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat, kAovUsage, m_renderSize);
-  createOffscreenImage(m_offscreenNormalRoughness, m_offscreenNormalRoughnessFormat, kAovUsage, m_renderSize);
-  createOffscreenImage(m_offscreenMotionVector, m_offscreenMotionVectorFormat, kAovUsage, m_renderSize);
-  createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kAovUsage, m_renderSize);
   createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kAovUsage, m_aovSize);
-  createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kAovUsage, m_renderSize);
   createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat,
                        kAovUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_aovSize);
   createOffscreenImage(m_offscreenLidarPointCloudDepthKey, m_offscreenLidarPointCloudDepthKeyFormat,
@@ -504,14 +492,7 @@ void HelloVulkan::createOffscreenRender()
                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenInstanceId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDiffuseAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenSpecularAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenNormalRoughness.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenMotionVector.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLinearDepth.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepthAov.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenSpecularHitDistance.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloud.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
