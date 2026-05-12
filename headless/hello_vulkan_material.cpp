@@ -64,15 +64,13 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
 
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
-  VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-  VkBufferUsageFlags rayTracingFlags =
-      flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  VkBufferUsageFlags deviceAddressFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   model.vertexBuffer =
-      m_alloc.createBuffer(cmdBuf, loader.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
+      m_alloc.createBuffer(cmdBuf, loader.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
   model.indexBuffer =
-      m_alloc.createBuffer(cmdBuf, loader.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | rayTracingFlags);
-  model.matColorBuffer = m_alloc.createBuffer(cmdBuf, loader.m_materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
-  model.matIndexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_matIndx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag);
+      m_alloc.createBuffer(cmdBuf, loader.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | deviceAddressFlags);
+  model.matColorBuffer = m_alloc.createBuffer(cmdBuf, loader.m_materials, deviceAddressFlags);
+  model.matIndexBuffer = m_alloc.createBuffer(cmdBuf, loader.m_matIndx, deviceAddressFlags);
 
   auto txtOffset = 0;
   createTextureImages(cmdBuf, loader.m_textures, loader.m_textureAssets);

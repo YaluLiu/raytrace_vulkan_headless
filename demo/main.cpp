@@ -157,7 +157,7 @@ private:
     m_app.getVulkan().loadModel(sphereLoader);
 
     loadGroundPlane();
-    m_app.createBVH();
+    m_app.createRenderResources();
   }
 
   void loadBeautyBallFallback()
@@ -220,7 +220,7 @@ private:
 
     loadGroundPlane();
 
-    m_app.createBVH();
+    m_app.createRenderResources();
   }
 
   fs::path                              m_cwd;

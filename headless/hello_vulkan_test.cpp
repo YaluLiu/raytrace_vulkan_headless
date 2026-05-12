@@ -91,11 +91,13 @@ void HelloVulkan::animationInstances(float time)
     transform           = glm::rotate(transform, i * deltaAngle + offset, glm::vec3(0.f, 1.f, 0.f));
     transform           = glm::translate(transform, glm::vec3(radius, 0.f, 0.f));
 
-    VkAccelerationStructureInstanceKHR& tinst = m_tlas[wusonIdx];
-    tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
+    if(wusonIdx >= 0 && static_cast<size_t>(wusonIdx) < m_instances.size())
+    {
+      m_instances[wusonIdx].transform = transform;
+    }
   }
 
-  m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
+  resetFrameHistory();
 }
 
 void HelloVulkan::animationObject(float time)
@@ -120,8 +122,7 @@ void HelloVulkan::animationObject(float time)
 
   genCmdBuf.submitAndWait(cmdBuf);
 
-  m_rtBuilder.updateBlas(sphereId, m_blas[sphereId],
-                         VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
+  resetFrameHistory();
 }
 
 void HelloVulkan::createCompDescriptors()

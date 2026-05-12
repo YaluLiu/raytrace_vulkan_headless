@@ -321,7 +321,7 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   m_hasLastCamera = true;
 
   VkBuffer deviceUBO      = m_bFrameUniforms.buffer;
-  auto     uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+  auto     uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
   VkBufferMemoryBarrier beforeBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
   beforeBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -382,6 +382,11 @@ void HelloVulkan::destroyResources()
   {
     m_alloc.destroy(t);
   }
+
+  destroyRasterFramebuffer();
+  vkDestroyPipeline(m_device, m_rasterPipeline, nullptr);
+  vkDestroyPipelineLayout(m_device, m_rasterPipelineLayout, nullptr);
+  vkDestroyRenderPass(m_device, m_rasterRenderPass, nullptr);
 
   m_alloc.destroy(m_offscreenDepth);
   m_sharedAlloc.destroy(m_offscreenColor);
@@ -451,6 +456,8 @@ void HelloVulkan::onResize(int w, int h)
 
 void HelloVulkan::createOffscreenRender()
 {
+  destroyRasterFramebuffer();
+
   m_renderSize = computeRenderSize();
   m_aovSize    = m_size;
 
@@ -499,5 +506,6 @@ void HelloVulkan::createOffscreenRender()
     genCmdBuf.submitAndWait(cmdBuf);
   }
 
+  createRasterFramebuffer();
   resetFrameHistory();
 }

@@ -69,6 +69,7 @@ public:
   {
     glm::mat4 transform;
     uint32_t  objIndex{0};
+    bool      visible{true};
   };
 
   uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
@@ -109,6 +110,8 @@ public:
   void     renderHeightScanPointCloud(const VkCommandBuffer& cmdBuf);
   void     createLidarCompositePipeline();
   void     compositeLidar(const VkCommandBuffer& cmdBuf);
+  void     createRasterPipeline();
+  void     rasterize(const VkCommandBuffer& cmdBuf);
   void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
   void     resetFrameHistory();
@@ -191,6 +194,11 @@ public:
   VkDescriptorSet             m_lidarCompositeDescSet{VK_NULL_HANDLE};
   VkPipeline                  m_lidarCompositePipeline{VK_NULL_HANDLE};
   VkPipelineLayout            m_lidarCompositePipelineLayout{VK_NULL_HANDLE};
+
+  VkRenderPass     m_rasterRenderPass{VK_NULL_HANDLE};
+  VkFramebuffer    m_rasterFramebuffer{VK_NULL_HANDLE};
+  VkPipeline       m_rasterPipeline{VK_NULL_HANDLE};
+  VkPipelineLayout m_rasterPipelineLayout{VK_NULL_HANDLE};
 
   VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
@@ -283,6 +291,8 @@ private:
   VkExtent2D computeRenderSize();
   void       refreshOffscreenRenderTargetsIfNeeded();
   void       refreshOffscreenRenderTargetDescriptors();
+  void       createRasterFramebuffer();
+  void       destroyRasterFramebuffer();
   void       updateLidarRtDescriptorSet();
   void       updateLidarCompositeDescriptorSet();
 

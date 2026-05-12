@@ -48,16 +48,15 @@ void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, con
   barrier.offset        = offset;
   barrier.size          = sizeof(WaveFrontMaterial);
 
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
+                       &barrier, 0, nullptr);
 
   vkCmdUpdateBuffer(cmdBuf, m_objModel[modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial), &newMaterial);
 
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
-                       nullptr, 1, &barrier, 0, nullptr);
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 1,
+                       &barrier, 0, nullptr);
 
   cmdGen.submitAndWait(cmdBuf);
   resetFrameHistory();
@@ -84,9 +83,8 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
 
     preBarriers.push_back(preBarrier);
   }
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, static_cast<uint32_t>(preBarriers.size()),
-                       preBarriers.data(), 0, nullptr);
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                       static_cast<uint32_t>(preBarriers.size()), preBarriers.data(), 0, nullptr);
 
   for(const auto& upd : updates)
   {
@@ -107,9 +105,8 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
 
     postBarriers.push_back(postBarrier);
   }
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
-                       nullptr, static_cast<uint32_t>(postBarriers.size()), postBarriers.data(), 0, nullptr);
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr,
+                       static_cast<uint32_t>(postBarriers.size()), postBarriers.data(), 0, nullptr);
 
   cmdGen.submitAndWait(cmdBuf);
   resetFrameHistory();
@@ -186,7 +183,7 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
     preBarrier.buffer        = m_bLights.buffer;
     preBarrier.offset        = 0;
     preBarrier.size          = lightBufferSize;
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
                          nullptr, 1, &preBarrier, 0, nullptr);
 
     vkCmdUpdateBuffer(cmdBuf, m_bLights.buffer, 0, lightBufferSize, m_lights.data());
@@ -197,7 +194,7 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
     postBarrier.buffer        = m_bLights.buffer;
     postBarrier.offset        = 0;
     postBarrier.size          = lightBufferSize;
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0,
+    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
                          nullptr, 1, &postBarrier, 0, nullptr);
   }
 }

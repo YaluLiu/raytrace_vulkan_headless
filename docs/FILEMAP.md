@@ -10,7 +10,7 @@ call sites with `rg`.
 - `CMakeLists.txt`: Root build configuration, options, and subdirectory
   registration.
 - `install.sh`: Main local build/run helper used by demo and hydra workflows.
-- `headless/`: Core headless Vulkan ray tracing library and shaders.
+- `headless/`: Core headless Vulkan rasterization library and shaders.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   headless renderer.
 - `demo/`: Standalone demo executable and USD loading helpers.
@@ -32,8 +32,9 @@ call sites with `rg`.
 ## Runtime Entry Points
 
 - `demo/main.cpp`: Demo application entry and scene setup.
-- `headless/ray_trace_app.cpp`: Headless app orchestration, context setup,
-  resize forwarding, and default scene loading.
+- `headless/ray_trace_app.cpp`: Headless app orchestration, raster-oriented
+  Vulkan context setup, resize forwarding, frame pass sequencing, and default
+  scene loading.
 - `headless/ray_trace_app.hpp`: Headless app public surface and member state.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
@@ -47,19 +48,22 @@ call sites with `rg`.
 
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` state, public controls,
   renderer resources, offscreen fields, and helper declarations.
-- `headless/hello_vulkan.cpp`: Core setup, frame rendering, resize handling,
-  accumulation reset, render settings application, and offscreen target flow.
+- `headless/hello_vulkan.cpp`: Core setup, frame rendering state, resize
+  handling, accumulation reset, render settings application, and offscreen
+  raster target flow.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
   OpenGL types.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   camera/light/material/mesh update paths, and accumulation invalidation.
-- `headless/hello_vulkan_mesh.cpp`: Mesh upload, BLAS/TLAS updates, geometry
-  conversion, and mesh-driven accumulation reset paths.
+- `headless/hello_vulkan_mesh.cpp`: Mesh upload, raster instance
+  transform/visibility updates, geometry conversion helpers still awaiting RT
+  removal, and mesh-driven accumulation reset paths.
 - `headless/hello_vulkan_material.cpp`: Material loading, material buffer
   updates, and model loading into the renderer.
-- `headless/hello_vulkan_pipeline.cpp`: Ray tracing pipeline setup and shader
-  binding table related logic.
+- `headless/hello_vulkan_pipeline.cpp`: Current raster graphics pipeline,
+  framebuffer creation, draw loop, shared scene descriptor set updates, and
+  older RT pipeline helpers still pending deletion.
 - `headless/hello_vulkan_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `headless/headless_vk.cpp`: Headless Vulkan offline app context support.
 
@@ -74,11 +78,12 @@ call sites with `rg`.
 
 ## LiDAR Rendering
 
-- `headless/hello_vulkan_lidar.cpp`: LiDAR ray tracing, shared sensor
-  point-cloud descriptor setup, point-cloud rendering, composite descriptor
-  setup, and related barriers.
+- `headless/hello_vulkan_lidar.cpp`: Legacy LiDAR ray tracing and composite
+  helpers. The main frame pass no longer invokes this path in the raster
+  baseline; deletion or replacement is tracked separately.
 - `headless/hello_vulkan_height_scan.cpp`: Height scan ray tracing pipeline,
   shader binding table setup, height scan ray dispatch, and related barriers.
+  The main frame pass no longer invokes this path in the raster baseline.
 - `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
 - `headless/shaders/raytrace_height_scan.rgen`: Height scan ray generation
   shader; casts default XZ-grid rays into the scene and writes the shared
@@ -154,7 +159,13 @@ call sites with `rg`.
 
 - `headless/shaders/host_device.h`: Shared host/device structs and constants.
   `FrameUniforms` carries independent main, LiDAR, and height scan camera
-  uniform state.
+  uniform state; `PushConstantRaster` carries per-draw model/object/instance
+  data for the raster path.
+- `headless/shaders/raster.vert`: Minimal raster vertex shader for mesh
+  positions, normals, vertex colors, texcoords, tangents, and per-instance
+  transform/object metadata.
+- `headless/shaders/raster.frag`: Minimal raster fragment shader writing color,
+  primId, instanceId, and normalized depth AOV attachments.
 - `headless/shaders/raycommon.glsl`: Common ray tracing shader helpers.
 - `headless/shaders/raytrace.rgen`: Main ray generation shader.
 - `headless/shaders/raytrace.rchit`: Main closest-hit shader.
@@ -174,7 +185,8 @@ call sites with `rg`.
 - Frame rendering or accumulation:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `hdRobot/headlessRenderBridge.cpp`, then search for `RenderFrame`,
-  `resetAccumulation`, `resetFrameHistory`, and `applyRenderSettings`.
+  `rasterize`, `resetAccumulation`, `resetFrameHistory`, and
+  `applyRenderSettings`.
 - Resize or render target size:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/ray_trace_app.cpp`, then search for `onResize`,

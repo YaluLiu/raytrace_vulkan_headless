@@ -56,6 +56,15 @@ struct ObjDesc
   uint64_t materialIndexAddress;
 };
 
+struct PushConstantRaster
+{
+  mat4 model;
+  uint objIndex;
+  int instanceId;
+  uint pad0;
+  uint pad1;
+};
+
 struct CameraUniforms
 {
   mat4 viewProj;

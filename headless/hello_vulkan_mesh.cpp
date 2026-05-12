@@ -137,14 +137,16 @@ void HelloVulkan::createTopLevelAS()
 
 void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible)
 {
-  VkAccelerationStructureInstanceKHR& tinst = m_tlas[mesh_Id];
-  tinst.mask                                = visible ? 0xFF : 0x00;
-  tinst.transform                           = nvvk::toTransformMatrixKHR(transform);
+  if(mesh_Id >= m_instances.size())
+  {
+    return;
+  }
+  m_instances[mesh_Id].transform = transform;
+  m_instances[mesh_Id].visible   = visible;
 }
 
 void HelloVulkan::updateTlasEnd()
 {
-  m_rtBuilder.buildTlas(m_tlas, m_rtFlags, true);
   resetFrameHistory();
 }
 
@@ -158,15 +160,11 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
 
   model.nbVertices = static_cast<uint32_t>(now_vertices.size());
 
-  VkBufferUsageFlags flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-  VkBufferUsageFlags rayTracingFlags =
-      flag | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  VkBufferUsageFlags storageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
   m_alloc.destroy(model.vertexBuffer);
-  model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | rayTracingFlags);
+  model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | storageFlags);
   genCmdBuf.submitAndWait(cmdBuf);
-  m_rtBuilder.updateBlas(mesh_Id, m_blas[mesh_Id],
-                         VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
   resetFrameHistory();
 }
 

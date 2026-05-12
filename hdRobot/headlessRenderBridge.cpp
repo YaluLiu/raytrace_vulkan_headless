@@ -210,7 +210,7 @@ void HeadlessRenderBridge::initOrResize()
       _renderParam.MarkMeshTlasDirty(meshId);
     }
     vulkan.addSpheres(_renderParam.v_sphere);
-    _renderApp.createBVH();
+    _renderApp.createRenderResources();
   }
   else if (_resetRenderBuffer)
   {

@@ -23,17 +23,14 @@ enum class HeadlessRenderPass
   UpdateUniforms,
   UpdateLights,
   UpdateInstanceIds,
-  RayTrace,
-  LidarPointCloud,
-  HeightScanPointCloud,
-  LidarComposite,
+  Rasterize,
 };
 
-constexpr std::array<HeadlessRenderPass, 7> kHeadlessRenderPassSequence{
-    HeadlessRenderPass::UpdateUniforms,        HeadlessRenderPass::UpdateLights,
-    HeadlessRenderPass::UpdateInstanceIds,     HeadlessRenderPass::RayTrace,
-    HeadlessRenderPass::LidarPointCloud,
-    HeadlessRenderPass::HeightScanPointCloud,  HeadlessRenderPass::LidarComposite,
+constexpr std::array<HeadlessRenderPass, 4> kHeadlessRenderPassSequence{
+    HeadlessRenderPass::UpdateUniforms,
+    HeadlessRenderPass::UpdateLights,
+    HeadlessRenderPass::UpdateInstanceIds,
+    HeadlessRenderPass::Rasterize,
 };
 
 void addSearchPathIfExists(std::vector<std::string>& paths, const fs::path& path)
@@ -92,17 +89,8 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
     case HeadlessRenderPass::UpdateInstanceIds:
       renderer.updateInstanceIdBuffer(cmdBuf);
       break;
-    case HeadlessRenderPass::RayTrace:
-      renderer.raytrace(cmdBuf);
-      break;
-    case HeadlessRenderPass::LidarPointCloud:
-      renderer.renderLidarPointCloud(cmdBuf);
-      break;
-    case HeadlessRenderPass::HeightScanPointCloud:
-      renderer.renderHeightScanPointCloud(cmdBuf);
-      break;
-    case HeadlessRenderPass::LidarComposite:
-      renderer.compositeLidar(cmdBuf);
+    case HeadlessRenderPass::Rasterize:
+      renderer.rasterize(cmdBuf);
       break;
   }
 }
@@ -170,14 +158,7 @@ void RayTraceApp::setupContext()
   contextInfo.verboseAvailable         = false;
   contextInfo.setVersion(1, 2);
 
-  VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-  contextInfo.addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, false, &accelFeature);
-  VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-  contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);
-  contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-
   addExternalMemoryExtensions(contextInfo);
-  contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
   if(!m_vkctx.initInstance(contextInfo))
@@ -188,7 +169,7 @@ void RayTraceApp::setupContext()
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
   if(compatibleDevices.empty())
   {
-    throw std::runtime_error("No compatible Vulkan device found for ray tracing and external memory extensions");
+    throw std::runtime_error("No compatible Vulkan device found for rasterization and external memory extensions");
   }
 
   if(!m_vkctx.initDevice(compatibleDevices[0], contextInfo))
@@ -209,7 +190,7 @@ void RayTraceApp::setupHelloVulkan()
   m_helloCreated = true;
 }
 
-void RayTraceApp::createBVH()
+void RayTraceApp::createRenderResources()
 {
   m_helloVk.createOffscreenRender();
   m_helloVk.createLightBuffer();
@@ -220,18 +201,7 @@ void RayTraceApp::createBVH()
   m_helloVk.createObjDescriptionBuffer();
   m_helloVk.updateDescriptorSet();
 
-  m_helloVk.initRayTracing();
-  m_helloVk.createBottomLevelAS();
-  m_helloVk.createTopLevelAS();
-  m_helloVk.createRtDescriptorSet();
-  m_helloVk.createRtPipeline();
-  m_helloVk.createRtShaderBindingTable();
-  m_helloVk.createLidarRtDescriptorSet();
-  m_helloVk.createLidarRtPipeline();
-  m_helloVk.createLidarRtShaderBindingTable();
-  m_helloVk.createHeightScanRtPipeline();
-  m_helloVk.createHeightScanRtShaderBindingTable();
-  m_helloVk.createLidarCompositePipeline();
+  m_helloVk.createRasterPipeline();
   m_resourcesCreated = true;
 }
 

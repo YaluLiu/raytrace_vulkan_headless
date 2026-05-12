@@ -39,7 +39,7 @@ public:
 
   void loadScene();
 
-  void createBVH();
+  void createRenderResources();
 
   void animation();
 
