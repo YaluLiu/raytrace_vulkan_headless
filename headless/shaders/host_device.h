@@ -40,10 +40,9 @@ START_BINDING(RtxBindings)
   eMotionVectorImage      = 7,  // DLSS-RR: motion vector
   eLinearDepthImage       = 8,  // DLSS-RR: linear depth
   eSpecularHitDistImage   = 9,  // DLSS-RR: specular hit distance (optional)
-  eDistanceToCameraImage  = 10, // AOV: world-space distance from camera to first hit
-  eLidarPointCloudImage   = 11, // AOV: lidar point cloud
-  eDepthImage             = 12, // AOV: normalized Hydra depth
-  eLidarDepthKeyImage     = 13  // AOV: lidar normalized depth float-bit key for atomic nearest-point writes
+  eLidarPointCloudImage   = 10, // AOV: lidar point cloud
+  eDepthImage             = 11, // AOV: normalized Hydra depth
+  eLidarDepthKeyImage     = 12  // AOV: lidar normalized depth float-bit key for atomic nearest-point writes
 END_BINDING();
 
 START_BINDING(LidarCompositeBindings)

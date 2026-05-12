@@ -1,10 +1,6 @@
 #include <algorithm>
-#include <sstream>
 #include <cmath>
-#include <array>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
 #include <string>
 
 #include <glm/glm.hpp>
@@ -57,60 +53,6 @@ bool lidarParamsNearlyEqual(const LidarParams& a, const LidarParams& b, float ep
          && std::fabs(a.maxDistance - b.maxDistance) <= eps;
 }
 
-void appendDlssStatusLog(const std::string& line)
-{
-  const char* statusLogPath = std::getenv("DLSS_RR_STATUS_LOG");
-  if(statusLogPath == nullptr || *statusLogPath == '\0')
-  {
-    return;
-  }
-
-  std::ofstream file(statusLogPath, std::ios::app);
-  if(file)
-  {
-    file << line << '\n';
-  }
-}
-
-void logDlssInfo(const std::string& line)
-{
-  std::cout << line << '\n';
-  appendDlssStatusLog(line);
-}
-
-void logDlssError(const std::string& line)
-{
-  std::cerr << line << '\n';
-  appendDlssStatusLog(line);
-}
-
-float clampDlssScale(float scale)
-{
-  return std::clamp(scale, 0.1f, 1.0f);
-}
-
-dlss::PerfQuality dlssPerfQualityForScale(float scale)
-{
-  const float clamped = clampDlssScale(scale);
-  if(clamped >= 0.999f)
-  {
-    return dlss::PerfQuality::DLAA;
-  }
-  if(clamped >= 0.625f)
-  {
-    return dlss::PerfQuality::MaxQuality;
-  }
-  if(clamped >= 0.5417f)
-  {
-    return dlss::PerfQuality::Balanced;
-  }
-  if(clamped >= 0.4167f)
-  {
-    return dlss::PerfQuality::MaxPerformance;
-  }
-  return dlss::PerfQuality::UltraPerformance;
-}
-
 bool requiresDedicatedImageAllocation(VkDevice device, VkImage image)
 {
   if(device == VK_NULL_HANDLE || image == VK_NULL_HANDLE)
@@ -136,23 +78,6 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_debug.setup(m_device);
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
   m_sharedAlloc.init(device, physicalDevice);
-  if(const char* enableDlssEnv = std::getenv("ENABLE_DLSS_RR"))
-  {
-    m_enableDlssRR = std::string(enableDlssEnv) != "0";
-  }
-  if(const char* enableDlssSrEnv = std::getenv("ENABLE_DLSS_SR"))
-  {
-    m_enableDlssSR = std::string(enableDlssSrEnv) != "0";
-  }
-  if(const char* dlssScaleEnv = std::getenv("DLSS_SR_SCALE"))
-  {
-    char* end = nullptr;
-    float scale = std::strtof(dlssScaleEnv, &end);
-    if(end != dlssScaleEnv && end != nullptr && *end == '\0')
-    {
-      m_dlssSRScale = clampDlssScale(scale);
-    }
-  }
   if(const char* sppEnv = std::getenv("RT_SPP"))
   {
     char* end = nullptr;
@@ -175,8 +100,6 @@ void HelloVulkan::resetAccumulation()
 void HelloVulkan::resetFrameHistory()
 {
   resetAccumulation();
-  m_dlssResetRequested = true;
-  m_dlssHasHistory     = false;
 }
 
 std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
@@ -188,8 +111,8 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
   switch(aov)
   {
     case HeadlessAov::Color:
-      texture = &m_offscreenDenoised;
-      format  = m_offscreenDenoisedFormat;
+      texture = &m_offscreenColor;
+      format  = m_offscreenColorFormat;
       extent  = m_size;
       break;
     case HeadlessAov::PrimId:
@@ -241,17 +164,6 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
   return result;
 }
 
-void HelloVulkan::setDlssSRScale(float scale)
-{
-  const float clamped = clampDlssScale(scale);
-  if(std::fabs(m_dlssSRScale - clamped) > 1e-6f)
-  {
-    m_dlssSRScale = clamped;
-    refreshOffscreenRenderTargetsIfNeeded();
-    resetFrameHistory();
-  }
-}
-
 void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   const float safeStart = std::max(clipStart, 0.001f);
@@ -300,33 +212,8 @@ void HelloVulkan::setLidarEnabled(bool enabled)
   }
 }
 
-dlss::PerfQuality HelloVulkan::desiredDlssPerfQuality() const
-{
-  if(!m_enableDlssSR || m_dlssSRScale >= 0.999f)
-  {
-    return dlss::PerfQuality::DLAA;
-  }
-  return dlssPerfQualityForScale(m_dlssSRScale);
-}
-
 VkExtent2D HelloVulkan::computeRenderSize()
 {
-  m_dlssRRSizeSupported = false;
-
-  if(!m_enableDlssRR || !m_dlssRR.isOperational() || m_size.width == 0 || m_size.height == 0)
-  {
-    return m_size;
-  }
-
-  m_dlssRRPerfQuality = desiredDlssPerfQuality();
-
-  dlss::OptimalSettings settings{};
-  if(m_dlssRR.queryOptimalSettings(m_size.width, m_size.height, m_dlssRRPerfQuality, settings))
-  {
-    m_dlssRRSizeSupported = true;
-    return {settings.renderWidth, settings.renderHeight};
-  }
-
   return m_size;
 }
 
@@ -477,8 +364,6 @@ void HelloVulkan::createObjDescriptionBuffer()
 
 void HelloVulkan::destroyResources()
 {
-  m_dlssRR.shutdown();
-
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
 
@@ -500,8 +385,6 @@ void HelloVulkan::destroyResources()
 
   m_alloc.destroy(m_offscreenDepth);
   m_sharedAlloc.destroy(m_offscreenColor);
-  m_sharedAlloc.destroy(m_offscreenDlssOutput);
-  m_sharedAlloc.destroy(m_offscreenDenoised);
   m_sharedAlloc.destroy(m_offscreenObjectId);
   m_sharedAlloc.destroy(m_offscreenInstanceId);
   m_sharedAlloc.destroy(m_offscreenDiffuseAlbedo);
@@ -511,7 +394,6 @@ void HelloVulkan::destroyResources()
   m_sharedAlloc.destroy(m_offscreenLinearDepth);
   m_sharedAlloc.destroy(m_offscreenDepthAov);
   m_sharedAlloc.destroy(m_offscreenSpecularHitDistance);
-  m_sharedAlloc.destroy(m_offscreenDistanceToCamera);
   m_sharedAlloc.destroy(m_offscreenLidarPointCloud);
   m_sharedAlloc.destroy(m_offscreenLidarPointCloudDepthKey);
   m_sharedAlloc.deinit();
@@ -582,15 +464,8 @@ void HelloVulkan::createOffscreenRender()
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
   createOffscreenImage(m_offscreenColor, m_offscreenColorFormat,
-                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                       kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                        m_renderSize);
-  createOffscreenImage(m_offscreenDlssOutput, m_offscreenDlssOutputFormat,
-                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                       m_size);
-  createOffscreenImage(m_offscreenDenoised, m_offscreenDenoisedFormat,
-                       kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_size);
   createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                        m_aovSize);
   createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kAovUsage, m_aovSize);
@@ -601,7 +476,6 @@ void HelloVulkan::createOffscreenRender()
   createOffscreenImage(m_offscreenLinearDepth, m_offscreenLinearDepthFormat, kAovUsage, m_renderSize);
   createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kAovUsage, m_aovSize);
   createOffscreenImage(m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat, kAovUsage, m_renderSize);
-  createOffscreenImage(m_offscreenDistanceToCamera, m_offscreenDistanceToCameraFormat, kAovUsage, m_aovSize);
   createOffscreenImage(m_offscreenLidarPointCloud, m_offscreenLidarPointCloudFormat,
                        kAovUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_aovSize);
   createOffscreenImage(m_offscreenLidarPointCloudDepthKey, m_offscreenLidarPointCloudDepthKeyFormat,
@@ -626,8 +500,6 @@ void HelloVulkan::createOffscreenRender()
     nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
     auto              cmdBuf = genCmdBuf.createCommandBuffer();
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDlssOutput.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDenoised.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepth.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -640,8 +512,6 @@ void HelloVulkan::createOffscreenRender()
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepthAov.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenSpecularHitDistance.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDistanceToCamera.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloud.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenLidarPointCloudDepthKey.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_GENERAL);
@@ -649,217 +519,4 @@ void HelloVulkan::createOffscreenRender()
   }
 
   resetFrameHistory();
-}
-
-void HelloVulkan::createDlssRR()
-{
-  if(!m_dlssRR.isApiEnabled())
-  {
-    logDlssError("[DLSS-RR] disabled: API support not compiled in binary");
-    return;
-  }
-
-  if(!m_enableDlssRR)
-  {
-    m_dlssRR.shutdown();
-    logDlssInfo("[DLSS-RR] disabled by runtime switch ENABLE_DLSS_RR=0");
-    return;
-  }
-
-  dlss::InitInputs init{};
-  init.instance          = m_instance;
-  init.physicalDevice    = m_physicalDevice;
-  init.device            = m_device;
-  if(const char* appDataPath = std::getenv("DLSS_RR_APPDATA_PATH"); appDataPath != nullptr && *appDataPath != '\0')
-  {
-    init.applicationDataPath = appDataPath;
-  }
-  else
-  {
-    init.applicationDataPath = "output/ngx";
-  }
-
-#if defined(DLSS_RR_DEFAULT_NGX_PATH)
-  if(std::char_traits<char>::length(DLSS_RR_DEFAULT_NGX_PATH) != 0)
-  {
-    init.featureSearchPaths.emplace_back(DLSS_RR_DEFAULT_NGX_PATH);
-  }
-#endif
-
-  if(!m_dlssRR.initialize(init))
-  {
-    logDlssError(std::string("[DLSS-RR] disabled: ") + m_dlssRR.getLastError());
-    return;
-  }
-
-  logDlssInfo(std::string("[DLSS-RR] enabled: appDataPath=") + init.applicationDataPath);
-  resetFrameHistory();
-  refreshOffscreenRenderTargetsIfNeeded();
-}
-
-void HelloVulkan::runDlssRR(const VkCommandBuffer& cmdBuf)
-{
-  if(cmdBuf == VK_NULL_HANDLE)
-  {
-    return;
-  }
-
-  std::array<VkImageMemoryBarrier, 8> preEvalBarriers{
-      makeGeneralColorImageBarrier(m_offscreenColor.image,
-                                   VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT
-                                       | VK_ACCESS_TRANSFER_WRITE_BIT,
-                                   VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT),
-      makeGeneralColorImageBarrier(m_offscreenDlssOutput.image,
-                                   VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT
-                                       | VK_ACCESS_TRANSFER_WRITE_BIT,
-                                   VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT),
-      makeGeneralColorImageBarrier(m_offscreenDiffuseAlbedo.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT),
-      makeGeneralColorImageBarrier(m_offscreenSpecularAlbedo.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT),
-      makeGeneralColorImageBarrier(m_offscreenNormalRoughness.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT),
-      makeGeneralColorImageBarrier(m_offscreenMotionVector.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT),
-      makeGeneralColorImageBarrier(m_offscreenLinearDepth.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT),
-      makeGeneralColorImageBarrier(m_offscreenSpecularHitDistance.image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT),
-  };
-
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
-                       nullptr, static_cast<uint32_t>(preEvalBarriers.size()), preEvalBarriers.data());
-
-  auto fillImageInput = [](dlss::ImageInput& input, const nvvk::Texture& texture, VkFormat format) {
-    input.image  = texture.image;
-    input.view   = texture.descriptor.imageView;
-    input.format = format;
-    input.layout = VK_IMAGE_LAYOUT_GENERAL;
-  };
-
-  dlss::EvaluateInputs eval{};
-  eval.cmd         = cmdBuf;
-  eval.renderWidth = m_renderSize.width;
-  eval.renderHeight = m_renderSize.height;
-  eval.targetWidth = m_size.width;
-  eval.targetHeight = m_size.height;
-  eval.perfQuality = m_dlssRRPerfQuality;
-  eval.reset       = m_dlssResetRequested || !m_dlssHasHistory;
-  eval.jitterX     = -m_currentJitter.x;
-  eval.jitterY     = -m_currentJitter.y;
-  eval.frameTimeMs = 16.6667f;
-  eval.worldToView = m_lastView;
-  eval.viewToClip  = m_lastProj;
-
-  fillImageInput(eval.color, m_offscreenColor, m_offscreenColorFormat);
-  fillImageInput(eval.output, m_offscreenDlssOutput, m_offscreenDlssOutputFormat);
-  fillImageInput(eval.diffuseAlbedo, m_offscreenDiffuseAlbedo, m_offscreenDiffuseAlbedoFormat);
-  fillImageInput(eval.specularAlbedo, m_offscreenSpecularAlbedo, m_offscreenSpecularAlbedoFormat);
-  fillImageInput(eval.normalsRoughness, m_offscreenNormalRoughness, m_offscreenNormalRoughnessFormat);
-  fillImageInput(eval.motionVectors, m_offscreenMotionVector, m_offscreenMotionVectorFormat);
-  fillImageInput(eval.depth, m_offscreenLinearDepth, m_offscreenLinearDepthFormat);
-  fillImageInput(eval.specularHitDistance, m_offscreenSpecularHitDistance, m_offscreenSpecularHitDistanceFormat);
-
-  static bool reportedFailure = false;
-  static bool reportedSuccess = false;
-  bool        dlssApplied     = false;
-  if(m_enableDlssRR && m_dlssRR.isOperational() && m_dlssRRSizeSupported)
-  {
-    if(!m_dlssRR.evaluate(eval))
-    {
-      if(!reportedFailure)
-      {
-        logDlssError(std::string("[DLSS-RR] evaluate failed: ") + m_dlssRR.getLastError());
-        reportedFailure = true;
-      }
-      reportedSuccess = false;
-    }
-    else
-    {
-      reportedFailure = false;
-      dlssApplied     = true;
-      m_dlssResetRequested = false;
-      m_dlssHasHistory     = true;
-      if(!reportedSuccess)
-      {
-        logDlssInfo("[DLSS-RR] evaluate active");
-        reportedSuccess = true;
-      }
-    }
-  }
-  else
-  {
-    reportedFailure = false;
-    reportedSuccess = false;
-  }
-
-  if(dlssApplied)
-  {
-    std::array<VkImageMemoryBarrier, 2> toCopyBarriers{
-        makeColorImageBarrier(m_offscreenDlssOutput.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-                              VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
-        makeColorImageBarrier(
-            m_offscreenDenoised.image,
-            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
-    };
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
-                         static_cast<uint32_t>(toCopyBarriers.size()), toCopyBarriers.data());
-
-    VkImageCopy region{};
-    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.extent         = {m_size.width, m_size.height, 1};
-    vkCmdCopyImage(cmdBuf, m_offscreenDlssOutput.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_offscreenDenoised.image,
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    std::array<VkImageMemoryBarrier, 2> restoreBarriers{
-        makeColorImageBarrier(m_offscreenDlssOutput.image, VK_ACCESS_TRANSFER_READ_BIT,
-                              VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                              VK_IMAGE_LAYOUT_GENERAL),
-        makeColorImageBarrier(m_offscreenDenoised.image, VK_ACCESS_TRANSFER_WRITE_BIT,
-                              VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_IMAGE_LAYOUT_GENERAL),
-    };
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr,
-                         static_cast<uint32_t>(restoreBarriers.size()), restoreBarriers.data());
-    return;
-  }
-
-  std::array<VkImageMemoryBarrier, 2> toCopyBarriers{
-      makeColorImageBarrier(m_offscreenColor.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-                            VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
-      makeColorImageBarrier(m_offscreenDenoised.image, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-                            VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
-  };
-
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
-                       static_cast<uint32_t>(toCopyBarriers.size()), toCopyBarriers.data());
-
-  if(m_renderSize.width == m_size.width && m_renderSize.height == m_size.height)
-  {
-    VkImageCopy region{};
-    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.extent         = {m_size.width, m_size.height, 1};
-    vkCmdCopyImage(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_offscreenDenoised.image,
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-  }
-  else
-  {
-    VkImageBlit region{};
-    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.srcOffsets[1]  = {static_cast<int32_t>(m_renderSize.width), static_cast<int32_t>(m_renderSize.height), 1};
-    region.dstOffsets[1]  = {static_cast<int32_t>(m_size.width), static_cast<int32_t>(m_size.height), 1};
-
-    vkCmdBlitImage(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_offscreenDenoised.image,
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, VK_FILTER_LINEAR);
-  }
-
-  std::array<VkImageMemoryBarrier, 2> restoreBarriers{
-      makeColorImageBarrier(m_offscreenColor.image, VK_ACCESS_TRANSFER_READ_BIT,
-                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                            VK_IMAGE_LAYOUT_GENERAL),
-      makeColorImageBarrier(m_offscreenDenoised.image, VK_ACCESS_TRANSFER_WRITE_BIT,
-                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                            VK_IMAGE_LAYOUT_GENERAL),
-  };
-
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr,
-                       static_cast<uint32_t>(restoreBarriers.size()), restoreBarriers.data());
 }

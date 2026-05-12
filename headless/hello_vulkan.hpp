@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aov_texture.hpp"
-#include "dlss/dlss_rr.hpp"
 
 #include "headless_vk.hpp"
 #include "nvvk/debug_util_vk.hpp"
@@ -112,7 +111,6 @@ public:
   void     compositeLidar(const VkCommandBuffer& cmdBuf);
   void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
-  // Reset DLSS temporal history in addition to progressive accumulation.
   void     resetFrameHistory();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
   float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
@@ -198,41 +196,6 @@ public:
 
   void saveOffscreenColorToFile(const char* filename);
 
-  void createDlssRR();
-  void runDlssRR(const VkCommandBuffer& cmdBuf);
-  void setDlssRREnabled(bool enabled)
-  {
-    if(m_enableDlssRR != enabled)
-    {
-      m_enableDlssRR = enabled;
-      if(m_enableDlssRR)
-      {
-        if(!m_dlssRR.isOperational())
-        {
-          createDlssRR();
-        }
-      }
-      else
-      {
-        m_dlssRR.shutdown();
-      }
-      refreshOffscreenRenderTargetsIfNeeded();
-      resetFrameHistory();
-    }
-  }
-  bool isDlssRREnabled() const { return m_enableDlssRR; }
-  void setDlssSREnabled(bool enabled)
-  {
-    if(m_enableDlssSR != enabled)
-    {
-      m_enableDlssSR = enabled;
-      refreshOffscreenRenderTargetsIfNeeded();
-      resetFrameHistory();
-    }
-  }
-  bool isDlssSREnabled() const { return m_enableDlssSR; }
-  void setDlssSRScale(float scale);
-  float getDlssSRScale() const { return m_dlssSRScale; }
   void setSamplesPerFrame(int spp)
   {
     if(spp < 1)
@@ -256,10 +219,6 @@ public:
 
   nvvk::Texture          m_offscreenColor;
   VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  nvvk::Texture          m_offscreenDlssOutput;
-  VkFormat               m_offscreenDlssOutputFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  nvvk::Texture          m_offscreenDenoised;
-  VkFormat               m_offscreenDenoisedFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
 
   nvvk::Texture          m_offscreenObjectId;
   VkFormat               m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
@@ -288,21 +247,12 @@ public:
   nvvk::Texture          m_offscreenSpecularHitDistance;
   VkFormat               m_offscreenSpecularHitDistanceFormat{VK_FORMAT_R32_SFLOAT};
 
-  nvvk::Texture          m_offscreenDistanceToCamera;
-  VkFormat               m_offscreenDistanceToCameraFormat{VK_FORMAT_R32_SFLOAT};
-
   nvvk::Texture          m_offscreenLidarPointCloud;
   VkFormat               m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
   nvvk::Texture          m_offscreenLidarPointCloudDepthKey;
   VkFormat               m_offscreenLidarPointCloudDepthKeyFormat{VK_FORMAT_R32_UINT};
 
   mutable nvvk::ExportResourceAllocatorDedicated m_sharedAlloc;
-  dlss::DlssRR                                  m_dlssRR;
-  bool                                          m_enableDlssRR{true};
-  bool                                          m_enableDlssSR{true};
-  float                                         m_dlssSRScale{0.6f};
-  bool                                          m_dlssRRSizeSupported{false};
-  dlss::PerfQuality                             m_dlssRRPerfQuality{dlss::PerfQuality::Balanced};
   VkExtent2D                                    m_renderSize{0, 0};
   VkExtent2D                                    m_aovSize{0, 0};
   float                                         m_mainCameraClipStart{0.1f};
@@ -348,7 +298,6 @@ private:
                             VkFormat          format,
                             VkImageUsageFlags usage,
                             VkExtent2D        extent = {0, 0});
-  dlss::PerfQuality desiredDlssPerfQuality() const;
   VkExtent2D computeRenderSize();
   void       refreshOffscreenRenderTargetsIfNeeded();
   void       refreshOffscreenRenderTargetDescriptors();
@@ -357,8 +306,6 @@ private:
 
   uint32_t  m_accumulatedFrames{0};
   uint32_t  m_frameIndex{0};  // Monotonic jitter/RNG frame index; not reset by camera motion.
-  bool      m_dlssResetRequested{true};
-  bool      m_dlssHasHistory{false};
   glm::vec2 m_currentJitter{0.0f};
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};

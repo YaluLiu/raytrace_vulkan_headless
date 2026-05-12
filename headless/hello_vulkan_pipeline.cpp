@@ -60,8 +60,6 @@ void HelloVulkan::createRtDescriptorSet()
                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eSpecularHitDistImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-  m_rtDescSetLayoutBind.addBinding(RtxBindings::eDistanceToCameraImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                   VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eLidarPointCloudImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
                                    VK_SHADER_STAGE_RAYGEN_BIT_KHR);
   m_rtDescSetLayoutBind.addBinding(RtxBindings::eDepthImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
@@ -90,7 +88,6 @@ void HelloVulkan::createRtDescriptorSet()
   VkDescriptorImageInfo linearDepthInfo{{}, m_offscreenLinearDepth.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo depthAovInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo specHitDistanceInfo{{}, m_offscreenSpecularHitDistance.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo distanceToCameraInfo{{}, m_offscreenDistanceToCamera.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   std::vector<VkWriteDescriptorSet> writes;
@@ -104,7 +101,6 @@ void HelloVulkan::createRtDescriptorSet()
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eMotionVectorImage, &motionInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLinearDepthImage, &linearDepthInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eSpecularHitDistImage, &specHitDistanceInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDistanceToCameraImage, &distanceToCameraInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLidarPointCloudImage, &lidarPointCloudInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDepthImage, &depthAovInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
@@ -122,7 +118,6 @@ void HelloVulkan::updateRtDescriptorSet()
   VkDescriptorImageInfo linearDepthInfo{{}, m_offscreenLinearDepth.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo depthAovInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo specHitDistanceInfo{{}, m_offscreenSpecularHitDistance.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
-  VkDescriptorImageInfo distanceToCameraInfo{{}, m_offscreenDistanceToCamera.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
 
   std::vector<VkWriteDescriptorSet> writes;
@@ -135,7 +130,6 @@ void HelloVulkan::updateRtDescriptorSet()
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eMotionVectorImage, &motionInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLinearDepthImage, &linearDepthInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eSpecularHitDistImage, &specHitDistanceInfo));
-  writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDistanceToCameraImage, &distanceToCameraInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eLidarPointCloudImage, &lidarPointCloudInfo));
   writes.emplace_back(m_rtDescSetLayoutBind.makeWrite(m_rtDescSet, RtxBindings::eDepthImage, &depthAovInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);

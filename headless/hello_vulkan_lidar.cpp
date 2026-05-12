@@ -338,7 +338,7 @@ void HelloVulkan::createLidarCompositePipeline()
 
 void HelloVulkan::updateLidarCompositeDescriptorSet()
 {
-  VkDescriptorImageInfo denoisedInfo{{}, m_offscreenDenoised.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
+  VkDescriptorImageInfo colorInfo{{}, m_offscreenColor.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarPointCloudInfo{{}, m_offscreenLidarPointCloud.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo depthInfo{{}, m_offscreenDepthAov.descriptor.imageView, VK_IMAGE_LAYOUT_GENERAL};
   VkDescriptorImageInfo lidarDepthKeyInfo{{}, m_offscreenLidarPointCloudDepthKey.descriptor.imageView,
@@ -346,7 +346,7 @@ void HelloVulkan::updateLidarCompositeDescriptorSet()
 
   std::array<VkWriteDescriptorSet, 4> writes{
       m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet, LidarCompositeBindings::eCompositeDenoisedImage,
-                                                  &denoisedInfo),
+                                                  &colorInfo),
       m_lidarCompositeDescSetLayoutBind.makeWrite(m_lidarCompositeDescSet,
                                                   LidarCompositeBindings::eCompositeLidarPointCloudImage,
                                                   &lidarPointCloudInfo),
@@ -369,7 +369,7 @@ void HelloVulkan::compositeLidar(const VkCommandBuffer& cmdBuf)
 
   m_debug.beginLabel(cmdBuf, "Lidar composite");
 
-  insertGeneralImageBarrier(cmdBuf, m_offscreenDenoised.image,
+  insertGeneralImageBarrier(cmdBuf, m_offscreenColor.image,
                             VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
@@ -392,7 +392,7 @@ void HelloVulkan::compositeLidar(const VkCommandBuffer& cmdBuf)
   const uint32_t     groupY     = (m_size.height + kLocalSize - 1) / kLocalSize;
   vkCmdDispatch(cmdBuf, groupX, groupY, 1);
 
-  insertGeneralImageBarrier(cmdBuf, m_offscreenDenoised.image, VK_ACCESS_SHADER_WRITE_BIT,
+  insertGeneralImageBarrier(cmdBuf, m_offscreenColor.image, VK_ACCESS_SHADER_WRITE_BIT,
                             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
   insertGeneralImageBarrier(cmdBuf, m_offscreenLidarPointCloud.image, VK_ACCESS_SHADER_WRITE_BIT,

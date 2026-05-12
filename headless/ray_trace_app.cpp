@@ -4,22 +4,12 @@
 #include <cassert>
 #include <array>
 #include <cstdlib>
-#include <iostream>
 #include <stdexcept>
-#include <unordered_set>
 #include "ray_trace_app.hpp"
 
 #include <algorithm>
 #include <filesystem>
 #include <utility>
-
-#ifndef ENABLE_DLSS_RR
-#define ENABLE_DLSS_RR 0
-#endif
-
-#if ENABLE_DLSS_RR
-#include "nvsdk_ngx_vk.h"
-#endif
 
 #include "obj_loader.h"
 
@@ -34,16 +24,15 @@ enum class HeadlessRenderPass
   UpdateLights,
   UpdateInstanceIds,
   RayTrace,
-  DlssResolve,
   LidarPointCloud,
   HeightScanPointCloud,
   LidarComposite,
 };
 
-constexpr std::array<HeadlessRenderPass, 8> kHeadlessRenderPassSequence{
+constexpr std::array<HeadlessRenderPass, 7> kHeadlessRenderPassSequence{
     HeadlessRenderPass::UpdateUniforms,        HeadlessRenderPass::UpdateLights,
     HeadlessRenderPass::UpdateInstanceIds,     HeadlessRenderPass::RayTrace,
-    HeadlessRenderPass::DlssResolve,           HeadlessRenderPass::LidarPointCloud,
+    HeadlessRenderPass::LidarPointCloud,
     HeadlessRenderPass::HeightScanPointCloud,  HeadlessRenderPass::LidarComposite,
 };
 
@@ -106,9 +95,6 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
     case HeadlessRenderPass::RayTrace:
       renderer.raytrace(cmdBuf);
       break;
-    case HeadlessRenderPass::DlssResolve:
-      renderer.runDlssRR(cmdBuf);
-      break;
     case HeadlessRenderPass::LidarPointCloud:
       renderer.renderLidarPointCloud(cmdBuf);
       break;
@@ -120,77 +106,6 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
       break;
   }
 }
-
-#if ENABLE_DLSS_RR
-bool isDlssRuntimeEnabled()
-{
-  const char* envValue = std::getenv("ENABLE_DLSS_RR");
-  return envValue == nullptr || std::string(envValue) != "0";
-}
-
-void addNgxRequiredExtensions(nvvk::ContextCreateInfo& contextInfo)
-{
-  std::unordered_set<std::string> instanceExtensions;
-  std::unordered_set<std::string> deviceExtensions;
-
-  auto addInstance = [&](const char* extName) {
-    if(extName == nullptr || *extName == '\0')
-    {
-      return;
-    }
-    if(instanceExtensions.insert(extName).second)
-    {
-      contextInfo.addInstanceExtension(extName);
-    }
-  };
-
-  auto addDevice = [&](const char* extName) {
-    if(extName == nullptr || *extName == '\0')
-    {
-      return;
-    }
-    if(deviceExtensions.insert(extName).second)
-    {
-      contextInfo.addDeviceExtension(extName, true);
-    }
-  };
-
-  unsigned int instanceExtCount = 0;
-  unsigned int deviceExtCount   = 0;
-  const char** instanceExts     = nullptr;
-  const char** deviceExts       = nullptr;
-
-  const NVSDK_NGX_Result reqResult =
-      NVSDK_NGX_VULKAN_RequiredExtensions(&instanceExtCount, &instanceExts, &deviceExtCount, &deviceExts);
-
-  if(reqResult == NVSDK_NGX_Result_Success)
-  {
-    for(unsigned int i = 0; i < instanceExtCount; ++i)
-    {
-      addInstance(instanceExts[i]);
-    }
-    for(unsigned int i = 0; i < deviceExtCount; ++i)
-    {
-      addDevice(deviceExts[i]);
-    }
-  }
-  else
-  {
-    std::cerr << "[DLSS-RR] warning: NVSDK_NGX_VULKAN_RequiredExtensions failed (code=" << static_cast<int>(reqResult)
-              << "), using fallback extension list\n";
-  }
-
-#if defined(VK_NVX_BINARY_IMPORT_EXTENSION_NAME)
-  addDevice(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
-#endif
-#if defined(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME)
-  addDevice(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
-#endif
-#if defined(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME)
-  addDevice(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-#endif
-}
-#endif
 }
 
 RayTraceApp::RayTraceApp() {}
@@ -265,13 +180,6 @@ void RayTraceApp::setupContext()
   contextInfo.addDeviceExtension(VK_NV_RAY_TRACING_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
-#if ENABLE_DLSS_RR
-  if(isDlssRuntimeEnabled())
-  {
-    addNgxRequiredExtensions(contextInfo);
-  }
-#endif
-
   if(!m_vkctx.initInstance(contextInfo))
   {
     throw std::runtime_error("Failed to initialize Vulkan instance");
@@ -304,7 +212,6 @@ void RayTraceApp::setupHelloVulkan()
 void RayTraceApp::createBVH()
 {
   m_helloVk.createOffscreenRender();
-  m_helloVk.createDlssRR();
   m_helloVk.createLightBuffer();
   m_helloVk.createInstanceIdBuffer();
 

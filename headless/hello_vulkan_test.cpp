@@ -170,7 +170,7 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   VkQueue  queue  = m_queue;
 
   VkExtent2D extent    = m_size;
-  VkImage    srcImage  = m_offscreenDenoised.image;
+  VkImage    srcImage  = m_offscreenColor.image;
   uint32_t   w         = extent.width;
   uint32_t   h         = extent.height;
   size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT
