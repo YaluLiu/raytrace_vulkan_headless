@@ -20,8 +20,6 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../headless")
 
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_lidar.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/hello_vulkan_height_scan.cpp")
 list(REMOVE_DUPLICATES SOURCE_FILES)
 file(GLOB EXTRA_COMMON ${TUTO_KHR_DIR}/common/*.*)
 list(APPEND COMMON_SOURCE_FILES ${EXTRA_COMMON})

@@ -17,8 +17,6 @@ call sites with `rg`.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
-- `docs/PLAN/materialx-rendering-plan.md`: Current OpenChessSet MaterialX
-  support scope, approximations, and regression commands.
 
 ## Build And Test Routing
 
@@ -57,13 +55,12 @@ call sites with `rg`.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   camera/light/material/mesh update paths, and accumulation invalidation.
 - `headless/hello_vulkan_mesh.cpp`: Mesh upload, raster instance
-  transform/visibility updates, geometry conversion helpers still awaiting RT
-  removal, and mesh-driven accumulation reset paths.
+  transform/visibility updates, geometry buffer refresh, and mesh-driven
+  accumulation reset paths.
 - `headless/hello_vulkan_material.cpp`: Material loading, material buffer
   updates, and model loading into the renderer.
-- `headless/hello_vulkan_pipeline.cpp`: Current raster graphics pipeline,
-  framebuffer creation, draw loop, shared scene descriptor set updates, and
-  older RT pipeline helpers still pending deletion.
+- `headless/hello_vulkan_pipeline.cpp`: Raster graphics pipeline,
+  framebuffer creation, draw loop, and shared scene descriptor set updates.
 - `headless/hello_vulkan_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `headless/headless_vk.cpp`: Headless Vulkan offline app context support.
 
@@ -76,20 +73,13 @@ call sites with `rg`.
 - `headless/hello_vulkan.hpp`: Offscreen color/depth/id texture state and
   public AOV access surface.
 
-## LiDAR Rendering
+## Raster Baseline
 
-- `headless/hello_vulkan_lidar.cpp`: Legacy LiDAR ray tracing and composite
-  helpers. The main frame pass no longer invokes this path in the raster
-  baseline; deletion or replacement is tracked separately.
-- `headless/hello_vulkan_height_scan.cpp`: Height scan ray tracing pipeline,
-  shader binding table setup, height scan ray dispatch, and related barriers.
-  The main frame pass no longer invokes this path in the raster baseline.
-- `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
-- `headless/shaders/raytrace_height_scan.rgen`: Height scan ray generation
-  shader; casts default XZ-grid rays into the scene and writes the shared
-  point-cloud depth key.
-- `headless/shaders/lidar_pointcloud.glsl`: LiDAR point cloud shader.
-- `headless/shaders/lidar_composite.comp`: LiDAR composite compute shader.
+- `headless/shaders/raster.vert`: Active mesh vertex shader.
+- `headless/shaders/raster.frag`: Active mesh fragment shader for color,
+  primitive ID, instance ID, and depth AOV writes.
+- `headless/shaders/host_device.h`: Shared raster descriptor bindings,
+  material structs, frame uniforms, and push constants.
 
 ## Hydra Delegate
 
@@ -98,10 +88,9 @@ call sites with `rg`.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/headlessRenderBridge.h` / `hdRobot/headlessRenderBridge.cpp`:
-  Converts Hydra frame state into `HelloVulkan` updates and render calls,
-  including LiDAR and height scan sensor forwarding.
+  Converts Hydra frame state into `HelloVulkan` updates and render calls.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object, LiDAR/height scan sensor state, and renderer bridge
+  parameter object, scene dirty flags, texture registry, and renderer bridge
   ownership.
 - `hdRobot/renderSettings.h` / `hdRobot/renderSettings.cpp`: Render setting
   tokens, parsing, and application helpers.
@@ -120,10 +109,11 @@ call sites with `rg`.
   standard surface/OpenPBR and selected BSDF/EDF input rules, upstream texture
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
-- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
-  conversion, and LiDAR/height scan sensor parameter reads.
+- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
+  conversion.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
-- `hdRobot/points.h` / `hdRobot/points.cpp`: Points primitive support.
+- `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
+  minimal raster path currently does not draw points.
 - `hdRobot/instancer.h` / `hdRobot/instancer.cpp`: Hydra instancer support.
 - `hdRobot/sceneData.h` / `hdRobot/sceneData.cpp`: Shared scene data helpers.
 
@@ -158,27 +148,13 @@ call sites with `rg`.
 ## Shader Files
 
 - `headless/shaders/host_device.h`: Shared host/device structs and constants.
-  `FrameUniforms` carries independent main, LiDAR, and height scan camera
-  uniform state; `PushConstantRaster` carries per-draw model/object/instance
-  data for the raster path.
+  `FrameUniforms` carries the active camera state; `PushConstantRaster`
+  carries per-draw model/object/instance data for the raster path.
 - `headless/shaders/raster.vert`: Minimal raster vertex shader for mesh
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.
 - `headless/shaders/raster.frag`: Minimal raster fragment shader writing color,
   primId, instanceId, and normalized depth AOV attachments.
-- `headless/shaders/raycommon.glsl`: Common ray tracing shader helpers.
-- `headless/shaders/raytrace.rgen`: Main ray generation shader.
-- `headless/shaders/raytrace.rchit`: Main closest-hit shader.
-- `headless/shaders/raytrace.rmiss`: Main miss shader.
-- `headless/shaders/raytraceShadow.rmiss`: Shadow miss shader.
-- `headless/shaders/raytrace.rint`: Intersection shader.
-- `headless/shaders/raytrace2.rchit`: Additional closest-hit shader variant.
-- `headless/shaders/wavefront.glsl`: Wavefront helper shader code.
-- `headless/shaders/raytrace_lidar.rgen`: LiDAR ray generation shader.
-- `headless/shaders/raytrace_height_scan.rgen`: Height scan ray generation
-  shader.
-- `headless/shaders/lidar_pointcloud.glsl`: LiDAR point cloud shader.
-- `headless/shaders/lidar_composite.comp`: LiDAR composite compute shader.
 
 ## Question Routing
 
@@ -196,15 +172,10 @@ call sites with `rg`.
   `headless/aov_texture.hpp`, `headless/hello_vulkan.cpp`,
   `hdRobot/renderTextureExport.cpp`, then search for `GetAovTexture`,
   `HeadlessAov`, and `ExportRenderTexture`.
-- LiDAR:
-  `headless/hello_vulkan_lidar.cpp` and LiDAR shader files, then search for
-  `renderLidarPointCloud`, `updateLidarCamera`, and
-  `updateLidarCompositeDescriptorSet`.
-- Height scan:
-  `headless/hello_vulkan_height_scan.cpp`,
-  `headless/shaders/raytrace_height_scan.rgen`, then search for
-  `renderHeightScanPointCloud`, `updateHeightScanCamera`, and
-  `setHeightScanParams`.
+- Raster pipeline:
+  `headless/hello_vulkan_pipeline.cpp`, `headless/shaders/raster.vert`,
+  `headless/shaders/raster.frag`, then search for `createRasterPipeline`,
+  `createRasterFramebuffer`, and `PushConstantRaster`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
   `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,
@@ -236,28 +207,26 @@ call sites with `rg`.
   `headless/hello_vulkan_material.cpp`, then search for `TextureUsage`,
   `TextureColorSpaceForUsage`, `GetTextureAssets`, and
   `VK_FORMAT_R8G8B8A8_UNORM`.
-- PBR shader lighting:
-  `headless/shaders/raytrace.rchit`, `headless/shaders/wavefront.glsl`,
-  `headless/shaders/raytrace.rgen`, then search for `samplePbrMaterial`,
-  `computePbrDirectLighting`, `firstHitDiffuseValid`, and
-  `firstHitSpecularPad`.
-- Normal map support:
+- Raster shader material sampling:
+  `headless/shaders/raster.frag`, `headless/shaders/host_device.h`, then
+  search for `sampleBaseColor`, `WaveFrontMaterial`, and
+  `baseColorTextureId`.
+- Normal map data flow:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
   `common/data_loader.h`, `headless/shaders/host_device.h`,
-  `headless/shaders/raytrace.rchit`, then search for `tangent`,
-  `bitangentSigns`, and `sampleNormalMap`.
+  `headless/shaders/raster.vert`, then search for `tangent`,
+  `bitangentSigns`, and `normalTextureId`.
 - Advanced MaterialX inputs:
   `hdRobot/materialXParser.cpp`, `hdRobot/sceneData.h`,
   `hdRobot/sceneData.cpp`, `common/data_loader.h`,
-  `headless/shaders/host_device.h`, `headless/shaders/raytrace.rchit`,
-  `headless/shaders/wavefront.glsl`, then search for `transmissionFactor`,
+  `headless/shaders/host_device.h`, then search for `transmissionFactor`,
   `transmissionColorFactor`, `subsurfaceFactor`, `subsurfaceTextureId`, and
-  `computeSubsurfaceWrap`.
+  the matching material parser fields.
 - Instancers or material subsets:
   `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
   `hdRobot/sceneData.cpp`, `hdRobot/headlessRenderBridge.cpp`, then search
   for `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
-  `materialIds`, and `tlasIds`.
+  `materialIds`, and `rendererInstanceIds`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

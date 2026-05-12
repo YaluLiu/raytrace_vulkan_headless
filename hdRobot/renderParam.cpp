@@ -1,7 +1,5 @@
 #include "renderParam.h"
 
-#include <pxr/base/tf/diagnostic.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 int HdRobotRenderParam::RegisterTexturePath(const std::string& texturePath, TextureUsage usage)
@@ -20,128 +18,47 @@ const std::vector<TextureAsset>& HdRobotRenderParam::GetTextureAssets() const
   return textureRegistry.GetTextureAssets();
 }
 
-void HdRobotRenderParam::UpdateLidarCamera(const SdfPath& cameraId, const HdRobotLidarData& lidarData)
-{
-  std::lock_guard<std::mutex> lock(_lidarMutex);
-
-  if (_hasLidarCamera && _lidarCameraId != cameraId && !_warnedMultipleLidarCameras)
-  {
-    TF_WARN("Multiple lidar cameras are unsupported (%s -> %s). Latest synced camera wins.", _lidarCameraId.GetText(),
-            cameraId.GetText());
-    _warnedMultipleLidarCameras = true;
-  }
-
-  _lidarCameraId = cameraId;
-  _lidarCameraData = lidarData;
-  _hasLidarCamera = true;
-}
-
-void HdRobotRenderParam::ClearLidarCamera(const SdfPath& cameraId)
-{
-  std::lock_guard<std::mutex> lock(_lidarMutex);
-  if (_hasLidarCamera && _lidarCameraId == cameraId)
-  {
-    _lidarCameraId = SdfPath();
-    _lidarCameraData = HdRobotLidarData();
-    _hasLidarCamera = false;
-    _warnedMultipleLidarCameras = false;
-  }
-}
-
-bool HdRobotRenderParam::GetLidarCamera(HdRobotLidarData* lidarData) const
-{
-  std::lock_guard<std::mutex> lock(_lidarMutex);
-  if (!_hasLidarCamera || lidarData == nullptr)
-  {
-    return false;
-  }
-
-  *lidarData = _lidarCameraData;
-  return true;
-}
-
-void HdRobotRenderParam::UpdateHeightScanCamera(const SdfPath& cameraId,
-                                                const HdRobotHeightScanData& heightScanData)
-{
-  std::lock_guard<std::mutex> lock(_heightScanMutex);
-
-  if (_hasHeightScanCamera && _heightScanCameraId != cameraId && !_warnedMultipleHeightScanCameras)
-  {
-    TF_WARN("Multiple height scan cameras are unsupported (%s -> %s). Latest synced camera wins.",
-            _heightScanCameraId.GetText(), cameraId.GetText());
-    _warnedMultipleHeightScanCameras = true;
-  }
-
-  _heightScanCameraId = cameraId;
-  _heightScanCameraData = heightScanData;
-  _hasHeightScanCamera = true;
-}
-
-void HdRobotRenderParam::ClearHeightScanCamera(const SdfPath& cameraId)
-{
-  std::lock_guard<std::mutex> lock(_heightScanMutex);
-  if (_hasHeightScanCamera && _heightScanCameraId == cameraId)
-  {
-    _heightScanCameraId = SdfPath();
-    _heightScanCameraData = HdRobotHeightScanData();
-    _hasHeightScanCamera = false;
-    _warnedMultipleHeightScanCameras = false;
-  }
-}
-
-bool HdRobotRenderParam::GetHeightScanCamera(HdRobotHeightScanData* heightScanData) const
-{
-  std::lock_guard<std::mutex> lock(_heightScanMutex);
-  if (!_hasHeightScanCamera || heightScanData == nullptr)
-  {
-    return false;
-  }
-
-  *heightScanData = _heightScanCameraData;
-  return true;
-}
-
-void HdRobotRenderParam::MarkAllMeshesTlasDirty()
+void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
 {
   for (auto& mesh : v_mesh)
   {
-    mesh.tlas_changed = true;
+    mesh.instance_changed = true;
   }
 }
 
-void HdRobotRenderParam::MarkMeshTlasDirty(size_t meshId)
+void HdRobotRenderParam::MarkMeshInstanceDirty(size_t meshId)
 {
   if (meshId < v_mesh.size())
   {
-    v_mesh[meshId].tlas_changed = true;
+    v_mesh[meshId].instance_changed = true;
   }
 }
 
-void HdRobotRenderParam::MarkMeshBlasDirty(size_t meshId)
+void HdRobotRenderParam::MarkMeshGeometryDirty(size_t meshId)
 {
   if (meshId < v_mesh.size())
   {
-    v_mesh[meshId].blas_changed = true;
+    v_mesh[meshId].geometry_changed = true;
   }
 }
 
-bool HdRobotRenderParam::ConsumeMeshTlasDirty(size_t meshId)
+bool HdRobotRenderParam::ConsumeMeshInstanceDirty(size_t meshId)
 {
-  if (meshId >= v_mesh.size() || !v_mesh[meshId].tlas_changed)
+  if (meshId >= v_mesh.size() || !v_mesh[meshId].instance_changed)
   {
     return false;
   }
-  v_mesh[meshId].tlas_changed = false;
+  v_mesh[meshId].instance_changed = false;
   return true;
 }
 
-bool HdRobotRenderParam::ConsumeMeshBlasDirty(size_t meshId)
+bool HdRobotRenderParam::ConsumeMeshGeometryDirty(size_t meshId)
 {
-  if (meshId >= v_mesh.size() || !v_mesh[meshId].blas_changed)
+  if (meshId >= v_mesh.size() || !v_mesh[meshId].geometry_changed)
   {
     return false;
   }
-  v_mesh[meshId].blas_changed = false;
+  v_mesh[meshId].geometry_changed = false;
   return true;
 }
 

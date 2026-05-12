@@ -25,12 +25,10 @@ private:
   void applyRenderSettings();
   void initOrResize();
   bool updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState);
-  void updateLidarCamera();
-  void updateHeightScanCamera();
   void updateLights();
   void updateScene();
-  void updateBlas();
-  void updateTlas();
+  void updateGeometry();
+  void updateInstances();
   void updateMaterials();
   bool updateActiveRenderTags(const TfTokenVector& renderTags);
   bool isMeshRenderTagMatched(const HydraMesh& mesh) const;

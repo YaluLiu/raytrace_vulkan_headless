@@ -9,9 +9,6 @@
 #include "nvvk/resourceallocator_vk.hpp"
 #include "shaders/host_device.h"
 
-#include "nvvk/raytraceKHR_vk.hpp"
-#include "nvvk/sbtwrapper_vk.hpp"
-
 #include "ModelLoader.h"
 
 struct MaterialUpdate
@@ -24,14 +21,6 @@ struct MaterialUpdate
 class HelloVulkan : public nvvkhl::AppOffline
 {
 public:
-  struct RadarCameraData
-  {
-    glm::vec3 eye{0.0f};
-    glm::vec3 center{0.0f, 0.0f, -1.0f};
-    glm::vec3 up{0.0f, 1.0f, 0.0f};
-    float     fov{60.0f};
-  };
-
   void setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily) override;
   void createDescriptorSetLayout();
   void loadModel(ModelLoader& loader, glm::mat4 transform = glm::mat4(1));
@@ -43,14 +32,6 @@ public:
                            const std::vector<TextureAsset>& textureAssets);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void setMainCameraClipRange(float clipStart, float clipEnd);
-  void setRadarCamera(const RadarCameraData& camera);
-  void setHeightScanCamera(const RadarCameraData& camera);
-  void setRadarLidarParams(const LidarParams& params);
-  void setLidarEnabled(bool enabled);
-  bool isLidarEnabled() const { return m_enableLidar; }
-  void setHeightScanParams(const HeightScanParams& params);
-  void setHeightScanEnabled(bool enabled);
-  bool isHeightScanEnabled() const { return m_enableHeightScan; }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
   std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
@@ -94,85 +75,13 @@ public:
   nvvk::ResourceAllocatorDma m_alloc;
   nvvk::DebugUtil            m_debug;
 
-  void     initRayTracing();
-  auto     objectToVkGeometryKHR(const ObjModel& model);
-  void     createBottomLevelAS();
-  void     createTopLevelAS();
-  void     createRtDescriptorSet();
-  void     updateRtDescriptorSet();
-  void     createRtPipeline();
-  void     createLidarRtDescriptorSet();
-  void     createLidarRtPipeline();
-  void     createLidarRtShaderBindingTable();
-  void     renderLidarPointCloud(const VkCommandBuffer& cmdBuf);
-  void     createHeightScanRtPipeline();
-  void     createHeightScanRtShaderBindingTable();
-  void     renderHeightScanPointCloud(const VkCommandBuffer& cmdBuf);
-  void     createLidarCompositePipeline();
-  void     compositeLidar(const VkCommandBuffer& cmdBuf);
   void     createRasterPipeline();
   void     rasterize(const VkCommandBuffer& cmdBuf);
-  void     raytrace(const VkCommandBuffer& cmdBuf);
   void     resetAccumulation();
   void     resetFrameHistory();
   uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
   float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
   float    getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
-
-  VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-  nvvk::RaytracingBuilderKHR                        m_rtBuilder;
-  nvvk::DescriptorSetBindings                       m_rtDescSetLayoutBind;
-  VkDescriptorPool                                  m_rtDescPool{VK_NULL_HANDLE};
-  VkDescriptorSetLayout                             m_rtDescSetLayout{VK_NULL_HANDLE};
-  VkDescriptorSet                                   m_rtDescSet{VK_NULL_HANDLE};
-  std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_rtShaderGroups;
-  VkPipelineLayout                                  m_rtPipelineLayout{VK_NULL_HANDLE};
-  VkPipeline                                        m_rtPipeline{VK_NULL_HANDLE};
-
-  nvvk::DescriptorSetBindings                       m_lidarRtDescSetLayoutBind;
-  VkDescriptorPool                                  m_lidarRtDescPool{VK_NULL_HANDLE};
-  VkDescriptorSetLayout                             m_lidarRtDescSetLayout{VK_NULL_HANDLE};
-  VkDescriptorSet                                   m_lidarRtDescSet{VK_NULL_HANDLE};
-  std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_lidarRtShaderGroups;
-  VkPipelineLayout                                  m_lidarRtPipelineLayout{VK_NULL_HANDLE};
-  VkPipeline                                        m_lidarRtPipeline{VK_NULL_HANDLE};
-  std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_heightScanRtShaderGroups;
-  VkPipelineLayout                                  m_heightScanRtPipelineLayout{VK_NULL_HANDLE};
-  VkPipeline                                        m_heightScanRtPipeline{VK_NULL_HANDLE};
-
-  nvvk::SBTWrapper                m_sbtWrapper;
-  nvvk::Buffer                    m_rtSBTBuffer;
-  VkStridedDeviceAddressRegionKHR m_rgenRegion{};
-  VkStridedDeviceAddressRegionKHR m_missRegion{};
-  VkStridedDeviceAddressRegionKHR m_hitRegion{};
-  VkStridedDeviceAddressRegionKHR m_callRegion{};
-
-  nvvk::Buffer                    m_lidarRtSBTBuffer;
-  VkStridedDeviceAddressRegionKHR m_lidarRtRgenRegion{};
-  VkStridedDeviceAddressRegionKHR m_lidarRtMissRegion{};
-  VkStridedDeviceAddressRegionKHR m_lidarRtHitRegion{};
-  VkStridedDeviceAddressRegionKHR m_lidarRtCallRegion{};
-
-  nvvk::Buffer                    m_heightScanRtSBTBuffer;
-  VkStridedDeviceAddressRegionKHR m_heightScanRtRgenRegion{};
-  VkStridedDeviceAddressRegionKHR m_heightScanRtMissRegion{};
-  VkStridedDeviceAddressRegionKHR m_heightScanRtHitRegion{};
-  VkStridedDeviceAddressRegionKHR m_heightScanRtCallRegion{};
-
-  std::vector<VkAccelerationStructureInstanceKHR>    m_tlas;
-  std::vector<nvvk::RaytracingBuilderKHR::BlasInput> m_blas;
-
-  // Push constant for ray tracer
-  PushConstantRay m_pcRay{
-      0,  // num lights
-      0,  // frame index
-      0.0f,  // jitter X
-      0.0f,  // jitter Y
-      6,  // max depth
-      2,  // samples per frame
-      eRaygenPassLowResBeauty,  // lidar pass mode
-      {-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f},
-      {-10.0f, 10.0f, 0.1f, -10.0f, 10.0f, 0.1f, 0.0f, 0.0f, -1.0f, 2.0f, 200.0f, 0.0f}};
 
   void animationInstances(float time);
   void animationObject(float time);
@@ -188,19 +97,10 @@ public:
   VkPipeline                  m_compPipeline{VK_NULL_HANDLE};
   VkPipelineLayout            m_compPipelineLayout{VK_NULL_HANDLE};
 
-  nvvk::DescriptorSetBindings m_lidarCompositeDescSetLayoutBind;
-  VkDescriptorPool            m_lidarCompositeDescPool{VK_NULL_HANDLE};
-  VkDescriptorSetLayout       m_lidarCompositeDescSetLayout{VK_NULL_HANDLE};
-  VkDescriptorSet             m_lidarCompositeDescSet{VK_NULL_HANDLE};
-  VkPipeline                  m_lidarCompositePipeline{VK_NULL_HANDLE};
-  VkPipelineLayout            m_lidarCompositePipelineLayout{VK_NULL_HANDLE};
-
   VkRenderPass     m_rasterRenderPass{VK_NULL_HANDLE};
   VkFramebuffer    m_rasterFramebuffer{VK_NULL_HANDLE};
   VkPipeline       m_rasterPipeline{VK_NULL_HANDLE};
   VkPipelineLayout m_rasterPipelineLayout{VK_NULL_HANDLE};
-
-  VkBuildAccelerationStructureFlagsKHR m_rtFlags;
 
   void saveOffscreenColorToFile(const char* filename);
 
@@ -215,13 +115,13 @@ public:
       spp = 64;
     }
 
-    if(m_pcRay.samplesPerFrame != spp)
+    if(m_samplesPerFrame != spp)
     {
-      m_pcRay.samplesPerFrame = spp;
+      m_samplesPerFrame = spp;
       resetAccumulation();
     }
   }
-  int getSamplesPerFrame() const { return m_pcRay.samplesPerFrame; }
+  int getSamplesPerFrame() const { return m_samplesPerFrame; }
 
   void createOffscreenRender();
 
@@ -237,11 +137,6 @@ public:
   nvvk::Texture          m_offscreenDepthAov;
   VkFormat               m_offscreenDepthAovFormat{VK_FORMAT_R32_SFLOAT};
 
-  nvvk::Texture          m_offscreenLidarPointCloud;
-  VkFormat               m_offscreenLidarPointCloudFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  nvvk::Texture          m_offscreenLidarPointCloudDepthKey;
-  VkFormat               m_offscreenLidarPointCloudDepthKeyFormat{VK_FORMAT_R32_UINT};
-
   mutable nvvk::ExportResourceAllocatorDedicated m_sharedAlloc;
   VkExtent2D                                    m_renderSize{0, 0};
   VkExtent2D                                    m_aovSize{0, 0};
@@ -253,35 +148,21 @@ public:
 
   std::vector<uint32_t> readObjectIdImage();
 
-  void updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible);
-  void updateTlasEnd();
-  void updateBlas(uint32_t mesh_Id);
+  void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
+  void updateInstancesEnd();
+  void updateMeshGeometry(uint32_t meshId);
   void updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 
   std::vector<Light> m_lights;
   std::vector<int>   m_instanceIds;
   std::vector<Light> m_uploadedLights;
-  nvvk::Buffer       m_bInstanceIds;
   nvvk::Buffer       m_bLights;
 
   void addLight(const Light& light);
   void clearLights();
   void createLightBuffer();
   void updateLightBuffer(const VkCommandBuffer& cmdBuf);
-  void createInstanceIdBuffer();
-  void updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf);
-
-  std::vector<Sphere> m_spheres;
-  nvvk::Buffer        m_spheresBuffer;
-  nvvk::Buffer        m_spheresAabbBuffer;
-  nvvk::Buffer        m_spheresMatColorBuffer;
-  nvvk::Buffer        m_spheresMatIndexBuffer;
-
-  void createSpheres(uint32_t nbSpheres);
-  void addSpheres(std::vector<Sphere> vector);
-  auto sphereToVkGeometryKHR();
-  void createRtShaderBindingTable();
 
 private:
   void createOffscreenImage(nvvk::Texture&    texture,
@@ -293,22 +174,12 @@ private:
   void       refreshOffscreenRenderTargetDescriptors();
   void       createRasterFramebuffer();
   void       destroyRasterFramebuffer();
-  void       updateLidarRtDescriptorSet();
-  void       updateLidarCompositeDescriptorSet();
 
   uint32_t  m_accumulatedFrames{0};
   uint32_t  m_frameIndex{0};  // Monotonic jitter/RNG frame index; not reset by camera motion.
+  int       m_samplesPerFrame{2};
   glm::vec2 m_currentJitter{0.0f};
   glm::mat4 m_lastView{1.0f};
   glm::mat4 m_lastProj{1.0f};
   bool      m_hasLastCamera{false};
-  RadarCameraData m_radarCamera{};
-  bool            m_hasRadarCamera{false};
-  RadarCameraData m_heightScanCamera{};
-  bool            m_hasHeightScanCamera{false};
-  bool            m_enableLidar{true};
-  LidarParams     m_radarLidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
-  bool             m_enableHeightScan{true};
-  HeightScanParams m_heightScanParams{-10.0f, 10.0f, 0.1f, -10.0f, 10.0f, 0.1f,
-                                      0.0f, 0.0f, -1.0f, 2.0f, 200.0f, 0.0f};
 };

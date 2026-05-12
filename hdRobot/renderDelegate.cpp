@@ -68,16 +68,10 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
     , _renderParam(std::make_unique<HdRobotRenderParam>())
 {
   _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(1)});
-  _settingDescriptors.emplace_back(
-      HdRenderSettingDescriptor{"Enable Lidar", HdRobotSettingsTokens->lidarEnable, VtValue(false)});
 
   if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
   {
     _settingsMap[HdRobotSettingsTokens->spp] = VtValue(1);
-  }
-  if(_settingsMap.find(HdRobotSettingsTokens->lidarEnable) == _settingsMap.end())
-  {
-    _settingsMap[HdRobotSettingsTokens->lidarEnable] = VtValue(false);
   }
 }
 

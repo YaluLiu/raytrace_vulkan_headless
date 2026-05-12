@@ -70,19 +70,6 @@ function demo() {
     # build/bin/${BUILD_TYPE}/libheadless_app
 }
 
-function anim() {
-    app_name="ray_tracing_animation"
-    set -e
-    cd build
-    cmake ..  \
-        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-        -DENABLE_GL_VK_CONVERSION=OFF \
-        -DENABLE_HYDRA=OFF
-    make -j20
-    cd ..
-    build/bin/${BUILD_TYPE}/vk_${app_name}_KHR_app
-}
-
 function hydra(){
     set -e
     usd_path="/home/${USER}/software/USD"
@@ -103,9 +90,9 @@ function hydra(){
     cmake --install . --component ${plugin_name}
     cd ..
 
-    export RT_SPP="${RT_SPP:-4}"
+    export RASTER_SPP="${RASTER_SPP:-4}"
 
-    echo "[hydra] RT_SPP=${RT_SPP}"
+    echo "[hydra] RASTER_SPP=${RASTER_SPP}"
     echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"
 }
 

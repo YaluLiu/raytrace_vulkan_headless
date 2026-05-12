@@ -117,14 +117,7 @@ void HdRobotPoints::_UpdateVisibility(HdSceneDelegate* sceneDelegate, HdDirtyBit
 
 void HdRobotPoints::_UpdateRenderScene() const
 {
-  const size_t pointsSize = _points.size();
-  _scene.v_sphere.resize(pointsSize);
-  for(size_t i = 0; i < pointsSize; ++i)
-  {
-    const GfVec3f& point      = _points[i];
-    _scene.v_sphere[i].center = glm::vec3(point[0], point[1], point[2]);
-    _scene.v_sphere[i].radius = i < _widths.size() ? _widths[i] : 1.0f;
-  }
+  // The minimal raster path does not draw HdPoints yet.
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

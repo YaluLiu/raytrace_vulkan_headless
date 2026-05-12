@@ -12,23 +12,6 @@
 class RayTraceApp
 {
 public:
-  struct RadarCameraInput
-  {
-    glm::vec3   eye{0.0f};
-    glm::vec3   center{0.0f, 0.0f, -1.0f};
-    glm::vec3   up{0.0f, 1.0f, 0.0f};
-    float       fovDeg{60.0f};
-    LidarParams lidarParams{-90.0f, 90.0f, 0.5f, -2.0f, -20.0f, 1.0f, 2.0f, 200.0f};
-  };
-
-  struct SensorCameraInput
-  {
-    glm::vec3 eye{0.0f};
-    glm::vec3 center{0.0f, 0.0f, -1.0f};
-    glm::vec3 up{0.0f, 1.0f, 0.0f};
-    float     fovDeg{60.0f};
-  };
-
   RayTraceApp();
   ~RayTraceApp();
 
@@ -48,13 +31,6 @@ public:
   void cleanup();
 
   void saveFrame(std::string outputImagePath = "headless.png");
-  void setRadarCamera(const RadarCameraInput& radarCamera);
-  void setHeightScanCamera(const SensorCameraInput& heightScanCamera);
-  void setLidarEnabled(bool enabled);
-  bool isLidarEnabled() const;
-  void setHeightScanParams(const HeightScanParams& params);
-  void setHeightScanEnabled(bool enabled);
-  bool isHeightScanEnabled() const;
 
   HelloVulkan& getVulkan() { return m_helloVk; };
 

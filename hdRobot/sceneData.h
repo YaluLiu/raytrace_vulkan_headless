@@ -31,14 +31,14 @@ struct HydraMesh
   bool valid = true;
   TfToken renderTag = HdRenderTagTokens->geometry;
 
-  bool blas_changed = false;
-  bool tlas_changed = false;
+  bool geometry_changed = false;
+  bool instance_changed = false;
 
   std::vector<int> scene_mat_ids;
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1.0f}};
   bool hasInstances = true;
   glm::mat4 transform = glm::mat4{1.0f};
-  std::vector<int> tlasIds;
+  std::vector<int> rendererInstanceIds;
 };
 
 struct HydraMaterial

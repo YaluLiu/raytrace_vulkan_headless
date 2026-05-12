@@ -1,14 +1,19 @@
 # raytrace_vulkan_headless
 
-Headless Vulkan ray tracing demo
+Headless Vulkan rasterization demo
 
 ## Overview
 
-This project is adapted from the `ray_tracing_animation` demo in [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR).  
+This project is a headless Vulkan renderer with standalone and OpenUSD Hydra
+entry points. The current renderer is a compact rasterization baseline that
+exports color, depth, primitive ID, and instance ID AOVs.
+
 Major modifications include:
 
-- **Removed window, surface, and swapchain code** to create a headless version suitable for environments without GUI (such as servers or automated rendering).
-- The overall code structure and build process remain consistent with the original nvpro-samples repository.
+- **Removed window, surface, and swapchain code** to create a headless version
+  suitable for environments without GUI, such as servers or automated
+  rendering.
+- Added Hydra render delegate integration for the headless raster renderer.
 
 ## Dependencies
 
@@ -22,7 +27,7 @@ Major modifications include:
 
 ## Build Instructions
 
-The build process is identical to [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR):
+The build uses CMake and the nvpro_core helper libraries:
 
 1. Clone this repository and `nvpro_core`:
 
@@ -55,44 +60,29 @@ bash install.sh hydra
 
 Runs the Hydra plugin based on headless mode.
 
-You can override the default Hydra scene used by `install.sh hydra`:
+You can override the default Hydra scene used by `install.sh hydra` with any
+USD scene path supported by your local USD installation:
 
 ```bash
-HYDRA_SCENE_PATH=hydra_lidar_verify/scene_a.usda bash install.sh hydra
+HYDRA_SCENE_PATH=/path/to/scene.usda bash install.sh hydra
 ```
-
-Tracked lidar-camera verification scenes live in `hydra_lidar_verify/`:
-
-- `scene_a.usda`: main render camera fixed, lidar camera on the +X side
-- `scene_b.usda`: same main camera, lidar camera mirrored to the -X side
 
 ## Visual Regression (AI Self-check)
 
-Use rendered images as a functional regression gate:
+The old `baseline` and `selfcheck` helpers have been removed from
+`install.sh`. Use `bash install.sh demo` or `bash install.sh hydra`, then
+compare the generated color/depth/id AOV artifacts with your preferred image
+diff tooling.
 
 ```bash
-# 1) Capture baseline (stores result/gl_0.png and result/lidar_0.png)
 bash install.sh baseline
-
-# 2) After code changes, rerun demo and compare against baseline
 bash install.sh selfcheck
 ```
 
-Artifacts:
-
-- Baseline images: `output/visual_baseline/`
-- Current captures: `output/visual_current/`
-- Diff reports (`json` + `diff_*.png`): `output/visual_report/latest/`
-
-Common overrides:
-
-- `VIS_DEMO_CMD`: custom demo command
-- `VIS_MAX_MAE`, `VIS_MAX_RMSE`, `VIS_MAX_CHANGED_RATIO`: pass/fail thresholds
-- `VIS_SKIP_RUN=1`: compare existing `result/*.png` without rerunning demo
+Both commands currently print a removal message and return a non-zero status.
 
 ## References
 
-- [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR)
 - [nvpro-samples/nvpro_core](https://github.com/nvpro-samples/nvpro_core)
 - [pablode/gatling](https://github.com/pablode/gatling.git)
 

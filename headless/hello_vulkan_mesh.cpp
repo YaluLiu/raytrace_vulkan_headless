@@ -11,149 +11,28 @@
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
-#include <random>
 
 extern std::vector<std::string> defaultSearchPaths;
 
-void HelloVulkan::initRayTracing()
+void HelloVulkan::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible)
 {
-  VkPhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-  prop2.pNext = &m_rtProperties;
-  vkGetPhysicalDeviceProperties2(m_physicalDevice, &prop2);
-
-  m_rtBuilder.setup(m_device, &m_alloc, m_graphicsQueueIndex);
-  m_sbtWrapper.setup(m_device, m_graphicsQueueIndex, &m_alloc, m_rtProperties);
-}
-
-auto HelloVulkan::objectToVkGeometryKHR(const ObjModel& model)
-{
-  VkDeviceAddress vertexAddress = nvvk::getBufferDeviceAddress(m_device, model.vertexBuffer.buffer);
-  VkDeviceAddress indexAddress  = nvvk::getBufferDeviceAddress(m_device, model.indexBuffer.buffer);
-
-  uint32_t maxPrimitiveCount = model.nbIndices / 3;
-
-  VkAccelerationStructureGeometryTrianglesDataKHR triangles{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
-  triangles.vertexFormat             = VK_FORMAT_R32G32B32_SFLOAT;
-  triangles.vertexData.deviceAddress = vertexAddress;
-  triangles.vertexStride             = sizeof(VertexObj);
-  triangles.indexType                = VK_INDEX_TYPE_UINT32;
-  triangles.indexData.deviceAddress  = indexAddress;
-  triangles.maxVertex                = model.nbVertices - 1;
-
-  VkAccelerationStructureGeometryKHR asGeom{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
-  asGeom.geometryType       = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
-  asGeom.flags              = VK_GEOMETRY_OPAQUE_BIT_KHR;
-  asGeom.geometry.triangles = triangles;
-
-  VkAccelerationStructureBuildRangeInfoKHR offset;
-  offset.firstVertex     = 0;
-  offset.primitiveCount  = maxPrimitiveCount;
-  offset.primitiveOffset = 0;
-  offset.transformOffset = 0;
-
-  nvvk::RaytracingBuilderKHR::BlasInput input;
-  input.asGeometry.emplace_back(asGeom);
-  input.asBuildOffsetInfo.emplace_back(offset);
-
-  return input;
-}
-
-
-auto HelloVulkan::sphereToVkGeometryKHR()
-{
-  VkDeviceAddress dataAddress = nvvk::getBufferDeviceAddress(m_device, m_spheresAabbBuffer.buffer);
-
-  VkAccelerationStructureGeometryAabbsDataKHR aabbs{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR};
-  aabbs.data.deviceAddress = dataAddress;
-  aabbs.stride             = sizeof(Aabb);
-
-  // Setting up the build info of the acceleration (C version, c++ gives wrong type)
-  VkAccelerationStructureGeometryKHR asGeom{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
-  asGeom.geometryType   = VK_GEOMETRY_TYPE_AABBS_KHR;
-  asGeom.flags          = VK_GEOMETRY_OPAQUE_BIT_KHR;
-  asGeom.geometry.aabbs = aabbs;
-
-  VkAccelerationStructureBuildRangeInfoKHR offset{};
-  offset.firstVertex     = 0;
-  offset.primitiveCount  = (uint32_t)m_spheres.size();
-  offset.primitiveOffset = 0;
-  offset.transformOffset = 0;
-
-  nvvk::RaytracingBuilderKHR::BlasInput input;
-  input.asGeometry.emplace_back(asGeom);
-  input.asBuildOffsetInfo.emplace_back(offset);
-  return input;
-}
-
-void HelloVulkan::createBottomLevelAS()
-{
-  m_blas.reserve(m_objModel.size());
-
-  for(const auto& obj : m_objModel)
-  {
-    auto blas = objectToVkGeometryKHR(obj);
-    m_blas.emplace_back(blas);
-  }
-
-  {
-    auto blas = sphereToVkGeometryKHR();
-    m_blas.emplace_back(blas);
-  }
-  m_rtBuilder.buildBlas(m_blas, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR
-                                    | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR);
-}
-
-void HelloVulkan::createTopLevelAS()
-{
-  auto nbObj = static_cast<uint32_t>(m_instances.size()) - 1;
-
-  for(const HelloVulkan::ObjInstance& inst : m_instances)
-  {
-    VkAccelerationStructureInstanceKHR rayInst{};
-    rayInst.transform                              = nvvk::toTransformMatrixKHR(inst.transform);
-    rayInst.instanceCustomIndex                    = inst.objIndex;
-    rayInst.accelerationStructureReference         = m_rtBuilder.getBlasDeviceAddress(inst.objIndex);
-    rayInst.flags                                  = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-    rayInst.mask                                   = 0xFF;
-    rayInst.instanceShaderBindingTableRecordOffset = 0;
-    m_tlas.emplace_back(rayInst);
-  }
-
-  // Add the blas containing all implicit objects
-  {
-    VkAccelerationStructureInstanceKHR rayInst{};
-    rayInst.transform                      = nvvk::toTransformMatrixKHR(glm::mat4(1));
-    rayInst.instanceCustomIndex            = nbObj;  // nbObj == last object == implicit
-    rayInst.accelerationStructureReference = m_rtBuilder.getBlasDeviceAddress(static_cast<uint32_t>(m_objModel.size()));
-    rayInst.flags                          = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-    rayInst.mask                           = 0xFF;
-    rayInst.instanceShaderBindingTableRecordOffset = 1;  // We will use the same hit group for all objects
-    m_tlas.emplace_back(rayInst);
-  }
-
-  m_rtFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
-  m_rtBuilder.buildTlas(m_tlas, m_rtFlags);
-}
-
-void HelloVulkan::updateTlas(uint32_t mesh_Id, glm::mat4 transform, bool visible)
-{
-  if(mesh_Id >= m_instances.size())
+  if(instanceId >= m_instances.size())
   {
     return;
   }
-  m_instances[mesh_Id].transform = transform;
-  m_instances[mesh_Id].visible   = visible;
+  m_instances[instanceId].transform = transform;
+  m_instances[instanceId].visible   = visible;
 }
 
-void HelloVulkan::updateTlasEnd()
+void HelloVulkan::updateInstancesEnd()
 {
   resetFrameHistory();
 }
 
-void HelloVulkan::updateBlas(uint32_t mesh_Id)
+void HelloVulkan::updateMeshGeometry(uint32_t meshId)
 {
-  std::vector<VertexObj>& now_vertices = m_Loader[mesh_Id].m_vertices;
-  ObjModel&               model        = m_objModel[mesh_Id];
+  std::vector<VertexObj>& now_vertices = m_Loader[meshId].m_vertices;
+  ObjModel&               model        = m_objModel[meshId];
 
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
   VkCommandBuffer   cmdBuf = genCmdBuf.createCommandBuffer();
@@ -165,147 +44,5 @@ void HelloVulkan::updateBlas(uint32_t mesh_Id)
   m_alloc.destroy(model.vertexBuffer);
   model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | storageFlags);
   genCmdBuf.submitAndWait(cmdBuf);
-  resetFrameHistory();
-}
-
-void HelloVulkan::addSpheres(std::vector<Sphere> v_sphere)
-{
-  uint32_t nbSpheres = v_sphere.size();
-  if(nbSpheres == 0)
-  {
-    return;
-  }
-  m_spheres.resize(nbSpheres);
-
-  for(uint32_t i = 0; i < nbSpheres; i++)
-  {
-    Sphere s;
-    s.center     = v_sphere[i].center;
-    s.radius     = v_sphere[i].radius;
-    m_spheres[i] = std::move(s);
-  }
-
-  std::vector<Aabb> aabbs;
-  aabbs.reserve(nbSpheres);
-  for(const auto& s : m_spheres)
-  {
-    Aabb aabb;
-    aabb.minimum = s.center - glm::vec3(s.radius);
-    aabb.maximum = s.center + glm::vec3(s.radius);
-    aabbs.emplace_back(aabb);
-  }
-
-  MaterialObj mat;
-  mat.diffuse = glm::vec3(0, 1, 1);
-  mat.baseColorFactor = mat.diffuse;
-  std::vector<MaterialObj> materials;
-  std::vector<int>         matIdx(nbSpheres);
-  materials.emplace_back(mat);
-  mat.diffuse = glm::vec3(1, 1, 0);
-  mat.baseColorFactor = mat.diffuse;
-  materials.emplace_back(mat);
-
-  for(size_t i = 0; i < m_spheres.size(); i++)
-  {
-    matIdx[i] = i % 2;
-  }
-
-  using vkBU = VkBufferUsageFlagBits;
-  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-  auto              cmdBuf = genCmdBuf.createCommandBuffer();
-  m_spheresBuffer          = m_alloc.createBuffer(cmdBuf, m_spheres, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-  m_spheresAabbBuffer      = m_alloc.createBuffer(cmdBuf, aabbs,
-                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
-                                                      | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
-  m_spheresMatIndexBuffer =
-      m_alloc.createBuffer(cmdBuf, matIdx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-  m_spheresMatColorBuffer =
-      m_alloc.createBuffer(cmdBuf, materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-  genCmdBuf.submitAndWait(cmdBuf);
-
-  m_debug.setObjectName(m_spheresBuffer.buffer, "spheres");
-  m_debug.setObjectName(m_spheresAabbBuffer.buffer, "spheresAabb");
-  m_debug.setObjectName(m_spheresMatColorBuffer.buffer, "spheresMat");
-  m_debug.setObjectName(m_spheresMatIndexBuffer.buffer, "spheresMatIdx");
-
-  ObjDesc objDesc{};
-  objDesc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, m_spheresMatColorBuffer.buffer);
-  objDesc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, m_spheresMatIndexBuffer.buffer);
-  m_objDesc.emplace_back(objDesc);
-
-  ObjInstance instance{};
-  instance.objIndex = static_cast<uint32_t>(m_objModel.size());
-  m_instances.emplace_back(instance);
-  resetFrameHistory();
-}
-
-void HelloVulkan::createSpheres(uint32_t nbSpheres)
-{
-  std::random_device                    rd{};
-  std::mt19937                          gen{rd()};
-  std::normal_distribution<float>       xzd{0.f, 5.f};
-  std::normal_distribution<float>       yd{6.f, 3.f};
-  std::uniform_real_distribution<float> radd{.05f, .2f};
-
-  m_spheres.resize(nbSpheres);
-  for(uint32_t i = 0; i < nbSpheres; i++)
-  {
-    Sphere s;
-    s.center     = glm::vec3(xzd(gen), yd(gen), xzd(gen));
-    s.radius     = radd(gen);
-    m_spheres[i] = std::move(s);
-  }
-
-  std::vector<Aabb> aabbs;
-  aabbs.reserve(nbSpheres);
-  for(const auto& s : m_spheres)
-  {
-    Aabb aabb;
-    aabb.minimum = s.center - glm::vec3(s.radius);
-    aabb.maximum = s.center + glm::vec3(s.radius);
-    aabbs.emplace_back(aabb);
-  }
-
-  MaterialObj mat;
-  mat.diffuse = glm::vec3(0, 1, 1);
-  mat.baseColorFactor = mat.diffuse;
-  std::vector<MaterialObj> materials;
-  std::vector<int>         matIdx(nbSpheres);
-  materials.emplace_back(mat);
-  mat.diffuse = glm::vec3(1, 1, 0);
-  mat.baseColorFactor = mat.diffuse;
-  materials.emplace_back(mat);
-
-  for(size_t i = 0; i < m_spheres.size(); i++)
-  {
-    matIdx[i] = i % 2;
-  }
-
-  using vkBU = VkBufferUsageFlagBits;
-  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-  auto              cmdBuf = genCmdBuf.createCommandBuffer();
-  m_spheresBuffer          = m_alloc.createBuffer(cmdBuf, m_spheres, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-  m_spheresAabbBuffer      = m_alloc.createBuffer(cmdBuf, aabbs,
-                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
-                                                      | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
-  m_spheresMatIndexBuffer =
-      m_alloc.createBuffer(cmdBuf, matIdx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-  m_spheresMatColorBuffer =
-      m_alloc.createBuffer(cmdBuf, materials, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-  genCmdBuf.submitAndWait(cmdBuf);
-
-  m_debug.setObjectName(m_spheresBuffer.buffer, "spheres");
-  m_debug.setObjectName(m_spheresAabbBuffer.buffer, "spheresAabb");
-  m_debug.setObjectName(m_spheresMatColorBuffer.buffer, "spheresMat");
-  m_debug.setObjectName(m_spheresMatIndexBuffer.buffer, "spheresMatIdx");
-
-  ObjDesc objDesc{};
-  objDesc.materialAddress      = nvvk::getBufferDeviceAddress(m_device, m_spheresMatColorBuffer.buffer);
-  objDesc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, m_spheresMatIndexBuffer.buffer);
-  m_objDesc.emplace_back(objDesc);
-
-  ObjInstance instance{};
-  instance.objIndex = static_cast<uint32_t>(m_objModel.size());
-  m_instances.emplace_back(instance);
   resetFrameHistory();
 }

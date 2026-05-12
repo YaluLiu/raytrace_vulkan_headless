@@ -20,30 +20,9 @@ using uint = unsigned int;
 #endif
 
 START_BINDING(SceneBindings)
-  eFrameUniforms = 0,  // Frame uniform containing main camera and sensor data
+  eFrameUniforms = 0,  // Frame uniform containing the active camera
   eObjDescs    = 1,
-  eTextures    = 2,
-  eLights      = 3,
-  eInstanceIds = 4,
-  eImplicit    = 5
-END_BINDING();
-
-
-START_BINDING(RtxBindings)
-  eTlas                   = 0,  // Top-level acceleration structure
-  eOutImage               = 1,  // Ray tracer output image (color)
-  eObjIdImage             = 2,  // ObjectId output
-  eInsIdImage             = 3,  // InstanceId output
-  eLidarPointCloudImage   = 4,  // AOV: lidar point cloud
-  eDepthImage             = 5,  // AOV: normalized Hydra depth
-  eLidarDepthKeyImage     = 6   // AOV: lidar normalized depth float-bit key for atomic nearest-point writes
-END_BINDING();
-
-START_BINDING(LidarCompositeBindings)
-  eCompositeColorImage           = 0,
-  eCompositeLidarPointCloudImage = 1,
-  eCompositeDepthImage           = 2,
-  eCompositeLidarDepthKeyImage   = 3
+  eTextures    = 2
 END_BINDING();
 // clang-format on
 
@@ -74,58 +53,9 @@ struct CameraUniforms
   mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
-struct LidarParamsUniforms
-{
-  vec4 positionAndPad;  // xyz: lidar world position, w: reserved
-  vec4 azimuthParams;   // x: minDeg, y: maxDeg, z: stepDeg, w: pointRadiusPixels
-  vec4 verticalParams;  // x: minDeg, y: maxDeg, z: stepDeg, w: maxDistance
-};
-
-struct LidarUniforms
-{
-  CameraUniforms camera;
-  LidarParamsUniforms params;
-};
-
-struct HeightScanUniforms
-{
-  CameraUniforms camera;
-  vec4 positionAndPad;  // xyz: height scan world position, w: reserved
-};
-
 struct FrameUniforms
 {
   CameraUniforms camera;
-  LidarUniforms lidar;
-  HeightScanUniforms heightScan;
-};
-
-struct LidarParams
-{
-  float azimuthMinDeg;
-  float azimuthMaxDeg;
-  float azimuthStepDeg;
-  float verticalMinDeg;
-  float verticalMaxDeg;
-  float verticalStepDeg;
-  float pointRadiusPixels;
-  float maxDistance;
-};
-
-struct HeightScanParams
-{
-  float minX;
-  float maxX;
-  float stepX;
-  float minZ;
-  float maxZ;
-  float stepZ;
-  float rayDirectionX;
-  float rayDirectionY;
-  float rayDirectionZ;
-  float pointRadiusPixels;
-  float maxDistance;
-  float reserved;
 };
 
 struct Light
@@ -141,34 +71,6 @@ struct Light
   float radius;
   vec4 rotateQuat;
   vec3 padding;
-};
-
-#ifdef __cplusplus
-enum RaygenPassMode
-{
-  eRaygenPassLidarPointCloud = 0,
-  eRaygenPassLowResBeautyWithLidar = 1,  // Legacy mode; lidar compositing now uses lidar_composite.comp.
-  eRaygenPassLowResBeauty = 2,
-  eRaygenPassHighResAov = 3
-};
-#else
-const int eRaygenPassLidarPointCloud = 0;
-const int eRaygenPassLowResBeautyWithLidar = 1;  // Legacy mode; lidar compositing now uses lidar_composite.comp.
-const int eRaygenPassLowResBeauty = 2;
-const int eRaygenPassHighResAov = 3;
-#endif
-
-struct PushConstantRay
-{
-  int numLights;
-  uint frameIndex;
-  float jitterX;
-  float jitterY;
-  int maxDepth;
-  int samplesPerFrame;
-  int lidarPassMode;
-  LidarParams lidar;
-  HeightScanParams heightScan;
 };
 
 struct Vertex
@@ -211,21 +113,6 @@ struct WaveFrontMaterial
   int subsurfaceTextureId;
 };
 
-struct Sphere
-{
-  vec3 center;
-  float radius;
-};
-
-struct Aabb
-{
-  vec3 minimum;
-  vec3 maximum;
-};
-
 const float PI = 3.1415926535897932384626433832795;
-
-#define KIND_SPHERE 0
-#define KIND_CUBE 1
 
 #endif

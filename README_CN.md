@@ -1,13 +1,17 @@
 # raytrace_vulkan_headless
 
-Headless Vulkan ray tracing demo
+Headless Vulkan rasterization demo
 
 ## 项目介绍
 
-本项目基于 [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR) 仓库下 `ray_tracing_animation` 文件夹中的 demo，进行了如下修改：
+本项目是一个支持独立运行和 OpenUSD Hydra 插件入口的 headless Vulkan
+渲染器。当前实现是精简的光栅化基线，输出 color、depth、primitive ID
+和 instance ID AOV。
+
+主要修改包括：
 
 - **去除窗口、surface 和 swapchain**，实现了 Headless 版本，适用于无界面环境。
-- 其余代码结构、编译方式保持与原仓库一致。
+- 增加 Hydra render delegate 集成，供 headless 光栅渲染器使用。
 
 ## 依赖
 
@@ -21,7 +25,7 @@ Headless Vulkan ray tracing demo
 
 ## 编译方式
 
-编译流程与 [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR) 完全一致：
+项目使用 CMake 和 nvpro_core helper 库进行构建：
 
 1. 克隆本仓库和 nvpro_core：
 
@@ -57,41 +61,24 @@ bash install.sh hydra
 可以用 `HYDRA_SCENE_PATH` 覆盖 `install.sh hydra` 默认打开的 Hydra 场景：
 
 ```bash
-HYDRA_SCENE_PATH=hydra_lidar_verify/scene_a.usda bash install.sh hydra
+HYDRA_SCENE_PATH=/path/to/scene.usda bash install.sh hydra
 ```
-
-仓库内提供了两个用于 lidar 相机分离验证的场景，位于 `hydra_lidar_verify/`：
-
-- `scene_a.usda`：主渲染相机固定，lidar 相机位于 +X 侧
-- `scene_b.usda`：主渲染相机不变，lidar 相机镜像到 -X 侧
 
 ## 视觉回归（AI 自验收）
 
-把 demo 渲染结果作为功能回归门禁：
+旧的 `baseline` 和 `selfcheck` helper 已从 `install.sh` 移除。现在可以
+使用 `bash install.sh demo` 或 `bash install.sh hydra` 生成 color/depth/id
+AOV，再用外部图像对比工具做回归检查。
 
 ```bash
-# 1) 采集基线（保存 result/gl_0.png 和 result/lidar_0.png）
 bash install.sh baseline
-
-# 2) 每次改动后重跑 demo，并与基线对比
 bash install.sh selfcheck
 ```
 
-产物目录：
-
-- 基线图：`output/visual_baseline/`
-- 当前运行图：`output/visual_current/`
-- 对比报告（`json` + `diff_*.png`）：`output/visual_report/latest/`
-
-常用参数：
-
-- `VIS_DEMO_CMD`：自定义运行命令
-- `VIS_MAX_MAE`、`VIS_MAX_RMSE`、`VIS_MAX_CHANGED_RATIO`：对比阈值
-- `VIS_SKIP_RUN=1`：不重跑 demo，直接对当前 `result/*.png` 做对比
+这两个命令目前只会输出移除提示并返回非零状态。
 
 ## 参考
 
-- [nvpro-samples/vk_raytracing_tutorial_KHR](https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR)
 - [nvpro-samples/nvpro_core](https://github.com/nvpro-samples/nvpro_core)
 - [pablode/gatling](https://github.com/pablode/gatling.git)
 

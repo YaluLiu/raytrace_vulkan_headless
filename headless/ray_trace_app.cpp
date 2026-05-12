@@ -22,14 +22,12 @@ enum class HeadlessRenderPass
 {
   UpdateUniforms,
   UpdateLights,
-  UpdateInstanceIds,
   Rasterize,
 };
 
-constexpr std::array<HeadlessRenderPass, 4> kHeadlessRenderPassSequence{
+constexpr std::array<HeadlessRenderPass, 3> kHeadlessRenderPassSequence{
     HeadlessRenderPass::UpdateUniforms,
     HeadlessRenderPass::UpdateLights,
-    HeadlessRenderPass::UpdateInstanceIds,
     HeadlessRenderPass::Rasterize,
 };
 
@@ -85,9 +83,6 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
       break;
     case HeadlessRenderPass::UpdateLights:
       renderer.updateLightBuffer(cmdBuf);
-      break;
-    case HeadlessRenderPass::UpdateInstanceIds:
-      renderer.updateInstanceIdBuffer(cmdBuf);
       break;
     case HeadlessRenderPass::Rasterize:
       renderer.rasterize(cmdBuf);
@@ -194,7 +189,6 @@ void RayTraceApp::createRenderResources()
 {
   m_helloVk.createOffscreenRender();
   m_helloVk.createLightBuffer();
-  m_helloVk.createInstanceIdBuffer();
 
   m_helloVk.createDescriptorSetLayout();
   m_helloVk.createUniformBuffer();
@@ -226,52 +220,6 @@ void RayTraceApp::render()
 void RayTraceApp::saveFrame(std::string outputImagePath)
 {
   m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
-}
-
-void RayTraceApp::setRadarCamera(const RadarCameraInput& radarCamera)
-{
-  HelloVulkan::RadarCameraData radar{};
-  radar.eye    = radarCamera.eye;
-  radar.center = radarCamera.center;
-  radar.up     = radarCamera.up;
-  radar.fov    = radarCamera.fovDeg;
-  m_helloVk.setRadarCamera(radar);
-  m_helloVk.setRadarLidarParams(radarCamera.lidarParams);
-}
-
-void RayTraceApp::setHeightScanCamera(const SensorCameraInput& heightScanCamera)
-{
-  HelloVulkan::RadarCameraData camera{};
-  camera.eye    = heightScanCamera.eye;
-  camera.center = heightScanCamera.center;
-  camera.up     = heightScanCamera.up;
-  camera.fov    = heightScanCamera.fovDeg;
-  m_helloVk.setHeightScanCamera(camera);
-}
-
-void RayTraceApp::setLidarEnabled(bool enabled)
-{
-  m_helloVk.setLidarEnabled(enabled);
-}
-
-bool RayTraceApp::isLidarEnabled() const
-{
-  return m_helloVk.isLidarEnabled();
-}
-
-void RayTraceApp::setHeightScanParams(const HeightScanParams& params)
-{
-  m_helloVk.setHeightScanParams(params);
-}
-
-void RayTraceApp::setHeightScanEnabled(bool enabled)
-{
-  m_helloVk.setHeightScanEnabled(enabled);
-}
-
-bool RayTraceApp::isHeightScanEnabled() const
-{
-  return m_helloVk.isHeightScanEnabled();
 }
 
 void RayTraceApp::cleanup()

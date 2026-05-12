@@ -71,15 +71,6 @@ bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
   return true;
 }
 
-RayTraceApp::SensorCameraInput ToHeightScanCameraInput(const HdRobotHeightScanData &heightScanData)
-{
-  RayTraceApp::SensorCameraInput camera{};
-  camera.eye    = heightScanData.eye;
-  camera.center = heightScanData.center;
-  camera.up     = heightScanData.up;
-  camera.fovDeg = heightScanData.fovDeg;
-  return camera;
-}
 }  // namespace
 
 HeadlessRenderBridge::HeadlessRenderBridge(const HdRenderSettingsMap &settings, HdRobotRenderParam &renderParam,
@@ -98,7 +89,7 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
 {
   if (updateActiveRenderTags(renderTags))
   {
-    _renderParam.MarkAllMeshesTlasDirty();
+    _renderParam.MarkAllMeshesInstanceDirty();
   }
 
   if (!renderPassState)
@@ -128,8 +119,6 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
     return false;
   }
 
-  updateLidarCamera();
-  updateHeightScanCamera();
   updateLights();
   updateScene();
   _renderApp.render();
@@ -196,20 +185,19 @@ void HeadlessRenderBridge::initOrResize()
       const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
       const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
       const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
-      const size_t tlasSlotCount = std::max<size_t>(authoredInstanceCount, 1);
+      const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
       curMesh.hasInstances = authoredInstanceCount > 0;
-      for (size_t i = 1; i < tlasSlotCount; ++i)
+      for (size_t i = 1; i < rendererInstanceSlotCount; ++i)
       {
         vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
       }
-      curMesh.tlasIds.clear();
-      for (size_t i = 0; i < tlasSlotCount; ++i)
+      curMesh.rendererInstanceIds.clear();
+      for (size_t i = 0; i < rendererInstanceSlotCount; ++i)
       {
-        curMesh.tlasIds.push_back(static_cast<int>(i + firstInstanceId));
+        curMesh.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
       }
-      _renderParam.MarkMeshTlasDirty(meshId);
+      _renderParam.MarkMeshInstanceDirty(meshId);
     }
-    vulkan.addSpheres(_renderParam.v_sphere);
     _renderApp.createRenderResources();
   }
   else if (_resetRenderBuffer)
@@ -251,55 +239,6 @@ bool HeadlessRenderBridge::updateMainCamera(const HdRenderPassStateSharedPtr &re
   return true;
 }
 
-void HeadlessRenderBridge::updateLidarCamera()
-{
-  const bool lidarEnabledBySetting = GetLidarEnabledSetting(_settings);
-
-  HdRobotLidarData lidarData;
-  if (!lidarEnabledBySetting || !_renderParam.GetLidarCamera(&lidarData))
-  {
-    _renderApp.setLidarEnabled(false);
-    return;
-  }
-
-  _renderApp.setLidarEnabled(true);
-
-  RayTraceApp::RadarCameraInput lidarCamera{};
-  lidarCamera.eye = lidarData.eye;
-  lidarCamera.center = lidarData.center;
-  lidarCamera.up = lidarData.up;
-  lidarCamera.fovDeg = lidarData.fovDeg;
-  lidarCamera.lidarParams = {
-      lidarData.params.azimuthMinDeg,     lidarData.params.azimuthMaxDeg,  lidarData.params.azimuthStepDeg,
-      lidarData.params.verticalMinDeg,    lidarData.params.verticalMaxDeg, lidarData.params.verticalStepDeg,
-      lidarData.params.pointRadiusPixels, lidarData.params.maxDistance,
-  };
-  _renderApp.setRadarCamera(lidarCamera);
-}
-
-void HeadlessRenderBridge::updateHeightScanCamera()
-{
-  HdRobotHeightScanData heightScanData;
-  if (!_renderParam.GetHeightScanCamera(&heightScanData))
-  {
-    _renderApp.setHeightScanEnabled(false);
-    return;
-  }
-
-  _renderApp.setHeightScanCamera(ToHeightScanCameraInput(heightScanData));
-
-  const HdRobotHeightScanParams &params = heightScanData.params;
-  _renderApp.setHeightScanParams({
-      params.minX,              params.maxX,
-      params.stepX,             params.minZ,
-      params.maxZ,              params.stepZ,
-      params.rayDirection.x,    params.rayDirection.y,
-      params.rayDirection.z,    params.pointRadiusPixels,
-      params.maxDistance,       0.0f,
-  });
-  _renderApp.setHeightScanEnabled(true);
-}
-
 void HeadlessRenderBridge::updateLights()
 {
   HelloVulkan &vulkan = _renderApp.getVulkan();
@@ -316,40 +255,40 @@ void HeadlessRenderBridge::updateLights()
 
 void HeadlessRenderBridge::updateScene()
 {
-  updateBlas();
-  updateTlas();
+  updateGeometry();
+  updateInstances();
   updateMaterials();
 }
 
-void HeadlessRenderBridge::updateBlas()
+void HeadlessRenderBridge::updateGeometry()
 {
   HelloVulkan &vulkan = _renderApp.getVulkan();
   for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
-    if (_renderParam.ConsumeMeshBlasDirty(meshId))
+    if (_renderParam.ConsumeMeshGeometryDirty(meshId))
     {
       ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.m_Loader[meshId]);
-      vulkan.updateBlas(meshId);
+      vulkan.updateMeshGeometry(meshId);
     }
   }
 }
 
-void HeadlessRenderBridge::updateTlas()
+void HeadlessRenderBridge::updateInstances()
 {
   HelloVulkan &vulkan = _renderApp.getVulkan();
-  bool updateTlas = false;
+  bool updateInstances = false;
 
   for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     auto &curMesh = _renderParam.v_mesh[meshId];
-    if (_renderParam.ConsumeMeshTlasDirty(meshId))
+    if (_renderParam.ConsumeMeshInstanceDirty(meshId))
     {
-      updateTlas = true;
+      updateInstances = true;
       const bool tagMatched = isMeshRenderTagMatched(curMesh);
       const bool meshVisible = curMesh.visible && curMesh.valid && tagMatched;
-      for (size_t instanceId = 0; instanceId < curMesh.tlasIds.size(); ++instanceId)
+      for (size_t instanceId = 0; instanceId < curMesh.rendererInstanceIds.size(); ++instanceId)
       {
-        auto tlasId = curMesh.tlasIds[instanceId];
+        auto rendererInstanceId = curMesh.rendererInstanceIds[instanceId];
         const bool instanceValid = curMesh.hasInstances && (instanceId < curMesh.instanceTransforms.size());
         const bool visible = meshVisible && instanceValid;
         glm::mat4 transform = glm::transpose(curMesh.transform);
@@ -357,13 +296,13 @@ void HeadlessRenderBridge::updateTlas()
         {
           transform = glm::transpose(curMesh.transform * curMesh.instanceTransforms[instanceId]);
         }
-        vulkan.updateTlas(tlasId, transform, visible);
+        vulkan.updateInstance(rendererInstanceId, transform, visible);
       }
     }
   }
-  if (updateTlas)
+  if (updateInstances)
   {
-    vulkan.updateTlasEnd();
+    vulkan.updateInstancesEnd();
   }
 }
 

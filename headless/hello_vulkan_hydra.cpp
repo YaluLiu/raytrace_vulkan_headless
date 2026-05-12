@@ -198,22 +198,3 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
                          nullptr, 1, &postBarrier, 0, nullptr);
   }
 }
-
-void HelloVulkan::createInstanceIdBuffer()
-{
-  size_t maxInstances = std::max(size_t(1000), m_instanceIds.size() * 2);
-  size_t bufferSize   = sizeof(int) * maxInstances;
-
-  m_bInstanceIds = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  m_debug.setObjectName(m_bInstanceIds.buffer, "InstanceIds");
-}
-
-void HelloVulkan::updateInstanceIdBuffer(const VkCommandBuffer& cmdBuf)
-{
-  if(!m_instanceIds.empty())
-  {
-    vkCmdUpdateBuffer(cmdBuf, m_bInstanceIds.buffer, 0, sizeof(int) * m_instanceIds.size(), m_instanceIds.data());
-  }
-}
