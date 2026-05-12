@@ -70,9 +70,7 @@ call sites with `rg`.
 - `headless/hello_vulkan.cpp`: Offscreen target allocation, resize refresh,
   AOV texture export, and direct color/depth/id target selection.
 - `headless/hello_vulkan.hpp`: Offscreen color/depth/id texture state and
-  public AOV access surface. Legacy DLSS wrapper sources under
-  `headless/dlss/` are no longer part of the build and are scheduled for
-  deletion in the rasterization refactor.
+  public AOV access surface.
 
 ## LiDAR Rendering
 
