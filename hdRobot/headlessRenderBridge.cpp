@@ -164,18 +164,14 @@ void HeadlessRenderBridge::initOrResize()
     _renderApp.setup(_width, _height);
     _resetRenderBuffer = false;
 
-    bool isFirstModel = true;
+    vulkan.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
+    _uploadedTextureRegistryVersion = _renderParam.GetTextureRegistryVersion();
     for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
     {
       auto &curMesh = _renderParam.v_mesh[meshId];
       ModelLoader loader;
       ConvertVmeshToLoader(curMesh, loader);
       loader.m_textures.clear();
-      if (isFirstModel)
-      {
-        loader.m_textureAssets = ExportRegisteredTextures(_renderParam.GetTextureAssets());
-        isFirstModel = false;
-      }
       for (auto &matId : curMesh.scene_mat_ids)
       {
         auto materialObj = _renderParam.v_mat[matId].toMaterialObj();
@@ -206,6 +202,26 @@ void HeadlessRenderBridge::initOrResize()
     _renderApp.resize(_width, _height);
     _resetRenderBuffer = false;
   }
+  refreshTextureAssetsIfNeeded();
+}
+
+void HeadlessRenderBridge::refreshTextureAssetsIfNeeded()
+{
+  if(!_isAppInited)
+  {
+    return;
+  }
+
+  const uint64_t textureRegistryVersion = _renderParam.GetTextureRegistryVersion();
+  if(textureRegistryVersion == _uploadedTextureRegistryVersion)
+  {
+    return;
+  }
+
+  _glInteropCache.Clear();
+  HelloVulkan& vulkan = _renderApp.getVulkan();
+  vulkan.recreateTextureResources(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
+  _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
 
 bool HeadlessRenderBridge::updateMainCamera(const HdRenderPassStateSharedPtr &renderPassState)

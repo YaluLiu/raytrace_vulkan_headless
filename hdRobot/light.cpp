@@ -274,13 +274,13 @@ std::string HdRobotDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
   if (boxedTextureFile.IsEmpty())
   {
     // Hydra runtime warns of empty path; we don't need to repeat it.
-    return "Error";
+    return {};
   }
 
   if (!boxedTextureFile.IsHolding<SdfAssetPath>())
   {
     TF_WARN("%s:%s does not hold SdfAssetPath - ignoring!", id.GetText(), HdLightTokens->textureFile.GetText());
-    return "Error";
+    return {};
   }
 
   const SdfAssetPath& assetPath = boxedTextureFile.UncheckedGet<SdfAssetPath>();
@@ -290,7 +290,7 @@ std::string HdRobotDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
   {
     // Texture file is missing
     TF_WARN("Unable to resolve asset path \"%s\"", assetPath.GetAssetPath().c_str());
-    return "Error";
+    return {};
   }
   return path;
 }
@@ -312,7 +312,7 @@ void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdR
     const GfMatrix4d& transform = sceneDelegate->GetTransform(id);
     auto rotateQuat = GfMatrix4f(transform.GetOrthonormalized()).ExtractRotationQuat();
     _scene.v_light[_light_id].rotateQuat = glm::vec4(rotateQuat.GetImaginary()[0], rotateQuat.GetImaginary()[1],
-                                                     rotateQuat.GetImaginary()[2], rotateQuat.GetImaginary()[3]);
+                                                     rotateQuat.GetImaginary()[2], rotateQuat.GetReal());
   }
 
   if (*dirtyBits & DirtyBits::DirtyParams)
@@ -327,7 +327,12 @@ void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdR
     _scene.v_light[_light_id].diffuse = diffuse;
     _scene.v_light[_light_id].specular = specular;
     std::string texturePath = GetTexturePath(sceneDelegate);
-    if (_scene.v_light[_light_id].texturePath != texturePath)
+    if(texturePath.empty())
+    {
+      _scene.v_light[_light_id].texturePath.clear();
+      _scene.v_light[_light_id].textureID = -1;
+    }
+    else if (_scene.v_light[_light_id].texturePath != texturePath)
     {
       _scene.v_light[_light_id].texturePath = texturePath;
       _scene.v_light[_light_id].textureID = _scene.RegisterTexturePath(texturePath, TextureUsage::Light);

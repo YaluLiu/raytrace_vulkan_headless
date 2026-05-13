@@ -24,6 +24,7 @@ public:
 private:
   void applyRenderSettings();
   void initOrResize();
+  void refreshTextureAssetsIfNeeded();
   bool updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void updateLights();
   void updateScene();
@@ -45,6 +46,7 @@ private:
   int           _frameIndex = 0;
   int           _width = -1;
   int           _height = -1;
+  uint64_t      _uploadedTextureRegistryVersion = 0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

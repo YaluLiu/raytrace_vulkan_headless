@@ -32,6 +32,8 @@ layout(set = 0, binding = eLights, scalar) readonly buffer Lights_
 lights;
 layout(set = 0, binding = eTextures) uniform sampler2D textureSamplers[];
 
+#include "dome_light.glsl"
+
 layout(location = 0) in vec3 inWorldPos;
 layout(location = 1) in vec3 inWorldNormal;
 layout(location = 2) in vec3 inColor;
@@ -113,15 +115,20 @@ void main()
   }
 
   vec3 baseColor = sampleBaseColor(mat, inTexCoord, inColor);
-  vec3 lighting = vec3(0.08);
+  vec3 lighting = vec3(0.0);
   int supportedLightCount = 0;
   uint lightCount = min(frameUni.lightCount, MAX_SCENE_LIGHTS);
   for(uint lightIndex = 0; lightIndex < lightCount; ++lightIndex)
   {
     Light light = lights.i[lightIndex];
-    if(light.type == 0)
+    if(light.type == LIGHT_TYPE_SPHERE)
     {
       lighting += evaluateSphereLight(light, normal, inWorldPos);
+      supportedLightCount++;
+    }
+    else if(light.type == LIGHT_TYPE_DOME)
+    {
+      lighting += sampleDomeLightDiffuse(light, normal) * max(light.diffuse, 0.0);
       supportedLightCount++;
     }
   }

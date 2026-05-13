@@ -18,6 +18,11 @@ const std::vector<TextureAsset>& HdRobotRenderParam::GetTextureAssets() const
   return textureRegistry.GetTextureAssets();
 }
 
+uint64_t HdRobotRenderParam::GetTextureRegistryVersion() const
+{
+  return textureRegistry.GetVersion();
+}
+
 void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
 {
   for (auto& mesh : v_mesh)

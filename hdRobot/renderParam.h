@@ -18,6 +18,7 @@ class HdRobotRenderParam final : public HdRenderParam
   int RegisterTexturePath(const std::string& texturePath, TextureUsage usage = TextureUsage::BaseColor);
   const std::vector<std::string>& GetTexturePaths() const;
   const std::vector<TextureAsset>& GetTextureAssets() const;
+  uint64_t GetTextureRegistryVersion() const;
 
   void MarkAllMeshesInstanceDirty();
   void MarkMeshInstanceDirty(size_t meshId);

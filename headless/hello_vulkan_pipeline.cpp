@@ -59,12 +59,14 @@ void HelloVulkan::createRasterFramebuffer()
 void HelloVulkan::createRasterPipeline()
 {
   vkDestroyPipeline(m_device, m_rasterPipeline, nullptr);
+  vkDestroyPipeline(m_device, m_domeBackgroundPipeline, nullptr);
   vkDestroyPipelineLayout(m_device, m_rasterPipelineLayout, nullptr);
   destroyRasterFramebuffer();
   vkDestroyRenderPass(m_device, m_rasterRenderPass, nullptr);
-  m_rasterPipeline       = VK_NULL_HANDLE;
-  m_rasterPipelineLayout = VK_NULL_HANDLE;
-  m_rasterRenderPass     = VK_NULL_HANDLE;
+  m_rasterPipeline         = VK_NULL_HANDLE;
+  m_domeBackgroundPipeline = VK_NULL_HANDLE;
+  m_rasterPipelineLayout   = VK_NULL_HANDLE;
+  m_rasterRenderPass       = VK_NULL_HANDLE;
 
   VkPushConstantRange pushConstant{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                    sizeof(PushConstantRaster)};
@@ -114,13 +116,35 @@ void HelloVulkan::createRasterPipeline()
     throw std::runtime_error("Failed to create raster graphics pipeline");
   }
 
+  nvvk::GraphicsPipelineState backgroundState;
+  backgroundState.rasterizationState.cullMode = VK_CULL_MODE_NONE;
+  backgroundState.depthStencilState.depthTestEnable = VK_FALSE;
+  backgroundState.depthStencilState.depthWriteEnable = VK_FALSE;
+  backgroundState.setBlendAttachmentCount(static_cast<uint32_t>(colorAttachmentFormats.size()));
+  for(uint32_t attachment = 0; attachment < colorAttachmentFormats.size(); ++attachment)
+  {
+    backgroundState.setBlendAttachmentState(attachment, nvvk::GraphicsPipelineState::makePipelineColorBlendAttachmentState());
+  }
+
+  nvvk::GraphicsPipelineGenerator backgroundGenerator(m_device, m_rasterPipelineLayout, m_rasterRenderPass,
+                                                      backgroundState);
+  backgroundGenerator.addShader(nvh::loadFile("spv/dome_background.vert.spv", true, defaultSearchPaths, true),
+                                VK_SHADER_STAGE_VERTEX_BIT);
+  backgroundGenerator.addShader(nvh::loadFile("spv/dome_background.frag.spv", true, defaultSearchPaths, true),
+                                VK_SHADER_STAGE_FRAGMENT_BIT);
+  m_domeBackgroundPipeline = backgroundGenerator.createPipeline();
+  if(m_domeBackgroundPipeline == VK_NULL_HANDLE)
+  {
+    throw std::runtime_error("Failed to create DomeLight background graphics pipeline");
+  }
+
   createRasterFramebuffer();
 }
 
 void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
 {
-  if(m_rasterPipeline == VK_NULL_HANDLE || m_rasterPipelineLayout == VK_NULL_HANDLE || m_rasterFramebuffer == VK_NULL_HANDLE
-     || m_descSet == VK_NULL_HANDLE)
+  if(m_rasterPipeline == VK_NULL_HANDLE || m_domeBackgroundPipeline == VK_NULL_HANDLE
+     || m_rasterPipelineLayout == VK_NULL_HANDLE || m_rasterFramebuffer == VK_NULL_HANDLE || m_descSet == VK_NULL_HANDLE)
   {
     return;
   }
@@ -146,13 +170,18 @@ void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
   renderPassInfo.pClearValues             = clearValues.data();
 
   vkCmdBeginRenderPass(cmdBuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipeline);
-  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipelineLayout, 0, 1, &m_descSet, 0, nullptr);
 
   VkViewport viewport{0.0f, 0.0f, static_cast<float>(m_aovSize.width), static_cast<float>(m_aovSize.height), 0.0f, 1.0f};
   VkRect2D   scissor{{0, 0}, m_aovSize};
   vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
   vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+
+  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_domeBackgroundPipeline);
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipelineLayout, 0, 1, &m_descSet, 0, nullptr);
+  vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+
+  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipeline);
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipelineLayout, 0, 1, &m_descSet, 0, nullptr);
 
   for(size_t instanceIndex = 0; instanceIndex < m_instances.size(); ++instanceIndex)
   {
@@ -191,6 +220,7 @@ void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
 
 void HelloVulkan::createDescriptorSetLayout()
 {
+  m_descSetLayoutBind.clear();
   auto nbTxt = static_cast<uint32_t>(m_textures.size());
 
   m_descSetLayoutBind.addBinding(SceneBindings::eFrameUniforms, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,

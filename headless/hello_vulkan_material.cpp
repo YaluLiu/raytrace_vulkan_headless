@@ -99,6 +99,46 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   resetFrameHistory();
 }
 
+void HelloVulkan::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
+{
+  nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
+  VkCommandBuffer   cmdBuf = cmdBufGet.createCommandBuffer();
+  const std::vector<std::string> noLegacyTextures;
+  createTextureImages(cmdBuf, noLegacyTextures, textureAssets);
+  cmdBufGet.submitAndWait(cmdBuf);
+  m_alloc.finalizeAndReleaseStaging();
+  resetFrameHistory();
+}
+
+void HelloVulkan::recreateTextureResources(const std::vector<TextureAsset>& textureAssets)
+{
+  vkDeviceWaitIdle(m_device);
+
+  vkDestroyPipeline(m_device, m_rasterPipeline, nullptr);
+  vkDestroyPipeline(m_device, m_domeBackgroundPipeline, nullptr);
+  vkDestroyPipelineLayout(m_device, m_rasterPipelineLayout, nullptr);
+  m_rasterPipeline = VK_NULL_HANDLE;
+  m_domeBackgroundPipeline = VK_NULL_HANDLE;
+  m_rasterPipelineLayout = VK_NULL_HANDLE;
+
+  vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
+  vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
+  m_descPool = VK_NULL_HANDLE;
+  m_descSetLayout = VK_NULL_HANDLE;
+  m_descSet = VK_NULL_HANDLE;
+
+  for(auto& texture : m_textures)
+  {
+    m_alloc.destroy(texture);
+  }
+  m_textures.clear();
+
+  loadTextureAssets(textureAssets);
+  createDescriptorSetLayout();
+  updateDescriptorSet();
+  createRasterPipeline();
+}
+
 void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures,
                                       const std::vector<TextureAsset>& textureAssets)
 {

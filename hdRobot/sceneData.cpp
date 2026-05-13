@@ -123,6 +123,7 @@ int TextureRegistry::Register(const std::string &texturePath, TextureUsage usage
   textureAsset.colorSpace = TextureColorSpaceForUsage(usage);
   _textureAssets.emplace_back(std::move(textureAsset));
   _textureIdByPath.emplace(key, textureId);
+  ++_version;
   return textureId;
 }
 
@@ -134,6 +135,11 @@ const std::vector<std::string> &TextureRegistry::GetPaths() const
 const std::vector<TextureAsset> &TextureRegistry::GetTextureAssets() const
 {
   return _textureAssets;
+}
+
+uint64_t TextureRegistry::GetVersion() const
+{
+  return _version;
 }
 
 void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader)

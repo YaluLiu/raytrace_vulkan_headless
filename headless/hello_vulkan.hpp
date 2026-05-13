@@ -24,6 +24,8 @@ public:
   void setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily) override;
   void createDescriptorSetLayout();
   void loadModel(ModelLoader& loader, glm::mat4 transform = glm::mat4(1));
+  void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
+  void recreateTextureResources(const std::vector<TextureAsset>& textureAssets);
   void updateDescriptorSet();
   void createUniformBuffer();
   void createObjDescriptionBuffer();
@@ -63,9 +65,9 @@ public:
   std::vector<ObjInstance> m_instances;
 
   nvvk::DescriptorSetBindings m_descSetLayoutBind;
-  VkDescriptorPool            m_descPool;
-  VkDescriptorSetLayout       m_descSetLayout;
-  VkDescriptorSet             m_descSet;
+  VkDescriptorPool            m_descPool{VK_NULL_HANDLE};
+  VkDescriptorSetLayout       m_descSetLayout{VK_NULL_HANDLE};
+  VkDescriptorSet             m_descSet{VK_NULL_HANDLE};
 
   nvvk::Buffer m_bFrameUniforms;
   nvvk::Buffer m_bObjDesc;
@@ -100,6 +102,7 @@ public:
   VkRenderPass     m_rasterRenderPass{VK_NULL_HANDLE};
   VkFramebuffer    m_rasterFramebuffer{VK_NULL_HANDLE};
   VkPipeline       m_rasterPipeline{VK_NULL_HANDLE};
+  VkPipeline       m_domeBackgroundPipeline{VK_NULL_HANDLE};
   VkPipelineLayout m_rasterPipelineLayout{VK_NULL_HANDLE};
 
   void saveOffscreenColorToFile(const char* filename);

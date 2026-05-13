@@ -250,7 +250,9 @@ void HelloVulkan::createObjDescriptionBuffer()
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
 
   auto cmdBuf = cmdGen.createCommandBuffer();
-  m_bObjDesc  = m_alloc.createBuffer(cmdBuf, m_objDesc, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+  const std::vector<ObjDesc> dummyObjDesc(1);
+  const std::vector<ObjDesc>& objDesc = m_objDesc.empty() ? dummyObjDesc : m_objDesc;
+  m_bObjDesc  = m_alloc.createBuffer(cmdBuf, objDesc, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
   cmdGen.submitAndWait(cmdBuf);
   m_alloc.finalizeAndReleaseStaging();
   m_debug.setObjectName(m_bObjDesc.buffer, "ObjDescs");
@@ -280,6 +282,7 @@ void HelloVulkan::destroyResources()
 
   destroyRasterFramebuffer();
   vkDestroyPipeline(m_device, m_rasterPipeline, nullptr);
+  vkDestroyPipeline(m_device, m_domeBackgroundPipeline, nullptr);
   vkDestroyPipelineLayout(m_device, m_rasterPipelineLayout, nullptr);
   vkDestroyRenderPass(m_device, m_rasterRenderPass, nullptr);
 
