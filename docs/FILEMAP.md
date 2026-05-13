@@ -46,13 +46,20 @@ a separate cleanup if the public surface can absorb the churn.
 
 ## Headless Vulkan Renderer
 
-- `headless/hello_vulkan.hpp`: Main `HelloVulkan` state, public controls,
-  renderer resources, offscreen fields, and helper declarations.
-- `headless/hello_vulkan.cpp`: Core setup, camera uniforms, resize handling,
-  AOV texture export, and offscreen raster target flow.
+- `headless/hello_vulkan.hpp`: Main `HelloVulkan` renderer facade, public
+  controls, scene buffers, descriptor state, compatibility wrappers, and
+  `RasterPipeline` ownership.
+- `headless/hello_vulkan.cpp`: Core setup, camera uniforms, resize forwarding,
+  AOV texture wrapper, and renderer resource lifecycle.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
   OpenGL types.
+- `headless/raster_scene_types.hpp`: Shared draw input types used by
+  `HelloVulkan` and `RasterPipeline`.
+- `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Main raster
+  pipeline wrapper owning offscreen AOV images, depth attachment, raster render
+  pass, framebuffer, graphics pipelines, AOV texture export backing, and draw
+  command recording.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.
@@ -60,8 +67,9 @@ a separate cleanup if the public surface can absorb the churn.
   transform/visibility updates, and geometry buffer refresh.
 - `headless/hello_vulkan_material.cpp`: Material loading, material buffer
   updates, and model loading into the renderer.
-- `headless/hello_vulkan_pipeline.cpp`: Raster graphics pipeline,
-  framebuffer creation, draw loop, and shared scene descriptor set updates.
+- `headless/hello_vulkan_pipeline.cpp`: Shared scene descriptor set updates
+  plus compatibility wrappers that delegate the main raster pass to
+  `RasterPipeline`.
 - `headless/hello_vulkan_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `headless/headless_vk.cpp`: Headless Vulkan offline app context support.
 
@@ -69,10 +77,11 @@ a separate cleanup if the public surface can absorb the churn.
 
 - `headless/aov_texture.hpp`: Public headless AOV contract, currently
   `color`, `depth`, `primId`, and `instanceId`.
-- `headless/hello_vulkan.cpp`: Offscreen target allocation, resize refresh,
-  AOV texture export, and direct color/depth/id target selection.
-- `headless/hello_vulkan.hpp`: Offscreen color/depth/id texture state and
-  public AOV access surface.
+- `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Offscreen
+  target allocation, resize refresh, AOV texture export backing, direct
+  color/depth/id target selection, and framebuffer rebuilds.
+- `headless/hello_vulkan.cpp`: Public compatibility wrappers for resize and
+  `GetAovTexture`.
 
 ## Raster Baseline
 
@@ -161,17 +170,20 @@ a separate cleanup if the public surface can absorb the churn.
   `rasterize`, `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
-  `headless/ray_trace_app.cpp`, then search for `onResize`,
-  `refreshOffscreenRenderTargetsIfNeeded`, `computeRenderSize`, and
+  `headless/raster_pipeline.cpp`, `headless/ray_trace_app.cpp`, then search
+  for `onResize`, `createOffscreenRender`, `getRenderSize`, and
   `initOrResize`.
 - Offscreen AOV export:
-  `headless/aov_texture.hpp`, `headless/hello_vulkan.cpp`,
-  `hdRobot/renderTextureExport.cpp`, then search for `GetAovTexture`,
-  `HeadlessAov`, and `ExportRenderTexture`.
+  `headless/aov_texture.hpp`, `headless/raster_pipeline.cpp`,
+  `headless/hello_vulkan.cpp`, `hdRobot/renderTextureExport.cpp`, then search
+  for `GetAovTexture`, `getAovTexture`, `HeadlessAov`, and
+  `ExportRenderTexture`.
 - Raster pipeline:
+  `headless/raster_pipeline.hpp`, `headless/raster_pipeline.cpp`,
   `headless/hello_vulkan_pipeline.cpp`, `headless/shaders/raster.vert`,
-  `headless/shaders/raster.frag`, then search for `createRasterPipeline`,
-  `createRasterFramebuffer`, and `PushConstantRaster`.
+  `headless/shaders/raster.frag`, then search for `RasterPipeline`,
+  `createGraphicsPipeline`, `createFramebuffer`, `rasterize`, and
+  `PushConstantRaster`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
   `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,
@@ -244,15 +256,16 @@ a separate cleanup if the public surface can absorb the churn.
 
 The graph report currently identifies these high-connectivity anchors:
 
-- `RenderFrame()`
-- `loadModel()`
-- `setupContext()`
-- `refreshOffscreenRenderTargetsIfNeeded()`
-- `createDesc()`
+- `GetOrImportSourceGlTexture()`
 - `_CreateGiMeshes()`
-- `queryOptimalSettings()`
-- `evaluate()`
-- `onResize()`
+- `createDesc()`
+- `RenderFrame()`
+- `setupContext()`
+- `createOffscreenRender()`
+- `updateScene()`
+- `Sync()`
+- `_ProcessPrimvar()`
+- `setup()`
 
 When a question is ambiguous, start from the matching anchor, inspect its
 definition, then read direct callers/callees before widening to the full

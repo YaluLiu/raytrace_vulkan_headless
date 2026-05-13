@@ -2,16 +2,19 @@
 
 The headless target now provides a compact Vulkan raster baseline for Hydra and
 standalone rendering. It renders mesh color, normalized depth, primitive ID, and
-instance ID AOVs through the offscreen framebuffer owned by `HelloVulkan`.
+instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
 
 ## Main Files
 
 - `ray_trace_app.cpp` owns Vulkan context setup, resource creation, resize
   forwarding, and frame pass ordering.
 - `hello_vulkan.cpp` owns renderer setup, render settings, frame uniforms,
-  offscreen target allocation, and AOV export.
-- `hello_vulkan_pipeline.cpp` owns descriptor layout updates, graphics pipeline
-  creation, framebuffer creation, and raster draw submission.
+  resize/lifecycle forwarding, and AOV export wrappers.
+- `raster_pipeline.hpp` and `raster_pipeline.cpp` own the main raster
+  offscreen AOV targets, graphics pipeline, framebuffer, AOV export backing,
+  and draw command recording.
+- `hello_vulkan_pipeline.cpp` keeps descriptor layout updates and compatibility
+  wrappers that route the main raster pass into `RasterPipeline`.
 - `hello_vulkan_mesh.cpp` owns mesh upload, geometry refresh, and per-instance
   transform or visibility updates.
 - `hello_vulkan_hydra.cpp` applies Hydra camera, light, material, and scene
@@ -27,11 +30,12 @@ instance ID AOVs through the offscreen framebuffer owned by `HelloVulkan`.
 
 1. `UpdateUniforms`
 2. `UpdateLights`
-3. `Rasterize`
+3. `Rasterize` through `HelloVulkan::rasterize()`, which delegates command
+   recording to `RasterPipeline`
 
-The raster pass binds the shared scene descriptor set, then draws each visible
-instance with `PushConstantRaster` data for model transform, object index, and
-instance ID.
+The raster pipeline binds the shared scene descriptor set, then draws each
+visible instance with `PushConstantRaster` data for model transform, object
+index, and instance ID.
 
 ## AOVs
 
