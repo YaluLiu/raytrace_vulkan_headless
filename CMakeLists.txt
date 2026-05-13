@@ -58,7 +58,6 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 message(STATUS "ENABLE_GL_VK_CONVERSION: ${ENABLE_GL_VK_CONVERSION}")
 # Sub examples
 add_subdirectory(headless)
-add_subdirectory(demo)
 if(ENABLE_HYDRA)
   add_subdirectory(hdRobot)
 endif()

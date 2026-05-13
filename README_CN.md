@@ -1,12 +1,11 @@
 # raytrace_vulkan_headless
 
-Headless Vulkan rasterization demo
+Headless Vulkan rasterization renderer
 
 ## 项目介绍
 
-本项目是一个支持独立运行和 OpenUSD Hydra 插件入口的 headless Vulkan
-渲染器。当前实现是精简的光栅化基线，输出 color、depth、primitive ID
-和 instance ID AOV。
+本项目是一个支持 OpenUSD Hydra 插件入口的 headless Vulkan 渲染器。当前实现
+是精简的光栅化基线，输出 color、depth、primitive ID 和 instance ID AOV。
 
 主要修改包括：
 
@@ -44,13 +43,7 @@ Headless Vulkan rasterization demo
 
 ## 运行方式
 
-编译完成后，直接运行：
-
-```bash
-bash install.sh demo
-```
-
-可以运行 headless 的测试 demo
+编译完成后，可以运行 Hydra 插件流程：
 
 ```bash
 bash install.sh hydra
@@ -66,9 +59,8 @@ HYDRA_SCENE_PATH=/path/to/scene.usda bash install.sh hydra
 
 ## 视觉回归（AI 自验收）
 
-旧的 `baseline` 和 `selfcheck` helper 已从 `install.sh` 移除。现在可以
-使用 `bash install.sh demo` 或 `bash install.sh hydra` 生成 color/depth/id
-AOV，再用外部图像对比工具做回归检查。
+旧的 `baseline` 和 `selfcheck` helper 已从 `install.sh` 移除。现在可以使用
+`bash install.sh hydra` 生成 color/depth/id AOV，再用外部图像对比工具做回归检查。
 
 ```bash
 bash install.sh baseline

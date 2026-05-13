@@ -1,12 +1,12 @@
 # raytrace_vulkan_headless
 
-Headless Vulkan rasterization demo
+Headless Vulkan rasterization renderer
 
 ## Overview
 
-This project is a headless Vulkan renderer with standalone and OpenUSD Hydra
-entry points. The current renderer is a compact rasterization baseline that
-exports color, depth, primitive ID, and instance ID AOVs.
+This project is a headless Vulkan renderer with an OpenUSD Hydra entry point.
+The current renderer is a compact rasterization baseline that exports color,
+depth, primitive ID, and instance ID AOVs.
 
 Major modifications include:
 
@@ -46,13 +46,7 @@ The build uses CMake and the nvpro_core helper libraries:
 
 ## Run
 
-After building, you can use the following commands to run demos or plugins:
-
-```bash
-bash install.sh demo
-```
-
-Runs the headless test demo.
+After building, you can use the following command to run the plugin workflow:
 
 ```bash
 bash install.sh hydra
@@ -70,9 +64,8 @@ HYDRA_SCENE_PATH=/path/to/scene.usda bash install.sh hydra
 ## Visual Regression (AI Self-check)
 
 The old `baseline` and `selfcheck` helpers have been removed from
-`install.sh`. Use `bash install.sh demo` or `bash install.sh hydra`, then
-compare the generated color/depth/id AOV artifacts with your preferred image
-diff tooling.
+`install.sh`. Use `bash install.sh hydra`, then compare the generated
+color/depth/id AOV artifacts with your preferred image diff tooling.
 
 ```bash
 bash install.sh baseline

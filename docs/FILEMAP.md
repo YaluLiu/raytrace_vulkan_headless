@@ -9,11 +9,10 @@ call sites with `rg`.
 
 - `CMakeLists.txt`: Root build configuration, options, and subdirectory
   registration.
-- `install.sh`: Main local build/run helper used by demo and hydra workflows.
+- `install.sh`: Main local build/run helper used by Hydra workflows.
 - `headless/`: Core headless Vulkan rasterization library and shaders.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   headless renderer.
-- `demo/`: Standalone demo executable and USD loading helpers.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
@@ -26,10 +25,9 @@ call sites with `rg`.
   compilation, and renderer compile definitions.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
-- `demo/CMakeLists.txt`: Standalone demo target.
+
 ## Runtime Entry Points
 
-- `demo/main.cpp`: Demo application entry and scene setup.
 - `headless/ray_trace_app.cpp`: Headless app orchestration, raster-oriented
   Vulkan context setup, resize forwarding, frame pass sequencing, and default
   scene loading.
@@ -143,10 +141,6 @@ a separate cleanup if the public surface can absorb the churn.
 - `common/obj_loader.h` / `common/obj_loader.cpp`: OBJ loader implementation,
   vertices, indices, normals, texcoords, material assignment, and fallback
   normals.
-- `demo/usd_loader.h` / `demo/usd_loader.cpp`: USD scene loading helper for the
-  demo path, including `UsdShadeMaterial` to `UsdPreviewSurface` parsing and
-  mesh `displayColor` primvar fallback for primvar-driven base color.
-- `demo/main.cpp`: Example scene composition and model loading calls.
 - `headless/ray_trace_app.cpp`: Default headless scene loading.
 
 ## Shader Files
