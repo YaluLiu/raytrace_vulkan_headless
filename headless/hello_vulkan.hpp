@@ -7,6 +7,7 @@
 #include "nvvk/descriptorsets_vk.hpp"
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
+#include "raster_pipeline.hpp"
 #include "raster_scene_types.hpp"
 #include "shaders/host_device.h"
 
@@ -88,6 +89,7 @@ public:
   VkPipeline       m_rasterPipeline{VK_NULL_HANDLE};
   VkPipeline       m_domeBackgroundPipeline{VK_NULL_HANDLE};
   VkPipelineLayout m_rasterPipelineLayout{VK_NULL_HANDLE};
+  RasterPipeline   m_mainRasterPipeline;
 
   void saveOffscreenColorToFile(const char* filename);
 
