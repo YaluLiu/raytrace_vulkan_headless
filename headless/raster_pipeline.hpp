@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <span>
 
@@ -35,6 +36,8 @@ public:
   std::optional<HeadlessAovTexture> getAovTexture(HeadlessAov aov) const;
   VkExtent2D getRenderSize() const { return _renderSize; }
   VkExtent2D getAovSize() const { return _aovSize; }
+  const nvvk::Texture& getColorTextureForReadback() const { return _offscreenColor; }
+  const nvvk::Texture& getObjectIdTextureForReadback() const { return _offscreenObjectId; }
 
 private:
   void createOffscreenImage(nvvk::Texture& texture, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent);
@@ -45,9 +48,9 @@ private:
   VkPhysicalDevice _physicalDevice{VK_NULL_HANDLE};
   uint32_t         _graphicsQueueIndex{0};
 
-  nvvk::ResourceAllocatorDma*            _transientAllocator{nullptr};
-  nvvk::DebugUtil*                       _debug{nullptr};
-  nvvk::ExportResourceAllocatorDedicated _sharedAlloc;
+  nvvk::ResourceAllocatorDma*                    _transientAllocator{nullptr};
+  nvvk::DebugUtil*                               _debug{nullptr};
+  mutable nvvk::ExportResourceAllocatorDedicated _sharedAlloc;
 
   nvvk::Texture _offscreenColor;
   VkFormat      _offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};

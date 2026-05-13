@@ -18,9 +18,11 @@ extern std::vector<std::string> defaultSearchPaths;
 
 std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 {
-  std::vector<uint32_t> result(m_aovSize.width * m_aovSize.height, 0);
+  const VkExtent2D    aovSize         = m_mainRasterPipeline.getAovSize();
+  const nvvk::Texture& objectIdTexture = m_mainRasterPipeline.getObjectIdTextureForReadback();
+  std::vector<uint32_t> result(aovSize.width * aovSize.height, 0);
 
-  VkDeviceSize       imageSize = m_aovSize.width * m_aovSize.height * sizeof(uint32_t);
+  VkDeviceSize       imageSize = aovSize.width * aovSize.height * sizeof(uint32_t);
   VkBufferCreateInfo bInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   bInfo.size  = imageSize;
   bInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -43,7 +45,7 @@ std::vector<uint32_t> HelloVulkan::readObjectIdImage()
   VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
   barrier.oldLayout        = VK_IMAGE_LAYOUT_GENERAL;
   barrier.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  barrier.image            = m_offscreenObjectId.image;
+  barrier.image            = objectIdTexture.image;
   barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
   barrier.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT;
   barrier.dstAccessMask    = VK_ACCESS_TRANSFER_READ_BIT;
@@ -52,9 +54,9 @@ std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 
   VkBufferImageCopy region{};
   region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-  region.imageExtent      = {m_aovSize.width, m_aovSize.height, 1};
+  region.imageExtent      = {aovSize.width, aovSize.height, 1};
 
-  vkCmdCopyImageToBuffer(cmd, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging, 1, &region);
+  vkCmdCopyImageToBuffer(cmd, objectIdTexture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging, 1, &region);
 
   std::swap(barrier.oldLayout, barrier.newLayout);
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
@@ -166,8 +168,9 @@ void HelloVulkan::saveOffscreenColorToFile(const char* filename)
   VkDevice device = m_device;
   VkQueue  queue  = m_queue;
 
-  VkExtent2D extent    = m_size;
-  VkImage    srcImage  = m_offscreenColor.image;
+  const VkExtent2D     extent       = m_mainRasterPipeline.getRenderSize();
+  const nvvk::Texture& colorTexture = m_mainRasterPipeline.getColorTextureForReadback();
+  VkImage              srcImage     = colorTexture.image;
   uint32_t   w         = extent.width;
   uint32_t   h         = extent.height;
   size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT

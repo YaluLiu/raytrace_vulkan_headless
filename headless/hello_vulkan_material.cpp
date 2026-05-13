@@ -111,12 +111,7 @@ void HelloVulkan::recreateTextureResources(const std::vector<TextureAsset>& text
 {
   vkDeviceWaitIdle(m_device);
 
-  vkDestroyPipeline(m_device, m_rasterPipeline, nullptr);
-  vkDestroyPipeline(m_device, m_domeBackgroundPipeline, nullptr);
-  vkDestroyPipelineLayout(m_device, m_rasterPipelineLayout, nullptr);
-  m_rasterPipeline = VK_NULL_HANDLE;
-  m_domeBackgroundPipeline = VK_NULL_HANDLE;
-  m_rasterPipelineLayout = VK_NULL_HANDLE;
+  m_mainRasterPipeline.destroyGraphicsPipeline();
 
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);

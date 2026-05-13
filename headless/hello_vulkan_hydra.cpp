@@ -62,25 +62,6 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
   cmdGen.submitAndWait(cmdBuf);
 }
 
-void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
-                                       VkFormat format,
-                                       VkImageUsageFlags usage,
-                                       VkExtent2D extent)
-{
-  if(extent.width == 0 || extent.height == 0)
-  {
-    extent = m_size;
-  }
-
-  m_sharedAlloc.destroy(texture);
-  auto                  imageInfo = nvvk::makeImage2DCreateInfo(extent, format, usage);
-  nvvk::Image           image     = m_sharedAlloc.createImage(imageInfo);
-  VkImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageInfo);
-  VkSamplerCreateInfo   sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-  texture                        = m_sharedAlloc.createTexture(image, ivInfo, sampler);
-  texture.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-}
-
 void HelloVulkan::addLight(const Light& light)
 {
   m_lights.push_back(light);

@@ -21,94 +21,17 @@
 
 extern std::vector<std::string> defaultSearchPaths;
 
-namespace {
-bool requiresDedicatedImageAllocation(VkDevice device, VkImage image)
-{
-  if(device == VK_NULL_HANDLE || image == VK_NULL_HANDLE)
-  {
-    return false;
-  }
-
-  VkMemoryDedicatedRequirements  dedicatedRequirements{VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS};
-  VkMemoryRequirements2          memoryRequirements{VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
-  VkImageMemoryRequirementsInfo2 imageRequirements{VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2};
-  imageRequirements.image = image;
-  memoryRequirements.pNext = &dedicatedRequirements;
-
-  vkGetImageMemoryRequirements2(device, &imageRequirements, &memoryRequirements);
-  return dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE;
-}
-}
-
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
   AppOffline::setup(instance, device, physicalDevice, queueFamily);
   m_alloc.init(device, physicalDevice);
   m_debug.setup(m_device);
-  m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
-  m_sharedAlloc.init(device, physicalDevice);
+  m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
 }
 
 std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
 {
-  const nvvk::Texture* texture = nullptr;
-  VkFormat             format  = VK_FORMAT_UNDEFINED;
-  VkExtent2D           extent  = {0, 0};
-
-  switch(aov)
-  {
-    case HeadlessAov::Color:
-      texture = &m_offscreenColor;
-      format  = m_offscreenColorFormat;
-      extent  = m_size;
-      break;
-    case HeadlessAov::PrimId:
-      texture = &m_offscreenObjectId;
-      format  = m_offscreenObjectIdFormat;
-      extent  = m_aovSize;
-      break;
-    case HeadlessAov::InstanceId:
-      texture = &m_offscreenInstanceId;
-      format  = m_offscreenInstanceIdFormat;
-      extent  = m_aovSize;
-      break;
-    case HeadlessAov::Depth:
-      texture = &m_offscreenDepthAov;
-      format  = m_offscreenDepthAovFormat;
-      extent  = m_aovSize;
-      break;
-  }
-
-  if(texture == nullptr || texture->image == VK_NULL_HANDLE || texture->descriptor.imageView == VK_NULL_HANDLE
-     || texture->memHandle == nullptr)
-  {
-    return std::nullopt;
-  }
-
-  auto* memAlloc = m_sharedAlloc.getMemoryAllocator();
-  if(memAlloc == nullptr)
-  {
-    return std::nullopt;
-  }
-
-  const auto memoryInfo = memAlloc->getMemoryInfo(texture->memHandle);
-  if(memoryInfo.memory == VK_NULL_HANDLE)
-  {
-    return std::nullopt;
-  }
-
-  HeadlessAovTexture result;
-  result.device       = m_device;
-  result.image        = texture->image;
-  result.imageView    = texture->descriptor.imageView;
-  result.memory       = memoryInfo.memory;
-  result.memoryOffset = memoryInfo.offset;
-  result.memorySize   = memoryInfo.size;
-  result.format       = format;
-  result.extent       = extent;
-  result.layout       = texture->descriptor.imageLayout;
-  result.dedicatedMemory = requiresDedicatedImageAllocation(m_device, texture->image);
-  return result;
+  return m_mainRasterPipeline.getAovTexture(aov);
 }
 
 void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
@@ -120,32 +43,6 @@ void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
     m_mainCameraClipStart = safeStart;
     m_mainCameraClipEnd   = safeEnd;
   }
-}
-
-VkExtent2D HelloVulkan::computeRenderSize()
-{
-  return m_size;
-}
-
-void HelloVulkan::refreshOffscreenRenderTargetsIfNeeded()
-{
-  if(m_device == VK_NULL_HANDLE || m_size.width == 0 || m_size.height == 0)
-  {
-    return;
-  }
-
-  const VkExtent2D desiredRenderSize = computeRenderSize();
-  if(desiredRenderSize.width == m_renderSize.width && desiredRenderSize.height == m_renderSize.height)
-  {
-    return;
-  }
-
-  createOffscreenRender();
-  refreshOffscreenRenderTargetDescriptors();
-}
-
-void HelloVulkan::refreshOffscreenRenderTargetDescriptors()
-{
 }
 
 void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
@@ -208,6 +105,8 @@ void HelloVulkan::createObjDescriptionBuffer()
 
 void HelloVulkan::destroyResources()
 {
+  m_mainRasterPipeline.destroy();
+
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
 
@@ -227,19 +126,6 @@ void HelloVulkan::destroyResources()
   {
     m_alloc.destroy(t);
   }
-
-  destroyRasterFramebuffer();
-  vkDestroyPipeline(m_device, m_rasterPipeline, nullptr);
-  vkDestroyPipeline(m_device, m_domeBackgroundPipeline, nullptr);
-  vkDestroyPipelineLayout(m_device, m_rasterPipelineLayout, nullptr);
-  vkDestroyRenderPass(m_device, m_rasterRenderPass, nullptr);
-
-  m_alloc.destroy(m_offscreenDepth);
-  m_sharedAlloc.destroy(m_offscreenColor);
-  m_sharedAlloc.destroy(m_offscreenObjectId);
-  m_sharedAlloc.destroy(m_offscreenInstanceId);
-  m_sharedAlloc.destroy(m_offscreenDepthAov);
-  m_sharedAlloc.deinit();
 
   if(m_compPipeline != VK_NULL_HANDLE)
     vkDestroyPipeline(m_device, m_compPipeline, nullptr);
@@ -262,60 +148,16 @@ void HelloVulkan::onResize(int w, int h)
 
   if(w == (int)m_size.width && h == (int)m_size.height)
   {
-    refreshOffscreenRenderTargetsIfNeeded();
+    createOffscreenRender();
     return;
   }
 
   m_size.width  = w;
   m_size.height = h;
   createOffscreenRender();
-  refreshOffscreenRenderTargetDescriptors();
 }
 
 void HelloVulkan::createOffscreenRender()
 {
-  destroyRasterFramebuffer();
-
-  m_renderSize = computeRenderSize();
-  m_aovSize    = m_size;
-
-  constexpr VkImageUsageFlags kAovUsage =
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-
-  createOffscreenImage(m_offscreenColor, m_offscreenColorFormat,
-                       kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                       m_renderSize);
-  createOffscreenImage(m_offscreenObjectId, m_offscreenObjectIdFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                       m_aovSize);
-  createOffscreenImage(m_offscreenInstanceId, m_offscreenInstanceIdFormat, kAovUsage, m_aovSize);
-  createOffscreenImage(m_offscreenDepthAov, m_offscreenDepthAovFormat, kAovUsage, m_aovSize);
-  m_alloc.destroy(m_offscreenDepth);
-  auto depthCreateInfo =
-      nvvk::makeImage2DCreateInfo(m_renderSize, m_offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-  {
-    nvvk::Image image = m_alloc.createImage(depthCreateInfo);
-
-    VkImageViewCreateInfo depthStencilView{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-    depthStencilView.viewType         = VK_IMAGE_VIEW_TYPE_2D;
-    depthStencilView.format           = m_offscreenDepthFormat;
-    depthStencilView.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
-    depthStencilView.image            = image.image;
-
-    m_offscreenDepth = m_alloc.createTexture(image, depthStencilView);
-  }
-
-
-  {
-    nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-    auto              cmdBuf = genCmdBuf.createCommandBuffer();
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenColor.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepth.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenInstanceId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, m_offscreenDepthAov.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    genCmdBuf.submitAndWait(cmdBuf);
-  }
-
-  createRasterFramebuffer();
+  m_mainRasterPipeline.createOffscreenRender(m_size);
 }

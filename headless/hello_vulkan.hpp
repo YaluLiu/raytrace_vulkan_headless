@@ -84,37 +84,14 @@ public:
   VkPipeline                  m_compPipeline{VK_NULL_HANDLE};
   VkPipelineLayout            m_compPipelineLayout{VK_NULL_HANDLE};
 
-  VkRenderPass     m_rasterRenderPass{VK_NULL_HANDLE};
-  VkFramebuffer    m_rasterFramebuffer{VK_NULL_HANDLE};
-  VkPipeline       m_rasterPipeline{VK_NULL_HANDLE};
-  VkPipeline       m_domeBackgroundPipeline{VK_NULL_HANDLE};
-  VkPipelineLayout m_rasterPipelineLayout{VK_NULL_HANDLE};
-  RasterPipeline   m_mainRasterPipeline;
+  RasterPipeline m_mainRasterPipeline;
 
   void saveOffscreenColorToFile(const char* filename);
 
   void createOffscreenRender();
 
-  nvvk::Texture          m_offscreenColor;
-  VkFormat               m_offscreenColorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-
-  nvvk::Texture          m_offscreenObjectId;
-  VkFormat               m_offscreenObjectIdFormat{VK_FORMAT_R32_SINT};
-
-  nvvk::Texture          m_offscreenInstanceId;
-  VkFormat               m_offscreenInstanceIdFormat{VK_FORMAT_R32_SINT};
-
-  nvvk::Texture          m_offscreenDepthAov;
-  VkFormat               m_offscreenDepthAovFormat{VK_FORMAT_R32_SFLOAT};
-
-  mutable nvvk::ExportResourceAllocatorDedicated m_sharedAlloc;
-  VkExtent2D                                    m_renderSize{0, 0};
-  VkExtent2D                                    m_aovSize{0, 0};
-  float                                         m_mainCameraClipStart{0.1f};
-  float                                         m_mainCameraClipEnd{1000.0f};
-
-  nvvk::Texture m_offscreenDepth;
-  VkFormat      m_offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
+  float m_mainCameraClipStart{0.1f};
+  float m_mainCameraClipEnd{1000.0f};
 
   std::vector<uint32_t> readObjectIdImage();
 
@@ -130,16 +107,5 @@ public:
   void clearLights();
   void createLightBuffer();
   void updateLightBuffer(const VkCommandBuffer& cmdBuf);
-
-private:
-  void createOffscreenImage(nvvk::Texture&    texture,
-                            VkFormat          format,
-                            VkImageUsageFlags usage,
-                            VkExtent2D        extent = {0, 0});
-  VkExtent2D computeRenderSize();
-  void       refreshOffscreenRenderTargetsIfNeeded();
-  void       refreshOffscreenRenderTargetDescriptors();
-  void       createRasterFramebuffer();
-  void       destroyRasterFramebuffer();
 
 };
