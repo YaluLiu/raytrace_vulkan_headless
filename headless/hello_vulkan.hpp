@@ -7,6 +7,7 @@
 #include "nvvk/descriptorsets_vk.hpp"
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
+#include "raster_scene_types.hpp"
 #include "shaders/host_device.h"
 
 #include "ModelLoader.h"
@@ -38,22 +39,8 @@ public:
   void destroyResources();
   std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
 
-  struct ObjModel
-  {
-    uint32_t     nbIndices{0};
-    uint32_t     nbVertices{0};
-    nvvk::Buffer vertexBuffer;
-    nvvk::Buffer indexBuffer;
-    nvvk::Buffer matColorBuffer;
-    nvvk::Buffer matIndexBuffer;
-  };
-
-  struct ObjInstance
-  {
-    glm::mat4 transform;
-    uint32_t  objIndex{0};
-    bool      visible{true};
-  };
+  using ObjModel = RasterObjModel;
+  using ObjInstance = RasterObjInstance;
 
   uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
   size_t getInstanceCount() const { return m_instances.size(); }
