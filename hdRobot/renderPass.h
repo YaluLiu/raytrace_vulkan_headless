@@ -39,7 +39,6 @@ class HdRobotRenderPass final : public HdRenderPass
 public:
   HdRobotRenderPass(HdRenderIndex*             index,
                     const HdRprimCollection&   collection,
-                    const HdRenderSettingsMap& settings,
                     HdRobotRenderParam&        renderParam,
                     std::string                resourcePath);
 

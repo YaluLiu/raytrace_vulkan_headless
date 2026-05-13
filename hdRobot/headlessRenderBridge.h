@@ -16,13 +16,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HeadlessRenderBridge final
 {
 public:
-  HeadlessRenderBridge(const HdRenderSettingsMap& settings, HdRobotRenderParam& renderParam, std::string resourcePath);
+  HeadlessRenderBridge(HdRobotRenderParam& renderParam, std::string resourcePath);
   ~HeadlessRenderBridge();
 
   bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
 
 private:
-  void applyRenderSettings();
   void initOrResize();
   void refreshTextureAssetsIfNeeded();
   bool updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState);
@@ -34,7 +33,6 @@ private:
   bool updateActiveRenderTags(const TfTokenVector& renderTags);
   bool isMeshRenderTagMatched(const HydraMesh& mesh) const;
 
-  const HdRenderSettingsMap& _settings;
   HdRobotRenderParam&        _renderParam;
   std::string                _resourcePath;
 
@@ -43,7 +41,6 @@ private:
   bool          _isAppInited = false;
   bool          _resetRenderBuffer = false;
   TfTokenVector _activeRenderTags;
-  int           _frameIndex = 0;
   int           _width = -1;
   int           _height = -1;
   uint64_t      _uploadedTextureRegistryVersion = 0;

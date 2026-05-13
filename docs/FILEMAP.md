@@ -48,17 +48,16 @@ a separate cleanup if the public surface can absorb the churn.
 
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` state, public controls,
   renderer resources, offscreen fields, and helper declarations.
-- `headless/hello_vulkan.cpp`: Core setup, frame rendering state, resize
-  handling, accumulation reset, render settings application, and offscreen
-  raster target flow.
+- `headless/hello_vulkan.cpp`: Core setup, camera uniforms, resize handling,
+  AOV texture export, and offscreen raster target flow.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
   OpenGL types.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
-  camera/light/material/mesh update paths, and accumulation invalidation.
+  light/material update paths, texture export allocation, and light buffer
+  uploads.
 - `headless/hello_vulkan_mesh.cpp`: Mesh upload, raster instance
-  transform/visibility updates, geometry buffer refresh, and mesh-driven
-  accumulation reset paths.
+  transform/visibility updates, and geometry buffer refresh.
 - `headless/hello_vulkan_material.cpp`: Material loading, material buffer
   updates, and model loading into the renderer.
 - `headless/hello_vulkan_pipeline.cpp`: Raster graphics pipeline,
@@ -95,8 +94,6 @@ a separate cleanup if the public surface can absorb the churn.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, scene dirty flags, texture registry, and renderer bridge
   ownership.
-- `hdRobot/renderSettings.h` / `hdRobot/renderSettings.cpp`: Render setting
-  tokens, parsing, and application helpers.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
 
@@ -158,11 +155,10 @@ a separate cleanup if the public surface can absorb the churn.
 
 ## Question Routing
 
-- Frame rendering or accumulation:
+- Frame rendering:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `hdRobot/headlessRenderBridge.cpp`, then search for `RenderFrame`,
-  `rasterize`, `resetAccumulation`, `resetFrameHistory`, and
-  `applyRenderSettings`.
+  `rasterize`, `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/ray_trace_app.cpp`, then search for `onResize`,
@@ -249,8 +245,6 @@ a separate cleanup if the public surface can absorb the churn.
 The graph report currently identifies these high-connectivity anchors:
 
 - `RenderFrame()`
-- `resetFrameHistory()`
-- `resetAccumulation()`
 - `loadModel()`
 - `setupContext()`
 - `refreshOffscreenRenderTargetsIfNeeded()`

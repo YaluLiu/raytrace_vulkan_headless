@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <string>
 
 #include <glm/glm.hpp>
@@ -23,21 +22,6 @@
 extern std::vector<std::string> defaultSearchPaths;
 
 namespace {
-bool matrixNearlyEqual(const glm::mat4& a, const glm::mat4& b, float eps = 1e-5f)
-{
-  for(int c = 0; c < 4; ++c)
-  {
-    for(int r = 0; r < 4; ++r)
-    {
-      if(std::fabs(a[c][r] - b[c][r]) > eps)
-      {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 bool requiresDedicatedImageAllocation(VkDevice device, VkImage image)
 {
   if(device == VK_NULL_HANDLE || image == VK_NULL_HANDLE)
@@ -63,28 +47,6 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_debug.setup(m_device);
   m_offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
   m_sharedAlloc.init(device, physicalDevice);
-  if(const char* sppEnv = std::getenv("RASTER_SPP"))
-  {
-    char* end = nullptr;
-    long  spp = std::strtol(sppEnv, &end, 10);
-    if(end != sppEnv && end != nullptr && *end == '\0')
-    {
-      m_samplesPerFrame = std::clamp(static_cast<int>(spp), 1, 64);
-    }
-  }
-  m_frameIndex = 0;
-  resetFrameHistory();
-  m_hasLastCamera = false;
-}
-
-void HelloVulkan::resetAccumulation()
-{
-  m_accumulatedFrames = 0;
-}
-
-void HelloVulkan::resetFrameHistory()
-{
-  resetAccumulation();
 }
 
 std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
@@ -157,8 +119,6 @@ void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
   {
     m_mainCameraClipStart = safeStart;
     m_mainCameraClipEnd   = safeEnd;
-    resetFrameHistory();
-    m_hasLastCamera = false;
   }
 }
 
@@ -196,23 +156,11 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   glm::mat4      proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, m_mainCameraClipStart,
                                          m_mainCameraClipEnd);
 
-  const bool cameraChanged = !m_hasLastCamera || !matrixNearlyEqual(view, m_lastView) || !matrixNearlyEqual(proj, m_lastProj);
-  const glm::mat4 prevViewProj = m_hasLastCamera ? (m_lastProj * m_lastView) : (proj * view);
-  if(cameraChanged)
-  {
-    resetAccumulation();
-  }
-
   frameUBO.camera.viewProj     = proj * view;
   frameUBO.camera.view         = view;
   frameUBO.camera.viewInverse  = glm::inverse(view);
   frameUBO.camera.projInverse  = glm::inverse(proj);
-  frameUBO.camera.prevViewProj = prevViewProj;
   frameUBO.lightCount = static_cast<uint32_t>(std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS));
-
-  m_lastView      = view;
-  m_lastProj      = proj;
-  m_hasLastCamera = true;
 
   VkBuffer deviceUBO      = m_bFrameUniforms.buffer;
   auto     uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -322,8 +270,6 @@ void HelloVulkan::onResize(int w, int h)
   m_size.height = h;
   createOffscreenRender();
   refreshOffscreenRenderTargetDescriptors();
-  resetFrameHistory();
-  m_hasLastCamera = false;
 }
 
 void HelloVulkan::createOffscreenRender()
@@ -372,5 +318,4 @@ void HelloVulkan::createOffscreenRender()
   }
 
   createRasterFramebuffer();
-  resetFrameHistory();
 }

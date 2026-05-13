@@ -67,34 +67,13 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
     , _renderParam(std::make_unique<HdRobotRenderParam>())
 {
-  _settingDescriptors.emplace_back(HdRenderSettingDescriptor{"Samples Per Pixel", HdRobotSettingsTokens->spp, VtValue(1)});
-
-  if(_settingsMap.find(HdRobotSettingsTokens->spp) == _settingsMap.end())
-  {
-    _settingsMap[HdRobotSettingsTokens->spp] = VtValue(1);
-  }
 }
 
 HdRobotRenderDelegate::~HdRobotRenderDelegate() {}
 
 HdRenderSettingDescriptorList HdRobotRenderDelegate::GetRenderSettingDescriptors() const
 {
-  return _settingDescriptors;
-}
-
-void HdRobotRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue& value)
-{
-#ifdef NDEBUG
-  // Disallow changing debug render settings in release config.
-  for(const HdRenderSettingDescriptor& descriptor : _debugSettingDescriptors)
-  {
-    if(key == descriptor.key)
-    {
-      return;
-    }
-  }
-#endif
-  HdRenderDelegate::SetRenderSetting(key, value);
+  return {};
 }
 
 const HdCommandDescriptors COMMAND_DESCRIPTORS = {
@@ -140,7 +119,7 @@ HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex* ind
     return nullptr;
   }
 
-  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, _settingsMap, *robotRenderParam, _resourcePath));
+  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, *robotRenderParam, _resourcePath));
 }
 
 HdResourceRegistrySharedPtr HdRobotRenderDelegate::GetResourceRegistry() const

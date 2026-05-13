@@ -25,9 +25,6 @@ function hydra(){
     cmake --install . --component ${plugin_name}
     cd ..
 
-    export RASTER_SPP="${RASTER_SPP:-4}"
-
-    echo "[hydra] RASTER_SPP=${RASTER_SPP}"
     echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"
 }
 

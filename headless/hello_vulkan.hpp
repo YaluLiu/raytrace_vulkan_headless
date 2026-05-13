@@ -79,9 +79,6 @@ public:
 
   void     createRasterPipeline();
   void     rasterize(const VkCommandBuffer& cmdBuf);
-  void     resetAccumulation();
-  void     resetFrameHistory();
-  uint32_t getAccumulatedFrames() const { return m_accumulatedFrames; }
   float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
   float    getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
 
@@ -106,25 +103,6 @@ public:
   VkPipelineLayout m_rasterPipelineLayout{VK_NULL_HANDLE};
 
   void saveOffscreenColorToFile(const char* filename);
-
-  void setSamplesPerFrame(int spp)
-  {
-    if(spp < 1)
-    {
-      spp = 1;
-    }
-    else if(spp > 64)
-    {
-      spp = 64;
-    }
-
-    if(m_samplesPerFrame != spp)
-    {
-      m_samplesPerFrame = spp;
-      resetAccumulation();
-    }
-  }
-  int getSamplesPerFrame() const { return m_samplesPerFrame; }
 
   void createOffscreenRender();
 
@@ -152,14 +130,11 @@ public:
   std::vector<uint32_t> readObjectIdImage();
 
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
-  void updateInstancesEnd();
   void updateMeshGeometry(uint32_t meshId);
-  void updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
 
   std::vector<Light> m_lights;
   std::vector<int>   m_instanceIds;
-  std::vector<Light> m_uploadedLights;
   nvvk::Buffer       m_bLights;
 
   void addLight(const Light& light);
@@ -178,11 +153,4 @@ private:
   void       createRasterFramebuffer();
   void       destroyRasterFramebuffer();
 
-  uint32_t  m_accumulatedFrames{0};
-  uint32_t  m_frameIndex{0};  // Monotonic jitter/RNG frame index; not reset by camera motion.
-  int       m_samplesPerFrame{2};
-  glm::vec2 m_currentJitter{0.0f};
-  glm::mat4 m_lastView{1.0f};
-  glm::mat4 m_lastProj{1.0f};
-  bool      m_hasLastCamera{false};
 };

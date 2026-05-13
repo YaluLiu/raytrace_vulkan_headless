@@ -24,11 +24,6 @@ void HelloVulkan::updateInstance(uint32_t instanceId, glm::mat4 transform, bool 
   m_instances[instanceId].visible   = visible;
 }
 
-void HelloVulkan::updateInstancesEnd()
-{
-  resetFrameHistory();
-}
-
 void HelloVulkan::updateMeshGeometry(uint32_t meshId)
 {
   std::vector<VertexObj>& now_vertices = m_Loader[meshId].m_vertices;
@@ -44,5 +39,4 @@ void HelloVulkan::updateMeshGeometry(uint32_t meshId)
   m_alloc.destroy(model.vertexBuffer);
   model.vertexBuffer = m_alloc.createBuffer(cmdBuf, now_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | storageFlags);
   genCmdBuf.submitAndWait(cmdBuf);
-  resetFrameHistory();
 }

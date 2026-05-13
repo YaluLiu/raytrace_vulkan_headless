@@ -212,9 +212,6 @@ void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
 
   vkCmdEndRenderPass(cmdBuf);
 
-  m_accumulatedFrames = 1;
-  m_frameIndex++;
-
   m_debug.endLabel(cmdBuf);
 }
 

@@ -7,7 +7,6 @@
 #include "camera.h"
 #include "nvh/cameramanipulator.hpp"
 #include "renderBuffer.h"
-#include "renderSettings.h"
 #include "renderTextureExport.h"
 #include "sceneData.h"
 
@@ -73,9 +72,8 @@ bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
 
 }  // namespace
 
-HeadlessRenderBridge::HeadlessRenderBridge(const HdRenderSettingsMap &settings, HdRobotRenderParam &renderParam,
-                                           std::string resourcePath)
-    : _settings(settings), _renderParam(renderParam), _resourcePath(std::move(resourcePath))
+HeadlessRenderBridge::HeadlessRenderBridge(HdRobotRenderParam &renderParam, std::string resourcePath)
+    : _renderParam(renderParam), _resourcePath(std::move(resourcePath))
 {
 }
 
@@ -112,7 +110,6 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
     _resetRenderBuffer = true;
   }
 
-  applyRenderSettings();
   initOrResize();
   if (!updateMainCamera(renderPassState))
   {
@@ -136,18 +133,7 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
     }
   }
 
-  ++_frameIndex;
   return allAovsCopied;
-}
-
-void HeadlessRenderBridge::applyRenderSettings()
-{
-  HelloVulkan &app = _renderApp.getVulkan();
-  if (_isAppInited && RenderSettingsMayReallocateAovs(_settings, app))
-  {
-    _glInteropCache.Clear();
-  }
-  ApplyRenderSettingsToApp(_settings, app);
 }
 
 void HeadlessRenderBridge::initOrResize()
@@ -292,14 +278,12 @@ void HeadlessRenderBridge::updateGeometry()
 void HeadlessRenderBridge::updateInstances()
 {
   HelloVulkan &vulkan = _renderApp.getVulkan();
-  bool updateInstances = false;
 
   for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     auto &curMesh = _renderParam.v_mesh[meshId];
     if (_renderParam.ConsumeMeshInstanceDirty(meshId))
     {
-      updateInstances = true;
       const bool tagMatched = isMeshRenderTagMatched(curMesh);
       const bool meshVisible = curMesh.visible && curMesh.valid && tagMatched;
       for (size_t instanceId = 0; instanceId < curMesh.rendererInstanceIds.size(); ++instanceId)
@@ -315,10 +299,6 @@ void HeadlessRenderBridge::updateInstances()
         vulkan.updateInstance(rendererInstanceId, transform, visible);
       }
     }
-  }
-  if (updateInstances)
-  {
-    vulkan.updateInstancesEnd();
   }
 }
 

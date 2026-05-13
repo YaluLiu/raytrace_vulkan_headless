@@ -96,8 +96,6 @@ void HelloVulkan::animationInstances(float time)
       m_instances[wusonIdx].transform = transform;
     }
   }
-
-  resetFrameHistory();
 }
 
 void HelloVulkan::animationObject(float time)
@@ -121,8 +119,6 @@ void HelloVulkan::animationObject(float time)
   vkCmdDispatch(cmdBuf, model.nbVertices, 1, 1);
 
   genCmdBuf.submitAndWait(cmdBuf);
-
-  resetFrameHistory();
 }
 
 void HelloVulkan::createCompDescriptors()

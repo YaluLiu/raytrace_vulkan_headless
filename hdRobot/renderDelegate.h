@@ -17,8 +17,6 @@ public:
 public:
   HdRenderSettingDescriptorList GetRenderSettingDescriptors() const override;
 
-  void SetRenderSetting(const TfToken& key, const VtValue& value) override;
-
   HdCommandDescriptors GetCommandDescriptors() const override;
 
   bool InvokeCommand(const TfToken& command, const HdCommandArgs& args = HdCommandArgs()) override;
@@ -88,12 +86,9 @@ private:
 private:
   const std::string              _resourcePath;
   HdResourceRegistrySharedPtr    _resourceRegistry;
-  HdRenderSettingDescriptorList  _settingDescriptors;
-  HdRenderSettingDescriptorList  _debugSettingDescriptors;
   std::unique_ptr<HdRobotRenderParam> _renderParam;
   // std::unique_str<HdRobotRenderBuffer> _colorBuffer;
   Hgi*                         _hgi = nullptr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

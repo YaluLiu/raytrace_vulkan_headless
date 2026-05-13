@@ -9,12 +9,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex*             index,
                                      const HdRprimCollection&   collection,
-                                     const HdRenderSettingsMap& settings,
                                      HdRobotRenderParam&        renderParam,
                                      std::string                resourcePath)
     : HdRenderPass(index, collection)
     , _isConverged(false)
-    , _bridge(std::make_unique<HeadlessRenderBridge>(settings, renderParam, std::move(resourcePath)))
+    , _bridge(std::make_unique<HeadlessRenderBridge>(renderParam, std::move(resourcePath)))
 {
 }
 

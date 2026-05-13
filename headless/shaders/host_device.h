@@ -53,7 +53,6 @@ struct CameraUniforms
   mat4 view;
   mat4 viewInverse;
   mat4 projInverse;
-  mat4 prevViewProj;  // Previous frame camera view * projection
 };
 
 struct FrameUniforms

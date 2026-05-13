@@ -12,56 +12,6 @@
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 #include <algorithm>
-#include <cmath>
-
-namespace {
-bool nearlyEqual(float a, float b, float eps = 1e-5f)
-{
-  return std::fabs(a - b) <= eps;
-}
-
-bool lightEqual(const Light& lhs, const Light& rhs)
-{
-  return lhs.type == rhs.type && lhs.textureID == rhs.textureID && nearlyEqual(lhs.baseEmission.x, rhs.baseEmission.x)
-         && nearlyEqual(lhs.baseEmission.y, rhs.baseEmission.y) && nearlyEqual(lhs.baseEmission.z, rhs.baseEmission.z)
-         && nearlyEqual(lhs.diffuse, rhs.diffuse) && nearlyEqual(lhs.specular, rhs.specular)
-         && nearlyEqual(lhs.direction.x, rhs.direction.x) && nearlyEqual(lhs.direction.y, rhs.direction.y)
-         && nearlyEqual(lhs.direction.z, rhs.direction.z) && nearlyEqual(lhs.angle, rhs.angle)
-         && nearlyEqual(lhs.position.x, rhs.position.x) && nearlyEqual(lhs.position.y, rhs.position.y)
-         && nearlyEqual(lhs.position.z, rhs.position.z) && nearlyEqual(lhs.radius, rhs.radius)
-         && nearlyEqual(lhs.rotateQuat.x, rhs.rotateQuat.x) && nearlyEqual(lhs.rotateQuat.y, rhs.rotateQuat.y)
-         && nearlyEqual(lhs.rotateQuat.z, rhs.rotateQuat.z) && nearlyEqual(lhs.rotateQuat.w, rhs.rotateQuat.w);
-}
-
-}
-
-void HelloVulkan::updateMaterialAtRuntime(int modelIndex, int materialIndex, const WaveFrontMaterial& newMaterial)
-{
-  nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
-  VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
-
-  VkDeviceSize offset = materialIndex * sizeof(WaveFrontMaterial);
-
-  VkBufferMemoryBarrier barrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-  barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier.buffer        = m_objModel[modelIndex].matColorBuffer.buffer;
-  barrier.offset        = offset;
-  barrier.size          = sizeof(WaveFrontMaterial);
-
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
-                       &barrier, 0, nullptr);
-
-  vkCmdUpdateBuffer(cmdBuf, m_objModel[modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial), &newMaterial);
-
-  barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 1,
-                       &barrier, 0, nullptr);
-
-  cmdGen.submitAndWait(cmdBuf);
-  resetFrameHistory();
-}
 
 void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
 {
@@ -110,7 +60,6 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
                        static_cast<uint32_t>(postBarriers.size()), postBarriers.data(), 0, nullptr);
 
   cmdGen.submitAndWait(cmdBuf);
-  resetFrameHistory();
 }
 
 void HelloVulkan::createOffscreenImage(nvvk::Texture& texture,
@@ -155,25 +104,6 @@ void HelloVulkan::createLightBuffer()
 
 void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
 {
-  bool changed = m_lights.size() != m_uploadedLights.size();
-  if(!changed)
-  {
-    for(size_t i = 0; i < m_lights.size(); ++i)
-    {
-      if(!lightEqual(m_lights[i], m_uploadedLights[i]))
-      {
-        changed = true;
-        break;
-      }
-    }
-  }
-
-  if(changed)
-  {
-    resetFrameHistory();
-    m_uploadedLights = m_lights;
-  }
-
   const size_t lightCount = std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS);
   if(lightCount > 0)
   {
