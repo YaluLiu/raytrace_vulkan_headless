@@ -195,9 +195,6 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   const auto&    view        = CameraManip.getMatrix();
   glm::mat4      proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, m_mainCameraClipStart,
                                          m_mainCameraClipEnd);
-#if !ENABLE_HYDRA
-  proj[1][1] *= -1;
-#endif
 
   const bool cameraChanged = !m_hasLastCamera || !matrixNearlyEqual(view, m_lastView) || !matrixNearlyEqual(proj, m_lastProj);
   const glm::mat4 prevViewProj = m_hasLastCamera ? (m_lastProj * m_lastView) : (proj * view);

@@ -64,25 +64,14 @@ foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
   target_link_libraries(${PROJNAME} optimized ${RELEASELIB})
 endforeach(RELEASELIB)
 
-target_compile_definitions(${PROJNAME} PUBLIC
-  $<$<BOOL:${ENABLE_GL_VK_CONVERSION}>:ENABLE_GL_VK_CONVERSION=1>
-  $<$<NOT:$<BOOL:${ENABLE_GL_VK_CONVERSION}>>:ENABLE_GL_VK_CONVERSION=0>
-)
-target_compile_definitions(${PROJNAME} PUBLIC
-  $<$<BOOL:${ENABLE_HYDRA}>:ENABLE_HYDRA=1>
-  $<$<NOT:$<BOOL:${ENABLE_HYDRA}>>:ENABLE_HYDRA=0>
-)
-
 _finalize_target( ${PROJNAME} )
 
 
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Release DESTINATION "bin_${ARCH}/${PROJNAME}/spv")
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Debug DESTINATION "bin_${ARCH}_debug/${PROJNAME}/spv")
 
-if(ENABLE_HYDRA)
-  install(
-    FILES ${SPV_OUTPUT}
-    DESTINATION "./hdRobot/spv"
-    COMPONENT hdRobot
-  )
-endif()
+install(
+  FILES ${SPV_OUTPUT}
+  DESTINATION "./hdRobot/spv"
+  COMPONENT hdRobot
+)

@@ -7,8 +7,8 @@ call sites with `rg`.
 
 ## Top-Level Structure
 
-- `CMakeLists.txt`: Root build configuration, options, and subdirectory
-  registration.
+- `CMakeLists.txt`: Root build configuration, package setup, and unconditional
+  headless plus `hdRobot` subdirectory registration.
 - `install.sh`: Main local build/run helper used by Hydra workflows.
 - `headless/`: Core headless Vulkan rasterization library and shaders.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
@@ -19,8 +19,8 @@ call sites with `rg`.
 
 ## Build And Test Routing
 
-- `CMakeLists.txt`: Start here for project-wide options such as
-  `ENABLE_HYDRA` and `ENABLE_GL_VK_CONVERSION`.
+- `CMakeLists.txt`: Start here for project-wide package setup and target
+  registration.
 - `headless/CMakeLists.txt`: Headless renderer library sources, shader
   compilation, and renderer compile definitions.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin

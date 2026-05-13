@@ -6,8 +6,8 @@ rem   build_windows.bat hydra
 rem   build_windows.bat help
 rem
 rem Branches:
-rem   hydra  Configure with ENABLE_HYDRA=ON, build hdRobot,
-rem          then install the hdRobot component into the USD plugin directory.
+rem   hydra  Configure, build hdRobot, then install the hdRobot component into
+rem          the USD plugin directory.
 rem
 rem Environment overrides:
 rem   BUILD_ROOT      Build directory prefix. Defaults to build.
@@ -76,8 +76,6 @@ exit /b 0
 
 :configure_hydra
 call cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
-  -DENABLE_GL_VK_CONVERSION=ON ^
-  -DENABLE_HYDRA=ON ^
   -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%"
 exit /b %errorlevel%
 

@@ -19,8 +19,6 @@ function hydra(){
     cd build
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-        -DENABLE_GL_VK_CONVERSION=ON \
-        -DENABLE_HYDRA=ON \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
     
     cmake --build . --target ${plugin_name} --config Release -j20
