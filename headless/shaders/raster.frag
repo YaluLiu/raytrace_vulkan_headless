@@ -21,6 +21,15 @@ layout(set = 0, binding = eObjDescs, scalar) buffer ObjDesc_
   ObjDesc i[];
 }
 objDesc;
+layout(set = 0, binding = eFrameUniforms) uniform _FrameUniforms
+{
+  FrameUniforms frameUni;
+};
+layout(set = 0, binding = eLights, scalar) readonly buffer Lights_
+{
+  Light i[];
+}
+lights;
 layout(set = 0, binding = eTextures) uniform sampler2D textureSamplers[];
 
 layout(location = 0) in vec3 inWorldPos;
@@ -65,6 +74,29 @@ vec3 sampleBaseColor(WaveFrontMaterial mat, vec2 texCoord, vec3 fallbackColor)
   return clamp(baseColor + mat.emissionFactor, vec3(0.0), vec3(32.0));
 }
 
+vec3 evaluateSphereLight(Light light, vec3 normal, vec3 worldPos)
+{
+  vec3 toLight = light.position - worldPos;
+  float distanceSq = max(dot(toLight, toLight), 1.0e-6);
+  vec3 lightDir = toLight * inversesqrt(distanceSq);
+  float lambert = max(dot(normal, lightDir), 0.0);
+  if(lambert <= 0.0)
+  {
+    return vec3(0.0);
+  }
+
+  float radius = max(light.radius, 0.0);
+  float attenuation = 1.0 / max(1.0, max(distanceSq, radius * radius));
+  return max(light.diffuse, 0.0) * light.baseEmission * lambert * attenuation;
+}
+
+vec3 evaluateFallbackLighting(vec3 normal)
+{
+  vec3 lightDir = normalize(vec3(0.35, 0.85, 0.4));
+  float lambert = max(dot(normal, lightDir), 0.0);
+  return vec3(0.18 + 0.82 * lambert);
+}
+
 void main()
 {
   ObjDesc objResource = objDesc.i[inObjIndex];
@@ -81,9 +113,25 @@ void main()
   }
 
   vec3 baseColor = sampleBaseColor(mat, inTexCoord, inColor);
-  vec3 lightDir = normalize(vec3(0.35, 0.85, 0.4));
-  float lambert = max(dot(normal, lightDir), 0.0);
-  vec3 litColor = baseColor * (0.18 + 0.82 * lambert);
+  vec3 lighting = vec3(0.08);
+  int supportedLightCount = 0;
+  uint lightCount = min(frameUni.lightCount, MAX_SCENE_LIGHTS);
+  for(uint lightIndex = 0; lightIndex < lightCount; ++lightIndex)
+  {
+    Light light = lights.i[lightIndex];
+    if(light.type == 0)
+    {
+      lighting += evaluateSphereLight(light, normal, inWorldPos);
+      supportedLightCount++;
+    }
+  }
+
+  if(supportedLightCount == 0)
+  {
+    lighting = evaluateFallbackLighting(normal);
+  }
+
+  vec3 litColor = baseColor * lighting;
 
   outColor = vec4(litColor, 1.0);
   outObjId = int(inObjIndex);

@@ -208,6 +208,7 @@ void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
   frameUBO.camera.viewInverse  = glm::inverse(view);
   frameUBO.camera.projInverse  = glm::inverse(proj);
   frameUBO.camera.prevViewProj = prevViewProj;
+  frameUBO.lightCount = static_cast<uint32_t>(std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS));
 
   m_lastView      = view;
   m_lastProj      = proj;
@@ -262,6 +263,7 @@ void HelloVulkan::destroyResources()
 
   m_alloc.destroy(m_bFrameUniforms);
   m_alloc.destroy(m_bObjDesc);
+  m_alloc.destroy(m_bLights);
 
   for(auto& m : m_objModel)
   {

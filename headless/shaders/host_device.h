@@ -22,9 +22,12 @@ using uint = unsigned int;
 START_BINDING(SceneBindings)
   eFrameUniforms = 0,  // Frame uniform containing the active camera
   eObjDescs    = 1,
-  eTextures    = 2
+  eTextures    = 2,
+  eLights      = 3
 END_BINDING();
 // clang-format on
+
+const uint MAX_SCENE_LIGHTS = 100;
 
 struct ObjDesc
 {
@@ -56,6 +59,10 @@ struct CameraUniforms
 struct FrameUniforms
 {
   CameraUniforms camera;
+  uint lightCount;
+  uint pad0;
+  uint pad1;
+  uint pad2;
 };
 
 struct Light

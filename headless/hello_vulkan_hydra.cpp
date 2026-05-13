@@ -11,6 +11,7 @@
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -143,7 +144,7 @@ void HelloVulkan::clearLights()
 
 void HelloVulkan::createLightBuffer()
 {
-  size_t maxLights  = 100;
+  size_t maxLights  = MAX_SCENE_LIGHTS;
   size_t bufferSize = sizeof(Light) * maxLights;
 
   m_bLights = m_alloc.createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -173,9 +174,10 @@ void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
     m_uploadedLights = m_lights;
   }
 
-  if(!m_lights.empty())
+  const size_t lightCount = std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS);
+  if(lightCount > 0)
   {
-    const VkDeviceSize lightBufferSize = sizeof(Light) * m_lights.size();
+    const VkDeviceSize lightBufferSize = sizeof(Light) * lightCount;
 
     VkBufferMemoryBarrier preBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     preBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;

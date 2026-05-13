@@ -79,7 +79,8 @@ a separate cleanup if the public surface can absorb the churn.
 
 - `headless/shaders/raster.vert`: Active mesh vertex shader.
 - `headless/shaders/raster.frag`: Active mesh fragment shader for color,
-  primitive ID, instance ID, and depth AOV writes.
+  primitive ID, instance ID, depth AOV writes, and sphere/simple light shading
+  from the renderer light buffer. DomeLight is parsed but not evaluated here.
 - `headless/shaders/host_device.h`: Shared raster descriptor bindings,
   material structs, frame uniforms, and push constants.
 
@@ -152,7 +153,8 @@ a separate cleanup if the public surface can absorb the churn.
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.
 - `headless/shaders/raster.frag`: Minimal raster fragment shader writing color,
-  primId, instanceId, and normalized depth AOV attachments.
+  primId, instanceId, normalized depth AOV attachments, and sphere/simple light
+  diffuse shading from the shared light buffer.
 
 ## Question Routing
 
@@ -209,6 +211,12 @@ a separate cleanup if the public surface can absorb the churn.
   `headless/shaders/raster.frag`, `headless/shaders/host_device.h`, then
   search for `sampleBaseColor`, `WaveFrontMaterial`, and
   `baseColorTextureId`.
+- Raster light evaluation:
+  `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
+  `hdRobot/headlessRenderBridge.cpp`, `headless/hello_vulkan_hydra.cpp`,
+  `headless/hello_vulkan_pipeline.cpp`, `headless/shaders/host_device.h`,
+  `headless/shaders/raster.frag`, then search for `HydraLight::toLight`,
+  `updateLights`, `updateLightBuffer`, `eLights`, and `evaluateSphereLight`.
 - Normal map data flow:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
   `common/data_loader.h`, `headless/shaders/host_device.h`,
