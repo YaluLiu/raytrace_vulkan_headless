@@ -53,6 +53,7 @@ public:
                            const std::vector<TextureAsset>& textureAssets);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, VkExtent2D renderSize);
+  void updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf, const HeadlessCameraData& camera, VkExtent2D renderSize);
   void setCameras(std::vector<HeadlessCameraData> cameras);
   const std::vector<HeadlessCameraData>& getCameras() const { return m_cameras; }
   void setMainCamera(const HeadlessCameraData& camera);

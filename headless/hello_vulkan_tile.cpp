@@ -11,7 +11,6 @@
 #include <glm/common.hpp>
 
 #include "hello_vulkan_barriers.hpp"
-#include "nvh/cameramanipulator.hpp"
 #include "stb_image_write.h"
 
 namespace {
@@ -44,23 +43,15 @@ void HelloVulkan::renderTileAtlas(const VkCommandBuffer &cmdBuf) {
     return;
   }
 
-  const nvh::CameraManipulator::Camera savedCamera = CameraManip.getCamera();
-  const float savedClipStart = m_mainCameraClipStart;
-  const float savedClipEnd = m_mainCameraClipEnd;
-
   const uint32_t cameraCount =
       static_cast<uint32_t>(std::min<size_t>(m_cameras.size(), capacity));
   for (uint32_t cameraIndex = 0; cameraIndex < cameraCount; ++cameraIndex) {
-    setMainCamera(m_cameras[cameraIndex]);
-    updateUniformBufferForExtent(cmdBuf, tileExtent);
+    updateUniformBufferForCamera(cmdBuf, m_cameras[cameraIndex], tileExtent);
     m_tileRasterPipeline.rasterize(cmdBuf, m_descSet, m_objModel, m_instances,
                                    m_instanceIds);
     m_tileAtlas.copyTileFrom(cmdBuf, m_tileRasterPipeline, cameraIndex);
   }
 
-  CameraManip.setCamera(savedCamera);
-  m_mainCameraClipStart = savedClipStart;
-  m_mainCameraClipEnd = savedClipEnd;
   updateUniformBufferForExtent(cmdBuf, m_size);
   m_tileAtlasDirty = cameraCount > 0;
 }

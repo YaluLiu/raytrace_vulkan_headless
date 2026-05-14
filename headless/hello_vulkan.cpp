@@ -23,6 +23,93 @@
 
 extern std::vector<std::string> defaultSearchPaths;
 
+namespace {
+struct ResolvedCamera {
+  glm::vec3 position{0.0f};
+  glm::vec3 target{0.0f, 0.0f, -1.0f};
+  glm::vec3 up{0.0f, 1.0f, 0.0f};
+  float     vfovDeg{45.0f};
+  float     clipStart{0.1f};
+  float     clipEnd{1000.0f};
+};
+
+std::pair<float, float> sanitizeClipRange(float clipStart, float clipEnd)
+{
+  const float safeStart = std::max(clipStart, 0.001f);
+  const float safeEnd   = std::max(clipEnd, safeStart + 0.001f);
+  return {safeStart, safeEnd};
+}
+
+ResolvedCamera resolveCamera(const HeadlessCameraData& camera)
+{
+  ResolvedCamera resolved;
+  resolved.position = camera.position;
+
+  glm::vec3 forward = camera.forward;
+  if(glm::length(forward) < 1e-6f)
+  {
+    forward = glm::vec3(0.0f, 0.0f, -1.0f);
+  }
+
+  resolved.up = camera.up;
+  if(glm::length(glm::cross(forward, resolved.up)) < 1e-6f)
+  {
+    resolved.up = glm::vec3(0.0f, 1.0f, 0.0f);
+  }
+
+  resolved.target  = resolved.position + forward;
+  resolved.vfovDeg = std::clamp(camera.vfov_deg, 1.0f, 179.0f);
+  const auto [clipStart, clipEnd] = sanitizeClipRange(camera.clipStart, camera.clipEnd);
+  resolved.clipStart             = clipStart;
+  resolved.clipEnd               = clipEnd;
+  return resolved;
+}
+
+FrameUniforms makeFrameUniforms(const glm::mat4& view,
+                                float           vfovDeg,
+                                float           clipStart,
+                                float           clipEnd,
+                                VkExtent2D      renderSize,
+                                size_t          lightCount)
+{
+  FrameUniforms frameUBO = {};
+  const float   aspectRatio = renderSize.width / static_cast<float>(renderSize.height);
+  glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(vfovDeg), aspectRatio, clipStart, clipEnd);
+
+  frameUBO.camera.viewProj    = proj * view;
+  frameUBO.camera.view        = view;
+  frameUBO.camera.viewInverse = glm::inverse(view);
+  frameUBO.camera.projInverse = glm::inverse(proj);
+  frameUBO.lightCount         = static_cast<uint32_t>(std::min<size_t>(lightCount, MAX_SCENE_LIGHTS));
+  return frameUBO;
+}
+
+void recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf, VkBuffer deviceUBO, const FrameUniforms& frameUBO)
+{
+  auto uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+  VkBufferMemoryBarrier beforeBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+  beforeBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  beforeBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  beforeBarrier.buffer        = deviceUBO;
+  beforeBarrier.offset        = 0;
+  beforeBarrier.size          = sizeof(frameUBO);
+  vkCmdPipelineBarrier(cmdBuf, uboUsageStages, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
+                       nullptr, 1, &beforeBarrier, 0, nullptr);
+
+  vkCmdUpdateBuffer(cmdBuf, deviceUBO, 0, sizeof(FrameUniforms), &frameUBO);
+
+  VkBufferMemoryBarrier afterBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+  afterBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  afterBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  afterBarrier.buffer        = deviceUBO;
+  afterBarrier.offset        = 0;
+  afterBarrier.size          = sizeof(frameUBO);
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
+                       nullptr, 1, &afterBarrier, 0, nullptr);
+}
+}
+
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
 {
   AppOffline::setup(instance, device, physicalDevice, queueFamily);
@@ -41,8 +128,7 @@ std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) co
 
 void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
 {
-  const float safeStart = std::max(clipStart, 0.001f);
-  const float safeEnd   = std::max(clipEnd, safeStart + 0.001f);
+  const auto [safeStart, safeEnd] = sanitizeClipRange(clipStart, clipEnd);
   if(std::fabs(m_mainCameraClipStart - safeStart) > 1e-6f || std::fabs(m_mainCameraClipEnd - safeEnd) > 1e-6f)
   {
     m_mainCameraClipStart = safeStart;
@@ -57,19 +143,10 @@ void HelloVulkan::setCameras(std::vector<HeadlessCameraData> cameras)
 
 void HelloVulkan::setMainCamera(const HeadlessCameraData& camera)
 {
-  setMainCameraClipRange(camera.clipStart, camera.clipEnd);
-
-  glm::vec3 camPos     = camera.position;
-  glm::vec3 camForward = camera.forward;
-  glm::vec3 camUp      = camera.up;
-  glm::vec3 target     = camPos + camForward;
-
-  if(glm::length(glm::cross(camForward, camUp)) < 1e-6f)
-  {
-    camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-  }
-  const float vfovDeg = std::clamp(camera.vfov_deg, 1.0f, 179.0f);
-  CameraManip.setCamera({camPos, target, camUp, vfovDeg});
+  const ResolvedCamera resolved = resolveCamera(camera);
+  m_mainCameraClipStart         = resolved.clipStart;
+  m_mainCameraClipEnd           = resolved.clipEnd;
+  CameraManip.setCamera({resolved.position, resolved.target, resolved.up, resolved.vfovDeg});
 }
 
 void HelloVulkan::setTileConfig(HeadlessTileConfig config)
@@ -97,40 +174,27 @@ void HelloVulkan::updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, Vk
     return;
   }
 
-  const float    aspectRatio = renderSize.width / static_cast<float>(renderSize.height);
-  FrameUniforms  frameUBO    = {};
-  const auto&    view        = CameraManip.getMatrix();
-  glm::mat4      proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, m_mainCameraClipStart,
-                                         m_mainCameraClipEnd);
+  const glm::mat4 view = CameraManip.getMatrix();
+  const FrameUniforms frameUBO =
+      makeFrameUniforms(view, CameraManip.getFov(), m_mainCameraClipStart, m_mainCameraClipEnd, renderSize,
+                        m_lights.size());
+  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, frameUBO);
+}
 
-  frameUBO.camera.viewProj     = proj * view;
-  frameUBO.camera.view         = view;
-  frameUBO.camera.viewInverse  = glm::inverse(view);
-  frameUBO.camera.projInverse  = glm::inverse(proj);
-  frameUBO.lightCount = static_cast<uint32_t>(std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS));
+void HelloVulkan::updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf,
+                                               const HeadlessCameraData& camera,
+                                               VkExtent2D renderSize)
+{
+  if(renderSize.width == 0 || renderSize.height == 0)
+  {
+    return;
+  }
 
-  VkBuffer deviceUBO      = m_bFrameUniforms.buffer;
-  auto     uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-  VkBufferMemoryBarrier beforeBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-  beforeBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  beforeBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  beforeBarrier.buffer        = deviceUBO;
-  beforeBarrier.offset        = 0;
-  beforeBarrier.size          = sizeof(frameUBO);
-  vkCmdPipelineBarrier(cmdBuf, uboUsageStages, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
-                       nullptr, 1, &beforeBarrier, 0, nullptr);
-
-  vkCmdUpdateBuffer(cmdBuf, m_bFrameUniforms.buffer, 0, sizeof(FrameUniforms), &frameUBO);
-
-  VkBufferMemoryBarrier afterBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-  afterBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  afterBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  afterBarrier.buffer        = deviceUBO;
-  afterBarrier.offset        = 0;
-  afterBarrier.size          = sizeof(frameUBO);
-  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
-                       nullptr, 1, &afterBarrier, 0, nullptr);
+  const ResolvedCamera resolved = resolveCamera(camera);
+  const glm::mat4      view = glm::lookAtRH(resolved.position, resolved.target, resolved.up);
+  const FrameUniforms  frameUBO =
+      makeFrameUniforms(view, resolved.vfovDeg, resolved.clipStart, resolved.clipEnd, renderSize, m_lights.size());
+  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, frameUBO);
 }
 
 void HelloVulkan::createUniformBuffer()
