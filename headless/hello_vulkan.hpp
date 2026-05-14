@@ -51,6 +51,7 @@ public:
   std::vector<ObjModel>    m_objModel;
   std::vector<ObjDesc>     m_objDesc;
   std::vector<ObjInstance> m_instances;
+  std::vector<glm::mat4>   m_animationBaseTransforms;
 
   nvvk::DescriptorSetBindings m_descSetLayoutBind;
   VkDescriptorPool            m_descPool{VK_NULL_HANDLE};

@@ -81,6 +81,21 @@ std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 void HelloVulkan::animationInstances(float time)
 {
   const auto  nbWuson     = static_cast<int32_t>(m_instances.size() - 2);
+  if(nbWuson <= 0)
+  {
+    return;
+  }
+
+  if(m_animationBaseTransforms.size() != m_instances.size())
+  {
+    m_animationBaseTransforms.clear();
+    m_animationBaseTransforms.reserve(m_instances.size());
+    for(const ObjInstance& instance : m_instances)
+    {
+      m_animationBaseTransforms.push_back(instance.transform);
+    }
+  }
+
   const float deltaAngle  = 6.28318530718f / static_cast<float>(nbWuson);
   const float wusonLength = 3.f;
   const float radius      = wusonLength / (2.f * sin(deltaAngle / 2.0f));
@@ -89,7 +104,7 @@ void HelloVulkan::animationInstances(float time)
   for(int i = 0; i < nbWuson; i++)
   {
     int       wusonIdx  = i + 1;
-    glm::mat4 transform = m_instances[wusonIdx].transform;
+    glm::mat4 transform = m_animationBaseTransforms[wusonIdx];
     transform           = glm::rotate(transform, i * deltaAngle + offset, glm::vec3(0.f, 1.f, 0.f));
     transform           = glm::translate(transform, glm::vec3(radius, 0.f, 0.f));
 

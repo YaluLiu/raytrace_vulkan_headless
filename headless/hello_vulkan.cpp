@@ -17,6 +17,7 @@
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
+#include "nvvk/stagingmemorymanager_vk.hpp"
 
 
 extern std::vector<std::string> defaultSearchPaths;
@@ -25,6 +26,7 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
 {
   AppOffline::setup(instance, device, physicalDevice, queueFamily);
   m_alloc.init(device, physicalDevice);
+  m_alloc.getStaging()->setFreeUnusedOnRelease(false);
   m_debug.setup(m_device);
   m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
 }

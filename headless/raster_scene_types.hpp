@@ -10,6 +10,8 @@ struct RasterObjModel
 {
   uint32_t     nbIndices{0};
   uint32_t     nbVertices{0};
+  uint64_t     vertexBufferSize{0};
+  uint64_t     indexBufferSize{0};
   nvvk::Buffer vertexBuffer;
   nvvk::Buffer indexBuffer;
   nvvk::Buffer matColorBuffer;

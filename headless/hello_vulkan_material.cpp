@@ -41,6 +41,7 @@ uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex,
   instance.transform = transform;
   instance.objIndex = objIndex;
   m_instances.push_back(instance);
+  m_animationBaseTransforms.push_back(transform);
   m_instanceIds.push_back(instanceId);
   return static_cast<uint32_t>(m_instances.size() - 1);
 }
@@ -60,6 +61,8 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   ObjModel model;
   model.nbIndices = static_cast<uint32_t>(loader.m_indices.size());
   model.nbVertices = static_cast<uint32_t>(loader.m_vertices.size());
+  model.vertexBufferSize = sizeof(VertexObj) * loader.m_vertices.size();
+  model.indexBufferSize = sizeof(uint32_t) * loader.m_indices.size();
 
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
