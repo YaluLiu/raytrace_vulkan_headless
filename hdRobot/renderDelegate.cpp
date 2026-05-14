@@ -85,6 +85,18 @@ bool IsTileRenderSetting(const TfToken& key)
          || key == HdRobotRenderSettingTokens->tileGridRows;
 }
 
+bool IsColorAov(const TfToken& name)
+{
+  return name == HdAovTokens->color || name == HdRobotAovTokens->tileColor
+         || name == HdRobotAovTokens->tileColorDisplay;
+}
+
+bool IsDepthAov(const TfToken& name)
+{
+  return name == HdAovTokens->depth || name == HdRobotAovTokens->tileDepth
+         || name == HdRobotAovTokens->tileDepthDisplay;
+}
+
 uint32_t GetPositiveRenderSetting(const HdRenderDelegate& delegate, const TfToken& key, uint32_t fallback)
 {
   return static_cast<uint32_t>(std::max(1, delegate.GetRenderSetting<int>(key, static_cast<int>(fallback))));
@@ -201,27 +213,17 @@ void HdRobotRenderDelegate::DestroyInstancer(HdInstancer* instancer)
 
 HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& name) const
 {
-  if(name == HdAovTokens->color)
+  if(IsColorAov(name))
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(1.0f)));
   }
-  else if(name == HdAovTokens->depth)
+  else if(IsDepthAov(name))
   {
     return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
   }
   else if(name == HdAovTokens->primId || name == HdAovTokens->instanceId)
   {
     return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
-  }
-  // Display depth is RGBA because it is reserved for visualized depth, not raw training depth.
-  else if(name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileColorDisplay
-          || name == HdRobotAovTokens->tileDepthDisplay)
-  {
-    return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f)));
-  }
-  else if(name == HdRobotAovTokens->tileDepth)
-  {
-    return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
   }
 
   return HdAovDescriptor();
