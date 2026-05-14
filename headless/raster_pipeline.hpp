@@ -33,15 +33,43 @@ public:
                  std::span<const RasterObjInstance> instances,
                  std::span<const int> instanceIds,
                  uint32_t frameUniformOffset = 0);
+  void rasterizeToFramebuffer(const VkCommandBuffer& cmdBuf,
+                              VkFramebuffer framebuffer,
+                              VkExtent2D framebufferExtent,
+                              VkRect2D renderArea,
+                              VkViewport viewport,
+                              VkRect2D scissor,
+                              VkDescriptorSet sceneDescriptorSet,
+                              std::span<const RasterObjModel> objModels,
+                              std::span<const RasterObjInstance> instances,
+                              std::span<const int> instanceIds,
+                              uint32_t frameUniformOffset = 0);
 
   std::optional<HeadlessAovTexture> getAovTexture(HeadlessAov aov) const;
   VkExtent2D getRenderSize() const { return _renderSize; }
   VkExtent2D getAovSize() const { return _aovSize; }
+  VkRenderPass getRenderPass() const { return _renderPass; }
+  VkFormat getColorFormat() const { return _offscreenColorFormat; }
+  VkFormat getObjectIdFormat() const { return _offscreenObjectIdFormat; }
+  VkFormat getInstanceIdFormat() const { return _offscreenInstanceIdFormat; }
+  VkFormat getDepthAovFormat() const { return _offscreenDepthAovFormat; }
+  VkFormat getDepthAttachmentFormat() const { return _offscreenDepthFormat; }
   const nvvk::Texture& getColorTextureForReadback() const { return _offscreenColor; }
   const nvvk::Texture& getDepthAovTextureForReadback() const { return _offscreenDepthAov; }
   const nvvk::Texture& getObjectIdTextureForReadback() const { return _offscreenObjectId; }
 
 private:
+  void rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
+                           VkFramebuffer framebuffer,
+                           VkExtent2D framebufferExtent,
+                           VkRect2D renderArea,
+                           VkViewport viewport,
+                           VkRect2D scissor,
+                           VkDescriptorSet sceneDescriptorSet,
+                           std::span<const RasterObjModel> objModels,
+                           std::span<const RasterObjInstance> instances,
+                           std::span<const int> instanceIds,
+                           uint32_t frameUniformOffset);
   void createOffscreenImage(nvvk::Texture& texture, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent);
   void createFramebuffer();
   void destroyFramebuffer();

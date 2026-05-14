@@ -65,11 +65,12 @@ a separate cleanup if the public surface can absorb the churn.
   including enable flag, per-camera tile size, grid dimensions, and positive
   value normalization.
 - `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp`: Independent local tile
-  atlas color/depth images plus GPU copy helpers that place per-camera scratch
-  renders into row-major atlas tiles without touching main AOV images.
+  atlas color/depth/id/depth-attachment images plus framebuffer helpers used by
+  direct row-major atlas rendering without touching main AOV images.
 - `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
-  per-camera scratch raster passes using per-camera frame uniform slots, atlas
-  readback, and stable local `output/tile_*` file writes.
+  per-camera atlas framebuffer passes using per-camera frame uniform slots and
+  tile viewport/scissor rectangles, atlas readback, and stable local
+  `output/tile_*` file writes.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.

@@ -33,13 +33,7 @@ void HelloVulkan::renderTileAtlas(const VkCommandBuffer &cmdBuf) {
   }
 
   const VkExtent2D tileExtent = config.tileExtent();
-  const VkExtent2D currentTileExtent = m_tileRasterPipeline.getRenderSize();
-  if (currentTileExtent.width != tileExtent.width ||
-      currentTileExtent.height != tileExtent.height) {
-    m_tileRasterPipeline.createOffscreenRender(tileExtent);
-  }
-
-  if (!m_tileAtlas.ensureResources(config)) {
+  if (!m_tileAtlas.ensureResources(config, m_tileRasterPipeline)) {
     return;
   }
 
@@ -49,10 +43,15 @@ void HelloVulkan::renderTileAtlas(const VkCommandBuffer &cmdBuf) {
     const uint32_t frameUniformSlot = cameraIndex + 1;
     updateUniformBufferForCamera(cmdBuf, m_cameras[cameraIndex], tileExtent,
                                  frameUniformSlot);
-    m_tileRasterPipeline.rasterize(cmdBuf, m_descSet, m_objModel, m_instances,
-                                   m_instanceIds,
-                                   getFrameUniformOffset(frameUniformSlot));
-    m_tileAtlas.copyTileFrom(cmdBuf, m_tileRasterPipeline, cameraIndex);
+    const VkRect2D tileRect = m_tileAtlas.getTileRect(cameraIndex);
+    VkViewport viewport{static_cast<float>(tileRect.offset.x),
+                        static_cast<float>(tileRect.offset.y),
+                        static_cast<float>(tileRect.extent.width),
+                        static_cast<float>(tileRect.extent.height), 0.0f, 1.0f};
+    m_tileRasterPipeline.rasterizeToFramebuffer(
+        cmdBuf, m_tileAtlas.getFramebuffer(), m_tileAtlas.getExtent(), tileRect,
+        viewport, tileRect, m_descSet, m_objModel, m_instances, m_instanceIds,
+        getFrameUniformOffset(frameUniformSlot));
   }
 
   m_tileAtlasDirty = cameraCount > 0;

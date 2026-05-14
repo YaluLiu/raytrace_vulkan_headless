@@ -236,8 +236,51 @@ void RasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
                                std::span<const int> instanceIds,
                                uint32_t frameUniformOffset)
 {
+  VkViewport viewport{0.0f, 0.0f, static_cast<float>(_aovSize.width), static_cast<float>(_aovSize.height), 0.0f,
+                      1.0f};
+  VkRect2D   scissor{{0, 0}, _aovSize};
+  rasterizeWithTarget(cmdBuf, _framebuffer, _aovSize, scissor, viewport, scissor, sceneDescriptorSet, objModels,
+                      instances, instanceIds, frameUniformOffset);
+}
+
+void RasterPipeline::rasterizeToFramebuffer(const VkCommandBuffer& cmdBuf,
+                                            VkFramebuffer framebuffer,
+                                            VkExtent2D framebufferExtent,
+                                            VkRect2D renderArea,
+                                            VkViewport viewport,
+                                            VkRect2D scissor,
+                                            VkDescriptorSet sceneDescriptorSet,
+                                            std::span<const RasterObjModel> objModels,
+                                            std::span<const RasterObjInstance> instances,
+                                            std::span<const int> instanceIds,
+                                            uint32_t frameUniformOffset)
+{
+  rasterizeWithTarget(cmdBuf, framebuffer, framebufferExtent, renderArea, viewport, scissor, sceneDescriptorSet,
+                      objModels, instances, instanceIds, frameUniformOffset);
+}
+
+void RasterPipeline::rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
+                                         VkFramebuffer framebuffer,
+                                         VkExtent2D framebufferExtent,
+                                         VkRect2D renderArea,
+                                         VkViewport viewport,
+                                         VkRect2D scissor,
+                                         VkDescriptorSet sceneDescriptorSet,
+                                         std::span<const RasterObjModel> objModels,
+                                         std::span<const RasterObjInstance> instances,
+                                         std::span<const int> instanceIds,
+                                         uint32_t frameUniformOffset)
+{
   if(_rasterPipeline == VK_NULL_HANDLE || _domeBackgroundPipeline == VK_NULL_HANDLE || _pipelineLayout == VK_NULL_HANDLE
-     || _framebuffer == VK_NULL_HANDLE || sceneDescriptorSet == VK_NULL_HANDLE || _debug == nullptr)
+     || framebuffer == VK_NULL_HANDLE || sceneDescriptorSet == VK_NULL_HANDLE || _debug == nullptr
+     || framebufferExtent.width == 0 || framebufferExtent.height == 0 || renderArea.extent.width == 0
+     || renderArea.extent.height == 0)
+  {
+    return;
+  }
+  if(renderArea.offset.x < 0 || renderArea.offset.y < 0
+     || static_cast<uint32_t>(renderArea.offset.x) + renderArea.extent.width > framebufferExtent.width
+     || static_cast<uint32_t>(renderArea.offset.y) + renderArea.extent.height > framebufferExtent.height)
   {
     return;
   }
@@ -256,16 +299,13 @@ void RasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
 
   VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
   renderPassInfo.renderPass        = _renderPass;
-  renderPassInfo.framebuffer       = _framebuffer;
-  renderPassInfo.renderArea.offset = {0, 0};
-  renderPassInfo.renderArea.extent = _aovSize;
+  renderPassInfo.framebuffer       = framebuffer;
+  renderPassInfo.renderArea        = renderArea;
   renderPassInfo.clearValueCount   = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues      = clearValues.data();
 
   vkCmdBeginRenderPass(cmdBuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-  VkViewport viewport{0.0f, 0.0f, static_cast<float>(_aovSize.width), static_cast<float>(_aovSize.height), 0.0f, 1.0f};
-  VkRect2D   scissor{{0, 0}, _aovSize};
   vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
   vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 

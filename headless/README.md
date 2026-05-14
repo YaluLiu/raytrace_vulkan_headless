@@ -17,8 +17,8 @@ instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
   wrappers that route the main raster pass into `RasterPipeline`.
 - `tile_config.hpp`, `tile_atlas.hpp`, `tile_atlas.cpp`, and
   `hello_vulkan_tile.cpp` implement local-only multi-camera tile atlas output.
-  Tile output uses an independent scratch raster pipeline plus independent
-  color/depth atlas images, then writes stable files under `output/`.
+  Tile output uses atlas-sized framebuffer attachments and per-tile
+  viewport/scissor rectangles, then writes stable files under `output/`.
 - `hello_vulkan_mesh.cpp` owns mesh upload, geometry refresh, and per-instance
   transform or visibility updates.
 - `hello_vulkan_hydra.cpp` applies Hydra camera, light, material, and scene
@@ -43,8 +43,8 @@ index, and instance ID. The frame uniform binding is dynamic: slot 0 is used
 for the main output, and tile cameras use slots starting at 1.
 
 When tile output is enabled, headless renders cameras from the current camera
-array serially into a per-tile scratch pipeline, copies color and float depth
-into row-major atlas positions, and saves:
+array serially into row-major atlas rectangles using per-camera frame uniform
+slots, and saves:
 
 - `output/tile_color_atlas.png`
 - `output/tile_depth_atlas.f32`
