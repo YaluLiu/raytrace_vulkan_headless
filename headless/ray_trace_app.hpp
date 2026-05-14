@@ -20,11 +20,7 @@ public:
 
   void resize(int w, int h);
 
-  void loadScene();
-
   void createRenderResources();
-
-  void animation();
 
   void render();
 

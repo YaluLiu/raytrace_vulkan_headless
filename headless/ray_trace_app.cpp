@@ -245,34 +245,3 @@ void RayTraceApp::cleanup()
     m_vkctx.deinit();
   }
 }
-
-void RayTraceApp::loadScene()
-{
-  ObjLoader planeLoader;
-  planeLoader.loadModel(nvh::findFile("media/scenes/plane.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(planeLoader, glm::scale(glm::mat4(1.f), glm::vec3(2.f, 1.f, 2.f)));
-
-  ObjLoader wusonLoader;
-  wusonLoader.loadModel(nvh::findFile("media/scenes/wuson.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(wusonLoader);
-
-  uint32_t  wusonId = 1;
-  glm::mat4 identity{1};
-  for(int i = 0; i < 5; i++)
-  {
-    m_helloVk.addInstance(identity, wusonId);
-  }
-
-  ObjLoader sphereLoader;
-  sphereLoader.loadModel(nvh::findFile("media/scenes/sphere.obj", defaultSearchPaths, true));
-  m_helloVk.loadModel(sphereLoader);
-
-  m_startTime = std::chrono::system_clock::now();
-}
-
-void RayTraceApp::animation()
-{
-  std::chrono::duration<float> diff = std::chrono::system_clock::now() - m_startTime;
-  m_helloVk.animationObject(diff.count());
-  m_helloVk.animationInstances(diff.count());
-}
