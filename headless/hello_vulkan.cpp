@@ -40,6 +40,15 @@ std::pair<float, float> sanitizeClipRange(float clipStart, float clipEnd)
   return {safeStart, safeEnd};
 }
 
+VkDeviceSize alignTo(VkDeviceSize value, VkDeviceSize alignment)
+{
+  if(alignment == 0)
+  {
+    return value;
+  }
+  return ((value + alignment - 1) / alignment) * alignment;
+}
+
 ResolvedCamera resolveCamera(const HeadlessCameraData& camera)
 {
   ResolvedCamera resolved;
@@ -84,7 +93,10 @@ FrameUniforms makeFrameUniforms(const glm::mat4& view,
   return frameUBO;
 }
 
-void recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf, VkBuffer deviceUBO, const FrameUniforms& frameUBO)
+void recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf,
+                              VkBuffer deviceUBO,
+                              VkDeviceSize offset,
+                              const FrameUniforms& frameUBO)
 {
   auto uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
@@ -92,18 +104,18 @@ void recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf, VkBuffer deviceUBO,
   beforeBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
   beforeBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   beforeBarrier.buffer        = deviceUBO;
-  beforeBarrier.offset        = 0;
+  beforeBarrier.offset        = offset;
   beforeBarrier.size          = sizeof(frameUBO);
   vkCmdPipelineBarrier(cmdBuf, uboUsageStages, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
                        nullptr, 1, &beforeBarrier, 0, nullptr);
 
-  vkCmdUpdateBuffer(cmdBuf, deviceUBO, 0, sizeof(FrameUniforms), &frameUBO);
+  vkCmdUpdateBuffer(cmdBuf, deviceUBO, offset, sizeof(FrameUniforms), &frameUBO);
 
   VkBufferMemoryBarrier afterBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
   afterBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   afterBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   afterBarrier.buffer        = deviceUBO;
-  afterBarrier.offset        = 0;
+  afterBarrier.offset        = offset;
   afterBarrier.size          = sizeof(frameUBO);
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
                        nullptr, 1, &afterBarrier, 0, nullptr);
@@ -116,6 +128,9 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_alloc.init(device, physicalDevice);
   m_alloc.getStaging()->setFreeUnusedOnRelease(false);
   m_debug.setup(m_device);
+  VkPhysicalDeviceProperties deviceProperties{};
+  vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+  m_frameUniformStride = alignTo(sizeof(FrameUniforms), deviceProperties.limits.minUniformBufferOffsetAlignment);
   m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
   m_tileRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
   m_tileAtlas.setup(m_device, queueFamily, m_alloc, m_debug);
@@ -139,6 +154,7 @@ void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
 void HelloVulkan::setCameras(std::vector<HeadlessCameraData> cameras)
 {
   m_cameras = std::move(cameras);
+  ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
 }
 
 void HelloVulkan::setMainCamera(const HeadlessCameraData& camera)
@@ -159,6 +175,7 @@ void HelloVulkan::setTileConfig(HeadlessTileConfig config)
     {
       m_tileAtlasDirty = false;
     }
+    ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
   }
 }
 
@@ -178,12 +195,13 @@ void HelloVulkan::updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, Vk
   const FrameUniforms frameUBO =
       makeFrameUniforms(view, CameraManip.getFov(), m_mainCameraClipStart, m_mainCameraClipEnd, renderSize,
                         m_lights.size());
-  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, frameUBO);
+  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, 0, frameUBO);
 }
 
 void HelloVulkan::updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf,
                                                const HeadlessCameraData& camera,
-                                               VkExtent2D renderSize)
+                                               VkExtent2D renderSize,
+                                               uint32_t slotIndex)
 {
   if(renderSize.width == 0 || renderSize.height == 0)
   {
@@ -194,14 +212,63 @@ void HelloVulkan::updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf,
   const glm::mat4      view = glm::lookAtRH(resolved.position, resolved.target, resolved.up);
   const FrameUniforms  frameUBO =
       makeFrameUniforms(view, resolved.vfovDeg, resolved.clipStart, resolved.clipEnd, renderSize, m_lights.size());
-  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, frameUBO);
+  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, getFrameUniformOffset(slotIndex), frameUBO);
 }
 
 void HelloVulkan::createUniformBuffer()
 {
-  m_bFrameUniforms = m_alloc.createBuffer(sizeof(FrameUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+  ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
+}
+
+uint32_t HelloVulkan::getRequiredFrameUniformSlots() const
+{
+  uint32_t slotCount = 1;
+  if(m_tileConfig.enabled && !m_cameras.empty())
+  {
+    HeadlessTileConfig config = m_tileConfig;
+    config.sanitize();
+    slotCount += static_cast<uint32_t>(std::min<size_t>(m_cameras.size(), config.capacity()));
+  }
+  return slotCount;
+}
+
+uint32_t HelloVulkan::getFrameUniformOffset(uint32_t slotIndex) const
+{
+  return static_cast<uint32_t>(m_frameUniformStride * slotIndex);
+}
+
+void HelloVulkan::ensureFrameUniformCapacity(uint32_t slotCount)
+{
+  slotCount = std::max<uint32_t>(slotCount, 1);
+  if(m_device == VK_NULL_HANDLE || (m_bFrameUniforms.buffer != VK_NULL_HANDLE && slotCount <= m_frameUniformSlotCount))
+  {
+    return;
+  }
+
+  if(m_frameUniformStride == 0)
+  {
+    m_frameUniformStride = sizeof(FrameUniforms);
+  }
+
+  m_alloc.destroy(m_bFrameUniforms);
+  m_bFrameUniforms = m_alloc.createBuffer(m_frameUniformStride * slotCount,
+                                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  m_frameUniformSlotCount = slotCount;
   m_debug.setObjectName(m_bFrameUniforms.buffer, "FrameUniforms");
+  updateFrameUniformDescriptor();
+}
+
+void HelloVulkan::updateFrameUniformDescriptor()
+{
+  if(m_descSet == VK_NULL_HANDLE || m_descSetLayout == VK_NULL_HANDLE || m_bFrameUniforms.buffer == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  VkDescriptorBufferInfo dbiUnif{m_bFrameUniforms.buffer, 0, sizeof(FrameUniforms)};
+  VkWriteDescriptorSet write = m_descSetLayoutBind.makeWrite(m_descSet, SceneBindings::eFrameUniforms, &dbiUnif);
+  vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
 }
 
 void HelloVulkan::createObjDescriptionBuffer()
@@ -227,6 +294,8 @@ void HelloVulkan::destroyResources()
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
 
   m_alloc.destroy(m_bFrameUniforms);
+  m_bFrameUniforms        = {};
+  m_frameUniformSlotCount = 0;
   m_alloc.destroy(m_bObjDesc);
   m_alloc.destroy(m_bLights);
 

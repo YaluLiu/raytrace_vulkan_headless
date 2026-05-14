@@ -46,13 +46,15 @@ void HelloVulkan::renderTileAtlas(const VkCommandBuffer &cmdBuf) {
   const uint32_t cameraCount =
       static_cast<uint32_t>(std::min<size_t>(m_cameras.size(), capacity));
   for (uint32_t cameraIndex = 0; cameraIndex < cameraCount; ++cameraIndex) {
-    updateUniformBufferForCamera(cmdBuf, m_cameras[cameraIndex], tileExtent);
+    const uint32_t frameUniformSlot = cameraIndex + 1;
+    updateUniformBufferForCamera(cmdBuf, m_cameras[cameraIndex], tileExtent,
+                                 frameUniformSlot);
     m_tileRasterPipeline.rasterize(cmdBuf, m_descSet, m_objModel, m_instances,
-                                   m_instanceIds);
+                                   m_instanceIds,
+                                   getFrameUniformOffset(frameUniformSlot));
     m_tileAtlas.copyTileFrom(cmdBuf, m_tileRasterPipeline, cameraIndex);
   }
 
-  updateUniformBufferForExtent(cmdBuf, m_size);
   m_tileAtlasDirty = cameraCount > 0;
 }
 

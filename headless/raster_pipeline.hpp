@@ -31,7 +31,8 @@ public:
                  VkDescriptorSet sceneDescriptorSet,
                  std::span<const RasterObjModel> objModels,
                  std::span<const RasterObjInstance> instances,
-                 std::span<const int> instanceIds);
+                 std::span<const int> instanceIds,
+                 uint32_t frameUniformOffset = 0);
 
   std::optional<HeadlessAovTexture> getAovTexture(HeadlessAov aov) const;
   VkExtent2D getRenderSize() const { return _renderSize; }

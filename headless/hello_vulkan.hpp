@@ -53,7 +53,11 @@ public:
                            const std::vector<TextureAsset>& textureAssets);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
   void updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, VkExtent2D renderSize);
-  void updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf, const HeadlessCameraData& camera, VkExtent2D renderSize);
+  void updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf,
+                                    const HeadlessCameraData& camera,
+                                    VkExtent2D renderSize,
+                                    uint32_t slotIndex = 0);
+  void ensureFrameUniformCapacity(uint32_t slotCount);
   void setCameras(std::vector<HeadlessCameraData> cameras);
   const std::vector<HeadlessCameraData>& getCameras() const { return m_cameras; }
   void setMainCamera(const HeadlessCameraData& camera);
@@ -83,6 +87,8 @@ public:
   VkDescriptorSet             m_descSet{VK_NULL_HANDLE};
 
   nvvk::Buffer m_bFrameUniforms;
+  VkDeviceSize m_frameUniformStride{sizeof(FrameUniforms)};
+  uint32_t     m_frameUniformSlotCount{0};
   nvvk::Buffer m_bObjDesc;
 
   std::vector<nvvk::Texture> m_textures;
@@ -122,6 +128,9 @@ public:
   void saveOffscreenColorToFile(const char* filename);
 
   void createOffscreenRender();
+  uint32_t getRequiredFrameUniformSlots() const;
+  uint32_t getFrameUniformOffset(uint32_t slotIndex) const;
+  void updateFrameUniformDescriptor();
 
   float m_mainCameraClipStart{0.1f};
   float m_mainCameraClipEnd{1000.0f};

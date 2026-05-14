@@ -233,7 +233,8 @@ void RasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
                                VkDescriptorSet sceneDescriptorSet,
                                std::span<const RasterObjModel> objModels,
                                std::span<const RasterObjInstance> instances,
-                               std::span<const int> instanceIds)
+                               std::span<const int> instanceIds,
+                               uint32_t frameUniformOffset)
 {
   if(_rasterPipeline == VK_NULL_HANDLE || _domeBackgroundPipeline == VK_NULL_HANDLE || _pipelineLayout == VK_NULL_HANDLE
      || _framebuffer == VK_NULL_HANDLE || sceneDescriptorSet == VK_NULL_HANDLE || _debug == nullptr)
@@ -269,13 +270,13 @@ void RasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
   vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _domeBackgroundPipeline);
-  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &sceneDescriptorSet, 0,
-                          nullptr);
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &sceneDescriptorSet, 1,
+                          &frameUniformOffset);
   vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _rasterPipeline);
-  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &sceneDescriptorSet, 0,
-                          nullptr);
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &sceneDescriptorSet, 1,
+                          &frameUniformOffset);
 
   for(size_t instanceIndex = 0; instanceIndex < instances.size(); ++instanceIndex)
   {

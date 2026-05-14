@@ -49,9 +49,9 @@ a separate cleanup if the public surface can absorb the churn.
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` renderer facade, public
   controls, headless camera array storage, scene buffers, descriptor state,
   compatibility wrappers, and `RasterPipeline` ownership.
-- `headless/hello_vulkan.cpp`: Core setup, camera array ingestion, active
-  camera uniform setup, resize forwarding, AOV texture wrapper, and renderer
-  resource lifecycle.
+- `headless/hello_vulkan.cpp`: Core setup, camera array ingestion, dynamic
+  frame uniform slot allocation, explicit per-camera uniform updates, resize
+  forwarding, AOV texture wrapper, and renderer resource lifecycle.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, including reserved
   tile AOV enum values, without Hydra or OpenGL types.
@@ -59,8 +59,8 @@ a separate cleanup if the public surface can absorb the churn.
   `HelloVulkan` and `RasterPipeline`.
 - `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Main raster
   pipeline wrapper owning offscreen AOV images, depth attachment, raster render
-  pass, framebuffer, graphics pipelines, AOV texture export backing, and draw
-  command recording.
+  pass, framebuffer, graphics pipelines, AOV texture export backing, dynamic
+  frame-uniform descriptor binding, and draw command recording.
 - `headless/tile_config.hpp`: Pure headless tile output configuration contract,
   including enable flag, per-camera tile size, grid dimensions, and positive
   value normalization.
@@ -68,8 +68,8 @@ a separate cleanup if the public surface can absorb the churn.
   atlas color/depth images plus GPU copy helpers that place per-camera scratch
   renders into row-major atlas tiles without touching main AOV images.
 - `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
-  per-camera scratch raster passes, main camera restoration, atlas readback, and
-  stable local `output/tile_*` file writes.
+  per-camera scratch raster passes using per-camera frame uniform slots, atlas
+  readback, and stable local `output/tile_*` file writes.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.
@@ -168,8 +168,9 @@ a separate cleanup if the public surface can absorb the churn.
 ## Shader Files
 
 - `headless/shaders/host_device.h`: Shared host/device structs and constants.
-  `FrameUniforms` carries the active camera state; `PushConstantRaster`
-  carries per-draw model/object/instance data for the raster path.
+  `FrameUniforms` carries one camera/light-count slot selected by dynamic
+  uniform offset; `PushConstantRaster` carries per-draw model/object/instance
+  data for the raster path.
 - `headless/shaders/raster.vert`: Minimal raster vertex shader for mesh
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.

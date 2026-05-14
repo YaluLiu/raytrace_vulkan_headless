@@ -211,6 +211,8 @@ void RayTraceApp::createRenderResources()
 
 void RayTraceApp::render()
 {
+  m_helloVk.ensureFrameUniformCapacity(m_helloVk.getRequiredFrameUniformSlots());
+
   auto                   curFrame = m_helloVk.getCurFrame();
   const VkCommandBuffer& cmdBuf   = m_helloVk.getCommandBuffers()[curFrame];
 

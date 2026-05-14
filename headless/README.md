@@ -8,8 +8,8 @@ instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
 
 - `ray_trace_app.cpp` owns Vulkan context setup, resource creation, resize
   forwarding, and frame pass ordering.
-- `hello_vulkan.cpp` owns renderer setup, render settings, frame uniforms,
-  resize/lifecycle forwarding, and AOV export wrappers.
+- `hello_vulkan.cpp` owns renderer setup, render settings, dynamic frame
+  uniform slots, resize/lifecycle forwarding, and AOV export wrappers.
 - `raster_pipeline.hpp` and `raster_pipeline.cpp` own the main raster
   offscreen AOV targets, graphics pipeline, framebuffer, AOV export backing,
   and draw command recording.
@@ -39,11 +39,12 @@ instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
 
 The raster pipeline binds the shared scene descriptor set, then draws each
 visible instance with `PushConstantRaster` data for model transform, object
-index, and instance ID.
+index, and instance ID. The frame uniform binding is dynamic: slot 0 is used
+for the main output, and tile cameras use slots starting at 1.
 
 When tile output is enabled, headless renders cameras from the current camera
 array serially into a per-tile scratch pipeline, copies color and float depth
-into row-major atlas positions, restores the main camera state, and saves:
+into row-major atlas positions, and saves:
 
 - `output/tile_color_atlas.png`
 - `output/tile_depth_atlas.f32`
