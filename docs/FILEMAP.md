@@ -188,7 +188,7 @@ a separate cleanup if the public surface can absorb the churn.
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/raster_pipeline.cpp`, `headless/ray_trace_app.cpp`, then search
   for `onResize`, `createOffscreenRender`, `getRenderSize`, and
-  `initOrResize`.
+  `ensureHeadlessReady`.
 - Offscreen AOV export:
   `headless/aov_texture.hpp`, `headless/raster_pipeline.cpp`,
   `headless/hello_vulkan.cpp`, `hdRobot/renderTextureExport.cpp`, then search

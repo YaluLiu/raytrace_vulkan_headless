@@ -16,8 +16,6 @@ class HdRobotRenderBuffer;
 
 std::vector<TextureAsset>
 ExportRegisteredTextures(const std::vector<TextureAsset> &registeredTextures);
-HdRobotRenderBuffer *
-GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector &bindings);
 bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
                            HdRobotRenderBuffer *renderBuffer,
                            ::HdRobotGlInteropCache &glInteropCache);

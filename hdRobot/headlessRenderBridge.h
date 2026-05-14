@@ -6,6 +6,7 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/renderPass.h>
 #include <pxr/imaging/hd/renderPassState.h>
+#include <pxr/base/gf/vec2i.h>
 
 #include <ray_trace_app.hpp>
 
@@ -22,7 +23,10 @@ public:
   bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
 
 private:
-  void initOrResize();
+  void ensureHeadlessReady(const GfVec2i& renderSize);
+  void initializeHeadless(const GfVec2i& renderSize);
+  void resizeHeadless(const GfVec2i& renderSize);
+  void uploadInitialScene();
   void refreshTextureAssetsIfNeeded();
   bool updateCameras(const HdRenderPassStateSharedPtr& renderPassState);
   void updateLights();
@@ -39,10 +43,8 @@ private:
   RayTraceApp            _renderApp;
   HdRobotGlInteropCache  _glInteropCache;
   bool          _isAppInited = false;
-  bool          _resetRenderBuffer = false;
   TfTokenVector _activeRenderTags;
-  int           _width = -1;
-  int           _height = -1;
+  GfVec2i       _renderSize{-1, -1};
   uint64_t      _uploadedTextureRegistryVersion = 0;
 };
 

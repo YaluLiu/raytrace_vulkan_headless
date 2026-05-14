@@ -200,7 +200,6 @@ void HelloVulkan::onResize(int w, int h)
 
   if(w == (int)m_size.width && h == (int)m_size.height)
   {
-    createOffscreenRender();
     return;
   }
 

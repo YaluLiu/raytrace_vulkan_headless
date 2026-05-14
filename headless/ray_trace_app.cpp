@@ -111,6 +111,14 @@ void RayTraceApp::setup(int width, int height)
 
 void RayTraceApp::resize(int w, int h)
 {
+  if(w <= 0 || h <= 0)
+  {
+    return;
+  }
+
+  m_width  = w;
+  m_height = h;
+  CameraManip.setWindowSize(m_width, m_height);
   m_helloVk.onResize(w, h);
 }
 

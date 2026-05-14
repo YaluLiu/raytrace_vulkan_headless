@@ -77,16 +77,6 @@ ExportRegisteredTextures(const std::vector<TextureAsset> &registeredTextures) {
   return exportedTextures;
 }
 
-HdRobotRenderBuffer *
-GetPrimaryRenderBuffer(const HdRenderPassAovBindingVector &bindings) {
-  for (const HdRenderPassAovBinding &binding : bindings) {
-    if (binding.renderBuffer != nullptr) {
-      return static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
-    }
-  }
-  return nullptr;
-}
-
 void ClearGlErrors() {
   while (glGetError() != GL_NO_ERROR) {
   }

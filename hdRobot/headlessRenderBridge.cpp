@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <optional>
 #include <utility>
 
 #include "camera.h"
 #include "renderBuffer.h"
 #include "renderTextureExport.h"
 #include "sceneData.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,6 +107,63 @@ bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
   return true;
 }
 
+bool IsFixedSizeTileAov(const TfToken &name)
+{
+  return name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDepth;
+}
+
+bool HasRenderBuffer(const HdRenderPassAovBindingVector &bindings)
+{
+  return std::any_of(bindings.begin(), bindings.end(), [](const HdRenderPassAovBinding &binding) {
+    return binding.renderBuffer != nullptr;
+  });
+}
+
+std::optional<GfVec2i> GetRenderBufferSize(const HdRenderPassAovBindingVector &bindings)
+{
+  for (const HdRenderPassAovBinding &binding : bindings)
+  {
+    if (binding.renderBuffer == nullptr || IsFixedSizeTileAov(binding.aovName))
+    {
+      continue;
+    }
+
+    auto *renderBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
+    const int width = static_cast<int>(renderBuffer->GetWidth());
+    const int height = static_cast<int>(renderBuffer->GetHeight());
+    if (width > 0 && height > 0)
+    {
+      return GfVec2i(width, height);
+    }
+  }
+
+  return std::nullopt;
+}
+
+std::optional<GfVec2i> GetMainRenderSize(const HdRenderPassStateSharedPtr &renderPassState,
+                                         const HdRenderPassAovBindingVector &bindings)
+{
+  const CameraUtilFraming &framing = renderPassState->GetFraming();
+  if (framing.IsValid())
+  {
+    const GfVec2i size = framing.dataWindow.GetSize();
+    if (size[0] > 0 && size[1] > 0)
+    {
+      return size;
+    }
+  }
+
+  const GfVec4f &viewport = renderPassState->GetViewport();
+  const int viewportWidth = static_cast<int>(viewport[2]);
+  const int viewportHeight = static_cast<int>(viewport[3]);
+  if (viewportWidth > 0 && viewportHeight > 0)
+  {
+    return GfVec2i(viewportWidth, viewportHeight);
+  }
+
+  return GetRenderBufferSize(bindings);
+}
+
 }  // namespace
 
 HeadlessRenderBridge::HeadlessRenderBridge(HdRobotRenderParam &renderParam, std::string resourcePath)
@@ -131,21 +190,18 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   }
 
   const auto &hdAovBindings = renderPassState->GetAovBindings();
-  HdRobotRenderBuffer *primaryRenderBuffer = GetPrimaryRenderBuffer(hdAovBindings);
-  if (primaryRenderBuffer == nullptr)
+  if (!HasRenderBuffer(hdAovBindings))
   {
     return false;
   }
 
-  if (_width != static_cast<int>(primaryRenderBuffer->GetWidth()) ||
-      _height != static_cast<int>(primaryRenderBuffer->GetHeight()))
+  const std::optional<GfVec2i> mainRenderSize = GetMainRenderSize(renderPassState, hdAovBindings);
+  if (!mainRenderSize)
   {
-    _width = static_cast<int>(primaryRenderBuffer->GetWidth());
-    _height = static_cast<int>(primaryRenderBuffer->GetHeight());
-    _resetRenderBuffer = true;
+    return false;
   }
 
-  initOrResize();
+  ensureHeadlessReady(*mainRenderSize);
   if (!updateCameras(renderPassState))
   {
     return false;
@@ -172,59 +228,76 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   return allAovsCopied;
 }
 
-void HeadlessRenderBridge::initOrResize()
+void HeadlessRenderBridge::ensureHeadlessReady(const GfVec2i& renderSize)
 {
-  HelloVulkan &vulkan = _renderApp.getVulkan();
-
   if (!_isAppInited)
   {
-    _isAppInited = true;
-    if (!_resourcePath.empty())
-    {
-      _renderApp.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
-    }
-    _renderApp.setup(_width, _height);
-    _resetRenderBuffer = false;
-
-    vulkan.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
-    _uploadedTextureRegistryVersion = _renderParam.GetTextureRegistryVersion();
-    for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
-    {
-      auto &curMesh = _renderParam.v_mesh[meshId];
-      ModelLoader loader;
-      ConvertVmeshToLoader(curMesh, loader);
-      loader.m_textures.clear();
-      for (auto &matId : curMesh.scene_mat_ids)
-      {
-        auto materialObj = _renderParam.v_mat[matId].toMaterialObj();
-        loader.m_materials.emplace_back(materialObj);
-      }
-      vulkan.loadModel(loader);
-      const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
-      const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
-      const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
-      const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
-      curMesh.hasInstances = authoredInstanceCount > 0;
-      for (size_t i = 1; i < rendererInstanceSlotCount; ++i)
-      {
-        vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
-      }
-      curMesh.rendererInstanceIds.clear();
-      for (size_t i = 0; i < rendererInstanceSlotCount; ++i)
-      {
-        curMesh.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
-      }
-      _renderParam.MarkMeshInstanceDirty(meshId);
-    }
-    _renderApp.createRenderResources();
+    initializeHeadless(renderSize);
   }
-  else if (_resetRenderBuffer)
+  else if (_renderSize != renderSize)
   {
-    _glInteropCache.Clear();
-    _renderApp.resize(_width, _height);
-    _resetRenderBuffer = false;
+    resizeHeadless(renderSize);
   }
+
   refreshTextureAssetsIfNeeded();
+}
+
+void HeadlessRenderBridge::initializeHeadless(const GfVec2i& renderSize)
+{
+  if (!_resourcePath.empty())
+  {
+    _renderApp.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
+  }
+
+  _renderApp.setup(renderSize[0], renderSize[1]);
+  _renderSize = renderSize;
+  _isAppInited = true;
+
+  HelloVulkan &vulkan = _renderApp.getVulkan();
+  vulkan.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
+  _uploadedTextureRegistryVersion = _renderParam.GetTextureRegistryVersion();
+  uploadInitialScene();
+  _renderApp.createRenderResources();
+}
+
+void HeadlessRenderBridge::resizeHeadless(const GfVec2i& renderSize)
+{
+  _glInteropCache.Clear();
+  _renderApp.resize(renderSize[0], renderSize[1]);
+  _renderSize = renderSize;
+}
+
+void HeadlessRenderBridge::uploadInitialScene()
+{
+  HelloVulkan &vulkan = _renderApp.getVulkan();
+  for (size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  {
+    auto &curMesh = _renderParam.v_mesh[meshId];
+    ModelLoader loader;
+    ConvertVmeshToLoader(curMesh, loader);
+    loader.m_textures.clear();
+    for (auto &matId : curMesh.scene_mat_ids)
+    {
+      auto materialObj = _renderParam.v_mat[matId].toMaterialObj();
+      loader.m_materials.emplace_back(materialObj);
+    }
+    vulkan.loadModel(loader);
+    const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
+    const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
+    const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
+    const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
+    curMesh.hasInstances = authoredInstanceCount > 0;
+    for (size_t i = 1; i < rendererInstanceSlotCount; ++i)
+    {
+      vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
+    }
+    curMesh.rendererInstanceIds.clear();
+    for (size_t i = 0; i < rendererInstanceSlotCount; ++i)
+    {
+      curMesh.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
+    }
+    _renderParam.MarkMeshInstanceDirty(meshId);
+  }
 }
 
 void HeadlessRenderBridge::refreshTextureAssetsIfNeeded()
