@@ -1,5 +1,7 @@
 #include "camera.h"
 
+#include "renderParam.h"
+
 #include <pxr/base/gf/camera.h>
 #include <pxr/base/gf/vec3d.h>
 
@@ -55,8 +57,9 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
   return data;
 }
 
-HdRobotCamera::HdRobotCamera(const SdfPath& id)
+HdRobotCamera::HdRobotCamera(const SdfPath& id, HdRobotRenderParam& scene)
     : HdCamera(id)
+    , _scene(scene)
 {
 }
 
@@ -68,6 +71,11 @@ HdDirtyBits HdRobotCamera::GetInitialDirtyBitsMask() const
 const HdRobotCameraData& HdRobotCamera::GetCameraData() const
 {
   return _cameraData;
+}
+
+void HdRobotCamera::Finalize(HdRenderParam*)
+{
+  _scene.RemoveCamera(GetId());
 }
 
 void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
@@ -88,6 +96,7 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
   cameraData.name             = GetId().GetString();
   _cameraData                 = cameraData;
+  _scene.UpsertCamera(cameraData);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

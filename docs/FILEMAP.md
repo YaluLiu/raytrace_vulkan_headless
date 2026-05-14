@@ -29,8 +29,8 @@ call sites with `rg`.
 ## Runtime Entry Points
 
 - `headless/ray_trace_app.cpp`: Headless app orchestration, raster-oriented
-  Vulkan context setup, resize forwarding, frame pass sequencing, and default
-  scene loading.
+  Vulkan context setup, resize forwarding, frame pass sequencing, and render
+  resource lifecycle.
 - `headless/ray_trace_app.hpp`: Headless app public surface and member state.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
@@ -47,10 +47,11 @@ a separate cleanup if the public surface can absorb the churn.
 ## Headless Vulkan Renderer
 
 - `headless/hello_vulkan.hpp`: Main `HelloVulkan` renderer facade, public
-  controls, scene buffers, descriptor state, compatibility wrappers, and
-  `RasterPipeline` ownership.
-- `headless/hello_vulkan.cpp`: Core setup, camera uniforms, resize forwarding,
-  AOV texture wrapper, and renderer resource lifecycle.
+  controls, headless camera array storage, scene buffers, descriptor state,
+  compatibility wrappers, and `RasterPipeline` ownership.
+- `headless/hello_vulkan.cpp`: Core setup, camera array ingestion, active
+  camera uniform setup, resize forwarding, AOV texture wrapper, and renderer
+  resource lifecycle.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
   OpenGL types.
@@ -99,10 +100,11 @@ a separate cleanup if the public surface can absorb the churn.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/headlessRenderBridge.h` / `hdRobot/headlessRenderBridge.cpp`:
-  Converts Hydra frame state into `HelloVulkan` updates and render calls.
+  Converts Hydra frame state into `HelloVulkan` updates and render calls,
+  including the all-camera snapshot passed to headless.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object, scene dirty flags, texture registry, and renderer bridge
-  ownership.
+  parameter object, camera array, scene dirty flags, texture registry, and
+  renderer bridge ownership.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
 
@@ -118,8 +120,8 @@ a separate cleanup if the public surface can absorb the churn.
   standard surface/OpenPBR and selected BSDF/EDF input rules, upstream texture
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
-- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
-  conversion.
+- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
+  conversion, and registration into `HdRobotRenderParam::v_camera`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.
@@ -148,7 +150,6 @@ a separate cleanup if the public surface can absorb the churn.
 - `common/obj_loader.h` / `common/obj_loader.cpp`: OBJ loader implementation,
   vertices, indices, normals, texcoords, material assignment, and fallback
   normals.
-- `headless/ray_trace_app.cpp`: Default headless scene loading.
 
 ## Shader Files
 
@@ -188,6 +189,12 @@ a separate cleanup if the public surface can absorb the churn.
   `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
   `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,
   `_UpdateRenderScene`, and `Sync`.
+- Hydra camera and multi-camera flow:
+  `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
+  `hdRobot/headlessRenderBridge.cpp`, `headless/hello_vulkan.hpp`, and
+  `headless/hello_vulkan.cpp`, then search for `v_camera`,
+  `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, and
+  `HeadlessCameraData`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.

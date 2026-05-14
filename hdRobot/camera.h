@@ -6,6 +6,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdRobotRenderParam;
+
 struct HdRobotCameraData
 {
   std::string name;
@@ -22,14 +24,16 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera);
 class HdRobotCamera final : public HdCamera
 {
 public:
-  explicit HdRobotCamera(const SdfPath& id);
+  HdRobotCamera(const SdfPath& id, HdRobotRenderParam& scene);
 
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
+  void Finalize(HdRenderParam* renderParam) override;
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
   const HdRobotCameraData& GetCameraData() const;
 
 private:
+  HdRobotRenderParam&       _scene;
   mutable HdRobotCameraData _cameraData;
 };
 

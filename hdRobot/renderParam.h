@@ -19,6 +19,9 @@ class HdRobotRenderParam final : public HdRenderParam
   const std::vector<std::string>& GetTexturePaths() const;
   const std::vector<TextureAsset>& GetTextureAssets() const;
   uint64_t GetTextureRegistryVersion() const;
+  void UpsertCamera(const HdRobotCameraData& cameraData);
+  void RemoveCamera(const SdfPath& cameraId);
+  std::vector<HdRobotCameraData> GetCamerasSnapshot() const;
 
   void MarkAllMeshesInstanceDirty();
   void MarkMeshInstanceDirty(size_t meshId);
@@ -31,10 +34,11 @@ class HdRobotRenderParam final : public HdRenderParam
 
  public:
   // Shared render state synchronized by Hydra prims and consumed by render pass.
-  std::mutex mutex;
+  mutable std::mutex mutex;
   std::vector<HydraMesh> v_mesh;
   std::vector<HydraMaterial> v_mat;
   std::vector<HydraLight> v_light;
+  std::vector<HdRobotCameraData> v_camera;
   TextureRegistry textureRegistry;
 
 };

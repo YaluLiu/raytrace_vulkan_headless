@@ -207,7 +207,7 @@ HdSprim* HdRobotRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath
 
   if(typeId == HdPrimTypeTokens->camera)
   {
-    return new HdRobotCamera(sprimId);
+    return new HdRobotCamera(sprimId, *robotRenderParam);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {

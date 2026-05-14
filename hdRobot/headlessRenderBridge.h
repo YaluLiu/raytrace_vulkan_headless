@@ -24,7 +24,7 @@ public:
 private:
   void initOrResize();
   void refreshTextureAssetsIfNeeded();
-  bool updateMainCamera(const HdRenderPassStateSharedPtr& renderPassState);
+  bool updateCameras(const HdRenderPassStateSharedPtr& renderPassState);
   void updateLights();
   void updateScene();
   void updateGeometry();

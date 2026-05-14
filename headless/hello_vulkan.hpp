@@ -13,6 +13,21 @@
 
 #include "ModelLoader.h"
 
+#include <optional>
+#include <string>
+#include <vector>
+
+struct HeadlessCameraData
+{
+  std::string name;
+  glm::vec3   position{0.0f, 0.0f, 0.0f};
+  glm::vec3   forward{0.0f, 0.0f, -1.0f};
+  glm::vec3   up{0.0f, 1.0f, 0.0f};
+  float       vfov_deg{45.0f};
+  float       clipStart{0.1f};
+  float       clipEnd{1000.0f};
+};
+
 struct MaterialUpdate
 {
   int               modelIndex;
@@ -35,6 +50,9 @@ public:
                            const std::vector<std::string>& textures,
                            const std::vector<TextureAsset>& textureAssets);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
+  void setCameras(std::vector<HeadlessCameraData> cameras);
+  const std::vector<HeadlessCameraData>& getCameras() const { return m_cameras; }
+  void setMainCamera(const HeadlessCameraData& camera);
   void setMainCameraClipRange(float clipStart, float clipEnd);
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
@@ -86,6 +104,7 @@ public:
   VkPipelineLayout            m_compPipelineLayout{VK_NULL_HANDLE};
 
   RasterPipeline m_mainRasterPipeline;
+  std::vector<HeadlessCameraData> m_cameras;
 
   void saveOffscreenColorToFile(const char* filename);
 

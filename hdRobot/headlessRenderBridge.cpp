@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "camera.h"
-#include "nvh/cameramanipulator.hpp"
 #include "renderBuffer.h"
 #include "renderTextureExport.h"
 #include "sceneData.h"
@@ -44,6 +43,30 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   result.emissionTextureId = material.emissionTextureId;
   result.opacityTextureId = material.opacityTextureId;
   result.subsurfaceTextureId = material.subsurfaceTextureId;
+  return result;
+}
+
+HeadlessCameraData ToHeadlessCameraData(const HdRobotCameraData& camera)
+{
+  HeadlessCameraData result;
+  result.name      = camera.name;
+  result.position  = camera.position;
+  result.forward   = camera.forward;
+  result.up        = camera.up;
+  result.vfov_deg  = camera.vfov_deg;
+  result.clipStart = camera.clipStart;
+  result.clipEnd   = camera.clipEnd;
+  return result;
+}
+
+std::vector<HeadlessCameraData> ToHeadlessCameraData(const std::vector<HdRobotCameraData>& cameras)
+{
+  std::vector<HeadlessCameraData> result;
+  result.reserve(cameras.size());
+  for(const HdRobotCameraData& camera : cameras)
+  {
+    result.push_back(ToHeadlessCameraData(camera));
+  }
   return result;
 }
 
@@ -111,7 +134,7 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   }
 
   initOrResize();
-  if (!updateMainCamera(renderPassState))
+  if (!updateCameras(renderPassState))
   {
     return false;
   }
@@ -210,7 +233,7 @@ void HeadlessRenderBridge::refreshTextureAssetsIfNeeded()
   _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
 
-bool HeadlessRenderBridge::updateMainCamera(const HdRenderPassStateSharedPtr &renderPassState)
+bool HeadlessRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &renderPassState)
 {
   const HdCamera *hdCamera = renderPassState ? renderPassState->GetCamera() : nullptr;
   if (!hdCamera)
@@ -225,19 +248,17 @@ bool HeadlessRenderBridge::updateMainCamera(const HdRenderPassStateSharedPtr &re
   }
 
   const HdRobotCameraData &mainCameraData = robotCamera->GetCameraData();
-  _renderApp.getVulkan().setMainCameraClipRange(mainCameraData.clipStart, mainCameraData.clipEnd);
+  _renderParam.UpsertCamera(mainCameraData);
 
-  glm::vec3 camPos = mainCameraData.position;
-  glm::vec3 camForward = mainCameraData.forward;
-  glm::vec3 camUp = mainCameraData.up;
-  glm::vec3 target = camPos + camForward;
-
-  if (glm::length(glm::cross(camForward, camUp)) < 1e-6f)
+  std::vector<HdRobotCameraData> cameras = _renderParam.GetCamerasSnapshot();
+  if(cameras.empty())
   {
-    camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    cameras.push_back(mainCameraData);
   }
-  const float vfovDeg = std::clamp(mainCameraData.vfov_deg, 1.0f, 179.0f);
-  CameraManip.setCamera({camPos, target, camUp, vfovDeg});
+
+  HelloVulkan& vulkan = _renderApp.getVulkan();
+  vulkan.setCameras(ToHeadlessCameraData(cameras));
+  vulkan.setMainCamera(ToHeadlessCameraData(mainCameraData));
   return true;
 }
 

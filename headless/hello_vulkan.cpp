@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <utility>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -45,6 +46,28 @@ void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
     m_mainCameraClipStart = safeStart;
     m_mainCameraClipEnd   = safeEnd;
   }
+}
+
+void HelloVulkan::setCameras(std::vector<HeadlessCameraData> cameras)
+{
+  m_cameras = std::move(cameras);
+}
+
+void HelloVulkan::setMainCamera(const HeadlessCameraData& camera)
+{
+  setMainCameraClipRange(camera.clipStart, camera.clipEnd);
+
+  glm::vec3 camPos     = camera.position;
+  glm::vec3 camForward = camera.forward;
+  glm::vec3 camUp      = camera.up;
+  glm::vec3 target     = camPos + camForward;
+
+  if(glm::length(glm::cross(camForward, camUp)) < 1e-6f)
+  {
+    camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+  }
+  const float vfovDeg = std::clamp(camera.vfov_deg, 1.0f, 179.0f);
+  CameraManip.setCamera({camPos, target, camUp, vfovDeg});
 }
 
 void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)

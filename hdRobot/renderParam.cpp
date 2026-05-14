@@ -1,5 +1,7 @@
 #include "renderParam.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 int HdRobotRenderParam::RegisterTexturePath(const std::string& texturePath, TextureUsage usage)
@@ -21,6 +23,36 @@ const std::vector<TextureAsset>& HdRobotRenderParam::GetTextureAssets() const
 uint64_t HdRobotRenderParam::GetTextureRegistryVersion() const
 {
   return textureRegistry.GetVersion();
+}
+
+void HdRobotRenderParam::UpsertCamera(const HdRobotCameraData& cameraData)
+{
+  std::lock_guard guard(mutex);
+  auto cameraIt = std::find_if(v_camera.begin(), v_camera.end(), [&cameraData](const HdRobotCameraData& camera) {
+    return camera.name == cameraData.name;
+  });
+  if(cameraIt == v_camera.end())
+  {
+    v_camera.push_back(cameraData);
+    return;
+  }
+  *cameraIt = cameraData;
+}
+
+void HdRobotRenderParam::RemoveCamera(const SdfPath& cameraId)
+{
+  const std::string cameraName = cameraId.GetString();
+  std::lock_guard   guard(mutex);
+  v_camera.erase(std::remove_if(v_camera.begin(), v_camera.end(), [&cameraName](const HdRobotCameraData& camera) {
+                   return camera.name == cameraName;
+                 }),
+                 v_camera.end());
+}
+
+std::vector<HdRobotCameraData> HdRobotRenderParam::GetCamerasSnapshot() const
+{
+  std::lock_guard guard(mutex);
+  return v_camera;
 }
 
 void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
