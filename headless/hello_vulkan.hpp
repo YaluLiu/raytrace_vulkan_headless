@@ -12,6 +12,8 @@
 #include "shaders/host_device.h"
 #include "tile_atlas.hpp"
 #include "tile_config.hpp"
+#include "tile_layer_output.hpp"
+#include "tile_multiview_raster_pipeline.hpp"
 
 #include "ModelLoader.h"
 
@@ -64,6 +66,10 @@ public:
   void setMainCameraClipRange(float clipStart, float clipEnd);
   void setTileConfig(HeadlessTileConfig config);
   HeadlessTileConfig getTileConfig() const { return m_tileConfig; }
+  void setTileRenderMode(HeadlessTileRenderMode mode) { m_tileRenderMode = mode; }
+  HeadlessTileRenderMode getTileRenderMode() const { return m_tileRenderMode; }
+  bool isTileMultiviewSupported() const { return m_tileMultiviewSupported; }
+  uint32_t getTileMultiviewMaxViewCount() const { return m_tileMultiviewMaxViewCount; }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
   std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
@@ -89,6 +95,7 @@ public:
   nvvk::Buffer m_bFrameUniforms;
   VkDeviceSize m_frameUniformStride{sizeof(FrameUniforms)};
   uint32_t     m_frameUniformSlotCount{0};
+  nvvk::Buffer m_bTileFrameUniforms;
   nvvk::Buffer m_bObjDesc;
 
   std::vector<nvvk::Texture> m_textures;
@@ -99,6 +106,7 @@ public:
   void     createRasterPipeline();
   void     rasterize(const VkCommandBuffer& cmdBuf);
   void     renderTileAtlas(const VkCommandBuffer& cmdBuf);
+  void     renderTileAtlasMultiview(const VkCommandBuffer& cmdBuf);
   void     saveTileAtlasOutputs(const std::string& outputDirectory = "output");
   float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
   float    getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
@@ -120,7 +128,15 @@ public:
   RasterPipeline m_mainRasterPipeline;
   RasterPipeline m_tileRasterPipeline;
   TileAtlasOutput m_tileAtlas;
+  TileLayerOutput m_tileLayerOutput;
+  TileMultiviewRasterPipeline m_tileMultiviewRasterPipeline;
   HeadlessTileConfig m_tileConfig;
+  HeadlessTileRenderMode m_tileRenderMode{HeadlessTileRenderMode::MultiviewPreferred};
+  bool m_tileMultiviewSupported{false};
+  uint32_t m_tileMultiviewMaxViewCount{0};
+  uint32_t m_tileMultiviewMaxInstanceIndex{0};
+  uint32_t m_tileMultiviewEffectiveViewCount{0};
+  bool m_tileMultiviewUnsupportedLogged{false};
   bool m_tileAtlasDirty{false};
 
   std::vector<HeadlessCameraData> m_cameras;
@@ -131,6 +147,15 @@ public:
   uint32_t getRequiredFrameUniformSlots() const;
   uint32_t getFrameUniformOffset(uint32_t slotIndex) const;
   void updateFrameUniformDescriptor();
+  void ensureTileFrameUniformBuffer();
+  void updateTileFrameUniformDescriptor();
+  void updateTileFrameUniformBufferForBatch(const VkCommandBuffer& cmdBuf,
+                                            uint32_t firstCameraIndex,
+                                            uint32_t cameraCount,
+                                            uint32_t viewCount,
+                                            VkExtent2D tileExtent);
+  uint32_t getTileMultiviewEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const;
+  void logTileMultiviewUnavailableOnce(const char* reason);
 
   float m_mainCameraClipStart{0.1f};
   float m_mainCameraClipEnd{1000.0f};

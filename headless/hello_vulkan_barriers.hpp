@@ -6,7 +6,10 @@ inline VkImageMemoryBarrier makeColorImageBarrier(VkImage image,
                                                   VkAccessFlags srcAccessMask,
                                                   VkAccessFlags dstAccessMask,
                                                   VkImageLayout oldLayout,
-                                                  VkImageLayout newLayout)
+                                                  VkImageLayout newLayout,
+                                                  uint32_t baseArrayLayer = 0,
+                                                  uint32_t layerCount = 1,
+                                                  VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT)
 {
   VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
   barrier.srcAccessMask    = srcAccessMask;
@@ -14,7 +17,7 @@ inline VkImageMemoryBarrier makeColorImageBarrier(VkImage image,
   barrier.oldLayout        = oldLayout;
   barrier.newLayout        = newLayout;
   barrier.image            = image;
-  barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  barrier.subresourceRange = {aspectMask, 0, 1, baseArrayLayer, layerCount};
   return barrier;
 }
 

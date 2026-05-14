@@ -5,6 +5,12 @@
 
 #include <vulkan/vulkan_core.h>
 
+enum class HeadlessTileRenderMode {
+  Serial,
+  MultiviewPreferred,
+  MultiviewOnly,
+};
+
 struct HeadlessTileConfig {
   bool enabled = false;
   uint32_t cameraWidth = 100;

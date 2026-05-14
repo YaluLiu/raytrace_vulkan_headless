@@ -23,11 +23,13 @@ START_BINDING(SceneBindings)
   eFrameUniforms = 0,  // Frame uniform containing the active camera
   eObjDescs    = 1,
   eTextures    = 2,
-  eLights      = 3
+  eLights      = 3,
+  eTileFrameUniforms = 4
 END_BINDING();
 // clang-format on
 
 const uint MAX_SCENE_LIGHTS = 100;
+const uint MAX_TILE_MULTIVIEW_VIEWS = 16;
 
 struct ObjDesc
 {
@@ -62,6 +64,15 @@ struct FrameUniforms
   uint pad0;
   uint pad1;
   uint pad2;
+};
+
+struct TileFrameUniforms
+{
+  CameraUniforms cameras[MAX_TILE_MULTIVIEW_VIEWS];
+  uint lightCount;
+  uint viewCount;
+  uint batchBaseCameraIndex;
+  uint pad0;
 };
 
 struct Light

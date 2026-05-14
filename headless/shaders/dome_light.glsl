@@ -5,9 +5,13 @@ const int LIGHT_TYPE_SPHERE = 0;
 const int LIGHT_TYPE_DISTANT = 1;
 const int LIGHT_TYPE_DOME = 2;
 
+#ifndef DOME_LIGHT_COUNT
+#define DOME_LIGHT_COUNT frameUni.lightCount
+#endif
+
 bool getFirstDomeLight(out Light domeLight)
 {
-  uint lightCount = min(frameUni.lightCount, MAX_SCENE_LIGHTS);
+  uint lightCount = min(DOME_LIGHT_COUNT, MAX_SCENE_LIGHTS);
   for(uint i = 0; i < lightCount; ++i)
   {
     Light light = lights.i[i];

@@ -5,6 +5,7 @@
 #include "nvvk/resourceallocator_vk.hpp"
 #include "raster_pipeline.hpp"
 #include "tile_config.hpp"
+#include "tile_layer_output.hpp"
 
 class TileAtlasOutput final {
 public:
@@ -14,6 +15,10 @@ public:
 
   bool ensureResources(const HeadlessTileConfig &config,
                        const RasterPipeline &pipeline);
+  bool copyLayersFrom(const VkCommandBuffer &cmdBuf,
+                      const TileLayerOutput &layeredOutput,
+                      uint32_t firstTileIndex,
+                      uint32_t tileCount);
 
   bool hasImages() const;
   bool hasFramebuffer() const { return _framebuffer != VK_NULL_HANDLE; }
@@ -23,6 +28,8 @@ public:
   VkRect2D getTileRect(uint32_t tileIndex) const;
   const nvvk::Texture &getColorTexture() const { return _colorAtlas; }
   const nvvk::Texture &getDepthTexture() const { return _depthAtlas; }
+  const nvvk::Texture &getObjectIdTexture() const { return _objectIdAtlas; }
+  const nvvk::Texture &getInstanceIdTexture() const { return _instanceIdAtlas; }
 
 private:
   void createAtlasImage(nvvk::Texture &texture, VkFormat format,

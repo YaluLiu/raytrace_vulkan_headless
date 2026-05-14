@@ -1,10 +1,73 @@
 #include "tile_atlas.hpp"
 
+#include <algorithm>
 #include <array>
 #include <stdexcept>
 
+#include "hello_vulkan_barriers.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
+
+namespace {
+bool copyLayeredImageToAtlas(const VkCommandBuffer &cmdBuf,
+                             const nvvk::Texture &source,
+                             const nvvk::Texture &destination,
+                             const TileAtlasOutput &atlas,
+                             uint32_t firstTileIndex,
+                             uint32_t tileCount,
+                             uint32_t sourceLayerCount) {
+  if (source.image == VK_NULL_HANDLE || destination.image == VK_NULL_HANDLE ||
+      tileCount == 0 || sourceLayerCount == 0) {
+    return false;
+  }
+
+  const VkImageMemoryBarrier beforeBarriers[2] = {
+      makeColorImageBarrier(source.image, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                            VK_ACCESS_TRANSFER_READ_BIT,
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0,
+                            sourceLayerCount),
+      makeColorImageBarrier(
+          destination.image,
+          VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT |
+              VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+          VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL,
+          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
+  };
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                       nullptr, 2, beforeBarriers);
+
+  for (uint32_t layerIndex = 0; layerIndex < tileCount; ++layerIndex) {
+    const VkRect2D tileRect = atlas.getTileRect(firstTileIndex + layerIndex);
+    VkImageCopy region{};
+    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, layerIndex, 1};
+    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.dstOffset = {tileRect.offset.x, tileRect.offset.y, 0};
+    region.extent = {tileRect.extent.width, tileRect.extent.height, 1};
+    vkCmdCopyImage(cmdBuf, source.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   destination.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                   &region);
+  }
+
+  const VkImageMemoryBarrier afterBarriers[2] = {
+      makeColorImageBarrier(source.image, VK_ACCESS_TRANSFER_READ_BIT,
+                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            VK_IMAGE_LAYOUT_GENERAL, 0, sourceLayerCount),
+      makeColorImageBarrier(destination.image, VK_ACCESS_TRANSFER_WRITE_BIT,
+                            VK_ACCESS_TRANSFER_WRITE_BIT |
+                                VK_ACCESS_SHADER_WRITE_BIT |
+                                VK_ACCESS_SHADER_READ_BIT,
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                            VK_IMAGE_LAYOUT_GENERAL),
+  };
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0,
+                       nullptr, 2, afterBarriers);
+  return true;
+}
+} // namespace
 
 void TileAtlasOutput::setup(VkDevice device, uint32_t graphicsQueueIndex,
                             nvvk::ResourceAllocatorDma &allocator,
@@ -99,6 +162,40 @@ bool TileAtlasOutput::hasImages() const {
          _depthAtlas.image != VK_NULL_HANDLE &&
          _depthAttachment.image != VK_NULL_HANDLE &&
          _atlasExtent.width > 0 && _atlasExtent.height > 0;
+}
+
+bool TileAtlasOutput::copyLayersFrom(const VkCommandBuffer &cmdBuf,
+                                     const TileLayerOutput &layeredOutput,
+                                     uint32_t firstTileIndex,
+                                     uint32_t tileCount) {
+  if (!hasImages() || !layeredOutput.hasImages() || firstTileIndex >= _config.capacity()) {
+    return false;
+  }
+
+  const uint32_t boundedTileCount =
+      std::min({tileCount, layeredOutput.getLayerCount(),
+                _config.capacity() - firstTileIndex});
+  if (boundedTileCount == 0) {
+    return false;
+  }
+
+  const bool copiedColor =
+      copyLayeredImageToAtlas(cmdBuf, layeredOutput.getColorTexture(), _colorAtlas,
+                              *this, firstTileIndex, boundedTileCount,
+                              layeredOutput.getLayerCount());
+  const bool copiedDepth =
+      copyLayeredImageToAtlas(cmdBuf, layeredOutput.getDepthTexture(), _depthAtlas,
+                              *this, firstTileIndex, boundedTileCount,
+                              layeredOutput.getLayerCount());
+  const bool copiedObjectId =
+      copyLayeredImageToAtlas(cmdBuf, layeredOutput.getObjectIdTexture(),
+                              _objectIdAtlas, *this, firstTileIndex,
+                              boundedTileCount, layeredOutput.getLayerCount());
+  const bool copiedInstanceId =
+      copyLayeredImageToAtlas(cmdBuf, layeredOutput.getInstanceIdTexture(),
+                              _instanceIdAtlas, *this, firstTileIndex,
+                              boundedTileCount, layeredOutput.getLayerCount());
+  return copiedColor && copiedDepth && copiedObjectId && copiedInstanceId;
 }
 
 VkRect2D TileAtlasOutput::getTileRect(uint32_t tileIndex) const {

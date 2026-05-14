@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <string>
 #include <utility>
 
@@ -120,6 +121,31 @@ void recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf,
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
                        nullptr, 1, &afterBarrier, 0, nullptr);
 }
+
+void recordTileFrameUniformUpdate(const VkCommandBuffer& cmdBuf, VkBuffer deviceUBO, const TileFrameUniforms& tileUBO)
+{
+  auto uboUsageStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+  VkBufferMemoryBarrier beforeBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+  beforeBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  beforeBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  beforeBarrier.buffer        = deviceUBO;
+  beforeBarrier.offset        = 0;
+  beforeBarrier.size          = sizeof(tileUBO);
+  vkCmdPipelineBarrier(cmdBuf, uboUsageStages, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
+                       nullptr, 1, &beforeBarrier, 0, nullptr);
+
+  vkCmdUpdateBuffer(cmdBuf, deviceUBO, 0, sizeof(TileFrameUniforms), &tileUBO);
+
+  VkBufferMemoryBarrier afterBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+  afterBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  afterBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  afterBarrier.buffer        = deviceUBO;
+  afterBarrier.offset        = 0;
+  afterBarrier.size          = sizeof(tileUBO);
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
+                       nullptr, 1, &afterBarrier, 0, nullptr);
+}
 }
 
 void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, const VkPhysicalDevice& physicalDevice, uint32_t queueFamily)
@@ -131,9 +157,31 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   VkPhysicalDeviceProperties deviceProperties{};
   vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
   m_frameUniformStride = alignTo(sizeof(FrameUniforms), deviceProperties.limits.minUniformBufferOffsetAlignment);
+
+  VkPhysicalDeviceVulkan11Features features11{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+  VkPhysicalDeviceFeatures2        features2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+  features2.pNext = &features11;
+  vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+  VkPhysicalDeviceVulkan11Properties properties11{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
+  VkPhysicalDeviceProperties2        properties2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+  properties2.pNext = &properties11;
+  vkGetPhysicalDeviceProperties2(physicalDevice, &properties2);
+
+  m_tileMultiviewMaxViewCount     = properties11.maxMultiviewViewCount;
+  m_tileMultiviewMaxInstanceIndex = properties11.maxMultiviewInstanceIndex;
+  m_tileMultiviewSupported =
+      features11.multiview == VK_TRUE && m_tileMultiviewMaxViewCount > 0 && MAX_TILE_MULTIVIEW_VIEWS > 0;
+  std::cerr << "[HelloVulkan] Tile multiview "
+            << (m_tileMultiviewSupported ? "supported" : "not supported")
+            << " (maxViewCount=" << m_tileMultiviewMaxViewCount
+            << ", maxInstanceIndex=" << m_tileMultiviewMaxInstanceIndex << ")" << std::endl;
+
   m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
   m_tileRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
   m_tileAtlas.setup(m_device, queueFamily, m_alloc, m_debug);
+  m_tileLayerOutput.setup(m_device, queueFamily, m_alloc, m_debug);
+  m_tileMultiviewRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_debug);
 }
 
 std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
@@ -218,6 +266,7 @@ void HelloVulkan::updateUniformBufferForCamera(const VkCommandBuffer& cmdBuf,
 void HelloVulkan::createUniformBuffer()
 {
   ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
+  ensureTileFrameUniformBuffer();
 }
 
 uint32_t HelloVulkan::getRequiredFrameUniformSlots() const
@@ -271,6 +320,106 @@ void HelloVulkan::updateFrameUniformDescriptor()
   vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
 }
 
+void HelloVulkan::ensureTileFrameUniformBuffer()
+{
+  if(m_device == VK_NULL_HANDLE || m_bTileFrameUniforms.buffer != VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  static_assert(sizeof(TileFrameUniforms) <= 65536, "TileFrameUniforms must fit vkCmdUpdateBuffer limits");
+  m_bTileFrameUniforms = m_alloc.createBuffer(sizeof(TileFrameUniforms),
+                                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  m_debug.setObjectName(m_bTileFrameUniforms.buffer, "TileFrameUniforms");
+  updateTileFrameUniformDescriptor();
+}
+
+void HelloVulkan::updateTileFrameUniformDescriptor()
+{
+  if(m_descSet == VK_NULL_HANDLE || m_descSetLayout == VK_NULL_HANDLE || m_bTileFrameUniforms.buffer == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  VkDescriptorBufferInfo dbiUnif{m_bTileFrameUniforms.buffer, 0, sizeof(TileFrameUniforms)};
+  VkWriteDescriptorSet write = m_descSetLayoutBind.makeWrite(m_descSet, SceneBindings::eTileFrameUniforms, &dbiUnif);
+  vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
+}
+
+void HelloVulkan::updateTileFrameUniformBufferForBatch(const VkCommandBuffer& cmdBuf,
+                                                       uint32_t firstCameraIndex,
+                                                       uint32_t cameraCount,
+                                                       uint32_t viewCount,
+                                                       VkExtent2D tileExtent)
+{
+  if(m_bTileFrameUniforms.buffer == VK_NULL_HANDLE || tileExtent.width == 0 || tileExtent.height == 0
+     || firstCameraIndex >= m_cameras.size() || cameraCount == 0 || viewCount == 0)
+  {
+    return;
+  }
+
+  const uint32_t maxViews = std::min<uint32_t>(MAX_TILE_MULTIVIEW_VIEWS, viewCount);
+  const uint32_t availableCameras =
+      static_cast<uint32_t>(std::min<size_t>(m_cameras.size() - firstCameraIndex, cameraCount));
+  const uint32_t validCameraCount = std::min(maxViews, availableCameras);
+  if(validCameraCount == 0)
+  {
+    return;
+  }
+
+  TileFrameUniforms tileUBO{};
+  tileUBO.lightCount            = static_cast<uint32_t>(std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS));
+  tileUBO.viewCount             = validCameraCount;
+  tileUBO.batchBaseCameraIndex  = firstCameraIndex;
+  const uint32_t lastCameraSlot = validCameraCount - 1;
+
+  for(uint32_t viewIndex = 0; viewIndex < MAX_TILE_MULTIVIEW_VIEWS; ++viewIndex)
+  {
+    const uint32_t cameraSlot  = std::min(viewIndex, lastCameraSlot);
+    const auto&    camera      = m_cameras[firstCameraIndex + cameraSlot];
+    const auto     resolved    = resolveCamera(camera);
+    const glm::mat4 view       = glm::lookAtRH(resolved.position, resolved.target, resolved.up);
+    const auto      frameUBO   = makeFrameUniforms(view, resolved.vfovDeg, resolved.clipStart, resolved.clipEnd,
+                                                   tileExtent, m_lights.size());
+    tileUBO.cameras[viewIndex] = frameUBO.camera;
+  }
+
+  recordTileFrameUniformUpdate(cmdBuf, m_bTileFrameUniforms.buffer, tileUBO);
+}
+
+uint32_t HelloVulkan::getTileMultiviewEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const
+{
+  if(!m_tileMultiviewSupported || cameraCount == 0 || capacity == 0)
+  {
+    return 0;
+  }
+
+  const uint32_t deviceCap = std::min<uint32_t>(m_tileMultiviewMaxViewCount, MAX_TILE_MULTIVIEW_VIEWS);
+  if(deviceCap == 0)
+  {
+    return 0;
+  }
+
+  return std::min({cameraCount, capacity, deviceCap});
+}
+
+void HelloVulkan::logTileMultiviewUnavailableOnce(const char* reason)
+{
+  if(m_tileMultiviewUnsupportedLogged)
+  {
+    return;
+  }
+
+  m_tileMultiviewUnsupportedLogged = true;
+  std::cerr << "[HelloVulkan] Tile multiview unavailable";
+  if(reason != nullptr && reason[0] != '\0')
+  {
+    std::cerr << ": " << reason;
+  }
+  std::cerr << std::endl;
+}
+
 void HelloVulkan::createObjDescriptionBuffer()
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
@@ -286,6 +435,8 @@ void HelloVulkan::createObjDescriptionBuffer()
 
 void HelloVulkan::destroyResources()
 {
+  m_tileLayerOutput.destroy();
+  m_tileMultiviewRasterPipeline.destroy();
   m_tileAtlas.destroy();
   m_tileRasterPipeline.destroy();
   m_mainRasterPipeline.destroy();
@@ -296,6 +447,8 @@ void HelloVulkan::destroyResources()
   m_alloc.destroy(m_bFrameUniforms);
   m_bFrameUniforms        = {};
   m_frameUniformSlotCount = 0;
+  m_alloc.destroy(m_bTileFrameUniforms);
+  m_bTileFrameUniforms = {};
   m_alloc.destroy(m_bObjDesc);
   m_alloc.destroy(m_bLights);
 
