@@ -4,6 +4,7 @@
 #include <cassert>
 #include <array>
 #include <cstdlib>
+#include <iostream>
 #include <stdexcept>
 #include "ray_trace_app.hpp"
 
@@ -85,6 +86,7 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
       renderer.updateLightBuffer(cmdBuf);
       break;
     case HeadlessRenderPass::Rasterize:
+      renderer.renderTileAtlas(cmdBuf);
       renderer.rasterize(cmdBuf);
       break;
   }
@@ -215,6 +217,14 @@ void RayTraceApp::render()
 
   vkEndCommandBuffer(cmdBuf);
   m_helloVk.submitFrame();
+  try
+  {
+    m_helloVk.saveTileAtlasOutputs();
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << "[RayTraceApp] Failed to save tile atlas outputs: " << e.what() << std::endl;
+  }
 }
 
 void RayTraceApp::saveFrame(std::string outputImagePath)

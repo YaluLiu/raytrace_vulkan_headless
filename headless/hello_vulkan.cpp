@@ -30,6 +30,8 @@ void HelloVulkan::setup(const VkInstance& instance, const VkDevice& device, cons
   m_alloc.getStaging()->setFreeUnusedOnRelease(false);
   m_debug.setup(m_device);
   m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
+  m_tileRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
+  m_tileAtlas.setup(m_device, queueFamily, m_alloc, m_debug);
 }
 
 std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
@@ -70,9 +72,32 @@ void HelloVulkan::setMainCamera(const HeadlessCameraData& camera)
   CameraManip.setCamera({camPos, target, camUp, vfovDeg});
 }
 
+void HelloVulkan::setTileConfig(HeadlessTileConfig config)
+{
+  config.sanitize();
+  if(config != m_tileConfig)
+  {
+    m_tileConfig = config;
+    if(!m_tileConfig.enabled)
+    {
+      m_tileAtlasDirty = false;
+    }
+  }
+}
+
 void HelloVulkan::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 {
-  const float    aspectRatio = m_size.width / static_cast<float>(m_size.height);
+  updateUniformBufferForExtent(cmdBuf, m_size);
+}
+
+void HelloVulkan::updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, VkExtent2D renderSize)
+{
+  if(renderSize.width == 0 || renderSize.height == 0)
+  {
+    return;
+  }
+
+  const float    aspectRatio = renderSize.width / static_cast<float>(renderSize.height);
   FrameUniforms  frameUBO    = {};
   const auto&    view        = CameraManip.getMatrix();
   glm::mat4      proj = glm::perspectiveRH_ZO(glm::radians(CameraManip.getFov()), aspectRatio, m_mainCameraClipStart,
@@ -130,6 +155,8 @@ void HelloVulkan::createObjDescriptionBuffer()
 
 void HelloVulkan::destroyResources()
 {
+  m_tileAtlas.destroy();
+  m_tileRasterPipeline.destroy();
   m_mainRasterPipeline.destroy();
 
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);

@@ -61,6 +61,15 @@ a separate cleanup if the public surface can absorb the churn.
   pipeline wrapper owning offscreen AOV images, depth attachment, raster render
   pass, framebuffer, graphics pipelines, AOV texture export backing, and draw
   command recording.
+- `headless/tile_config.hpp`: Pure headless tile output configuration contract,
+  including enable flag, per-camera tile size, grid dimensions, and positive
+  value normalization.
+- `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp`: Independent local tile
+  atlas color/depth images plus GPU copy helpers that place per-camera scratch
+  renders into row-major atlas tiles without touching main AOV images.
+- `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
+  per-camera scratch raster passes, main camera restoration, atlas readback, and
+  stable local `output/tile_*` file writes.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.
@@ -83,6 +92,9 @@ a separate cleanup if the public surface can absorb the churn.
   color/depth/id target selection, and framebuffer rebuilds.
 - `headless/hello_vulkan.cpp`: Public compatibility wrappers for resize and
   `GetAovTexture`.
+- `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp` and
+  `headless/hello_vulkan_tile.cpp`: Local-only tile atlas resources and save
+  path; current tile AOV tokens remain reserved for future Hydra return work.
 
 ## Raster Baseline
 
@@ -169,8 +181,9 @@ a separate cleanup if the public surface can absorb the churn.
 
 - Frame rendering:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
-  `hdRobot/headlessRenderBridge.cpp`, then search for `RenderFrame`,
-  `rasterize`, `updateUniformBuffer`, and `updateScene`.
+  `headless/hello_vulkan_tile.cpp`, `hdRobot/headlessRenderBridge.cpp`, then
+  search for `RenderFrame`, `rasterize`, `renderTileAtlas`,
+  `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/raster_pipeline.cpp`, `headless/ray_trace_app.cpp`, then search
@@ -195,8 +208,8 @@ a separate cleanup if the public surface can absorb the churn.
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
   `hdRobot/headlessRenderBridge.cpp`, `headless/hello_vulkan.hpp`, and
   `headless/hello_vulkan.cpp`, then search for `v_camera`,
-  `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, and
-  `HeadlessCameraData`.
+  `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
+  `renderTileAtlas`, and `HeadlessCameraData`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.

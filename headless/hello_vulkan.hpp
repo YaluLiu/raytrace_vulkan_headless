@@ -10,6 +10,8 @@
 #include "raster_pipeline.hpp"
 #include "raster_scene_types.hpp"
 #include "shaders/host_device.h"
+#include "tile_atlas.hpp"
+#include "tile_config.hpp"
 
 #include "ModelLoader.h"
 
@@ -50,10 +52,13 @@ public:
                            const std::vector<std::string>& textures,
                            const std::vector<TextureAsset>& textureAssets);
   void updateUniformBuffer(const VkCommandBuffer& cmdBuf);
+  void updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, VkExtent2D renderSize);
   void setCameras(std::vector<HeadlessCameraData> cameras);
   const std::vector<HeadlessCameraData>& getCameras() const { return m_cameras; }
   void setMainCamera(const HeadlessCameraData& camera);
   void setMainCameraClipRange(float clipStart, float clipEnd);
+  void setTileConfig(HeadlessTileConfig config);
+  HeadlessTileConfig getTileConfig() const { return m_tileConfig; }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
   std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
@@ -86,6 +91,8 @@ public:
 
   void     createRasterPipeline();
   void     rasterize(const VkCommandBuffer& cmdBuf);
+  void     renderTileAtlas(const VkCommandBuffer& cmdBuf);
+  void     saveTileAtlasOutputs(const std::string& outputDirectory = "output");
   float    getMainCameraClipStart() const { return m_mainCameraClipStart; }
   float    getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
 
@@ -104,6 +111,11 @@ public:
   VkPipelineLayout            m_compPipelineLayout{VK_NULL_HANDLE};
 
   RasterPipeline m_mainRasterPipeline;
+  RasterPipeline m_tileRasterPipeline;
+  TileAtlasOutput m_tileAtlas;
+  HeadlessTileConfig m_tileConfig;
+  bool m_tileAtlasDirty{false};
+
   std::vector<HeadlessCameraData> m_cameras;
 
   void saveOffscreenColorToFile(const char* filename);

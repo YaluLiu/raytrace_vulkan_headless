@@ -70,6 +70,18 @@ std::vector<HeadlessCameraData> ToHeadlessCameraData(const std::vector<HdRobotCa
   return result;
 }
 
+HeadlessTileConfig ToHeadlessTileConfig(const HdRobotTileConfig& config)
+{
+  HeadlessTileConfig result;
+  result.enabled      = config.enabled;
+  result.cameraWidth  = config.cameraWidth;
+  result.cameraHeight = config.cameraHeight;
+  result.gridColumns  = config.gridColumns;
+  result.gridRows     = config.gridRows;
+  result.sanitize();
+  return result;
+}
+
 TfTokenVector NormalizeRenderTags(TfTokenVector tags)
 {
   std::sort(tags.begin(), tags.end(), [](const TfToken &a, const TfToken &b) { return a.GetString() < b.GetString(); });
@@ -139,6 +151,7 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
     return false;
   }
 
+  _renderApp.getVulkan().setTileConfig(ToHeadlessTileConfig(_renderParam.GetTileConfig()));
   updateLights();
   updateScene();
   _renderApp.render();

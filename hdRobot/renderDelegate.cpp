@@ -87,14 +87,12 @@ bool IsTileRenderSetting(const TfToken& key)
 
 bool IsColorAov(const TfToken& name)
 {
-  return name == HdAovTokens->color || name == HdRobotAovTokens->tileColor
-         || name == HdRobotAovTokens->tileColorDisplay;
+  return name == HdAovTokens->color;
 }
 
 bool IsDepthAov(const TfToken& name)
 {
-  return name == HdAovTokens->depth || name == HdRobotAovTokens->tileDepth
-         || name == HdRobotAovTokens->tileDepthDisplay;
+  return name == HdAovTokens->depth;
 }
 
 uint32_t GetPositiveRenderSetting(const HdRenderDelegate& delegate, const TfToken& key, uint32_t fallback)

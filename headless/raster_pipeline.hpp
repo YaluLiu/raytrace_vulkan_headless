@@ -37,6 +37,7 @@ public:
   VkExtent2D getRenderSize() const { return _renderSize; }
   VkExtent2D getAovSize() const { return _aovSize; }
   const nvvk::Texture& getColorTextureForReadback() const { return _offscreenColor; }
+  const nvvk::Texture& getDepthAovTextureForReadback() const { return _offscreenDepthAov; }
   const nvvk::Texture& getObjectIdTextureForReadback() const { return _offscreenObjectId; }
 
 private:

@@ -7,6 +7,7 @@ extern std::vector<std::string> defaultSearchPaths;
 void HelloVulkan::createRasterPipeline()
 {
   m_mainRasterPipeline.createGraphicsPipeline(m_descSetLayout);
+  m_tileRasterPipeline.createGraphicsPipeline(m_descSetLayout);
 }
 
 void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)

@@ -115,7 +115,8 @@ void RasterPipeline::createOffscreenRender(VkExtent2D size)
   createOffscreenImage(_offscreenObjectId, _offscreenObjectIdFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                        _aovSize);
   createOffscreenImage(_offscreenInstanceId, _offscreenInstanceIdFormat, kAovUsage, _aovSize);
-  createOffscreenImage(_offscreenDepthAov, _offscreenDepthAovFormat, kAovUsage, _aovSize);
+  createOffscreenImage(_offscreenDepthAov, _offscreenDepthAovFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                       _aovSize);
 
   _transientAllocator->destroy(_offscreenDepth);
   auto depthCreateInfo =
