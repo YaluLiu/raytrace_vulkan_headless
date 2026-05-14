@@ -3,6 +3,7 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -11,6 +12,15 @@
 #include "sceneData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+struct HdRobotTileConfig
+{
+  bool     enabled = false;
+  uint32_t cameraWidth = 100;
+  uint32_t cameraHeight = 100;
+  uint32_t gridColumns = 3;
+  uint32_t gridRows = 3;
+};
 
 class HdRobotRenderParam final : public HdRenderParam
 {
@@ -22,6 +32,8 @@ class HdRobotRenderParam final : public HdRenderParam
   void UpsertCamera(const HdRobotCameraData& cameraData);
   void RemoveCamera(const SdfPath& cameraId);
   std::vector<HdRobotCameraData> GetCamerasSnapshot() const;
+  void SetTileConfig(const HdRobotTileConfig& config);
+  HdRobotTileConfig GetTileConfig() const;
 
   void MarkAllMeshesInstanceDirty();
   void MarkMeshInstanceDirty(size_t meshId);
@@ -39,6 +51,7 @@ class HdRobotRenderParam final : public HdRenderParam
   std::vector<HydraMaterial> v_mat;
   std::vector<HydraLight> v_light;
   std::vector<HdRobotCameraData> v_camera;
+  HdRobotTileConfig tileConfig;
   TextureRegistry textureRegistry;
 
 };

@@ -23,6 +23,7 @@
 
 //娣诲姞hdlight
 #include "pxr/imaging/hdSt/light.h"
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 
@@ -59,6 +60,49 @@ const static TfTokenVector _supportedSprimTypes = {
 };
 
 const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
+
+HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
+{
+  const HdRobotTileConfig defaults;
+  return {
+      HdRenderSettingDescriptor{"Enable tile output", HdRobotRenderSettingTokens->tileEnabled,
+                                VtValue(defaults.enabled)},
+      HdRenderSettingDescriptor{"Tile camera width", HdRobotRenderSettingTokens->tileCameraWidth,
+                                VtValue(static_cast<int>(defaults.cameraWidth))},
+      HdRenderSettingDescriptor{"Tile camera height", HdRobotRenderSettingTokens->tileCameraHeight,
+                                VtValue(static_cast<int>(defaults.cameraHeight))},
+      HdRenderSettingDescriptor{"Tile grid columns", HdRobotRenderSettingTokens->tileGridColumns,
+                                VtValue(static_cast<int>(defaults.gridColumns))},
+      HdRenderSettingDescriptor{"Tile grid rows", HdRobotRenderSettingTokens->tileGridRows,
+                                VtValue(static_cast<int>(defaults.gridRows))},
+  };
+}
+
+bool IsTileRenderSetting(const TfToken& key)
+{
+  return key == HdRobotRenderSettingTokens->tileEnabled || key == HdRobotRenderSettingTokens->tileCameraWidth
+         || key == HdRobotRenderSettingTokens->tileCameraHeight || key == HdRobotRenderSettingTokens->tileGridColumns
+         || key == HdRobotRenderSettingTokens->tileGridRows;
+}
+
+uint32_t GetPositiveRenderSetting(const HdRenderDelegate& delegate, const TfToken& key, uint32_t fallback)
+{
+  return static_cast<uint32_t>(std::max(1, delegate.GetRenderSetting<int>(key, static_cast<int>(fallback))));
+}
+
+HdRobotTileConfig ReadTileConfig(const HdRenderDelegate& delegate)
+{
+  HdRobotTileConfig config;
+  config.enabled = delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileEnabled, config.enabled);
+  config.cameraWidth =
+      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraWidth, config.cameraWidth);
+  config.cameraHeight =
+      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraHeight, config.cameraHeight);
+  config.gridColumns =
+      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileGridColumns, config.gridColumns);
+  config.gridRows = GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileGridRows, config.gridRows);
+  return config;
+}
 }  // namespace
 
 HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
@@ -67,13 +111,25 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settings
     , _resourceRegistry(std::make_shared<HdResourceRegistry>())
     , _renderParam(std::make_unique<HdRobotRenderParam>())
 {
+  _settingDescriptors = CreateRenderSettingDescriptors();
+  _PopulateDefaultSettings(_settingDescriptors);
+  _SyncTileConfigFromSettings();
 }
 
 HdRobotRenderDelegate::~HdRobotRenderDelegate() {}
 
 HdRenderSettingDescriptorList HdRobotRenderDelegate::GetRenderSettingDescriptors() const
 {
-  return {};
+  return _settingDescriptors;
+}
+
+void HdRobotRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue& value)
+{
+  HdRenderDelegate::SetRenderSetting(key, value);
+  if(IsTileRenderSetting(key))
+  {
+    _SyncTileConfigFromSettings();
+  }
 }
 
 const HdCommandDescriptors COMMAND_DESCRIPTORS = {
@@ -157,6 +213,16 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& na
   {
     return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
   }
+  // Display depth is RGBA because it is reserved for visualized depth, not raw training depth.
+  else if(name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileColorDisplay
+          || name == HdRobotAovTokens->tileDepthDisplay)
+  {
+    return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f)));
+  }
+  else if(name == HdRobotAovTokens->tileDepth)
+  {
+    return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
+  }
 
   return HdAovDescriptor();
 }
@@ -164,6 +230,14 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& na
 HdRenderParam* HdRobotRenderDelegate::GetRenderParam() const
 {
   return _renderParam.get();
+}
+
+void HdRobotRenderDelegate::_SyncTileConfigFromSettings()
+{
+  if(_renderParam)
+  {
+    _renderParam->SetTileConfig(ReadTileConfig(*this));
+  }
 }
 
 const TfTokenVector& HdRobotRenderDelegate::GetSupportedRprimTypes() const

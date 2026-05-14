@@ -55,6 +55,18 @@ std::vector<HdRobotCameraData> HdRobotRenderParam::GetCamerasSnapshot() const
   return v_camera;
 }
 
+void HdRobotRenderParam::SetTileConfig(const HdRobotTileConfig& config)
+{
+  std::lock_guard guard(mutex);
+  tileConfig = config;
+}
+
+HdRobotTileConfig HdRobotRenderParam::GetTileConfig() const
+{
+  std::lock_guard guard(mutex);
+  return tileConfig;
+}
+
 void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
 {
   for (auto& mesh : v_mesh)

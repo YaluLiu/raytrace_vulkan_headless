@@ -26,6 +26,8 @@ public:
 
   HdResourceRegistrySharedPtr GetResourceRegistry() const override;
 
+  void SetRenderSetting(const TfToken& key, const VtValue& value) override;
+
   void CommitResources(HdChangeTracker* tracker) override;
 
   HdInstancer* CreateInstancer(HdSceneDelegate* delegate, const SdfPath& id) override;
@@ -82,11 +84,13 @@ public:
 
 private:
   HdRobotRenderParam* _GetRobotRenderParam() const;
+  void _SyncTileConfigFromSettings();
 
 private:
   const std::string              _resourcePath;
   HdResourceRegistrySharedPtr    _resourceRegistry;
   std::unique_ptr<HdRobotRenderParam> _renderParam;
+  HdRenderSettingDescriptorList  _settingDescriptors;
   // std::unique_str<HdRobotRenderBuffer> _colorBuffer;
   Hgi*                         _hgi = nullptr;
 };

@@ -45,6 +45,10 @@ index, and instance ID.
 - `HeadlessAov::Depth`
 - `HeadlessAov::PrimId`
 - `HeadlessAov::InstanceId`
+- `HeadlessAov::TileColor` (token reserved; render path not implemented yet)
+- `HeadlessAov::TileDepth` (token reserved; render path not implemented yet)
+- `HeadlessAov::TileColorDisplay` (token reserved; render path not implemented yet)
+- `HeadlessAov::TileDepthDisplay` (token reserved; render path not implemented yet)
 
 Hydra texture export and GL interop code consume these handles through
 `hdRobot/renderTextureExport.cpp` and `hdRobot/glInteropCache.cpp`.

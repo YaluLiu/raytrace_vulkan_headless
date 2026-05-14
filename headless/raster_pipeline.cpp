@@ -337,6 +337,11 @@ std::optional<HeadlessAovTexture> RasterPipeline::getAovTexture(HeadlessAov aov)
       format  = _offscreenDepthAovFormat;
       extent  = _aovSize;
       break;
+    case HeadlessAov::TileColor:
+    case HeadlessAov::TileDepth:
+    case HeadlessAov::TileColorDisplay:
+    case HeadlessAov::TileDepthDisplay:
+      return std::nullopt;
   }
 
   if(texture == nullptr || texture->image == VK_NULL_HANDLE || texture->descriptor.imageView == VK_NULL_HANDLE

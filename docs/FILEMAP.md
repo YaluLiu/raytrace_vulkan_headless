@@ -53,8 +53,8 @@ a separate cleanup if the public surface can absorb the churn.
   camera uniform setup, resize forwarding, AOV texture wrapper, and renderer
   resource lifecycle.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
-  descriptor returned by `HelloVulkan::GetAovTexture`, without Hydra or
-  OpenGL types.
+  descriptor returned by `HelloVulkan::GetAovTexture`, including reserved
+  tile AOV enum values, without Hydra or OpenGL types.
 - `headless/raster_scene_types.hpp`: Shared draw input types used by
   `HelloVulkan` and `RasterPipeline`.
 - `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Main raster
@@ -77,7 +77,7 @@ a separate cleanup if the public surface can absorb the churn.
 ## Offscreen Rendering
 
 - `headless/aov_texture.hpp`: Public headless AOV contract, currently
-  `color`, `depth`, `primId`, and `instanceId`.
+  `color`, `depth`, `primId`, `instanceId`, and reserved tile AOV tokens.
 - `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.
@@ -96,16 +96,18 @@ a separate cleanup if the public surface can absorb the churn.
 ## Hydra Delegate
 
 - `hdRobot/renderDelegate.h` / `hdRobot/renderDelegate.cpp`: Hydra delegate
-  ownership, supported primitives, render param setup, and resource access.
+  ownership, supported primitives, render param setup, tile render setting
+  descriptors, AOV descriptors, and resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/headlessRenderBridge.h` / `hdRobot/headlessRenderBridge.cpp`:
   Converts Hydra frame state into `HelloVulkan` updates and render calls,
   including the all-camera snapshot passed to headless.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object, camera array, scene dirty flags, texture registry, and
-  renderer bridge ownership.
-- `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions.
+  parameter object, camera array, tile config, scene dirty flags, texture
+  registry, and renderer bridge ownership.
+- `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
+  including tile render settings and tile AOV tokens.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
 
 ## Hydra Scene Primitives

@@ -9,6 +9,10 @@ enum class HeadlessAov
   PrimId,
   InstanceId,
   Depth,
+  TileColor,
+  TileDepth,
+  TileColorDisplay,
+  TileDepthDisplay,
 };
 
 struct HeadlessAovTexture
