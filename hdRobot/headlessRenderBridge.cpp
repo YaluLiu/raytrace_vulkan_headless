@@ -72,6 +72,13 @@ std::vector<HeadlessCameraData> ToHeadlessCameraData(const std::vector<HdRobotCa
   return result;
 }
 
+bool IsUsdImagingPluginCamera(const HdRobotCameraData &camera)
+{
+  constexpr const char *kInternalCameraPrefix = "/_UsdImaging_HdRobotRendererPlugin_";
+  constexpr const char *kInternalCameraSuffix = "/camera";
+  return camera.name.starts_with(kInternalCameraPrefix) && camera.name.ends_with(kInternalCameraSuffix);
+}
+
 HeadlessTileConfig ToHeadlessTileConfig(const HdRobotTileConfig &config)
 {
   HeadlessTileConfig result;
@@ -361,6 +368,11 @@ bool HeadlessRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &rende
   {
     cameras.push_back(mainCameraData);
   }
+
+  cameras.erase(std::remove_if(cameras.begin(), cameras.end(), IsUsdImagingPluginCamera), cameras.end());
+  std::sort(cameras.begin(), cameras.end(), [](const HdRobotCameraData &lhs, const HdRobotCameraData &rhs) {
+    return lhs.name < rhs.name;
+  });
 
   HelloVulkan &vulkan = _renderApp.getVulkan();
   vulkan.setCameras(ToHeadlessCameraData(cameras));
