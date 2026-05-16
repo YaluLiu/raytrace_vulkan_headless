@@ -381,8 +381,8 @@ std::optional<HeadlessAovTexture> RasterPipeline::getAovTexture(HeadlessAov aov)
       break;
     case HeadlessAov::TileColor:
     case HeadlessAov::TileDepth:
-    case HeadlessAov::TileColorDisplay:
-    case HeadlessAov::TileDepthDisplay:
+    case HeadlessAov::TileDisplayColor:
+    case HeadlessAov::TileDisplayDepth:
       return std::nullopt;
   }
 

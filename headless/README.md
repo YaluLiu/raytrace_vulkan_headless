@@ -60,8 +60,8 @@ The atlas size is controlled only by tile configuration:
 - `HeadlessAov::InstanceId`
 - `HeadlessAov::TileColor`
 - `HeadlessAov::TileDepth`
-- `HeadlessAov::TileColorDisplay`
-- `HeadlessAov::TileDepthDisplay`
+- `HeadlessAov::TileDisplayColor`
+- `HeadlessAov::TileDisplayDepth`
 
 Hydra texture export and GL interop code consume these handles through
 `hdRobot/renderTextureExport.cpp` and `hdRobot/glInteropCache.cpp`. Fixed tile

@@ -11,8 +11,8 @@ enum class HeadlessAov
   Depth,
   TileColor,
   TileDepth,
-  TileColorDisplay,
-  TileDepthDisplay,
+  TileDisplayColor,
+  TileDisplayDepth,
 };
 
 struct HeadlessAovTexture

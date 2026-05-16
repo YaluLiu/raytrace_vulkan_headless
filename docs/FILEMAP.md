@@ -96,7 +96,7 @@ a separate cleanup if the public surface can absorb the churn.
 
 - `headless/aov_texture.hpp`: Public headless AOV contract, currently
   `color`, `depth`, `primId`, `instanceId`, `tileColor`, `tileDepth`,
-  `tileColorDisplay`, and `tileDepthDisplay`.
+  `tileDisplayColor`, and `tileDisplayDepth`.
 - `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.

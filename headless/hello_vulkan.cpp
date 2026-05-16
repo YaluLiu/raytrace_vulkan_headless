@@ -53,8 +53,8 @@ VkDeviceSize alignTo(VkDeviceSize value, VkDeviceSize alignment)
 
 bool isTileAov(HeadlessAov aov)
 {
-  return aov == HeadlessAov::TileColor || aov == HeadlessAov::TileDepth || aov == HeadlessAov::TileColorDisplay ||
-         aov == HeadlessAov::TileDepthDisplay;
+  return aov == HeadlessAov::TileColor || aov == HeadlessAov::TileDepth || aov == HeadlessAov::TileDisplayColor ||
+         aov == HeadlessAov::TileDisplayDepth;
 }
 
 ResolvedCamera resolveCamera(const HeadlessCameraData &camera)

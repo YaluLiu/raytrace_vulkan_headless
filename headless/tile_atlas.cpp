@@ -218,12 +218,12 @@ std::optional<HeadlessAovTexture> TileAtlasOutput::getAovTexture(HeadlessAov aov
   switch(aov)
   {
   case HeadlessAov::TileColor:
-  case HeadlessAov::TileColorDisplay:
+  case HeadlessAov::TileDisplayColor:
     texture = &_colorAtlas;
     format = _colorFormat;
     break;
   case HeadlessAov::TileDepth:
-  case HeadlessAov::TileDepthDisplay:
+  case HeadlessAov::TileDisplayDepth:
     texture = &_depthAtlas;
     format = _depthFormat;
     break;

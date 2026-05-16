@@ -114,8 +114,7 @@ bool IsFixedSizeTileAov(const TfToken &name)
 
 bool IsDisplayTileAov(const TfToken &name)
 {
-  return name == HdRobotAovTokens->tileColorDisplay || name == HdRobotAovTokens->tileDepthDisplay ||
-         name == HdRobotAovTokens->tileDepthDisplayDepth;
+  return name == HdRobotAovTokens->tileDisplayColor || name == HdRobotAovTokens->tileDisplayDepth;
 }
 
 bool HasRenderBuffer(const HdRenderPassAovBindingVector &bindings)

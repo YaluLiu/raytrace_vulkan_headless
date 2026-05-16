@@ -44,13 +44,13 @@ std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name)
   {
     return HeadlessAov::TileDepth;
   }
-  if(name == HdRobotAovTokens->tileColorDisplay)
+  if(name == HdRobotAovTokens->tileDisplayColor)
   {
-    return HeadlessAov::TileColorDisplay;
+    return HeadlessAov::TileDisplayColor;
   }
-  if(name == HdRobotAovTokens->tileDepthDisplay || name == HdRobotAovTokens->tileDepthDisplayDepth)
+  if(name == HdRobotAovTokens->tileDisplayDepth)
   {
-    return HeadlessAov::TileDepthDisplay;
+    return HeadlessAov::TileDisplayDepth;
   }
   return std::nullopt;
 }

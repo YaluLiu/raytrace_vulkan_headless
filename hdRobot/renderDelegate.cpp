@@ -202,12 +202,11 @@ void HdRobotRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 
 HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken &name) const
 {
-  if(name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileColorDisplay)
+  if(name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDisplayColor)
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, false, VtValue(GfVec4f(0.0f)));
   }
-  else if(name == HdRobotAovTokens->tileDepth || name == HdRobotAovTokens->tileDepthDisplay ||
-          name == HdRobotAovTokens->tileDepthDisplayDepth)
+  else if(name == HdRobotAovTokens->tileDepth || name == HdRobotAovTokens->tileDisplayDepth)
   {
     return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
   }
