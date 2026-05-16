@@ -206,13 +206,10 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken &na
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, false, VtValue(GfVec4f(0.0f)));
   }
-  else if(name == HdRobotAovTokens->tileDepth)
+  else if(name == HdRobotAovTokens->tileDepth || name == HdRobotAovTokens->tileDepthDisplay ||
+          name == HdRobotAovTokens->tileDepthDisplayDepth)
   {
     return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-  }
-  else if(name == HdRobotAovTokens->tileDepthDisplay)
-  {
-    return HdAovDescriptor(HdFormatFloat32Vec4, false, VtValue(GfVec4f(1.0f)));
   }
   else if(IsColorAov(name))
   {

@@ -30,7 +30,8 @@ PXR_NAMESPACE_OPEN_SCOPE
   (tileColor) \
   (tileDepth) \
   (tileColorDisplay) \
-  (tileDepthDisplay)
+  (tileDepthDisplay) \
+  ((tileDepthDisplayDepth, "tileDepthDisplay_depth"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeIdentifiers, HD_ROBOT_NODE_IDENTIFIER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotSourceTypes, HD_ROBOT_SOURCE_TYPE_TOKENS);
