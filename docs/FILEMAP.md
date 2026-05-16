@@ -53,8 +53,8 @@ a separate cleanup if the public surface can absorb the churn.
   frame uniform slot allocation, explicit per-camera uniform updates, resize
   forwarding, AOV texture wrapper, and renderer resource lifecycle.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
-  descriptor returned by `HelloVulkan::GetAovTexture`, including reserved
-  tile AOV enum values, without Hydra or OpenGL types.
+  descriptor returned by `HelloVulkan::GetAovTexture`, including tile AOV
+  values exposed to Hydra without Hydra or OpenGL types.
 - `headless/raster_scene_types.hpp`: Shared draw input types used by
   `HelloVulkan` and `RasterPipeline`.
 - `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Main raster
@@ -64,10 +64,11 @@ a separate cleanup if the public surface can absorb the churn.
 - `headless/tile_config.hpp`: Pure headless tile output configuration contract,
   including enable flag, render mode, per-camera tile size, grid dimensions,
   and positive value normalization.
-- `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp`: Independent local tile
-  atlas color/depth/id/depth-attachment images plus framebuffer helpers used by
-  direct row-major atlas rendering without touching main AOV images; also owns
-  layered tile image copy into atlas rects for the multiview path.
+- `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp`: Independent tile atlas
+  color/depth/id/depth-attachment images plus framebuffer helpers used by
+  direct row-major atlas rendering without touching main AOV images; exports
+  color/depth atlas images as `HeadlessAovTexture` for Hydra tile AOV copy and
+  owns layered tile image copy into atlas rects for the multiview path.
 - `headless/tile_layer_output.hpp` / `headless/tile_layer_output.cpp`:
   Temporary layered color/depth/id/depth-attachment tile targets used by
   multiview tile batches before copying layers back into the 2D atlas.
@@ -76,8 +77,8 @@ a separate cleanup if the public surface can absorb the churn.
   render pass, raster pipeline, dome background pipeline, and draw recording.
 - `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
   serial per-camera atlas framebuffer passes, multiview layered batch rendering
-  and layer-to-atlas copy, atlas readback, and stable local `output/tile_*`
-  file writes.
+  and layer-to-atlas copy, atlas export-valid tracking, atlas readback, and
+  stable local `output/tile_*` file writes.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.
@@ -94,18 +95,20 @@ a separate cleanup if the public surface can absorb the churn.
 ## Offscreen Rendering
 
 - `headless/aov_texture.hpp`: Public headless AOV contract, currently
-  `color`, `depth`, `primId`, `instanceId`, and reserved tile AOV tokens.
+  `color`, `depth`, `primId`, `instanceId`, `tileColor`, `tileDepth`,
+  `tileColorDisplay`, and `tileDepthDisplay`.
 - `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.
 - `headless/hello_vulkan.cpp`: Public compatibility wrappers for resize and
-  `GetAovTexture`.
+  `GetAovTexture`, routing standard AOVs to the main raster pipeline and tile
+  AOVs to the current tile atlas export.
 - `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp` and
   `headless/tile_layer_output.hpp` / `headless/tile_layer_output.cpp`,
   `headless/tile_multiview_raster_pipeline.*`, and
-  `headless/hello_vulkan_tile.cpp`: Local-only tile atlas resources, layered
-  multiview tile resources, layer-to-atlas copy, and save path; current tile
-  AOV tokens remain reserved for future Hydra return work.
+  `headless/hello_vulkan_tile.cpp`: Tile atlas resources, layered multiview
+  tile resources, layer-to-atlas copy, Hydra-exportable atlas color/depth
+  sources, and local save path.
 
 ## Raster Baseline
 
@@ -126,12 +129,13 @@ a separate cleanup if the public surface can absorb the churn.
 
 - `hdRobot/renderDelegate.h` / `hdRobot/renderDelegate.cpp`: Hydra delegate
   ownership, supported primitives, render param setup, tile render setting
-  descriptors, AOV descriptors, and resource access.
+  descriptors, standard and tile AOV descriptors, and resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/headlessRenderBridge.h` / `hdRobot/headlessRenderBridge.cpp`:
   Converts Hydra frame state into `HelloVulkan` updates and render calls,
-  including the all-camera snapshot passed to headless.
+  including the all-camera snapshot passed to headless and ordered AOV copy
+  groups that copy fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, tile config, scene dirty flags, texture
   registry, and renderer bridge ownership.
@@ -166,7 +170,9 @@ a separate cleanup if the public surface can absorb the churn.
   conversion.
 - `hdRobot/renderTextureExport.h` / `hdRobot/renderTextureExport.cpp`: Render
   texture export surface, including Hydra material texture asset byte export
-  and debug AOV token to headless texture mapping.
+  and Hydra/debug AOV token to headless texture mapping; fixed `tileColor` and
+  `tileDepth` copies require exact atlas-size render buffers, while display tile
+  AOVs can use GL blit scaling.
 - `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
   Vulkan external-memory import cache for headless AOV textures exposed as
   source OpenGL textures.

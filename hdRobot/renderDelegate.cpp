@@ -1,62 +1,55 @@
 #include "renderDelegate.h"
+#include "instancer.h"
 #include "renderParam.h"
 #include "renderPass.h"
-#include "instancer.h"
 
-//robot or hdstorm
-#include "mesh.h"
-#include "material.h"
-#include "light.h"
+// robot or hdstorm
 #include "camera.h"
+#include "light.h"
+#include "material.h"
+#include "mesh.h"
 #include "points.h"
 #include "renderBuffer.h"
-//#include "pxr/imaging/hdSt/renderBuffer.h"
+// #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "tokens.h"
 
 #include <pxr/base/arch/fileSystem.h>
-#include <pxr/imaging/hd/extComputation.h>
-#include <pxr/imaging/hd/resourceRegistry.h>
-#include <pxr/imaging/hd/camera.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec4f.h>
+#include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hd/extComputation.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
 
-
-//娣诲姞hdlight
+// 娣诲姞hdlight
 #include "pxr/imaging/hdSt/light.h"
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
 
-//娣诲姞hgi
+// 娣诲姞hgi
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-using RprimFactory = HdRprim* (*)(const SdfPath&, HdRobotRenderParam&);
+namespace
+{
+using RprimFactory = HdRprim *(*)(const SdfPath &, HdRobotRenderParam &);
 
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh, HdPrimTypeTokens->points};
 
 const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rprimFactories = {
-    {HdPrimTypeTokens->mesh,
-     [](const SdfPath& rprimId, HdRobotRenderParam& renderParam) -> HdRprim* {
-       return new HdRobotMesh(rprimId, renderParam);
-     }},
-    {HdPrimTypeTokens->points,
-     [](const SdfPath& rprimId, HdRobotRenderParam& renderParam) -> HdRprim* {
-       return new HdRobotPoints(rprimId, renderParam);
-     }}};
+    {HdPrimTypeTokens->mesh, [](const SdfPath &rprimId, HdRobotRenderParam &renderParam) -> HdRprim *
+     { return new HdRobotMesh(rprimId, renderParam); }},
+    {HdPrimTypeTokens->points, [](const SdfPath &rprimId, HdRobotRenderParam &renderParam) -> HdRprim *
+     { return new HdRobotPoints(rprimId, renderParam); }}};
 
 const static TfTokenVector _supportedSprimTypes = {
-    HdPrimTypeTokens->camera,
-    HdPrimTypeTokens->material,
-    HdPrimTypeTokens->sphereLight,
-    HdPrimTypeTokens->distantLight,
+    HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
     //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->domeLight,
-    HdPrimTypeTokens->simpleLight,  // Required for usdview camera light creation
-    //  HdPrimTypeTokens->extComputation
+    HdPrimTypeTokens->simpleLight, // Required for usdview camera light creation
+                                   //  HdPrimTypeTokens->extComputation
 };
 
 const static TfTokenVector _supportedBprimTypes = {HdPrimTypeTokens->renderBuffer};
@@ -78,29 +71,29 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
   };
 }
 
-bool IsTileRenderSetting(const TfToken& key)
+bool IsTileRenderSetting(const TfToken &key)
 {
-  return key == HdRobotRenderSettingTokens->tileEnabled || key == HdRobotRenderSettingTokens->tileCameraWidth
-         || key == HdRobotRenderSettingTokens->tileCameraHeight || key == HdRobotRenderSettingTokens->tileGridColumns
-         || key == HdRobotRenderSettingTokens->tileGridRows;
+  return key == HdRobotRenderSettingTokens->tileEnabled || key == HdRobotRenderSettingTokens->tileCameraWidth ||
+         key == HdRobotRenderSettingTokens->tileCameraHeight || key == HdRobotRenderSettingTokens->tileGridColumns ||
+         key == HdRobotRenderSettingTokens->tileGridRows;
 }
 
-bool IsColorAov(const TfToken& name)
+bool IsColorAov(const TfToken &name)
 {
   return name == HdAovTokens->color;
 }
 
-bool IsDepthAov(const TfToken& name)
+bool IsDepthAov(const TfToken &name)
 {
   return name == HdAovTokens->depth;
 }
 
-uint32_t GetPositiveRenderSetting(const HdRenderDelegate& delegate, const TfToken& key, uint32_t fallback)
+uint32_t GetPositiveRenderSetting(const HdRenderDelegate &delegate, const TfToken &key, uint32_t fallback)
 {
   return static_cast<uint32_t>(std::max(1, delegate.GetRenderSetting<int>(key, static_cast<int>(fallback))));
 }
 
-HdRobotTileConfig ReadTileConfig(const HdRenderDelegate& delegate)
+HdRobotTileConfig ReadTileConfig(const HdRenderDelegate &delegate)
 {
   HdRobotTileConfig config;
   config.enabled = delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileEnabled, config.enabled);
@@ -113,13 +106,11 @@ HdRobotTileConfig ReadTileConfig(const HdRenderDelegate& delegate)
   config.gridRows = GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileGridRows, config.gridRows);
   return config;
 }
-}  // namespace
+} // namespace
 
-HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap& settingsMap, std::string_view resourcePath)
-    : HdRenderDelegate(settingsMap)
-    , _resourcePath(resourcePath)
-    , _resourceRegistry(std::make_shared<HdResourceRegistry>())
-    , _renderParam(std::make_unique<HdRobotRenderParam>())
+HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settingsMap, std::string_view resourcePath)
+    : HdRenderDelegate(settingsMap), _resourcePath(resourcePath),
+      _resourceRegistry(std::make_shared<HdResourceRegistry>()), _renderParam(std::make_unique<HdRobotRenderParam>())
 {
   _settingDescriptors = CreateRenderSettingDescriptors();
   _PopulateDefaultSettings(_settingDescriptors);
@@ -133,7 +124,7 @@ HdRenderSettingDescriptorList HdRobotRenderDelegate::GetRenderSettingDescriptors
   return _settingDescriptors;
 }
 
-void HdRobotRenderDelegate::SetRenderSetting(const TfToken& key, const VtValue& value)
+void HdRobotRenderDelegate::SetRenderSetting(const TfToken &key, const VtValue &value)
 {
   HdRenderDelegate::SetRenderSetting(key, value);
   if(IsTileRenderSetting(key))
@@ -150,7 +141,7 @@ HdCommandDescriptors HdRobotRenderDelegate::GetCommandDescriptors() const
   return COMMAND_DESCRIPTORS;
 }
 
-bool HdRobotRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused]] const HdCommandArgs& args)
+bool HdRobotRenderDelegate::InvokeCommand(const TfToken &command, [[maybe_unused]] const HdCommandArgs &args)
 {
   if(command == HdRobotCommandTokens->printLicenses)
   {
@@ -164,7 +155,7 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused
       return false;
     }
 
-    const char* licenseText = mapping.get();
+    const char *licenseText = mapping.get();
 
     printf("%s\n", licenseText);
     fflush(stdout);
@@ -177,9 +168,9 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken& command, [[maybe_unused
   return false;
 }
 
-HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollection& collection)
+HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex *index, const HdRprimCollection &collection)
 {
-  HdRobotRenderParam* robotRenderParam = _GetRobotRenderParam();
+  HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
   if(!TF_VERIFY(robotRenderParam != nullptr))
   {
     return nullptr;
@@ -193,25 +184,33 @@ HdResourceRegistrySharedPtr HdRobotRenderDelegate::GetResourceRegistry() const
   return _resourceRegistry;
 }
 
-void HdRobotRenderDelegate::CommitResources(HdChangeTracker* tracker)
+void HdRobotRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
   TF_UNUSED(tracker);
   // We delay BVH building and GPU uploads to the next render call.
 }
 
-HdInstancer* HdRobotRenderDelegate::CreateInstancer(HdSceneDelegate* delegate, const SdfPath& id)
+HdInstancer *HdRobotRenderDelegate::CreateInstancer(HdSceneDelegate *delegate, const SdfPath &id)
 {
   return new HdRobotInstancer(delegate, id);
 }
 
-void HdRobotRenderDelegate::DestroyInstancer(HdInstancer* instancer)
+void HdRobotRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 {
   delete instancer;
 }
 
-HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& name) const
+HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken &name) const
 {
-  if(IsColorAov(name))
+  if(name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileColorDisplay)
+  {
+    return HdAovDescriptor(HdFormatFloat32Vec4, false, VtValue(GfVec4f(0.0f)));
+  }
+  else if(name == HdRobotAovTokens->tileDepth || name == HdRobotAovTokens->tileDepthDisplay)
+  {
+    return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
+  }
+  else if(IsColorAov(name))
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(1.0f)));
   }
@@ -227,7 +226,7 @@ HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken& na
   return HdAovDescriptor();
 }
 
-HdRenderParam* HdRobotRenderDelegate::GetRenderParam() const
+HdRenderParam *HdRobotRenderDelegate::GetRenderParam() const
 {
   return _renderParam.get();
 }
@@ -240,17 +239,17 @@ void HdRobotRenderDelegate::_SyncTileConfigFromSettings()
   }
 }
 
-const TfTokenVector& HdRobotRenderDelegate::GetSupportedRprimTypes() const
+const TfTokenVector &HdRobotRenderDelegate::GetSupportedRprimTypes() const
 {
   return _supportedRprimTypes;
 }
 
-HdRprim* HdRobotRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath& rprimId)
+HdRprim *HdRobotRenderDelegate::CreateRprim(const TfToken &typeId, const SdfPath &rprimId)
 {
   const auto factoryIt = _rprimFactories.find(typeId);
   if(factoryIt != _rprimFactories.end())
   {
-    HdRobotRenderParam* robotRenderParam = _GetRobotRenderParam();
+    HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
     if(!TF_VERIFY(robotRenderParam != nullptr))
     {
       return nullptr;
@@ -261,19 +260,19 @@ HdRprim* HdRobotRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath
   return nullptr;
 }
 
-void HdRobotRenderDelegate::DestroyRprim(HdRprim* rprim)
+void HdRobotRenderDelegate::DestroyRprim(HdRprim *rprim)
 {
   delete rprim;
 }
 
-const TfTokenVector& HdRobotRenderDelegate::GetSupportedSprimTypes() const
+const TfTokenVector &HdRobotRenderDelegate::GetSupportedSprimTypes() const
 {
   return _supportedSprimTypes;
 }
 
-HdSprim* HdRobotRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& sprimId)
+HdSprim *HdRobotRenderDelegate::CreateSprim(const TfToken &typeId, const SdfPath &sprimId)
 {
-  HdRobotRenderParam* robotRenderParam = _GetRobotRenderParam();
+  HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
   if(!TF_VERIFY(robotRenderParam != nullptr))
   {
     return nullptr;
@@ -306,24 +305,24 @@ HdSprim* HdRobotRenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath
   return nullptr;
 }
 
-HdSprim* HdRobotRenderDelegate::CreateFallbackSprim(const TfToken& typeId)
+HdSprim *HdRobotRenderDelegate::CreateFallbackSprim(const TfToken &typeId)
 {
-  const SdfPath& sprimId = SdfPath::EmptyPath();
+  const SdfPath &sprimId = SdfPath::EmptyPath();
 
   return CreateSprim(typeId, sprimId);
 }
 
-void HdRobotRenderDelegate::DestroySprim(HdSprim* sprim)
+void HdRobotRenderDelegate::DestroySprim(HdSprim *sprim)
 {
   delete sprim;
 }
 
-const TfTokenVector& HdRobotRenderDelegate::GetSupportedBprimTypes() const
+const TfTokenVector &HdRobotRenderDelegate::GetSupportedBprimTypes() const
 {
   return _supportedBprimTypes;
 }
 
-HdBprim* HdRobotRenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& bprimId)
+HdBprim *HdRobotRenderDelegate::CreateBprim(const TfToken &typeId, const SdfPath &bprimId)
 {
   if(typeId == HdPrimTypeTokens->renderBuffer)
   {
@@ -333,14 +332,14 @@ HdBprim* HdRobotRenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath
   return nullptr;
 }
 
-HdBprim* HdRobotRenderDelegate::CreateFallbackBprim(const TfToken& typeId)
+HdBprim *HdRobotRenderDelegate::CreateFallbackBprim(const TfToken &typeId)
 {
-  const SdfPath& bprimId = SdfPath::EmptyPath();
+  const SdfPath &bprimId = SdfPath::EmptyPath();
 
   return CreateBprim(typeId, bprimId);
 }
 
-void HdRobotRenderDelegate::DestroyBprim(HdBprim* bprim)
+void HdRobotRenderDelegate::DestroyBprim(HdBprim *bprim)
 {
   delete bprim;
 }
@@ -361,25 +360,26 @@ TfTokenVector HdRobotRenderDelegate::GetShaderSourceTypes() const
 }
 
 #if PXR_VERSION >= 2408
-bool HdRobotRenderDelegate::IsParallelSyncEnabled(const TfToken& primType) const
+bool HdRobotRenderDelegate::IsParallelSyncEnabled(const TfToken &primType) const
 {
-  return primType == HdPrimTypeTokens->mesh || primType == HdPrimTypeTokens->material || primType == HdPrimTypeTokens->instancer;
+  return primType == HdPrimTypeTokens->mesh || primType == HdPrimTypeTokens->material ||
+         primType == HdPrimTypeTokens->instancer;
 }
 #endif
 
-Hgi* HdRobotRenderDelegate::GetHgi()
+Hgi *HdRobotRenderDelegate::GetHgi()
 {
   return _hgi;
 }
 
-void HdRobotRenderDelegate::SetDrivers(HdDriverVector const& drivers)
+void HdRobotRenderDelegate::SetDrivers(HdDriverVector const &drivers)
 {
   // For Storm we want to use the Hgi driver, so extract it.
-  for(HdDriver* hdDriver : drivers)
+  for(HdDriver *hdDriver : drivers)
   {
-    if(hdDriver->name == HgiTokens->renderDriver && hdDriver->driver.IsHolding<Hgi*>())
+    if(hdDriver->name == HgiTokens->renderDriver && hdDriver->driver.IsHolding<Hgi *>())
     {
-      _hgi = hdDriver->driver.UncheckedGet<Hgi*>();
+      _hgi = hdDriver->driver.UncheckedGet<Hgi *>();
       break;
     }
   }
@@ -387,7 +387,7 @@ void HdRobotRenderDelegate::SetDrivers(HdDriverVector const& drivers)
   TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 }
 
-HdRobotRenderParam* HdRobotRenderDelegate::_GetRobotRenderParam() const
+HdRobotRenderParam *HdRobotRenderDelegate::_GetRobotRenderParam() const
 {
   return _renderParam.get();
 }

@@ -15,24 +15,52 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name) {
-  if (name == HdAovTokens->color) {
+namespace
+{
+std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name)
+{
+  if(name == HdAovTokens->color)
+  {
     return HeadlessAov::Color;
   }
-  if (name == HdAovTokens->primId) {
+  if(name == HdAovTokens->primId)
+  {
     return HeadlessAov::PrimId;
   }
-  if (name == HdAovTokens->instanceId) {
+  if(name == HdAovTokens->instanceId)
+  {
     return HeadlessAov::InstanceId;
   }
-  if (name == HdAovTokens->depth || name == HdAovTokens->depthStencil) {
+  if(name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
+  {
     return HeadlessAov::Depth;
+  }
+  if(name == HdRobotAovTokens->tileColor)
+  {
+    return HeadlessAov::TileColor;
+  }
+  if(name == HdRobotAovTokens->tileDepth)
+  {
+    return HeadlessAov::TileDepth;
+  }
+  if(name == HdRobotAovTokens->tileColorDisplay)
+  {
+    return HeadlessAov::TileColorDisplay;
+  }
+  if(name == HdRobotAovTokens->tileDepthDisplay)
+  {
+    return HeadlessAov::TileDepthDisplay;
   }
   return std::nullopt;
 }
 
-TextureAsset ExportResolvedTextureAsset(const TextureAsset &registeredTexture) {
+bool IsFixedTileAov(const TfToken &name)
+{
+  return name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDepth;
+}
+
+TextureAsset ExportResolvedTextureAsset(const TextureAsset &registeredTexture)
+{
   TextureAsset textureAsset;
   textureAsset.sourcePath = registeredTexture.sourcePath;
   textureAsset.usage = registeredTexture.usage;
@@ -40,24 +68,24 @@ TextureAsset ExportResolvedTextureAsset(const TextureAsset &registeredTexture) {
 
   ArResolver &resolver = ArGetResolver();
   ArResolvedPath resolvedPath = resolver.Resolve(textureAsset.sourcePath);
-  if (!resolvedPath) {
-    std::cout << "[RenderPass]:" << textureAsset.sourcePath << "is not valid"
-              << std::endl;
+  if(!resolvedPath)
+  {
+    std::cout << "[RenderPass]:" << textureAsset.sourcePath << "is not valid" << std::endl;
     return textureAsset;
   }
 
   auto asset = resolver.OpenAsset(resolvedPath);
-  if (!asset) {
-    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed"
-              << std::endl;
+  if(!asset)
+  {
+    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed" << std::endl;
     return textureAsset;
   }
 
   const auto buffer = asset->GetBuffer();
   const auto size = asset->GetSize();
-  if (!buffer || size == 0) {
-    std::cout << "[RenderPass]:" << resolvedPath.GetPathString()
-              << "empty texture asset" << std::endl;
+  if(!buffer || size == 0)
+  {
+    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "empty texture asset" << std::endl;
     return textureAsset;
   }
 
@@ -67,86 +95,102 @@ TextureAsset ExportResolvedTextureAsset(const TextureAsset &registeredTexture) {
 }
 } // namespace
 
-std::vector<TextureAsset>
-ExportRegisteredTextures(const std::vector<TextureAsset> &registeredTextures) {
+std::vector<TextureAsset> ExportRegisteredTextures(const std::vector<TextureAsset> &registeredTextures)
+{
   std::vector<TextureAsset> exportedTextures;
   exportedTextures.reserve(registeredTextures.size());
-  for (const TextureAsset &registeredTexture : registeredTextures) {
+  for(const TextureAsset &registeredTexture : registeredTextures)
+  {
     exportedTextures.push_back(ExportResolvedTextureAsset(registeredTexture));
   }
   return exportedTextures;
 }
 
-void ClearGlErrors() {
-  while (glGetError() != GL_NO_ERROR) {
+void ClearGlErrors()
+{
+  while(glGetError() != GL_NO_ERROR)
+  {
   }
 }
 
-bool CheckGlError(const char *operation) {
+bool CheckGlError(const char *operation)
+{
   const GLenum error = glGetError();
-  if (error == GL_NO_ERROR) {
+  if(error == GL_NO_ERROR)
+  {
     return true;
   }
 
-  std::cerr << "[RenderTextureExport] " << operation
-            << " failed with GL error 0x" << std::hex << error << std::dec
+  std::cerr << "[RenderTextureExport] " << operation << " failed with GL error 0x" << std::hex << error << std::dec
             << std::endl;
   return false;
 }
 
-void DeleteFramebuffers(GLuint readFbo, GLuint drawFbo) {
-  if (readFbo != 0) {
+void DeleteFramebuffers(GLuint readFbo, GLuint drawFbo)
+{
+  if(readFbo != 0)
+  {
     glDeleteFramebuffers(1, &readFbo);
   }
-  if (drawFbo != 0) {
+  if(drawFbo != 0)
+  {
     glDeleteFramebuffers(1, &drawFbo);
   }
 }
 
-bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
-                           HdRobotRenderBuffer *renderBuffer,
-                           ::HdRobotGlInteropCache &glInteropCache) {
-  if (renderBuffer == nullptr) {
-    std::cerr << "[RenderTextureExport] Missing render buffer for AOV "
-              << name.GetString() << std::endl;
+bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobotRenderBuffer *renderBuffer,
+                           ::HdRobotGlInteropCache &glInteropCache)
+{
+  if(renderBuffer == nullptr)
+  {
+    std::cerr << "[RenderTextureExport] Missing render buffer for AOV " << name.GetString() << std::endl;
     return false;
   }
 
   const std::optional<HeadlessAov> aov = GetHeadlessAov(name);
-  if (!aov) {
+  if(!aov)
+  {
 #if PXR_VERSION >= 2408
-    if (name == HdAovTokens->elementId) {
+    if(name == HdAovTokens->elementId)
+    {
       return true;
     }
 #endif
-    std::cerr << "[RenderTextureExport] Unsupported AOV token "
-              << name.GetString() << std::endl;
+    std::cerr << "[RenderTextureExport] Unsupported AOV token " << name.GetString() << std::endl;
     return false;
   }
 
   const std::optional<HeadlessAovTexture> src = app.GetAovTexture(*aov);
-  if (!src) {
-    std::cerr << "[RenderTextureExport] Missing source AOV texture for "
-              << name.GetString() << std::endl;
-    return false;
-  }
-
-  const GLuint srcTextureId =
-      glInteropCache.GetOrImportSourceGlTexture(*src);
-  const GLuint dstTextureId = renderBuffer->GetOpenGlTextureId();
-  if (srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId) {
-    std::cerr << "[RenderTextureExport] Invalid GL texture ids for AOV "
-              << name.GetString() << " (src=" << srcTextureId
-              << ", dst=" << dstTextureId << ")" << std::endl;
+  if(!src)
+  {
+    std::cerr << "[RenderTextureExport] Missing source AOV texture for " << name.GetString() << std::endl;
     return false;
   }
 
   const GLsizei width = static_cast<GLsizei>(renderBuffer->GetWidth());
   const GLsizei height = static_cast<GLsizei>(renderBuffer->GetHeight());
-  if (width <= 0 || height <= 0) {
-    std::cerr << "[RenderTextureExport] Invalid render buffer size for AOV "
-              << name.GetString() << ": " << width << "x" << height
-              << std::endl;
+  if(width <= 0 || height <= 0)
+  {
+    std::cerr << "[RenderTextureExport] Invalid render buffer size for AOV " << name.GetString() << ": " << width << "x"
+              << height << std::endl;
+    return false;
+  }
+
+  if(IsFixedTileAov(name) &&
+     (src->extent.width != static_cast<uint32_t>(width) || src->extent.height != static_cast<uint32_t>(height)))
+  {
+    std::cerr << "[RenderTextureExport] Fixed tile AOV " << name.GetString()
+              << " render buffer size mismatch: src=" << src->extent.width << "x" << src->extent.height
+              << ", dst=" << width << "x" << height << std::endl;
+    return false;
+  }
+
+  const GLuint srcTextureId = glInteropCache.GetOrImportSourceGlTexture(*src);
+  const GLuint dstTextureId = renderBuffer->GetOpenGlTextureId();
+  if(srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId)
+  {
+    std::cerr << "[RenderTextureExport] Invalid GL texture ids for AOV " << name.GetString() << " (src=" << srcTextureId
+              << ", dst=" << dstTextureId << ")" << std::endl;
     return false;
   }
 
@@ -155,20 +199,22 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
   ClearGlErrors();
   glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_WIDTH, &srcWidth);
   glGetTextureLevelParameteriv(srcTextureId, 0, GL_TEXTURE_HEIGHT, &srcHeight);
-  if (!CheckGlError("glGetTextureLevelParameteriv")) {
+  if(!CheckGlError("glGetTextureLevelParameteriv"))
+  {
     return false;
   }
-  if (srcWidth <= 0 || srcHeight <= 0) {
-    std::cerr << "[RenderTextureExport] Invalid source AOV size for "
-              << name.GetString() << ": " << srcWidth << "x" << srcHeight
-              << std::endl;
+  if(srcWidth <= 0 || srcHeight <= 0)
+  {
+    std::cerr << "[RenderTextureExport] Invalid source AOV size for " << name.GetString() << ": " << srcWidth << "x"
+              << srcHeight << std::endl;
     return false;
   }
 
-  if (srcWidth == width && srcHeight == height) {
+  if(srcWidth == width && srcHeight == height)
+  {
     ClearGlErrors();
-    glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId,
-                       GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+    glCopyImageSubData(srcTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, dstTextureId, GL_TEXTURE_2D, 0, 0, 0, 0, width, height,
+                       1);
     return CheckGlError("glCopyImageSubData");
   }
 
@@ -177,9 +223,9 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
   ClearGlErrors();
   glCreateFramebuffers(1, &readFbo);
   glCreateFramebuffers(1, &drawFbo);
-  if (readFbo == 0 || drawFbo == 0 || !CheckGlError("glCreateFramebuffers")) {
-    std::cerr << "[RenderTextureExport] Failed to create blit FBOs for AOV "
-              << name.GetString() << std::endl;
+  if(readFbo == 0 || drawFbo == 0 || !CheckGlError("glCreateFramebuffers"))
+  {
+    std::cerr << "[RenderTextureExport] Failed to create blit FBOs for AOV " << name.GetString() << std::endl;
     DeleteFramebuffers(readFbo, drawFbo);
     return false;
   }
@@ -187,32 +233,31 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name,
   ClearGlErrors();
   glNamedFramebufferTexture(readFbo, GL_COLOR_ATTACHMENT0, srcTextureId, 0);
   glNamedFramebufferTexture(drawFbo, GL_COLOR_ATTACHMENT0, dstTextureId, 0);
-  if (!CheckGlError("glNamedFramebufferTexture")) {
+  if(!CheckGlError("glNamedFramebufferTexture"))
+  {
     DeleteFramebuffers(readFbo, drawFbo);
     return false;
   }
 
-  const GLenum readStatus =
-      glCheckNamedFramebufferStatus(readFbo, GL_FRAMEBUFFER);
-  const GLenum drawStatus =
-      glCheckNamedFramebufferStatus(drawFbo, GL_FRAMEBUFFER);
-  if (!CheckGlError("glCheckNamedFramebufferStatus")) {
+  const GLenum readStatus = glCheckNamedFramebufferStatus(readFbo, GL_FRAMEBUFFER);
+  const GLenum drawStatus = glCheckNamedFramebufferStatus(drawFbo, GL_FRAMEBUFFER);
+  if(!CheckGlError("glCheckNamedFramebufferStatus"))
+  {
     DeleteFramebuffers(readFbo, drawFbo);
     return false;
   }
 
-  if (readStatus != GL_FRAMEBUFFER_COMPLETE ||
-      drawStatus != GL_FRAMEBUFFER_COMPLETE) {
-    std::cerr << "[RenderTextureExport] Incomplete blit FBO for AOV "
-              << name.GetString() << " (read=0x" << std::hex << readStatus
-              << ", draw=0x" << drawStatus << std::dec << ")" << std::endl;
+  if(readStatus != GL_FRAMEBUFFER_COMPLETE || drawStatus != GL_FRAMEBUFFER_COMPLETE)
+  {
+    std::cerr << "[RenderTextureExport] Incomplete blit FBO for AOV " << name.GetString() << " (read=0x" << std::hex
+              << readStatus << ", draw=0x" << drawStatus << std::dec << ")" << std::endl;
     DeleteFramebuffers(readFbo, drawFbo);
     return false;
   }
 
   ClearGlErrors();
-  glBlitNamedFramebuffer(readFbo, drawFbo, 0, 0, srcWidth, srcHeight, 0, 0,
-                         width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  glBlitNamedFramebuffer(readFbo, drawFbo, 0, 0, srcWidth, srcHeight, 0, 0, width, height, GL_COLOR_BUFFER_BIT,
+                         GL_NEAREST);
   const bool copied = CheckGlError("glBlitNamedFramebuffer");
 
   DeleteFramebuffers(readFbo, drawFbo);
