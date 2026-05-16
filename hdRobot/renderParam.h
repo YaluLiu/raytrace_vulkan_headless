@@ -16,10 +16,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdRobotTileConfig
 {
   bool     enabled = false;
-  uint32_t cameraWidth = 100;
-  uint32_t cameraHeight = 100;
-  uint32_t gridColumns = 3;
-  uint32_t gridRows = 3;
+  uint32_t cameraWidth = 1920;
+  uint32_t cameraHeight = 1080;
+  uint32_t gridColumns = 10;
+  uint32_t gridRows = 10;
 };
 
 class HdRobotRenderParam final : public HdRenderParam

@@ -13,10 +13,10 @@ enum class HeadlessTileRenderMode {
 
 struct HeadlessTileConfig {
   bool enabled = false;
-  uint32_t cameraWidth = 100;
-  uint32_t cameraHeight = 100;
-  uint32_t gridColumns = 3;
-  uint32_t gridRows = 3;
+  uint32_t cameraWidth = 1920;
+  uint32_t cameraHeight = 1080;
+  uint32_t gridColumns = 10;
+  uint32_t gridRows = 10;
 
   void sanitize() {
     cameraWidth = std::max<uint32_t>(cameraWidth, 1);
