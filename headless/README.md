@@ -16,9 +16,9 @@ instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
 - `hello_vulkan_pipeline.cpp` keeps descriptor layout updates and compatibility
   wrappers that route the main raster pass into `RasterPipeline`.
 - `tile_config.hpp`, `tile_atlas.hpp`, `tile_atlas.cpp`, and
-  `hello_vulkan_tile.cpp` implement local-only multi-camera tile atlas output.
-  Tile output uses atlas-sized framebuffer attachments and per-tile
-  viewport/scissor rectangles, then writes stable files under `output/`.
+  `hello_vulkan_tile.cpp` implement multi-camera tile atlas rendering. Tile
+  output uses atlas-sized framebuffer attachments and per-tile viewport/scissor
+  rectangles, then exposes atlas color/depth through Hydra AOV export.
 - `hello_vulkan_mesh.cpp` owns mesh upload, geometry refresh, and per-instance
   transform or visibility updates.
 - `hello_vulkan_hydra.cpp` applies Hydra camera, light, material, and scene
@@ -43,12 +43,9 @@ index, and instance ID. The frame uniform binding is dynamic: slot 0 is used
 for the main output, and tile cameras use slots starting at 1.
 
 When tile output is enabled, headless renders cameras from the current camera
-array serially into row-major atlas rectangles using per-camera frame uniform
-slots, and saves:
-
-- `output/tile_color_atlas.png`
-- `output/tile_depth_atlas.f32`
-- `output/tile_depth_atlas.json`
+array into row-major atlas rectangles using per-camera frame uniform slots. It
+does not save tile color or tile depth files locally; Hydra consumes the atlas
+through tile AOV render buffers.
 
 The atlas size is controlled only by tile configuration:
 `tileCameraWidth * gridColumns` by `tileCameraHeight * gridRows`.
@@ -61,11 +58,12 @@ The atlas size is controlled only by tile configuration:
 - `HeadlessAov::Depth`
 - `HeadlessAov::PrimId`
 - `HeadlessAov::InstanceId`
-- `HeadlessAov::TileColor` (token reserved; not exported to Hydra in this stage)
-- `HeadlessAov::TileDepth` (token reserved; not exported to Hydra in this stage)
-- `HeadlessAov::TileColorDisplay` (token reserved; not exported to Hydra in this stage)
-- `HeadlessAov::TileDepthDisplay` (token reserved; not exported to Hydra in this stage)
+- `HeadlessAov::TileColor`
+- `HeadlessAov::TileDepth`
+- `HeadlessAov::TileColorDisplay`
+- `HeadlessAov::TileDepthDisplay`
 
 Hydra texture export and GL interop code consume these handles through
-`hdRobot/renderTextureExport.cpp` and `hdRobot/glInteropCache.cpp`. Tile atlas
-data is currently local file output only.
+`hdRobot/renderTextureExport.cpp` and `hdRobot/glInteropCache.cpp`. Fixed tile
+AOVs use exact atlas-sized render buffers, while display tile AOVs can be
+scaled to the viewport-sized render buffer.

@@ -77,8 +77,8 @@ a separate cleanup if the public surface can absorb the churn.
   render pass, raster pipeline, dome background pipeline, and draw recording.
 - `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
   serial per-camera atlas framebuffer passes, multiview layered batch rendering
-  and layer-to-atlas copy, atlas export-valid tracking, atlas readback, and
-  stable local `output/tile_*` file writes.
+  and layer-to-atlas copy, atlas export-valid tracking, and disabled local
+  tile file output.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.
@@ -108,7 +108,7 @@ a separate cleanup if the public surface can absorb the churn.
   `headless/tile_multiview_raster_pipeline.*`, and
   `headless/hello_vulkan_tile.cpp`: Tile atlas resources, layered multiview
   tile resources, layer-to-atlas copy, Hydra-exportable atlas color/depth
-  sources, and local save path.
+  sources, and local save suppression.
 
 ## Raster Baseline
 
