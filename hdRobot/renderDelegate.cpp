@@ -80,12 +80,14 @@ bool IsTileRenderSetting(const TfToken &key)
 
 bool IsColorAov(const TfToken &name)
 {
-  return name == HdAovTokens->color;
+  return name == HdAovTokens->color || name == HdRobotAovTokens->tileColor ||
+         name == HdRobotAovTokens->tileDisplayColor;
 }
 
 bool IsDepthAov(const TfToken &name)
 {
-  return name == HdAovTokens->depth;
+  return name == HdAovTokens->depth || name == HdAovTokens->depthStencil || name == HdRobotAovTokens->tileDepth ||
+         name == HdRobotAovTokens->tileDisplayDepth;
 }
 
 uint32_t GetPositiveRenderSetting(const HdRenderDelegate &delegate, const TfToken &key, uint32_t fallback)
@@ -202,15 +204,7 @@ void HdRobotRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 
 HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken &name) const
 {
-  if(name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDisplayColor)
-  {
-    return HdAovDescriptor(HdFormatFloat32Vec4, false, VtValue(GfVec4f(0.0f)));
-  }
-  else if(name == HdRobotAovTokens->tileDepth || name == HdRobotAovTokens->tileDisplayDepth)
-  {
-    return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-  }
-  else if(IsColorAov(name))
+  if(IsColorAov(name))
   {
     return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(1.0f)));
   }
