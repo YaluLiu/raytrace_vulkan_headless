@@ -4,7 +4,7 @@ BUILD_TYPE="Release"
 DEFAULT_HYDRA_SCENE_PATH="/home/yalu/docker/assets/unit_test/anim/pao/pao.usd"
 
 function format(){
-    find headless -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
+    find raster \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
 }
 
 function hydra(){

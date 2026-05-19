@@ -140,7 +140,7 @@ void RasterSession::setupContext()
   NVPSystem system("raster_session");
 
   defaultSearchPaths.clear();
-  addSearchPathIfExists(defaultSearchPaths, fs::current_path() / "headless");
+  addSearchPathIfExists(defaultSearchPaths, fs::current_path() / "raster");
   addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY);
   addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY / "..");
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
-project(vk_headless_raster)
+project(vk_raster)
 
 #--------------------------------------------------------------------------------------------------
 # look for nvpro_core 1) as a sub-folder 2) at some other locations
@@ -43,7 +43,7 @@ message(STATUS "COPY ${CMAKE_CURRENT_SOURCE_DIR}/media  to  ${OUTPUT_PATH}")
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 
 # Sub examples
-add_subdirectory(headless)
+add_subdirectory(raster)
 add_subdirectory(hdRobot)
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory

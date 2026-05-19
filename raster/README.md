@@ -1,6 +1,6 @@
-# Headless Raster Renderer
+# Raster Renderer
 
-The headless target now provides a compact Vulkan raster baseline for Hydra and
+The raster target provides a compact Vulkan raster baseline for Hydra and
 standalone rendering. It renders mesh color, normalized depth, primitive ID, and
 instance ID AOVs through the offscreen framebuffer owned by `PreviewRasterPipeline`.
 
@@ -45,8 +45,8 @@ index, and instance ID. The main frame uniform uses slot 0; tile cameras are
 uploaded through the dedicated `TileFrameUniforms` buffer used by the multiview
 shaders.
 
-When tile output is enabled, headless renders cameras from the current camera
-array into layered multiview tile targets, then copies each layer into the
+When tile output is enabled, the raster renderer renders cameras from the
+current camera array into layered multiview tile targets, then copies each layer into the
 row-major atlas. It does not save tile color or tile depth files locally; Hydra
 consumes the atlas through tile AOV render buffers.
 

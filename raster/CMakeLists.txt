@@ -17,7 +17,7 @@ add_library(${PROJNAME})
 # replace _add_project_definitions,because add_definitions can not send to Caller
 # _add_project_definitions(${PROJNAME})
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
-target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../headless")
+target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../raster")
 
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
 list(REMOVE_DUPLICATES SOURCE_FILES)
@@ -57,11 +57,11 @@ source_group("Headers"      FILES ${HEADER_FILES})
 source_group("Shader Sources"  FILES ${GLSL_SOURCES})
 source_group("Shader Headers"  FILES ${GLSL_HEADERS})
 
-set(HEADLESS_PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES})
+set(RASTER_PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES})
 if(OPENGL_LIBRARY)
-  list(REMOVE_ITEM HEADLESS_PLATFORM_LIBRARIES ${OPENGL_LIBRARY})
+  list(REMOVE_ITEM RASTER_PLATFORM_LIBRARIES ${OPENGL_LIBRARY})
 endif()
-target_link_libraries(${PROJNAME} ${HEADLESS_PLATFORM_LIBRARIES} nvpro_core)
+target_link_libraries(${PROJNAME} ${RASTER_PLATFORM_LIBRARIES} nvpro_core)
 
 foreach(DEBUGLIB ${LIBRARIES_DEBUG})
   target_link_libraries(${PROJNAME} debug ${DEBUGLIB})

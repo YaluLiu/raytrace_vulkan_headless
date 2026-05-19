@@ -90,7 +90,7 @@ endif()
 target_link_libraries(
   ${PROJNAME}
   PUBLIC
-    ${USD_LIBS_PUBLIC} libheadless
+    ${USD_LIBS_PUBLIC} libraster
   PRIVATE
     ${USD_LIBS_PRIVATE}
 )

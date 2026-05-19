@@ -8,11 +8,11 @@ call sites with `rg`.
 ## Top-Level Structure
 
 - `CMakeLists.txt`: Root build configuration, package setup, and unconditional
-  headless plus `hdRobot` subdirectory registration.
+  raster plus `hdRobot` subdirectory registration.
 - `install.sh`: Main local build/run helper used by Hydra workflows.
-- `headless/`: Core headless Vulkan rasterization library and shaders.
+- `raster/`: Core Vulkan rasterization library and shaders.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
-  headless renderer.
+  raster renderer.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
@@ -21,17 +21,17 @@ call sites with `rg`.
 
 - `CMakeLists.txt`: Start here for project-wide package setup and target
   registration.
-- `headless/CMakeLists.txt`: Headless renderer library sources, shader
+- `raster/CMakeLists.txt`: Raster renderer library sources, shader
   compilation, and renderer compile definitions.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
 
 ## Runtime Entry Points
 
-- `headless/raster_session.cpp`: Headless app orchestration, raster-oriented
+- `raster/raster_session.cpp`: Raster session orchestration, raster-oriented
   Vulkan context setup, resize forwarding, frame pass sequencing, and render
   resource lifecycle.
-- `headless/raster_session.hpp`: `RasterSession` public surface and renderer
+- `raster/raster_session.hpp`: `RasterSession` public surface and renderer
   ownership.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
@@ -41,84 +41,84 @@ call sites with `rg`.
 - `hdRobot/rasterBridge.cpp`: Bridge between Hydra scene data and
   `RasterRenderer` frame execution.
 
-## Headless Vulkan Renderer
+## Raster Vulkan Renderer
 
-- `headless/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
+- `raster/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
   camera/tile configuration, scene upload/update entry points, AOV export, and
   private ownership of scene buffers, descriptor state, preview pipeline, and
   tile atlas resources.
-- `headless/raster_renderer.cpp`: Core setup, camera array ingestion, dynamic
+- `raster/raster_renderer.cpp`: Core setup, camera array ingestion, dynamic
   frame uniform slot allocation, explicit per-camera uniform updates, resize
   forwarding, AOV texture wrapper, and renderer resource lifecycle.
-- `headless/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
+- `raster/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
   downloads and offscreen color PNG output.
-- `headless/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
+- `raster/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
   descriptor returned by `RasterRenderer::GetAovTexture`, including tile AOV
   values exposed to Hydra without Hydra or OpenGL types.
-- `headless/raster_scene_types.hpp`: Shared draw input types used by
+- `raster/raster_scene_types.hpp`: Shared draw input types used by
   `RasterRenderer` and `PreviewRasterPipeline`.
-- `headless/preview_raster_pipeline.hpp` / `headless/preview_raster_pipeline.cpp`:
+- `raster/preview_raster_pipeline.hpp` / `raster/preview_raster_pipeline.cpp`:
   Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
   depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
   export backing, dynamic frame-uniform descriptor binding, and draw command
   recording.
-- `headless/tile_config.hpp`: Pure headless tile output configuration contract,
+- `raster/tile_config.hpp`: Pure raster tile output configuration contract,
   including enable flag, per-camera tile size, grid dimensions, and positive
   value normalization.
-- `headless/tile_aov_atlas.hpp` / `headless/tile_aov_atlas.cpp`: Independent tile atlas
+- `raster/tile_aov_atlas.hpp` / `raster/tile_aov_atlas.cpp`: Independent tile atlas
   color/depth/id images used by the multiview path without touching main AOV
   images; exports color/depth atlas images as `ExportedRasterAovTexture` for Hydra
   tile AOV copy and owns layered tile image copy into atlas rects.
-- `headless/multiview_tile_targets.hpp` / `headless/multiview_tile_targets.cpp`:
+- `raster/multiview_tile_targets.hpp` / `raster/multiview_tile_targets.cpp`:
   Temporary layered color/depth/id/depth-attachment tile targets used by
   multiview tile batches before copying layers back into the 2D atlas.
-- `headless/multiview_tile_raster_pipeline.hpp` /
-  `headless/multiview_tile_raster_pipeline.cpp`: Dedicated multiview tile
+- `raster/multiview_tile_raster_pipeline.hpp` /
+  `raster/multiview_tile_raster_pipeline.cpp`: Dedicated multiview tile
   render pass, raster pipeline, dome background pipeline, and draw recording.
-- `headless/tile_atlas_renderer.cpp`: `RasterRenderer` tile orchestration, including
+- `raster/tile_atlas_renderer.cpp`: `RasterRenderer` tile orchestration, including
   multiview layered batch rendering, layer-to-atlas copy, atlas export-valid
   tracking, and disabled local tile file output.
-- `headless/raster_runtime_updates.cpp`: Runtime material and light update
+- `raster/raster_runtime_updates.cpp`: Runtime material and light update
   paths plus light buffer uploads.
-- `headless/raster_geometry_upload.cpp`: Mesh upload, raster instance
+- `raster/raster_geometry_upload.cpp`: Mesh upload, raster instance
   transform/visibility updates, and geometry buffer refresh.
-- `headless/raster_scene_upload.cpp`: Material loading, material buffer
+- `raster/raster_scene_upload.cpp`: Material loading, material buffer
   updates, and model loading into the renderer.
-- `headless/raster_descriptor_sets.cpp`: Shared scene descriptor set updates
+- `raster/raster_descriptor_sets.cpp`: Shared scene descriptor set updates
   plus renderer entry points that create and run the preview AOV pipeline.
-- `headless/raster_image_barriers.hpp`: Vulkan image layout/barrier helpers.
-- `headless/headless_vk.cpp`: Headless Vulkan offline app context support.
+- `raster/raster_image_barriers.hpp`: Vulkan image layout/barrier helpers.
+- `raster/headless_vk.cpp`: Headless Vulkan offline app context support.
 
 ## Offscreen Rendering
 
-- `headless/aov_texture.hpp`: Public raster AOV contract, currently
+- `raster/aov_texture.hpp`: Public raster AOV contract, currently
   `color`, `depth`, `primId`, `instanceId`, `tileColor`, `tileDepth`,
   `tileDisplayColor`, and `tileDisplayDepth`.
-- `headless/preview_raster_pipeline.hpp` / `headless/preview_raster_pipeline.cpp`: Offscreen
+- `raster/preview_raster_pipeline.hpp` / `raster/preview_raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.
-- `headless/raster_renderer.cpp`: Resize and `GetAovTexture` routing for
+- `raster/raster_renderer.cpp`: Resize and `GetAovTexture` routing for
   standard preview AOVs and current tile atlas export images.
-- `headless/tile_aov_atlas.hpp` / `headless/tile_aov_atlas.cpp` and
-  `headless/multiview_tile_targets.hpp` / `headless/multiview_tile_targets.cpp`,
-  `headless/multiview_tile_raster_pipeline.*`, and
-  `headless/tile_atlas_renderer.cpp`: Tile atlas resources, layered multiview
+- `raster/tile_aov_atlas.hpp` / `raster/tile_aov_atlas.cpp` and
+  `raster/multiview_tile_targets.hpp` / `raster/multiview_tile_targets.cpp`,
+  `raster/multiview_tile_raster_pipeline.*`, and
+  `raster/tile_atlas_renderer.cpp`: Tile atlas resources, layered multiview
   tile resources, layer-to-atlas copy, Hydra-exportable atlas color/depth
   sources, and local save suppression.
 
 ## Raster Baseline
 
-- `headless/shaders/raster.vert`: Active mesh vertex shader.
-- `headless/shaders/raster.frag`: Active mesh fragment shader for color,
+- `raster/shaders/raster.vert`: Active mesh vertex shader.
+- `raster/shaders/raster.frag`: Active mesh fragment shader for color,
   primitive ID, instance ID, depth AOV writes, and sphere/simple light shading
   from the renderer light buffer. DomeLight is parsed but not evaluated here.
-- `headless/shaders/tile_multiview.vert` /
-  `headless/shaders/tile_multiview.frag`: Mesh shader variants for multiview
+- `raster/shaders/tile_multiview.vert` /
+  `raster/shaders/tile_multiview.frag`: Mesh shader variants for multiview
   tile rendering using `gl_ViewIndex` and `TileFrameUniforms`.
-- `headless/shaders/dome_background_tile_multiview.vert` /
-  `headless/shaders/dome_background_tile_multiview.frag`: Dome background
+- `raster/shaders/dome_background_tile_multiview.vert` /
+  `raster/shaders/dome_background_tile_multiview.frag`: Dome background
   variants for multiview tile rendering.
-- `headless/shaders/host_device.h`: Shared raster descriptor bindings,
+- `raster/shaders/host_device.h`: Shared raster descriptor bindings,
   material structs, frame uniforms, tile multiview uniforms, and push constants.
 
 ## Hydra Delegate
@@ -130,7 +130,7 @@ call sites with `rg`.
   and frame execution entry into the bridge.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
   Converts Hydra frame state into `RasterRenderer` updates and render calls,
-  including the all-camera snapshot passed to headless and ordered AOV copy
+  including the all-camera snapshot passed to raster renderer and ordered AOV copy
   groups that copy fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, tile config, scene dirty flags, texture
@@ -166,14 +166,14 @@ call sites with `rg`.
   conversion.
 - `hdRobot/hydraTextureAssetExport.h` / `hdRobot/hydraTextureAssetExport.cpp`:
   Resolves registered Hydra material texture assets and exports encoded bytes
-  for headless upload.
+  for raster upload.
 - `hdRobot/hydraRasterAovCopy.h` / `hdRobot/hydraRasterAovCopy.cpp`: Maps Hydra
   AOV tokens to `RasterAov` values and copies exported raster AOV textures into
   Hydra render buffers through OpenGL interop; fixed `tileColor` and
   `tileDepth` copies require exact atlas-size render buffers, while display tile
   AOVs can use GL blit scaling.
 - `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
-  Vulkan external-memory import cache for headless AOV textures exposed as
+  Vulkan external-memory import cache for raster AOV textures exposed as
   source OpenGL textures.
 - `hdRobot/utils.h` / `hdRobot/utils.cpp`: Utility functions shared by the
   Hydra plugin.
@@ -189,45 +189,45 @@ call sites with `rg`.
 
 ## Shader Files
 
-- `headless/shaders/host_device.h`: Shared host/device structs and constants.
+- `raster/shaders/host_device.h`: Shared host/device structs and constants.
   `FrameUniforms` carries one camera/light-count slot selected by dynamic
   uniform offset; `TileFrameUniforms` carries per-batch multiview tile cameras;
   `PushConstantRaster` carries per-draw model/object/instance data for the
   raster path.
-- `headless/shaders/raster.vert`: Minimal raster vertex shader for mesh
+- `raster/shaders/raster.vert`: Minimal raster vertex shader for mesh
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.
-- `headless/shaders/raster.frag`: Minimal raster fragment shader writing color,
+- `raster/shaders/raster.frag`: Minimal raster fragment shader writing color,
   primId, instanceId, normalized depth AOV attachments, and sphere/simple light
   diffuse shading from the shared light buffer.
-- `headless/shaders/tile_multiview.vert` /
-  `headless/shaders/tile_multiview.frag`: Multiview tile mesh shader variants
+- `raster/shaders/tile_multiview.vert` /
+  `raster/shaders/tile_multiview.frag`: Multiview tile mesh shader variants
   that read camera arrays from `TileFrameUniforms`.
-- `headless/shaders/dome_background_tile_multiview.vert` /
-  `headless/shaders/dome_background_tile_multiview.frag`: Multiview tile dome
+- `raster/shaders/dome_background_tile_multiview.vert` /
+  `raster/shaders/dome_background_tile_multiview.frag`: Multiview tile dome
   background variants that reconstruct view directions per `gl_ViewIndex`.
 
 ## Question Routing
 
 - Frame rendering:
-  `headless/raster_renderer.cpp`, `headless/raster_renderer.hpp`,
-  `headless/tile_atlas_renderer.cpp`, `hdRobot/rasterBridge.cpp`, then
+  `raster/raster_renderer.cpp`, `raster/raster_renderer.hpp`,
+  `raster/tile_atlas_renderer.cpp`, `hdRobot/rasterBridge.cpp`, then
   search for `RenderRasterFrame`, `renderPreviewAovs`, `renderTileAovAtlas`,
   `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
-  `headless/raster_renderer.cpp`, `headless/raster_renderer.hpp`,
-  `headless/preview_raster_pipeline.cpp`, `headless/raster_session.cpp`, then search
+  `raster/raster_renderer.cpp`, `raster/raster_renderer.hpp`,
+  `raster/preview_raster_pipeline.cpp`, `raster/raster_session.cpp`, then search
   for `onResize`, `createOffscreenRender`, `getRenderSize`, and
   `ensureRasterSessionReady`.
 - Offscreen AOV export:
-  `headless/aov_texture.hpp`, `headless/preview_raster_pipeline.cpp`,
-  `headless/raster_renderer.cpp`, `hdRobot/hydraRasterAovCopy.cpp`, then search
+  `raster/aov_texture.hpp`, `raster/preview_raster_pipeline.cpp`,
+  `raster/raster_renderer.cpp`, `hdRobot/hydraRasterAovCopy.cpp`, then search
   for `GetAovTexture`, `getAovTexture`, `RasterAov`, and
   `CopyAovToRenderBuffer`.
 - Raster pipeline:
-  `headless/preview_raster_pipeline.hpp`, `headless/preview_raster_pipeline.cpp`,
-  `headless/raster_descriptor_sets.cpp`, `headless/shaders/raster.vert`,
-  `headless/shaders/raster.frag`, then search for `PreviewRasterPipeline`,
+  `raster/preview_raster_pipeline.hpp`, `raster/preview_raster_pipeline.cpp`,
+  `raster/raster_descriptor_sets.cpp`, `raster/shaders/raster.vert`,
+  `raster/shaders/raster.frag`, then search for `PreviewRasterPipeline`,
   `createGraphicsPipeline`, `createFramebuffer`, `renderPreviewAovs`, and
   `PushConstantRaster`.
 - Hydra render flow:
@@ -236,22 +236,22 @@ call sites with `rg`.
   `_UpdateRenderScene`, and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/rasterBridge.cpp`, `headless/raster_renderer.hpp`, and
-  `headless/raster_renderer.cpp`, then search for `v_camera`,
+  `hdRobot/rasterBridge.cpp`, `raster/raster_renderer.hpp`, and
+  `raster/raster_renderer.cpp`, then search for `v_camera`,
   `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
   `renderTileAovAtlas`, and `RasterCameraSpec`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.
 - Material or texture path issues:
-  `hdRobot/material.cpp`, `headless/raster_scene_upload.cpp`,
+  `hdRobot/material.cpp`, `raster/raster_scene_upload.cpp`,
   `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`,
   `common/obj_loader.cpp`, then search for `GetTexturePath`,
   `ExportRegisteredTextures`, `stbi_load_from_memory`, `loadMaterial`, and
   material buffer updates.
 - PBR material struct or shader material layout:
   `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `hdRobot/rasterBridge.cpp`, `headless/shaders/host_device.h`,
+  `hdRobot/rasterBridge.cpp`, `raster/shaders/host_device.h`,
   then search for `baseColorFactor`, `emissionFactor`,
   `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
 - USD Preview/MaterialX surface parsing:
@@ -264,28 +264,28 @@ call sites with `rg`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,
   `hdRobot/renderParam.cpp`, `hdRobot/hydraTextureAssetExport.cpp`,
-  `headless/raster_scene_upload.cpp`, then search for `TextureUsage`,
+  `raster/raster_scene_upload.cpp`, then search for `TextureUsage`,
   `TextureColorSpaceForUsage`, `GetTextureAssets`, and
   `VK_FORMAT_R8G8B8A8_UNORM`.
 - Raster shader material sampling:
-  `headless/shaders/raster.frag`, `headless/shaders/host_device.h`, then
+  `raster/shaders/raster.frag`, `raster/shaders/host_device.h`, then
   search for `sampleBaseColor`, `WaveFrontMaterial`, and
   `baseColorTextureId`.
 - Raster light evaluation:
   `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
-  `hdRobot/rasterBridge.cpp`, `headless/raster_runtime_updates.cpp`,
-  `headless/raster_descriptor_sets.cpp`, `headless/shaders/host_device.h`,
-  `headless/shaders/raster.frag`, then search for `HydraLight::toLight`,
+  `hdRobot/rasterBridge.cpp`, `raster/raster_runtime_updates.cpp`,
+  `raster/raster_descriptor_sets.cpp`, `raster/shaders/host_device.h`,
+  `raster/shaders/raster.frag`, then search for `HydraLight::toLight`,
   `updateLights`, `updateLightBuffer`, `eLights`, and `evaluateSphereLight`.
 - Normal map data flow:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `common/data_loader.h`, `headless/shaders/host_device.h`,
-  `headless/shaders/raster.vert`, then search for `tangent`,
+  `common/data_loader.h`, `raster/shaders/host_device.h`,
+  `raster/shaders/raster.vert`, then search for `tangent`,
   `bitangentSigns`, and `normalTextureId`.
 - Advanced MaterialX inputs:
   `hdRobot/materialXParser.cpp`, `hdRobot/sceneData.h`,
   `hdRobot/sceneData.cpp`, `common/data_loader.h`,
-  `headless/shaders/host_device.h`, then search for `transmissionFactor`,
+  `raster/shaders/host_device.h`, then search for `transmissionFactor`,
   `transmissionColorFactor`, `subsurfaceFactor`, `subsurfaceTextureId`, and
   the matching material parser fields.
 - Instancers or material subsets:
@@ -298,7 +298,7 @@ call sites with `rg`.
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
 - Model loading:
   `common/obj_loader.cpp`, `common/obj_loader.h`, `common/ModelLoader.h`,
-  `headless/raster_scene_upload.cpp`, then search for `loadModel`,
+  `raster/raster_scene_upload.cpp`, then search for `loadModel`,
   `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:
   Root `CMakeLists.txt`, relevant subdirectory `CMakeLists.txt`,
