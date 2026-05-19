@@ -3,18 +3,8 @@
 #include "stb_image_write.h"
 
 #include "hello_vulkan.hpp"
-#include "nvh/alignment.hpp"
-#include "nvh/cameramanipulator.hpp"
-#include "nvh/fileoperations.hpp"
 #include "nvvk/commands_vk.hpp"
-#include "nvvk/descriptorsets_vk.hpp"
-#include "nvvk/images_vk.hpp"
-#include "nvvk/pipeline_vk.hpp"
-#include "nvvk/renderpasses_vk.hpp"
-#include "nvvk/shaders_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
-
-extern std::vector<std::string> defaultSearchPaths;
 
 std::vector<uint32_t> HelloVulkan::readObjectIdImage()
 {
@@ -75,107 +65,6 @@ std::vector<uint32_t> HelloVulkan::readObjectIdImage()
   vkFreeMemory(m_device, mem, nullptr);
 
   return result;
-}
-
-
-void HelloVulkan::animationInstances(float time)
-{
-  const auto  nbWuson     = static_cast<int32_t>(m_instances.size() - 2);
-  if(nbWuson <= 0)
-  {
-    return;
-  }
-
-  if(m_animationBaseTransforms.size() != m_instances.size())
-  {
-    m_animationBaseTransforms.clear();
-    m_animationBaseTransforms.reserve(m_instances.size());
-    for(const ObjInstance& instance : m_instances)
-    {
-      m_animationBaseTransforms.push_back(instance.transform);
-    }
-  }
-
-  const float deltaAngle  = 6.28318530718f / static_cast<float>(nbWuson);
-  const float wusonLength = 3.f;
-  const float radius      = wusonLength / (2.f * sin(deltaAngle / 2.0f));
-  const float offset      = time * 0.5f;
-
-  for(int i = 0; i < nbWuson; i++)
-  {
-    int       wusonIdx  = i + 1;
-    glm::mat4 transform = m_animationBaseTransforms[wusonIdx];
-    transform           = glm::rotate(transform, i * deltaAngle + offset, glm::vec3(0.f, 1.f, 0.f));
-    transform           = glm::translate(transform, glm::vec3(radius, 0.f, 0.f));
-
-    if(wusonIdx >= 0 && static_cast<size_t>(wusonIdx) < m_instances.size())
-    {
-      m_instances[wusonIdx].transform = transform;
-    }
-  }
-}
-
-void HelloVulkan::animationObject(float time)
-{
-  if(m_compPipeline == VK_NULL_HANDLE || m_compPipelineLayout == VK_NULL_HANDLE || m_compDescSet == VK_NULL_HANDLE)
-  {
-    return;
-  }
-
-  const uint32_t sphereId = 2;
-  ObjModel&      model    = m_objModel[sphereId];
-
-  updateCompDescriptors(model.vertexBuffer);
-
-  nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
-  VkCommandBuffer   cmdBuf = genCmdBuf.createCommandBuffer();
-
-  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_compPipeline);
-  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_compPipelineLayout, 0, 1, &m_compDescSet, 0, nullptr);
-  vkCmdPushConstants(cmdBuf, m_compPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &time);
-  vkCmdDispatch(cmdBuf, model.nbVertices, 1, 1);
-
-  genCmdBuf.submitAndWait(cmdBuf);
-}
-
-void HelloVulkan::createCompDescriptors()
-{
-  m_compDescSetLayoutBind.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT);
-
-  m_compDescSetLayout = m_compDescSetLayoutBind.createLayout(m_device);
-  m_compDescPool      = m_compDescSetLayoutBind.createPool(m_device, 1);
-  m_compDescSet       = nvvk::allocateDescriptorSet(m_device, m_compDescPool, m_compDescSetLayout);
-}
-
-void HelloVulkan::updateCompDescriptors(nvvk::Buffer& vertex)
-{
-  std::vector<VkWriteDescriptorSet> writes;
-  VkDescriptorBufferInfo            dbiUnif{vertex.buffer, 0, VK_WHOLE_SIZE};
-  writes.emplace_back(m_compDescSetLayoutBind.makeWrite(m_compDescSet, 0, &dbiUnif));
-  vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-}
-
-void HelloVulkan::createCompPipelines()
-{
-  VkPushConstantRange push_constants = {VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float)};
-
-  VkPipelineLayoutCreateInfo createInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-  createInfo.setLayoutCount         = 1;
-  createInfo.pSetLayouts            = &m_compDescSetLayout;
-  createInfo.pushConstantRangeCount = 1;
-  createInfo.pPushConstantRanges    = &push_constants;
-  vkCreatePipelineLayout(m_device, &createInfo, nullptr, &m_compPipelineLayout);
-
-  VkComputePipelineCreateInfo computePipelineCreateInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
-  computePipelineCreateInfo.layout = m_compPipelineLayout;
-
-  computePipelineCreateInfo.stage =
-      nvvk::createShaderStageInfo(m_device, nvh::loadFile("spv/anim.comp.spv", true, defaultSearchPaths, true),
-                                  VK_SHADER_STAGE_COMPUTE_BIT);
-
-  vkCreateComputePipelines(m_device, {}, 1, &computePipelineCreateInfo, nullptr, &m_compPipeline);
-
-  vkDestroyShaderModule(m_device, computePipelineCreateInfo.stage.module, nullptr);
 }
 
 void HelloVulkan::saveOffscreenColorToFile(const char* filename)

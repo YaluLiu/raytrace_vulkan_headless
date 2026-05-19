@@ -41,7 +41,6 @@ uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex,
   instance.transform = transform;
   instance.objIndex = objIndex;
   m_instances.push_back(instance);
-  m_animationBaseTransforms.push_back(transform);
   m_instanceIds.push_back(instanceId);
   return static_cast<uint32_t>(m_instances.size() - 1);
 }

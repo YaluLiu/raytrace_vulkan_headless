@@ -471,15 +471,6 @@ void HelloVulkan::destroyResources()
     m_alloc.destroy(t);
   }
 
-  if(m_compPipeline != VK_NULL_HANDLE)
-    vkDestroyPipeline(m_device, m_compPipeline, nullptr);
-  if(m_compPipelineLayout != VK_NULL_HANDLE)
-    vkDestroyPipelineLayout(m_device, m_compPipelineLayout, nullptr);
-  if(m_compDescPool != VK_NULL_HANDLE)
-    vkDestroyDescriptorPool(m_device, m_compDescPool, nullptr);
-  if(m_compDescSetLayout != VK_NULL_HANDLE)
-    vkDestroyDescriptorSetLayout(m_device, m_compDescSetLayout, nullptr);
-
   m_alloc.deinit();
 }
 

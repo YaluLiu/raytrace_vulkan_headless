@@ -107,7 +107,6 @@ public:
   std::vector<ObjModel> m_objModel;
   std::vector<ObjDesc> m_objDesc;
   std::vector<ObjInstance> m_instances;
-  std::vector<glm::mat4> m_animationBaseTransforms;
 
   nvvk::DescriptorSetBindings m_descSetLayoutBind;
   VkDescriptorPool m_descPool{VK_NULL_HANDLE};
@@ -138,20 +137,6 @@ public:
   {
     return m_mainCameraClipEnd;
   }
-
-  void animationInstances(float time);
-  void animationObject(float time);
-
-  void createCompDescriptors();
-  void updateCompDescriptors(nvvk::Buffer &vertex);
-  void createCompPipelines();
-
-  nvvk::DescriptorSetBindings m_compDescSetLayoutBind;
-  VkDescriptorPool m_compDescPool{VK_NULL_HANDLE};
-  VkDescriptorSetLayout m_compDescSetLayout{VK_NULL_HANDLE};
-  VkDescriptorSet m_compDescSet{VK_NULL_HANDLE};
-  VkPipeline m_compPipeline{VK_NULL_HANDLE};
-  VkPipelineLayout m_compPipelineLayout{VK_NULL_HANDLE};
 
   RasterPipeline m_mainRasterPipeline;
   RasterPipeline m_tileRasterPipeline;

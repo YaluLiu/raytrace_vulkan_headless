@@ -52,6 +52,8 @@ a separate cleanup if the public surface can absorb the churn.
 - `headless/hello_vulkan.cpp`: Core setup, camera array ingestion, dynamic
   frame uniform slot allocation, explicit per-camera uniform updates, resize
   forwarding, AOV texture wrapper, and renderer resource lifecycle.
+- `headless/hello_vulkan_test.cpp`: Readback/debug helpers for object ID image
+  downloads and offscreen color PNG output.
 - `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
   descriptor returned by `HelloVulkan::GetAovTexture`, including tile AOV
   values exposed to Hydra without Hydra or OpenGL types.
