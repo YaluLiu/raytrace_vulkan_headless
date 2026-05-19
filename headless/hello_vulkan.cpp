@@ -179,7 +179,6 @@ void HelloVulkan::setup(const VkInstance &instance, const VkDevice &device, cons
             << ", maxInstanceIndex=" << m_tileMultiviewMaxInstanceIndex << ")" << std::endl;
 
   m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
-  m_tileRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
   m_tileAtlas.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
   m_tileLayerOutput.setup(m_device, queueFamily, m_alloc, m_debug);
   m_tileMultiviewRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_debug);
@@ -255,21 +254,6 @@ void HelloVulkan::updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, Vk
   recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, 0, frameUBO);
 }
 
-void HelloVulkan::updateUniformBufferForCamera(const VkCommandBuffer &cmdBuf, const HeadlessCameraData &camera,
-                                               VkExtent2D renderSize, uint32_t slotIndex)
-{
-  if(renderSize.width == 0 || renderSize.height == 0)
-  {
-    return;
-  }
-
-  const ResolvedCamera resolved = resolveCamera(camera);
-  const glm::mat4 view = glm::lookAtRH(resolved.position, resolved.target, resolved.up);
-  const FrameUniforms frameUBO =
-      makeFrameUniforms(view, resolved.vfovDeg, resolved.clipStart, resolved.clipEnd, renderSize, m_lights.size());
-  recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, getFrameUniformOffset(slotIndex), frameUBO);
-}
-
 void HelloVulkan::createUniformBuffer()
 {
   ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
@@ -278,19 +262,7 @@ void HelloVulkan::createUniformBuffer()
 
 uint32_t HelloVulkan::getRequiredFrameUniformSlots() const
 {
-  uint32_t slotCount = 1;
-  if(m_tileConfig.enabled && !m_cameras.empty())
-  {
-    HeadlessTileConfig config = m_tileConfig;
-    config.sanitize();
-    slotCount += static_cast<uint32_t>(std::min<size_t>(m_cameras.size(), config.capacity()));
-  }
-  return slotCount;
-}
-
-uint32_t HelloVulkan::getFrameUniformOffset(uint32_t slotIndex) const
-{
-  return static_cast<uint32_t>(m_frameUniformStride * slotIndex);
+  return 1;
 }
 
 void HelloVulkan::ensureFrameUniformCapacity(uint32_t slotCount)
@@ -444,7 +416,6 @@ void HelloVulkan::destroyResources()
   m_tileAtlas.destroy();
   m_tileAtlasDirty = false;
   m_tileAtlasExportValid = false;
-  m_tileRasterPipeline.destroy();
   m_mainRasterPipeline.destroy();
 
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);

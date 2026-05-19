@@ -86,14 +86,7 @@ void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmd
       renderer.updateLightBuffer(cmdBuf);
       break;
     case HeadlessRenderPass::Rasterize:
-      if(renderer.getTileRenderMode() == HeadlessTileRenderMode::Serial)
-      {
-        renderer.renderTileAtlas(cmdBuf);
-      }
-      else
-      {
-        renderer.renderTileAtlasMultiview(cmdBuf);
-      }
+      renderer.renderTileAtlasMultiview(cmdBuf);
       renderer.rasterize(cmdBuf);
       break;
   }

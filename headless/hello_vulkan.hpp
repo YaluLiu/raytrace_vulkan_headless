@@ -55,8 +55,6 @@ public:
                            const std::vector<TextureAsset> &textureAssets);
   void updateUniformBuffer(const VkCommandBuffer &cmdBuf);
   void updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize);
-  void updateUniformBufferForCamera(const VkCommandBuffer &cmdBuf, const HeadlessCameraData &camera,
-                                    VkExtent2D renderSize, uint32_t slotIndex = 0);
   void ensureFrameUniformCapacity(uint32_t slotCount);
   void setCameras(std::vector<HeadlessCameraData> cameras);
   const std::vector<HeadlessCameraData> &getCameras() const
@@ -69,14 +67,6 @@ public:
   HeadlessTileConfig getTileConfig() const
   {
     return m_tileConfig;
-  }
-  void setTileRenderMode(HeadlessTileRenderMode mode)
-  {
-    m_tileRenderMode = mode;
-  }
-  HeadlessTileRenderMode getTileRenderMode() const
-  {
-    return m_tileRenderMode;
   }
   bool isTileMultiviewSupported() const
   {
@@ -126,7 +116,6 @@ public:
 
   void createRasterPipeline();
   void rasterize(const VkCommandBuffer &cmdBuf);
-  void renderTileAtlas(const VkCommandBuffer &cmdBuf);
   void renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf);
   void saveTileAtlasOutputs(const std::string &outputDirectory = "output");
   float getMainCameraClipStart() const
@@ -139,12 +128,10 @@ public:
   }
 
   RasterPipeline m_mainRasterPipeline;
-  RasterPipeline m_tileRasterPipeline;
   TileAtlasOutput m_tileAtlas;
   TileLayerOutput m_tileLayerOutput;
   TileMultiviewRasterPipeline m_tileMultiviewRasterPipeline;
   HeadlessTileConfig m_tileConfig;
-  HeadlessTileRenderMode m_tileRenderMode{HeadlessTileRenderMode::MultiviewPreferred};
   bool m_tileMultiviewSupported{false};
   uint32_t m_tileMultiviewMaxViewCount{0};
   uint32_t m_tileMultiviewMaxInstanceIndex{0};
@@ -159,7 +146,6 @@ public:
 
   void createOffscreenRender();
   uint32_t getRequiredFrameUniformSlots() const;
-  uint32_t getFrameUniformOffset(uint32_t slotIndex) const;
   void updateFrameUniformDescriptor();
   void ensureTileFrameUniformBuffer();
   void updateTileFrameUniformDescriptor();

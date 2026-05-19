@@ -64,13 +64,12 @@ a separate cleanup if the public surface can absorb the churn.
   pass, framebuffer, graphics pipelines, AOV texture export backing, dynamic
   frame-uniform descriptor binding, and draw command recording.
 - `headless/tile_config.hpp`: Pure headless tile output configuration contract,
-  including enable flag, render mode, per-camera tile size, grid dimensions,
-  and positive value normalization.
+  including enable flag, per-camera tile size, grid dimensions, and positive
+  value normalization.
 - `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp`: Independent tile atlas
-  color/depth/id/depth-attachment images plus framebuffer helpers used by
-  direct row-major atlas rendering without touching main AOV images; exports
-  color/depth atlas images as `HeadlessAovTexture` for Hydra tile AOV copy and
-  owns layered tile image copy into atlas rects for the multiview path.
+  color/depth/id images used by the multiview path without touching main AOV
+  images; exports color/depth atlas images as `HeadlessAovTexture` for Hydra
+  tile AOV copy and owns layered tile image copy into atlas rects.
 - `headless/tile_layer_output.hpp` / `headless/tile_layer_output.cpp`:
   Temporary layered color/depth/id/depth-attachment tile targets used by
   multiview tile batches before copying layers back into the 2D atlas.
@@ -78,9 +77,8 @@ a separate cleanup if the public surface can absorb the churn.
   `headless/tile_multiview_raster_pipeline.cpp`: Dedicated multiview tile
   render pass, raster pipeline, dome background pipeline, and draw recording.
 - `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
-  serial per-camera atlas framebuffer passes, multiview layered batch rendering
-  and layer-to-atlas copy, atlas export-valid tracking, and disabled local
-  tile file output.
+  multiview layered batch rendering, layer-to-atlas copy, atlas export-valid
+  tracking, and disabled local tile file output.
 - `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
   light/material update paths, texture export allocation, and light buffer
   uploads.
@@ -215,8 +213,8 @@ a separate cleanup if the public surface can absorb the churn.
 - Frame rendering:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/hello_vulkan_tile.cpp`, `hdRobot/headlessRenderBridge.cpp`, then
-  search for `RenderFrame`, `rasterize`, `renderTileAtlas`,
-  `renderTileAtlasMultiview`, `updateUniformBuffer`, and `updateScene`.
+  search for `RenderFrame`, `rasterize`, `renderTileAtlasMultiview`,
+  `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
   `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
   `headless/raster_pipeline.cpp`, `headless/ray_trace_app.cpp`, then search
@@ -242,8 +240,7 @@ a separate cleanup if the public surface can absorb the churn.
   `hdRobot/headlessRenderBridge.cpp`, `headless/hello_vulkan.hpp`, and
   `headless/hello_vulkan.cpp`, then search for `v_camera`,
   `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
-  `setTileRenderMode`, `renderTileAtlas`, `renderTileAtlasMultiview`, and
-  `HeadlessCameraData`.
+  `renderTileAtlasMultiview`, and `HeadlessCameraData`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.

@@ -15,10 +15,11 @@ instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
   and draw command recording.
 - `hello_vulkan_pipeline.cpp` keeps descriptor layout updates and compatibility
   wrappers that route the main raster pass into `RasterPipeline`.
-- `tile_config.hpp`, `tile_atlas.hpp`, `tile_atlas.cpp`, and
-  `hello_vulkan_tile.cpp` implement multi-camera tile atlas rendering. Tile
-  output uses atlas-sized framebuffer attachments and per-tile viewport/scissor
-  rectangles, then exposes atlas color/depth through Hydra AOV export.
+- `tile_config.hpp`, `tile_atlas.hpp`, `tile_layer_output.hpp`,
+  `tile_multiview_raster_pipeline.hpp`, and `hello_vulkan_tile.cpp` implement
+  multi-camera tile atlas rendering. Tile output renders multiview batches into
+  layered images, copies layers into the atlas, then exposes atlas color/depth
+  through Hydra AOV export.
 - `hello_vulkan_mesh.cpp` owns mesh upload, geometry refresh, and per-instance
   transform or visibility updates.
 - `hello_vulkan_hydra.cpp` applies Hydra camera, light, material, and scene
@@ -34,18 +35,20 @@ instance ID AOVs through the offscreen framebuffer owned by `RasterPipeline`.
 
 1. `UpdateUniforms`
 2. `UpdateLights`
-3. `Rasterize`, which first runs `HelloVulkan::renderTileAtlas()` when tile
-   output is enabled, then runs `HelloVulkan::rasterize()` for the main output
+3. `Rasterize`, which first runs `HelloVulkan::renderTileAtlasMultiview()`
+   when tile output is enabled, then runs `HelloVulkan::rasterize()` for the
+   main output
 
 The raster pipeline binds the shared scene descriptor set, then draws each
 visible instance with `PushConstantRaster` data for model transform, object
-index, and instance ID. The frame uniform binding is dynamic: slot 0 is used
-for the main output, and tile cameras use slots starting at 1.
+index, and instance ID. The main frame uniform uses slot 0; tile cameras are
+uploaded through the dedicated `TileFrameUniforms` buffer used by the multiview
+shaders.
 
 When tile output is enabled, headless renders cameras from the current camera
-array into row-major atlas rectangles using per-camera frame uniform slots. It
-does not save tile color or tile depth files locally; Hydra consumes the atlas
-through tile AOV render buffers.
+array into layered multiview tile targets, then copies each layer into the
+row-major atlas. It does not save tile color or tile depth files locally; Hydra
+consumes the atlas through tile AOV render buffers.
 
 The atlas size is controlled only by tile configuration:
 `tileCameraWidth * gridColumns` by `tileCameraHeight * gridRows`.
