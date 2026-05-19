@@ -199,7 +199,7 @@ void DestroyEntry(CacheEntry &entry) {
 #endif
 }
 
-bool SetDedicatedMemoryFlag(const HeadlessAovTexture &texture,
+bool SetDedicatedMemoryFlag(const ExportedRasterAovTexture &texture,
                             GLuint memoryObject) {
   if (!texture.dedicatedMemory) {
     return true;
@@ -213,7 +213,7 @@ bool SetDedicatedMemoryFlag(const HeadlessAovTexture &texture,
 }
 
 #ifdef _WIN32
-bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
+bool ImportVulkanMemoryToGl(const ExportedRasterAovTexture &texture,
                             CacheEntry &entry) {
   const auto getMemoryWin32Handle =
       reinterpret_cast<PFN_vkGetMemoryWin32HandleKHR>(
@@ -251,7 +251,7 @@ bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
   return true;
 }
 #else
-bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
+bool ImportVulkanMemoryToGl(const ExportedRasterAovTexture &texture,
                             GLuint memoryObject) {
   const auto getMemoryFd = reinterpret_cast<PFN_vkGetMemoryFdKHR>(
       vkGetDeviceProcAddr(texture.device, "vkGetMemoryFdKHR"));
@@ -285,7 +285,7 @@ bool ImportVulkanMemoryToGl(const HeadlessAovTexture &texture,
 }
 #endif
 
-CacheKey MakeCacheKey(const HeadlessAovTexture &texture) {
+CacheKey MakeCacheKey(const ExportedRasterAovTexture &texture) {
   CacheKey key;
   key.device = texture.device;
   key.image = texture.image;
@@ -309,7 +309,7 @@ HdRobotGlInteropCache::HdRobotGlInteropCache()
 HdRobotGlInteropCache::~HdRobotGlInteropCache() { Clear(); }
 
 GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
-    const HeadlessAovTexture &texture) {
+    const ExportedRasterAovTexture &texture) {
   if (texture.device == VK_NULL_HANDLE || texture.image == VK_NULL_HANDLE ||
       texture.memory == VK_NULL_HANDLE || texture.memorySize == 0 ||
       texture.extent.width == 0 || texture.extent.height == 0) {

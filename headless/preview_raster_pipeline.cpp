@@ -1,4 +1,4 @@
-#include "raster_pipeline.hpp"
+#include "preview_raster_pipeline.hpp"
 
 #include <array>
 #include <cstddef>
@@ -35,7 +35,7 @@ bool requiresDedicatedImageAllocation(VkDevice device, VkImage image)
 }
 }
 
-void RasterPipeline::setup(VkDevice device,
+void PreviewRasterPipeline::setup(VkDevice device,
                            VkPhysicalDevice physicalDevice,
                            uint32_t graphicsQueueIndex,
                            nvvk::ResourceAllocatorDma& transientAllocator,
@@ -50,7 +50,7 @@ void RasterPipeline::setup(VkDevice device,
   _sharedAlloc.init(device, physicalDevice);
 }
 
-void RasterPipeline::destroy()
+void PreviewRasterPipeline::destroy()
 {
   destroyGraphicsPipeline();
   if(_transientAllocator != nullptr)
@@ -79,7 +79,7 @@ void RasterPipeline::destroy()
   _aovSize            = {0, 0};
 }
 
-void RasterPipeline::destroyGraphicsPipeline()
+void PreviewRasterPipeline::destroyGraphicsPipeline()
 {
   destroyFramebuffer();
   if(_device != VK_NULL_HANDLE)
@@ -95,7 +95,7 @@ void RasterPipeline::destroyGraphicsPipeline()
   _renderPass             = VK_NULL_HANDLE;
 }
 
-void RasterPipeline::createOffscreenRender(VkExtent2D size)
+void PreviewRasterPipeline::createOffscreenRender(VkExtent2D size)
 {
   if(_device == VK_NULL_HANDLE || _transientAllocator == nullptr || size.width == 0 || size.height == 0)
   {
@@ -149,7 +149,7 @@ void RasterPipeline::createOffscreenRender(VkExtent2D size)
   createFramebuffer();
 }
 
-void RasterPipeline::createGraphicsPipeline(VkDescriptorSetLayout sceneDescriptorSetLayout)
+void PreviewRasterPipeline::createGraphicsPipeline(VkDescriptorSetLayout sceneDescriptorSetLayout)
 {
   destroyGraphicsPipeline();
 
@@ -229,10 +229,10 @@ void RasterPipeline::createGraphicsPipeline(VkDescriptorSetLayout sceneDescripto
   createFramebuffer();
 }
 
-void RasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
+void PreviewRasterPipeline::renderPreviewAovs(const VkCommandBuffer& cmdBuf,
                                VkDescriptorSet sceneDescriptorSet,
-                               std::span<const RasterObjModel> objModels,
-                               std::span<const RasterObjInstance> instances,
+                               std::span<const RasterMeshBuffers> objModels,
+                               std::span<const RasterInstance> instances,
                                std::span<const int> instanceIds,
                                uint32_t frameUniformOffset)
 {
@@ -243,15 +243,15 @@ void RasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
                       instances, instanceIds, frameUniformOffset);
 }
 
-void RasterPipeline::rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
+void PreviewRasterPipeline::rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
                                          VkFramebuffer framebuffer,
                                          VkExtent2D framebufferExtent,
                                          VkRect2D renderArea,
                                          VkViewport viewport,
                                          VkRect2D scissor,
                                          VkDescriptorSet sceneDescriptorSet,
-                                         std::span<const RasterObjModel> objModels,
-                                         std::span<const RasterObjInstance> instances,
+                                         std::span<const RasterMeshBuffers> objModels,
+                                         std::span<const RasterInstance> instances,
                                          std::span<const int> instanceIds,
                                          uint32_t frameUniformOffset)
 {
@@ -269,7 +269,7 @@ void RasterPipeline::rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
     return;
   }
 
-  _debug->beginLabel(cmdBuf, "Rasterize");
+  _debug->beginLabel(cmdBuf, "RenderPreviewAovs");
 
   std::array<VkClearValue, 5> clearValues{};
   clearValues[0].color.float32[0] = 0.0f;
@@ -304,13 +304,13 @@ void RasterPipeline::rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
 
   for(size_t instanceIndex = 0; instanceIndex < instances.size(); ++instanceIndex)
   {
-    const RasterObjInstance& instance = instances[instanceIndex];
+    const RasterInstance& instance = instances[instanceIndex];
     if(!instance.visible || instance.objIndex >= objModels.size())
     {
       continue;
     }
 
-    const RasterObjModel& model = objModels[instance.objIndex];
+    const RasterMeshBuffers& model = objModels[instance.objIndex];
     if(model.nbIndices == 0 || model.vertexBuffer.buffer == VK_NULL_HANDLE || model.indexBuffer.buffer == VK_NULL_HANDLE)
     {
       continue;
@@ -335,7 +335,7 @@ void RasterPipeline::rasterizeWithTarget(const VkCommandBuffer& cmdBuf,
   _debug->endLabel(cmdBuf);
 }
 
-std::optional<HeadlessAovTexture> RasterPipeline::getAovTexture(HeadlessAov aov) const
+std::optional<ExportedRasterAovTexture> PreviewRasterPipeline::getAovTexture(RasterAov aov) const
 {
   const nvvk::Texture* texture = nullptr;
   VkFormat             format  = VK_FORMAT_UNDEFINED;
@@ -343,30 +343,30 @@ std::optional<HeadlessAovTexture> RasterPipeline::getAovTexture(HeadlessAov aov)
 
   switch(aov)
   {
-    case HeadlessAov::Color:
+    case RasterAov::Color:
       texture = &_offscreenColor;
       format  = _offscreenColorFormat;
       extent  = _renderSize;
       break;
-    case HeadlessAov::PrimId:
+    case RasterAov::PrimId:
       texture = &_offscreenObjectId;
       format  = _offscreenObjectIdFormat;
       extent  = _aovSize;
       break;
-    case HeadlessAov::InstanceId:
+    case RasterAov::InstanceId:
       texture = &_offscreenInstanceId;
       format  = _offscreenInstanceIdFormat;
       extent  = _aovSize;
       break;
-    case HeadlessAov::Depth:
+    case RasterAov::Depth:
       texture = &_offscreenDepthAov;
       format  = _offscreenDepthAovFormat;
       extent  = _aovSize;
       break;
-    case HeadlessAov::TileColor:
-    case HeadlessAov::TileDepth:
-    case HeadlessAov::TileDisplayColor:
-    case HeadlessAov::TileDisplayDepth:
+    case RasterAov::TileColor:
+    case RasterAov::TileDepth:
+    case RasterAov::TileDisplayColor:
+    case RasterAov::TileDisplayDepth:
       return std::nullopt;
   }
 
@@ -388,7 +388,7 @@ std::optional<HeadlessAovTexture> RasterPipeline::getAovTexture(HeadlessAov aov)
     return std::nullopt;
   }
 
-  HeadlessAovTexture result;
+  ExportedRasterAovTexture result;
   result.device          = _device;
   result.image           = texture->image;
   result.imageView       = texture->descriptor.imageView;
@@ -402,7 +402,7 @@ std::optional<HeadlessAovTexture> RasterPipeline::getAovTexture(HeadlessAov aov)
   return result;
 }
 
-void RasterPipeline::createOffscreenImage(nvvk::Texture& texture,
+void PreviewRasterPipeline::createOffscreenImage(nvvk::Texture& texture,
                                           VkFormat format,
                                           VkImageUsageFlags usage,
                                           VkExtent2D extent)
@@ -421,7 +421,7 @@ void RasterPipeline::createOffscreenImage(nvvk::Texture& texture,
   texture.descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
-void RasterPipeline::createFramebuffer()
+void PreviewRasterPipeline::createFramebuffer()
 {
   if(_renderPass == VK_NULL_HANDLE || _offscreenColor.descriptor.imageView == VK_NULL_HANDLE
      || _offscreenObjectId.descriptor.imageView == VK_NULL_HANDLE
@@ -452,7 +452,7 @@ void RasterPipeline::createFramebuffer()
   }
 }
 
-void RasterPipeline::destroyFramebuffer()
+void PreviewRasterPipeline::destroyFramebuffer()
 {
   if(_device != VK_NULL_HANDLE && _framebuffer != VK_NULL_HANDLE)
   {

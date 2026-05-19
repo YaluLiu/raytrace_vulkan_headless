@@ -1,4 +1,4 @@
-#include "tile_multiview_raster_pipeline.hpp"
+#include "multiview_tile_raster_pipeline.hpp"
 
 #include <array>
 #include <cstddef>
@@ -13,7 +13,7 @@
 
 extern std::vector<std::string> defaultSearchPaths;
 
-void TileMultiviewRasterPipeline::setup(VkDevice device,
+void MultiviewTileRasterPipeline::setup(VkDevice device,
                                         VkPhysicalDevice physicalDevice,
                                         uint32_t graphicsQueueIndex,
                                         nvvk::DebugUtil& debug)
@@ -24,7 +24,7 @@ void TileMultiviewRasterPipeline::setup(VkDevice device,
   _debug              = &debug;
 }
 
-void TileMultiviewRasterPipeline::destroy()
+void MultiviewTileRasterPipeline::destroy()
 {
   destroyGraphicsPipeline();
   _device                   = VK_NULL_HANDLE;
@@ -35,7 +35,7 @@ void TileMultiviewRasterPipeline::destroy()
   _viewCount                = 0;
 }
 
-void TileMultiviewRasterPipeline::destroyGraphicsPipeline()
+void MultiviewTileRasterPipeline::destroyGraphicsPipeline()
 {
   if(_device != VK_NULL_HANDLE)
   {
@@ -50,8 +50,8 @@ void TileMultiviewRasterPipeline::destroyGraphicsPipeline()
   _renderPass             = VK_NULL_HANDLE;
 }
 
-bool TileMultiviewRasterPipeline::ensureResources(VkDescriptorSetLayout sceneDescriptorSetLayout,
-                                                  const RasterPipeline& referencePipeline,
+bool MultiviewTileRasterPipeline::ensureResources(VkDescriptorSetLayout sceneDescriptorSetLayout,
+                                                  const PreviewRasterPipeline& referencePipeline,
                                                   uint32_t viewCount)
 {
   if(_device == VK_NULL_HANDLE || sceneDescriptorSetLayout == VK_NULL_HANDLE || viewCount == 0)
@@ -87,7 +87,7 @@ bool TileMultiviewRasterPipeline::ensureResources(VkDescriptorSetLayout sceneDes
          && _domeBackgroundPipeline != VK_NULL_HANDLE && _pipelineLayout != VK_NULL_HANDLE;
 }
 
-void TileMultiviewRasterPipeline::createRenderPass()
+void MultiviewTileRasterPipeline::createRenderPass()
 {
   std::array<VkAttachmentDescription, 5> attachments{};
   const std::array<VkFormat, 4> colorFormats{_colorFormat, _objectIdFormat, _instanceIdFormat, _depthAovFormat};
@@ -162,7 +162,7 @@ void TileMultiviewRasterPipeline::createRenderPass()
   }
 }
 
-void TileMultiviewRasterPipeline::createGraphicsPipeline()
+void MultiviewTileRasterPipeline::createGraphicsPipeline()
 {
   VkPushConstantRange pushConstant{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                    sizeof(PushConstantRaster)};
@@ -235,12 +235,12 @@ void TileMultiviewRasterPipeline::createGraphicsPipeline()
   }
 }
 
-bool TileMultiviewRasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
+bool MultiviewTileRasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
                                             VkFramebuffer framebuffer,
                                             VkExtent2D tileExtent,
                                             VkDescriptorSet sceneDescriptorSet,
-                                            std::span<const RasterObjModel> objModels,
-                                            std::span<const RasterObjInstance> instances,
+                                            std::span<const RasterMeshBuffers> objModels,
+                                            std::span<const RasterInstance> instances,
                                             std::span<const int> instanceIds)
 {
   if(_rasterPipeline == VK_NULL_HANDLE || _domeBackgroundPipeline == VK_NULL_HANDLE || _pipelineLayout == VK_NULL_HANDLE
@@ -292,13 +292,13 @@ bool TileMultiviewRasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
 
   for(size_t instanceIndex = 0; instanceIndex < instances.size(); ++instanceIndex)
   {
-    const RasterObjInstance& instance = instances[instanceIndex];
+    const RasterInstance& instance = instances[instanceIndex];
     if(!instance.visible || instance.objIndex >= objModels.size())
     {
       continue;
     }
 
-    const RasterObjModel& model = objModels[instance.objIndex];
+    const RasterMeshBuffers& model = objModels[instance.objIndex];
     if(model.nbIndices == 0 || model.vertexBuffer.buffer == VK_NULL_HANDLE || model.indexBuffer.buffer == VK_NULL_HANDLE)
     {
       continue;

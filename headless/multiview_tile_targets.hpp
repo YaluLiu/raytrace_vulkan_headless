@@ -3,17 +3,17 @@
 #include "nvvk/debug_util_vk.hpp"
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
-#include "raster_pipeline.hpp"
+#include "preview_raster_pipeline.hpp"
 #include "tile_config.hpp"
 
-class TileLayerOutput final
+class MultiviewTileTargets final
 {
 public:
   void setup(VkDevice device, uint32_t graphicsQueueIndex, nvvk::ResourceAllocatorDma& allocator, nvvk::DebugUtil& debug);
   void destroy();
 
-  bool ensureResources(const HeadlessTileConfig& config,
-                       const RasterPipeline& pipeline,
+  bool ensureResources(const TileAtlasConfig& config,
+                       const PreviewRasterPipeline& pipeline,
                        VkRenderPass renderPass,
                        uint32_t layerCount);
 

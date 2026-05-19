@@ -1,4 +1,4 @@
-#include "tile_layer_output.hpp"
+#include "multiview_tile_targets.hpp"
 
 #include <array>
 #include <stdexcept>
@@ -6,7 +6,7 @@
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
 
-void TileLayerOutput::setup(VkDevice device,
+void MultiviewTileTargets::setup(VkDevice device,
                             uint32_t graphicsQueueIndex,
                             nvvk::ResourceAllocatorDma& allocator,
                             nvvk::DebugUtil& debug)
@@ -17,7 +17,7 @@ void TileLayerOutput::setup(VkDevice device,
   _debug              = &debug;
 }
 
-void TileLayerOutput::destroy()
+void MultiviewTileTargets::destroy()
 {
   destroyFramebuffer();
   destroyImages();
@@ -26,8 +26,8 @@ void TileLayerOutput::destroy()
   _renderPass = VK_NULL_HANDLE;
 }
 
-bool TileLayerOutput::ensureResources(const HeadlessTileConfig& config,
-                                      const RasterPipeline& pipeline,
+bool MultiviewTileTargets::ensureResources(const TileAtlasConfig& config,
+                                      const PreviewRasterPipeline& pipeline,
                                       VkRenderPass renderPass,
                                       uint32_t layerCount)
 {
@@ -36,7 +36,7 @@ bool TileLayerOutput::ensureResources(const HeadlessTileConfig& config,
     return false;
   }
 
-  HeadlessTileConfig sanitized = config;
+  TileAtlasConfig sanitized = config;
   sanitized.sanitize();
   const VkExtent2D desiredExtent = sanitized.tileExtent();
 
@@ -88,7 +88,7 @@ bool TileLayerOutput::ensureResources(const HeadlessTileConfig& config,
   return hasImages() && hasFramebuffer();
 }
 
-bool TileLayerOutput::hasImages() const
+bool MultiviewTileTargets::hasImages() const
 {
   return _colorLayers.image != VK_NULL_HANDLE && _objectIdLayers.image != VK_NULL_HANDLE
          && _instanceIdLayers.image != VK_NULL_HANDLE && _depthLayers.image != VK_NULL_HANDLE
@@ -96,7 +96,7 @@ bool TileLayerOutput::hasImages() const
          && _layerCount > 0;
 }
 
-void TileLayerOutput::createLayerImage(nvvk::Texture& texture,
+void MultiviewTileTargets::createLayerImage(nvvk::Texture& texture,
                                        VkFormat format,
                                        VkImageUsageFlags usage,
                                        const char* debugName)
@@ -124,7 +124,7 @@ void TileLayerOutput::createLayerImage(nvvk::Texture& texture,
   }
 }
 
-void TileLayerOutput::createDepthAttachment(const char* debugName)
+void MultiviewTileTargets::createDepthAttachment(const char* debugName)
 {
   auto imageInfo        = nvvk::makeImage2DCreateInfo(_tileExtent, _depthAttachmentFormat,
                                                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -149,7 +149,7 @@ void TileLayerOutput::createDepthAttachment(const char* debugName)
   }
 }
 
-void TileLayerOutput::createFramebuffer(VkRenderPass renderPass)
+void MultiviewTileTargets::createFramebuffer(VkRenderPass renderPass)
 {
   if(!hasImages() || renderPass == VK_NULL_HANDLE)
   {
@@ -176,7 +176,7 @@ void TileLayerOutput::createFramebuffer(VkRenderPass renderPass)
   }
 }
 
-void TileLayerOutput::destroyFramebuffer()
+void MultiviewTileTargets::destroyFramebuffer()
 {
   if(_device != VK_NULL_HANDLE && _framebuffer != VK_NULL_HANDLE)
   {
@@ -185,7 +185,7 @@ void TileLayerOutput::destroyFramebuffer()
   _framebuffer = VK_NULL_HANDLE;
 }
 
-void TileLayerOutput::destroyImages()
+void MultiviewTileTargets::destroyImages()
 {
   if(_allocator != nullptr)
   {

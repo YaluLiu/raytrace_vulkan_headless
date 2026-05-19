@@ -1,6 +1,6 @@
 #include <sstream>
 #include <glm/glm.hpp>
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/fileoperations.hpp"
@@ -35,7 +35,7 @@ void AddTransferBarrier(VkCommandBuffer cmdBuf, VkBuffer buffer, VkDeviceSize si
 }
 } // namespace
 
-void HelloVulkan::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible)
+void RasterRenderer::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible)
 {
   if(instanceId >= m_instances.size())
   {
@@ -45,7 +45,7 @@ void HelloVulkan::updateInstance(uint32_t instanceId, glm::mat4 transform, bool 
   m_instances[instanceId].visible   = visible;
 }
 
-void HelloVulkan::updateMeshGeometry(uint32_t meshId)
+void RasterRenderer::updateMeshGeometry(uint32_t meshId)
 {
   if(meshId >= m_Loader.size() || meshId >= m_objModel.size())
   {

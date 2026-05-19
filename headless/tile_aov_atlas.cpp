@@ -1,8 +1,8 @@
-#include "tile_atlas.hpp"
+#include "tile_aov_atlas.hpp"
 
 #include <algorithm>
 
-#include "hello_vulkan_barriers.hpp"
+#include "raster_image_barriers.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
 
@@ -26,7 +26,7 @@ bool requiresDedicatedImageAllocation(VkDevice device, VkImage image)
 }
 
 bool copyLayeredImageToAtlas(const VkCommandBuffer &cmdBuf, const nvvk::Texture &source,
-                             const nvvk::Texture &destination, const TileAtlasOutput &atlas, uint32_t firstTileIndex,
+                             const nvvk::Texture &destination, const TileAovAtlas &atlas, uint32_t firstTileIndex,
                              uint32_t tileCount, uint32_t sourceLayerCount)
 {
   if(source.image == VK_NULL_HANDLE || destination.image == VK_NULL_HANDLE || tileCount == 0 || sourceLayerCount == 0)
@@ -70,7 +70,7 @@ bool copyLayeredImageToAtlas(const VkCommandBuffer &cmdBuf, const nvvk::Texture 
 }
 } // namespace
 
-void TileAtlasOutput::setup(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex,
+void TileAovAtlas::setup(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex,
                             nvvk::ResourceAllocatorDma &allocator, nvvk::DebugUtil &debug)
 {
   _device = device;
@@ -81,7 +81,7 @@ void TileAtlasOutput::setup(VkDevice device, VkPhysicalDevice physicalDevice, ui
   _exportAllocator.init(device, physicalDevice);
 }
 
-void TileAtlasOutput::destroy()
+void TileAovAtlas::destroy()
 {
   destroyImages();
   if(_device != VK_NULL_HANDLE)
@@ -97,14 +97,14 @@ void TileAtlasOutput::destroy()
   _config = {};
 }
 
-bool TileAtlasOutput::ensureResources(const HeadlessTileConfig &config, const RasterPipeline &pipeline)
+bool TileAovAtlas::ensureResources(const TileAtlasConfig &config, const PreviewRasterPipeline &pipeline)
 {
   if(_device == VK_NULL_HANDLE || _allocator == nullptr)
   {
     return false;
   }
 
-  HeadlessTileConfig sanitized = config;
+  TileAtlasConfig sanitized = config;
   sanitized.sanitize();
   const VkExtent2D desiredExtent = sanitized.atlasExtent();
   const VkFormat desiredColorFormat = pipeline.getColorFormat();
@@ -145,14 +145,14 @@ bool TileAtlasOutput::ensureResources(const HeadlessTileConfig &config, const Ra
   return hasImages();
 }
 
-bool TileAtlasOutput::hasImages() const
+bool TileAovAtlas::hasImages() const
 {
   return _colorAtlas.image != VK_NULL_HANDLE && _objectIdAtlas.image != VK_NULL_HANDLE &&
          _instanceIdAtlas.image != VK_NULL_HANDLE && _depthAtlas.image != VK_NULL_HANDLE &&
          _atlasExtent.width > 0 && _atlasExtent.height > 0;
 }
 
-bool TileAtlasOutput::copyLayersFrom(const VkCommandBuffer &cmdBuf, const TileLayerOutput &layeredOutput,
+bool TileAovAtlas::copyLayersFrom(const VkCommandBuffer &cmdBuf, const MultiviewTileTargets &layeredOutput,
                                      uint32_t firstTileIndex, uint32_t tileCount)
 {
   if(!hasImages() || !layeredOutput.hasImages() || firstTileIndex >= _config.capacity())
@@ -179,7 +179,7 @@ bool TileAtlasOutput::copyLayersFrom(const VkCommandBuffer &cmdBuf, const TileLa
   return copiedColor && copiedDepth && copiedObjectId && copiedInstanceId;
 }
 
-VkRect2D TileAtlasOutput::getTileRect(uint32_t tileIndex) const
+VkRect2D TileAovAtlas::getTileRect(uint32_t tileIndex) const
 {
   if(_config.capacity() == 0)
   {
@@ -194,27 +194,27 @@ VkRect2D TileAtlasOutput::getTileRect(uint32_t tileIndex) const
   return rect;
 }
 
-std::optional<HeadlessAovTexture> TileAtlasOutput::getAovTexture(HeadlessAov aov) const
+std::optional<ExportedRasterAovTexture> TileAovAtlas::getAovTexture(RasterAov aov) const
 {
   const nvvk::Texture *texture = nullptr;
   VkFormat format = VK_FORMAT_UNDEFINED;
 
   switch(aov)
   {
-  case HeadlessAov::TileColor:
-  case HeadlessAov::TileDisplayColor:
+  case RasterAov::TileColor:
+  case RasterAov::TileDisplayColor:
     texture = &_colorAtlas;
     format = _colorFormat;
     break;
-  case HeadlessAov::TileDepth:
-  case HeadlessAov::TileDisplayDepth:
+  case RasterAov::TileDepth:
+  case RasterAov::TileDisplayDepth:
     texture = &_depthAtlas;
     format = _depthFormat;
     break;
-  case HeadlessAov::Color:
-  case HeadlessAov::PrimId:
-  case HeadlessAov::InstanceId:
-  case HeadlessAov::Depth:
+  case RasterAov::Color:
+  case RasterAov::PrimId:
+  case RasterAov::InstanceId:
+  case RasterAov::Depth:
     return std::nullopt;
   }
 
@@ -236,7 +236,7 @@ std::optional<HeadlessAovTexture> TileAtlasOutput::getAovTexture(HeadlessAov aov
     return std::nullopt;
   }
 
-  HeadlessAovTexture result;
+  ExportedRasterAovTexture result;
   result.device = _device;
   result.image = texture->image;
   result.imageView = texture->descriptor.imageView;
@@ -250,7 +250,7 @@ std::optional<HeadlessAovTexture> TileAtlasOutput::getAovTexture(HeadlessAov aov
   return result;
 }
 
-void TileAtlasOutput::createExportedAtlasImage(nvvk::Texture &texture, VkFormat format, VkExtent2D extent,
+void TileAovAtlas::createExportedAtlasImage(nvvk::Texture &texture, VkFormat format, VkExtent2D extent,
                                                const char *debugName)
 {
   constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -269,7 +269,7 @@ void TileAtlasOutput::createExportedAtlasImage(nvvk::Texture &texture, VkFormat 
   }
 }
 
-void TileAtlasOutput::createAtlasImage(nvvk::Texture &texture, VkFormat format, VkExtent2D extent,
+void TileAovAtlas::createAtlasImage(nvvk::Texture &texture, VkFormat format, VkExtent2D extent,
                                        const char *debugName)
 {
   constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -287,7 +287,7 @@ void TileAtlasOutput::createAtlasImage(nvvk::Texture &texture, VkFormat format, 
   }
 }
 
-void TileAtlasOutput::destroyImages()
+void TileAovAtlas::destroyImages()
 {
   if(_allocator != nullptr)
   {

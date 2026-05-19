@@ -4,19 +4,19 @@
 #include "nvvk/debug_util_vk.hpp"
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
-#include "raster_pipeline.hpp"
+#include "preview_raster_pipeline.hpp"
 #include "tile_config.hpp"
-#include "tile_layer_output.hpp"
+#include "multiview_tile_targets.hpp"
 
-class TileAtlasOutput final
+class TileAovAtlas final
 {
 public:
   void setup(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex,
              nvvk::ResourceAllocatorDma &allocator, nvvk::DebugUtil &debug);
   void destroy();
 
-  bool ensureResources(const HeadlessTileConfig &config, const RasterPipeline &pipeline);
-  bool copyLayersFrom(const VkCommandBuffer &cmdBuf, const TileLayerOutput &layeredOutput, uint32_t firstTileIndex,
+  bool ensureResources(const TileAtlasConfig &config, const PreviewRasterPipeline &pipeline);
+  bool copyLayersFrom(const VkCommandBuffer &cmdBuf, const MultiviewTileTargets &layeredOutput, uint32_t firstTileIndex,
                       uint32_t tileCount);
 
   bool hasImages() const;
@@ -24,7 +24,7 @@ public:
   {
     return _atlasExtent;
   }
-  const HeadlessTileConfig &getConfig() const
+  const TileAtlasConfig &getConfig() const
   {
     return _config;
   }
@@ -45,7 +45,7 @@ public:
   {
     return _instanceIdAtlas;
   }
-  std::optional<HeadlessAovTexture> getAovTexture(HeadlessAov aov) const;
+  std::optional<ExportedRasterAovTexture> getAovTexture(RasterAov aov) const;
 
 private:
   void createExportedAtlasImage(nvvk::Texture &texture, VkFormat format, VkExtent2D extent, const char *debugName);
@@ -59,7 +59,7 @@ private:
   nvvk::DebugUtil *_debug{nullptr};
   mutable nvvk::ExportResourceAllocatorDedicated _exportAllocator;
 
-  HeadlessTileConfig _config;
+  TileAtlasConfig _config;
   VkExtent2D _atlasExtent{0, 0};
 
   nvvk::Texture _colorAtlas;

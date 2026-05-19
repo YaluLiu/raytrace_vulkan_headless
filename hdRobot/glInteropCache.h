@@ -12,7 +12,7 @@ public:
   HdRobotGlInteropCache &operator=(const HdRobotGlInteropCache &) = delete;
   ~HdRobotGlInteropCache();
 
-  GLuint GetOrImportSourceGlTexture(const HeadlessAovTexture &texture);
+  GLuint GetOrImportSourceGlTexture(const ExportedRasterAovTexture &texture);
   void Clear();
 
 private:

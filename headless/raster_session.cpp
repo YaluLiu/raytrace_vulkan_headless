@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
-#include "ray_trace_app.hpp"
+#include "raster_session.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -19,17 +19,17 @@ std::vector<std::string> defaultSearchPaths;
 namespace fs = std::filesystem;
 
 namespace {
-enum class HeadlessRenderPass
+enum class RasterFramePass
 {
   UpdateUniforms,
   UpdateLights,
-  Rasterize,
+  RenderPreviewAovs,
 };
 
-constexpr std::array<HeadlessRenderPass, 3> kHeadlessRenderPassSequence{
-    HeadlessRenderPass::UpdateUniforms,
-    HeadlessRenderPass::UpdateLights,
-    HeadlessRenderPass::Rasterize,
+constexpr std::array<RasterFramePass, 3> kRasterFramePassSequence{
+    RasterFramePass::UpdateUniforms,
+    RasterFramePass::UpdateLights,
+    RasterFramePass::RenderPreviewAovs,
 };
 
 void addSearchPathIfExists(std::vector<std::string>& paths, const fs::path& path)
@@ -75,41 +75,41 @@ void addExternalMemoryExtensions(nvvk::ContextCreateInfo& contextInfo)
 #endif
 }
 
-void executeHeadlessRenderPass(HelloVulkan& renderer, const VkCommandBuffer& cmdBuf, HeadlessRenderPass pass)
+void executeRasterFramePass(RasterRenderer& renderer, const VkCommandBuffer& cmdBuf, RasterFramePass pass)
 {
   switch(pass)
   {
-    case HeadlessRenderPass::UpdateUniforms:
+    case RasterFramePass::UpdateUniforms:
       renderer.updateUniformBuffer(cmdBuf);
       break;
-    case HeadlessRenderPass::UpdateLights:
+    case RasterFramePass::UpdateLights:
       renderer.updateLightBuffer(cmdBuf);
       break;
-    case HeadlessRenderPass::Rasterize:
-      renderer.renderTileAtlasMultiview(cmdBuf);
-      renderer.rasterize(cmdBuf);
+    case RasterFramePass::RenderPreviewAovs:
+      renderer.renderTileAovAtlas(cmdBuf);
+      renderer.renderPreviewAovs(cmdBuf);
       break;
   }
 }
 }
 
-RayTraceApp::RayTraceApp() {}
+RasterSession::RasterSession() {}
 
-RayTraceApp::~RayTraceApp()
+RasterSession::~RasterSession()
 {
   cleanup();
 }
 
-void RayTraceApp::setup(int width, int height)
+void RasterSession::setup(int width, int height)
 {
   m_width  = width;
   m_height = height;
   setupCamera();
   setupContext();
-  setupHelloVulkan();
+  setupRenderer();
 }
 
-void RayTraceApp::resize(int w, int h)
+void RasterSession::resize(int w, int h)
 {
   if(w <= 0 || h <= 0)
   {
@@ -119,25 +119,25 @@ void RayTraceApp::resize(int w, int h)
   m_width  = w;
   m_height = h;
   CameraManip.setWindowSize(m_width, m_height);
-  m_helloVk.onResize(w, h);
+  m_renderer.onResize(w, h);
 }
 
-void RayTraceApp::setupCamera()
+void RasterSession::setupCamera()
 {
   CameraManip.setWindowSize(m_width, m_height);
   CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 }
 
-void RayTraceApp::UpdateCamera() {}
+void RasterSession::UpdateCamera() {}
 
-void RayTraceApp::setPluginSearchRoot(std::string pluginSearchRoot)
+void RasterSession::setPluginSearchRoot(std::string pluginSearchRoot)
 {
   m_pluginSearchRoot = std::move(pluginSearchRoot);
 }
 
-void RayTraceApp::setupContext()
+void RasterSession::setupContext()
 {
-  NVPSystem system("raytrace_vulkan_headless");
+  NVPSystem system("raster_session");
 
   defaultSearchPaths.clear();
   addSearchPathIfExists(defaultSearchPaths, fs::current_path() / "headless");
@@ -183,7 +183,7 @@ void RayTraceApp::setupContext()
   }
 }
 
-void RayTraceApp::setupHelloVulkan()
+void RasterSession::setupRenderer()
 {
   nvvkhl::AppBaseVkCreateInfo createInfo;
   createInfo.instance       = m_vkctx.m_instance;
@@ -191,58 +191,58 @@ void RayTraceApp::setupHelloVulkan()
   createInfo.physicalDevice = m_vkctx.m_physicalDevice;
   createInfo.queueIndices   = {m_vkctx.m_queueGCT.familyIndex};
   createInfo.size           = {uint32_t(m_width), uint32_t(m_height)};
-  m_helloVk.create(createInfo);
-  m_helloCreated = true;
+  m_renderer.create(createInfo);
+  m_rendererCreated = true;
 }
 
-void RayTraceApp::createRenderResources()
+void RasterSession::createRenderResources()
 {
-  m_helloVk.createOffscreenRender();
-  m_helloVk.createLightBuffer();
+  m_renderer.createOffscreenRender();
+  m_renderer.createLightBuffer();
 
-  m_helloVk.createDescriptorSetLayout();
-  m_helloVk.createUniformBuffer();
-  m_helloVk.createObjDescriptionBuffer();
-  m_helloVk.updateDescriptorSet();
+  m_renderer.createDescriptorSetLayout();
+  m_renderer.createUniformBuffer();
+  m_renderer.createObjDescriptionBuffer();
+  m_renderer.updateDescriptorSet();
 
-  m_helloVk.createRasterPipeline();
+  m_renderer.createPreviewRasterPipeline();
   m_resourcesCreated = true;
 }
 
-void RayTraceApp::render()
+void RasterSession::render()
 {
-  m_helloVk.ensureFrameUniformCapacity(m_helloVk.getRequiredFrameUniformSlots());
+  m_renderer.ensureFrameUniformCapacity(m_renderer.getRequiredFrameUniformSlots());
 
-  auto                   curFrame = m_helloVk.getCurFrame();
-  const VkCommandBuffer& cmdBuf   = m_helloVk.getCommandBuffers()[curFrame];
+  auto                   curFrame = m_renderer.getCurFrame();
+  const VkCommandBuffer& cmdBuf   = m_renderer.getCommandBuffers()[curFrame];
 
   VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(cmdBuf, &beginInfo);
 
-  for(const HeadlessRenderPass pass : kHeadlessRenderPassSequence)
+  for(const RasterFramePass pass : kRasterFramePassSequence)
   {
-    executeHeadlessRenderPass(m_helloVk, cmdBuf, pass);
+    executeRasterFramePass(m_renderer, cmdBuf, pass);
   }
 
   vkEndCommandBuffer(cmdBuf);
-  m_helloVk.submitFrame();
+  m_renderer.submitFrame();
   try
   {
-    m_helloVk.saveTileAtlasOutputs();
+    m_renderer.markTileAovAtlasConsumed();
   }
   catch(const std::exception& e)
   {
-    std::cerr << "[RayTraceApp] Failed to save tile atlas outputs: " << e.what() << std::endl;
+    std::cerr << "[RasterSession] Failed to mark tile AOV atlas consumed: " << e.what() << std::endl;
   }
 }
 
-void RayTraceApp::saveFrame(std::string outputImagePath)
+void RasterSession::saveFrame(std::string outputImagePath)
 {
-  m_helloVk.saveOffscreenColorToFile(outputImagePath.c_str());
+  m_renderer.saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
-void RayTraceApp::cleanup()
+void RasterSession::cleanup()
 {
   if(_cleaned)
   {
@@ -250,14 +250,14 @@ void RayTraceApp::cleanup()
   }
   _cleaned = true;
 
-  if(m_helloCreated && m_helloVk.getDevice() != VK_NULL_HANDLE)
+  if(m_rendererCreated && m_renderer.getDevice() != VK_NULL_HANDLE)
   {
-    vkDeviceWaitIdle(m_helloVk.getDevice());
+    vkDeviceWaitIdle(m_renderer.getDevice());
     if(m_resourcesCreated)
     {
-      m_helloVk.destroyResources();
+      m_renderer.destroyResources();
     }
-    m_helloVk.destroy();
+    m_renderer.destroy();
   }
 
   if(m_vkctx.m_device != VK_NULL_HANDLE || m_vkctx.m_instance != VK_NULL_HANDLE)

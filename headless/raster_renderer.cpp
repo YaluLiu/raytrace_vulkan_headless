@@ -7,8 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "hello_vulkan.hpp"
-#include "hello_vulkan_barriers.hpp"
+#include "raster_renderer.hpp"
+#include "raster_image_barriers.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/fileoperations.hpp"
@@ -51,13 +51,13 @@ VkDeviceSize alignTo(VkDeviceSize value, VkDeviceSize alignment)
   return ((value + alignment - 1) / alignment) * alignment;
 }
 
-bool isTileAov(HeadlessAov aov)
+bool isTileAov(RasterAov aov)
 {
-  return aov == HeadlessAov::TileColor || aov == HeadlessAov::TileDepth || aov == HeadlessAov::TileDisplayColor ||
-         aov == HeadlessAov::TileDisplayDepth;
+  return aov == RasterAov::TileColor || aov == RasterAov::TileDepth || aov == RasterAov::TileDisplayColor ||
+         aov == RasterAov::TileDisplayDepth;
 }
 
-ResolvedCamera resolveCamera(const HeadlessCameraData &camera)
+ResolvedCamera resolveCamera(const RasterCameraSpec &camera)
 {
   ResolvedCamera resolved;
   resolved.position = camera.position;
@@ -149,7 +149,7 @@ void recordTileFrameUniformUpdate(const VkCommandBuffer &cmdBuf, VkBuffer device
 }
 } // namespace
 
-void HelloVulkan::setup(const VkInstance &instance, const VkDevice &device, const VkPhysicalDevice &physicalDevice,
+void RasterRenderer::setup(const VkInstance &instance, const VkDevice &device, const VkPhysicalDevice &physicalDevice,
                         uint32_t queueFamily)
 {
   AppOffline::setup(instance, device, physicalDevice, queueFamily);
@@ -174,30 +174,30 @@ void HelloVulkan::setup(const VkInstance &instance, const VkDevice &device, cons
   m_tileMultiviewMaxInstanceIndex = properties11.maxMultiviewInstanceIndex;
   m_tileMultiviewSupported =
       features11.multiview == VK_TRUE && m_tileMultiviewMaxViewCount > 0 && MAX_TILE_MULTIVIEW_VIEWS > 0;
-  std::cerr << "[HelloVulkan] Tile multiview " << (m_tileMultiviewSupported ? "supported" : "not supported")
+  std::cerr << "[RasterRenderer] Tile multiview " << (m_tileMultiviewSupported ? "supported" : "not supported")
             << " (maxViewCount=" << m_tileMultiviewMaxViewCount
             << ", maxInstanceIndex=" << m_tileMultiviewMaxInstanceIndex << ")" << std::endl;
 
-  m_mainRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
-  m_tileAtlas.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
-  m_tileLayerOutput.setup(m_device, queueFamily, m_alloc, m_debug);
-  m_tileMultiviewRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_debug);
+  m_previewRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
+  m_tileAovAtlas.setup(m_device, physicalDevice, queueFamily, m_alloc, m_debug);
+  m_multiviewTileTargets.setup(m_device, queueFamily, m_alloc, m_debug);
+  m_multiviewTileRasterPipeline.setup(m_device, physicalDevice, queueFamily, m_debug);
 }
 
-std::optional<HeadlessAovTexture> HelloVulkan::GetAovTexture(HeadlessAov aov) const
+std::optional<ExportedRasterAovTexture> RasterRenderer::GetAovTexture(RasterAov aov) const
 {
   if(isTileAov(aov))
   {
-    if(!m_tileAtlasExportValid || !m_tileAtlas.hasImages())
+    if(!m_tileAtlasExportValid || !m_tileAovAtlas.hasImages())
     {
       return std::nullopt;
     }
-    return m_tileAtlas.getAovTexture(aov);
+    return m_tileAovAtlas.getAovTexture(aov);
   }
-  return m_mainRasterPipeline.getAovTexture(aov);
+  return m_previewRasterPipeline.getAovTexture(aov);
 }
 
-void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
+void RasterRenderer::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   const auto [safeStart, safeEnd] = sanitizeClipRange(clipStart, clipEnd);
   if(std::fabs(m_mainCameraClipStart - safeStart) > 1e-6f || std::fabs(m_mainCameraClipEnd - safeEnd) > 1e-6f)
@@ -207,13 +207,13 @@ void HelloVulkan::setMainCameraClipRange(float clipStart, float clipEnd)
   }
 }
 
-void HelloVulkan::setCameras(std::vector<HeadlessCameraData> cameras)
+void RasterRenderer::setCameras(std::vector<RasterCameraSpec> cameras)
 {
   m_cameras = std::move(cameras);
   ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
 }
 
-void HelloVulkan::setMainCamera(const HeadlessCameraData &camera)
+void RasterRenderer::setMainCamera(const RasterCameraSpec &camera)
 {
   const ResolvedCamera resolved = resolveCamera(camera);
   m_mainCameraClipStart = resolved.clipStart;
@@ -221,7 +221,7 @@ void HelloVulkan::setMainCamera(const HeadlessCameraData &camera)
   CameraManip.setCamera({resolved.position, resolved.target, resolved.up, resolved.vfovDeg});
 }
 
-void HelloVulkan::setTileConfig(HeadlessTileConfig config)
+void RasterRenderer::setTileConfig(TileAtlasConfig config)
 {
   config.sanitize();
   if(config != m_tileConfig)
@@ -236,12 +236,12 @@ void HelloVulkan::setTileConfig(HeadlessTileConfig config)
   }
 }
 
-void HelloVulkan::updateUniformBuffer(const VkCommandBuffer &cmdBuf)
+void RasterRenderer::updateUniformBuffer(const VkCommandBuffer &cmdBuf)
 {
   updateUniformBufferForExtent(cmdBuf, m_size);
 }
 
-void HelloVulkan::updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize)
+void RasterRenderer::updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize)
 {
   if(renderSize.width == 0 || renderSize.height == 0)
   {
@@ -254,18 +254,18 @@ void HelloVulkan::updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, Vk
   recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, 0, frameUBO);
 }
 
-void HelloVulkan::createUniformBuffer()
+void RasterRenderer::createUniformBuffer()
 {
   ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
   ensureTileFrameUniformBuffer();
 }
 
-uint32_t HelloVulkan::getRequiredFrameUniformSlots() const
+uint32_t RasterRenderer::getRequiredFrameUniformSlots() const
 {
   return 1;
 }
 
-void HelloVulkan::ensureFrameUniformCapacity(uint32_t slotCount)
+void RasterRenderer::ensureFrameUniformCapacity(uint32_t slotCount)
 {
   slotCount = std::max<uint32_t>(slotCount, 1);
   if(m_device == VK_NULL_HANDLE || (m_bFrameUniforms.buffer != VK_NULL_HANDLE && slotCount <= m_frameUniformSlotCount))
@@ -287,7 +287,7 @@ void HelloVulkan::ensureFrameUniformCapacity(uint32_t slotCount)
   updateFrameUniformDescriptor();
 }
 
-void HelloVulkan::updateFrameUniformDescriptor()
+void RasterRenderer::updateFrameUniformDescriptor()
 {
   if(m_descSet == VK_NULL_HANDLE || m_descSetLayout == VK_NULL_HANDLE || m_bFrameUniforms.buffer == VK_NULL_HANDLE)
   {
@@ -299,7 +299,7 @@ void HelloVulkan::updateFrameUniformDescriptor()
   vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
 }
 
-void HelloVulkan::ensureTileFrameUniformBuffer()
+void RasterRenderer::ensureTileFrameUniformBuffer()
 {
   if(m_device == VK_NULL_HANDLE || m_bTileFrameUniforms.buffer != VK_NULL_HANDLE)
   {
@@ -314,7 +314,7 @@ void HelloVulkan::ensureTileFrameUniformBuffer()
   updateTileFrameUniformDescriptor();
 }
 
-void HelloVulkan::updateTileFrameUniformDescriptor()
+void RasterRenderer::updateTileFrameUniformDescriptor()
 {
   if(m_descSet == VK_NULL_HANDLE || m_descSetLayout == VK_NULL_HANDLE || m_bTileFrameUniforms.buffer == VK_NULL_HANDLE)
   {
@@ -326,7 +326,7 @@ void HelloVulkan::updateTileFrameUniformDescriptor()
   vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
 }
 
-void HelloVulkan::updateTileFrameUniformBufferForBatch(const VkCommandBuffer &cmdBuf, uint32_t firstCameraIndex,
+void RasterRenderer::updateTileFrameUniformBufferForBatch(const VkCommandBuffer &cmdBuf, uint32_t firstCameraIndex,
                                                        uint32_t cameraCount, uint32_t viewCount, VkExtent2D tileExtent)
 {
   if(m_bTileFrameUniforms.buffer == VK_NULL_HANDLE || tileExtent.width == 0 || tileExtent.height == 0 ||
@@ -364,7 +364,7 @@ void HelloVulkan::updateTileFrameUniformBufferForBatch(const VkCommandBuffer &cm
   recordTileFrameUniformUpdate(cmdBuf, m_bTileFrameUniforms.buffer, tileUBO);
 }
 
-uint32_t HelloVulkan::getTileMultiviewEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const
+uint32_t RasterRenderer::getTileMultiviewEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const
 {
   if(!m_tileMultiviewSupported || cameraCount == 0 || capacity == 0)
   {
@@ -380,7 +380,7 @@ uint32_t HelloVulkan::getTileMultiviewEffectiveViewCount(uint32_t cameraCount, u
   return std::min({cameraCount, capacity, deviceCap});
 }
 
-void HelloVulkan::logTileMultiviewUnavailableOnce(const char *reason)
+void RasterRenderer::logTileMultiviewUnavailableOnce(const char *reason)
 {
   if(m_tileMultiviewUnsupportedLogged)
   {
@@ -388,7 +388,7 @@ void HelloVulkan::logTileMultiviewUnavailableOnce(const char *reason)
   }
 
   m_tileMultiviewUnsupportedLogged = true;
-  std::cerr << "[HelloVulkan] Tile multiview unavailable";
+  std::cerr << "[RasterRenderer] Tile multiview unavailable";
   if(reason != nullptr && reason[0] != '\0')
   {
     std::cerr << ": " << reason;
@@ -396,7 +396,7 @@ void HelloVulkan::logTileMultiviewUnavailableOnce(const char *reason)
   std::cerr << std::endl;
 }
 
-void HelloVulkan::createObjDescriptionBuffer()
+void RasterRenderer::createObjDescriptionBuffer()
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
 
@@ -409,14 +409,14 @@ void HelloVulkan::createObjDescriptionBuffer()
   m_debug.setObjectName(m_bObjDesc.buffer, "ObjDescs");
 }
 
-void HelloVulkan::destroyResources()
+void RasterRenderer::destroyResources()
 {
-  m_tileLayerOutput.destroy();
-  m_tileMultiviewRasterPipeline.destroy();
-  m_tileAtlas.destroy();
+  m_multiviewTileTargets.destroy();
+  m_multiviewTileRasterPipeline.destroy();
+  m_tileAovAtlas.destroy();
   m_tileAtlasDirty = false;
   m_tileAtlasExportValid = false;
-  m_mainRasterPipeline.destroy();
+  m_previewRasterPipeline.destroy();
 
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
@@ -445,7 +445,7 @@ void HelloVulkan::destroyResources()
   m_alloc.deinit();
 }
 
-void HelloVulkan::onResize(int w, int h)
+void RasterRenderer::onResize(int w, int h)
 {
   if(w <= 0 || h <= 0)
   {
@@ -462,7 +462,7 @@ void HelloVulkan::onResize(int w, int h)
   createOffscreenRender();
 }
 
-void HelloVulkan::createOffscreenRender()
+void RasterRenderer::createOffscreenRender()
 {
-  m_mainRasterPipeline.createOffscreenRender(m_size);
+  m_previewRasterPipeline.createOffscreenRender(m_size);
 }

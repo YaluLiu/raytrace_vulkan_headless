@@ -1,4 +1,4 @@
-#include "headlessRenderBridge.h"
+#include "rasterBridge.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -6,8 +6,9 @@
 #include <utility>
 
 #include "camera.h"
+#include "hydraRasterAovCopy.h"
+#include "hydraTextureAssetExport.h"
 #include "renderBuffer.h"
-#include "renderTextureExport.h"
 #include "sceneData.h"
 #include "tokens.h"
 
@@ -48,9 +49,9 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   return result;
 }
 
-HeadlessCameraData ToHeadlessCameraData(const HdRobotCameraData &camera)
+RasterCameraSpec ToRasterCameraSpec(const HdRobotCameraData &camera)
 {
-  HeadlessCameraData result;
+  RasterCameraSpec result;
   result.name = camera.name;
   result.position = camera.position;
   result.forward = camera.forward;
@@ -61,13 +62,13 @@ HeadlessCameraData ToHeadlessCameraData(const HdRobotCameraData &camera)
   return result;
 }
 
-std::vector<HeadlessCameraData> ToHeadlessCameraData(const std::vector<HdRobotCameraData> &cameras)
+std::vector<RasterCameraSpec> ToRasterCameraSpec(const std::vector<HdRobotCameraData> &cameras)
 {
-  std::vector<HeadlessCameraData> result;
+  std::vector<RasterCameraSpec> result;
   result.reserve(cameras.size());
   for(const HdRobotCameraData &camera : cameras)
   {
-    result.push_back(ToHeadlessCameraData(camera));
+    result.push_back(ToRasterCameraSpec(camera));
   }
   return result;
 }
@@ -79,9 +80,9 @@ bool IsUsdImagingPluginCamera(const HdRobotCameraData &camera)
   return camera.name.starts_with(kInternalCameraPrefix) && camera.name.ends_with(kInternalCameraSuffix);
 }
 
-HeadlessTileConfig ToHeadlessTileConfig(const HdRobotTileConfig &config)
+TileAtlasConfig ToTileAtlasConfig(const HdRobotTileConfig &config)
 {
-  HeadlessTileConfig result;
+  TileAtlasConfig result;
   result.enabled = config.enabled;
   result.cameraWidth = config.cameraWidth;
   result.cameraHeight = config.cameraHeight;
@@ -177,17 +178,17 @@ std::optional<GfVec2i> GetMainRenderSize(const HdRenderPassStateSharedPtr &rende
 
 } // namespace
 
-HeadlessRenderBridge::HeadlessRenderBridge(HdRobotRenderParam &renderParam, std::string resourcePath)
+HdRobotRasterBridge::HdRobotRasterBridge(HdRobotRenderParam &renderParam, std::string resourcePath)
     : _renderParam(renderParam), _resourcePath(std::move(resourcePath))
 {
 }
 
-HeadlessRenderBridge::~HeadlessRenderBridge()
+HdRobotRasterBridge::~HdRobotRasterBridge()
 {
   _glInteropCache.Clear();
 }
 
-bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPassState,
+bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &renderPassState,
                                        const TfTokenVector &renderTags)
 {
   if(updateActiveRenderTags(renderTags))
@@ -212,18 +213,18 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
     return false;
   }
 
-  ensureHeadlessReady(*mainRenderSize);
+  ensureRasterSessionReady(*mainRenderSize);
   if(!updateCameras(renderPassState))
   {
     return false;
   }
 
-  _renderApp.getVulkan().setTileConfig(ToHeadlessTileConfig(_renderParam.GetTileConfig()));
+  _rasterSession.getRenderer().setTileConfig(ToTileAtlasConfig(_renderParam.GetTileConfig()));
   updateLights();
   updateScene();
-  _renderApp.render();
+  _rasterSession.render();
 
-  const ::HelloVulkan &app = _renderApp.getVulkan();
+  const ::RasterRenderer &app = _rasterSession.getRenderer();
   bool allAovsCopied = true;
 
   auto copyBinding = [&](const HdRenderPassAovBinding &binding)
@@ -255,48 +256,48 @@ bool HeadlessRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderP
   return allAovsCopied;
 }
 
-void HeadlessRenderBridge::ensureHeadlessReady(const GfVec2i &renderSize)
+void HdRobotRasterBridge::ensureRasterSessionReady(const GfVec2i &renderSize)
 {
   if(!_isAppInited)
   {
-    initializeHeadless(renderSize);
+    initializeRasterSession(renderSize);
   }
   else if(_renderSize != renderSize)
   {
-    resizeHeadless(renderSize);
+    resizeRasterSession(renderSize);
   }
 
   refreshTextureAssetsIfNeeded();
 }
 
-void HeadlessRenderBridge::initializeHeadless(const GfVec2i &renderSize)
+void HdRobotRasterBridge::initializeRasterSession(const GfVec2i &renderSize)
 {
   if(!_resourcePath.empty())
   {
-    _renderApp.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
+    _rasterSession.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
   }
 
-  _renderApp.setup(renderSize[0], renderSize[1]);
+  _rasterSession.setup(renderSize[0], renderSize[1]);
   _renderSize = renderSize;
   _isAppInited = true;
 
-  HelloVulkan &vulkan = _renderApp.getVulkan();
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
   vulkan.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = _renderParam.GetTextureRegistryVersion();
   uploadInitialScene();
-  _renderApp.createRenderResources();
+  _rasterSession.createRenderResources();
 }
 
-void HeadlessRenderBridge::resizeHeadless(const GfVec2i &renderSize)
+void HdRobotRasterBridge::resizeRasterSession(const GfVec2i &renderSize)
 {
   _glInteropCache.Clear();
-  _renderApp.resize(renderSize[0], renderSize[1]);
+  _rasterSession.resize(renderSize[0], renderSize[1]);
   _renderSize = renderSize;
 }
 
-void HeadlessRenderBridge::uploadInitialScene()
+void HdRobotRasterBridge::uploadInitialScene()
 {
-  HelloVulkan &vulkan = _renderApp.getVulkan();
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
   for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     auto &curMesh = _renderParam.v_mesh[meshId];
@@ -327,7 +328,7 @@ void HeadlessRenderBridge::uploadInitialScene()
   }
 }
 
-void HeadlessRenderBridge::refreshTextureAssetsIfNeeded()
+void HdRobotRasterBridge::refreshTextureAssetsIfNeeded()
 {
   if(!_isAppInited)
   {
@@ -341,12 +342,12 @@ void HeadlessRenderBridge::refreshTextureAssetsIfNeeded()
   }
 
   _glInteropCache.Clear();
-  HelloVulkan &vulkan = _renderApp.getVulkan();
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
   vulkan.recreateTextureResources(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
 
-bool HeadlessRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &renderPassState)
+bool HdRobotRasterBridge::updateCameras(const HdRenderPassStateSharedPtr &renderPassState)
 {
   const HdCamera *hdCamera = renderPassState ? renderPassState->GetCamera() : nullptr;
   if(!hdCamera)
@@ -374,15 +375,15 @@ bool HeadlessRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &rende
     return lhs.name < rhs.name;
   });
 
-  HelloVulkan &vulkan = _renderApp.getVulkan();
-  vulkan.setCameras(ToHeadlessCameraData(cameras));
-  vulkan.setMainCamera(ToHeadlessCameraData(mainCameraData));
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
+  vulkan.setCameras(ToRasterCameraSpec(cameras));
+  vulkan.setMainCamera(ToRasterCameraSpec(mainCameraData));
   return true;
 }
 
-void HeadlessRenderBridge::updateLights()
+void HdRobotRasterBridge::updateLights()
 {
-  HelloVulkan &vulkan = _renderApp.getVulkan();
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
   vulkan.clearLights();
 
   for(auto &curLight : _renderParam.v_light)
@@ -394,29 +395,29 @@ void HeadlessRenderBridge::updateLights()
   }
 }
 
-void HeadlessRenderBridge::updateScene()
+void HdRobotRasterBridge::updateScene()
 {
   updateGeometry();
   updateInstances();
   updateMaterials();
 }
 
-void HeadlessRenderBridge::updateGeometry()
+void HdRobotRasterBridge::updateGeometry()
 {
-  HelloVulkan &vulkan = _renderApp.getVulkan();
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
   for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     if(_renderParam.ConsumeMeshGeometryDirty(meshId))
     {
-      ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.m_Loader[meshId]);
+      ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.getMutableModelLoader(meshId));
       vulkan.updateMeshGeometry(meshId);
     }
   }
 }
 
-void HeadlessRenderBridge::updateInstances()
+void HdRobotRasterBridge::updateInstances()
 {
-  HelloVulkan &vulkan = _renderApp.getVulkan();
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
 
   for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
@@ -441,10 +442,10 @@ void HeadlessRenderBridge::updateInstances()
   }
 }
 
-void HeadlessRenderBridge::updateMaterials()
+void HdRobotRasterBridge::updateMaterials()
 {
-  HelloVulkan &vulkan = _renderApp.getVulkan();
-  std::vector<MaterialUpdate> newMaterials;
+  RasterRenderer &vulkan = _rasterSession.getRenderer();
+  std::vector<RasterMaterialUpdate> newMaterials;
   for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     auto &curMesh = _renderParam.v_mesh[meshId];
@@ -466,7 +467,7 @@ void HeadlessRenderBridge::updateMaterials()
   _renderParam.ClearAllMaterialDirty();
 }
 
-bool HeadlessRenderBridge::updateActiveRenderTags(const TfTokenVector &renderTags)
+bool HdRobotRasterBridge::updateActiveRenderTags(const TfTokenVector &renderTags)
 {
   TfTokenVector normalizedRenderTags = NormalizeRenderTags(renderTags);
   if(RenderTagsEqual(_activeRenderTags, normalizedRenderTags))
@@ -478,7 +479,7 @@ bool HeadlessRenderBridge::updateActiveRenderTags(const TfTokenVector &renderTag
   return true;
 }
 
-bool HeadlessRenderBridge::isMeshRenderTagMatched(const HydraMesh &mesh) const
+bool HdRobotRasterBridge::isMeshRenderTagMatched(const HydraMesh &mesh) const
 {
   if(_activeRenderTags.empty())
   {

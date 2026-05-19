@@ -7,13 +7,13 @@
 #include "nvvk/descriptorsets_vk.hpp"
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
-#include "raster_pipeline.hpp"
+#include "preview_raster_pipeline.hpp"
 #include "raster_scene_types.hpp"
 #include "shaders/host_device.h"
-#include "tile_atlas.hpp"
+#include "tile_aov_atlas.hpp"
 #include "tile_config.hpp"
-#include "tile_layer_output.hpp"
-#include "tile_multiview_raster_pipeline.hpp"
+#include "multiview_tile_targets.hpp"
+#include "multiview_tile_raster_pipeline.hpp"
 
 #include "ModelLoader.h"
 
@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-struct HeadlessCameraData
+struct RasterCameraSpec
 {
   std::string name;
   glm::vec3 position{0.0f, 0.0f, 0.0f};
@@ -32,14 +32,14 @@ struct HeadlessCameraData
   float clipEnd{1000.0f};
 };
 
-struct MaterialUpdate
+struct RasterMaterialUpdate
 {
   int modelIndex;
   int materialIndex;
   WaveFrontMaterial newMaterial;
 };
 
-class HelloVulkan : public nvvkhl::AppOffline
+class RasterRenderer : public nvvkhl::AppOffline
 {
 public:
   void setup(const VkInstance &instance, const VkDevice &device, const VkPhysicalDevice &physicalDevice,
@@ -56,15 +56,15 @@ public:
   void updateUniformBuffer(const VkCommandBuffer &cmdBuf);
   void updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize);
   void ensureFrameUniformCapacity(uint32_t slotCount);
-  void setCameras(std::vector<HeadlessCameraData> cameras);
-  const std::vector<HeadlessCameraData> &getCameras() const
+  void setCameras(std::vector<RasterCameraSpec> cameras);
+  const std::vector<RasterCameraSpec> &getCameras() const
   {
     return m_cameras;
   }
-  void setMainCamera(const HeadlessCameraData &camera);
+  void setMainCamera(const RasterCameraSpec &camera);
   void setMainCameraClipRange(float clipStart, float clipEnd);
-  void setTileConfig(HeadlessTileConfig config);
-  HeadlessTileConfig getTileConfig() const
+  void setTileConfig(TileAtlasConfig config);
+  TileAtlasConfig getTileConfig() const
   {
     return m_tileConfig;
   }
@@ -78,10 +78,10 @@ public:
   }
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
-  std::optional<HeadlessAovTexture> GetAovTexture(HeadlessAov aov) const;
+  std::optional<ExportedRasterAovTexture> GetAovTexture(RasterAov aov) const;
 
-  using ObjModel = RasterObjModel;
-  using ObjInstance = RasterObjInstance;
+  using ObjModel = RasterMeshBuffers;
+  using ObjInstance = RasterInstance;
 
   uint32_t addInstance(const glm::mat4 &transform, uint32_t objIndex, int instanceId = 0);
   size_t getInstanceCount() const
@@ -92,7 +92,16 @@ public:
   {
     return m_instances[index];
   }
+  ModelLoader &getMutableModelLoader(size_t meshId)
+  {
+    return m_Loader[meshId];
+  }
+  size_t getModelCount() const
+  {
+    return m_Loader.size();
+  }
 
+private:
   std::vector<ModelLoader> m_Loader;
   std::vector<ObjModel> m_objModel;
   std::vector<ObjDesc> m_objDesc;
@@ -114,10 +123,11 @@ public:
   nvvk::ResourceAllocatorDma m_alloc;
   nvvk::DebugUtil m_debug;
 
-  void createRasterPipeline();
-  void rasterize(const VkCommandBuffer &cmdBuf);
-  void renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf);
-  void saveTileAtlasOutputs(const std::string &outputDirectory = "output");
+public:
+  void createPreviewRasterPipeline();
+  void renderPreviewAovs(const VkCommandBuffer &cmdBuf);
+  void renderTileAovAtlas(const VkCommandBuffer &cmdBuf);
+  void markTileAovAtlasConsumed(const std::string &outputDirectory = "output");
   float getMainCameraClipStart() const
   {
     return m_mainCameraClipStart;
@@ -127,11 +137,12 @@ public:
     return m_mainCameraClipEnd;
   }
 
-  RasterPipeline m_mainRasterPipeline;
-  TileAtlasOutput m_tileAtlas;
-  TileLayerOutput m_tileLayerOutput;
-  TileMultiviewRasterPipeline m_tileMultiviewRasterPipeline;
-  HeadlessTileConfig m_tileConfig;
+private:
+  PreviewRasterPipeline m_previewRasterPipeline;
+  TileAovAtlas m_tileAovAtlas;
+  MultiviewTileTargets m_multiviewTileTargets;
+  MultiviewTileRasterPipeline m_multiviewTileRasterPipeline;
+  TileAtlasConfig m_tileConfig;
   bool m_tileMultiviewSupported{false};
   uint32_t m_tileMultiviewMaxViewCount{0};
   uint32_t m_tileMultiviewMaxInstanceIndex{0};
@@ -140,8 +151,9 @@ public:
   bool m_tileAtlasDirty{false};
   bool m_tileAtlasExportValid{false};
 
-  std::vector<HeadlessCameraData> m_cameras;
+  std::vector<RasterCameraSpec> m_cameras;
 
+public:
   void saveOffscreenColorToFile(const char *filename);
 
   void createOffscreenRender();
@@ -154,19 +166,23 @@ public:
   uint32_t getTileMultiviewEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const;
   void logTileMultiviewUnavailableOnce(const char *reason);
 
+private:
   float m_mainCameraClipStart{0.1f};
   float m_mainCameraClipEnd{1000.0f};
 
+public:
   std::vector<uint32_t> readObjectIdImage();
 
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
   void updateMeshGeometry(uint32_t meshId);
-  void updateMaterialsAtRuntime(const std::vector<MaterialUpdate> &updates);
+  void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate> &updates);
 
+private:
   std::vector<Light> m_lights;
   std::vector<int> m_instanceIds;
   nvvk::Buffer m_bLights;
 
+public:
   void addLight(const Light &light);
   void clearLights();
   void createLightBuffer();

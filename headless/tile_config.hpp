@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-struct HeadlessTileConfig {
+struct TileAtlasConfig {
   bool enabled = false;
   uint32_t cameraWidth = 1920;
   uint32_t cameraHeight = 1080;
@@ -25,13 +25,13 @@ struct HeadlessTileConfig {
   }
   uint32_t capacity() const { return gridColumns * gridRows; }
 
-  bool operator==(const HeadlessTileConfig &rhs) const {
+  bool operator==(const TileAtlasConfig &rhs) const {
     return enabled == rhs.enabled && cameraWidth == rhs.cameraWidth &&
            cameraHeight == rhs.cameraHeight && gridColumns == rhs.gridColumns &&
            gridRows == rhs.gridRows;
   }
 
-  bool operator!=(const HeadlessTileConfig &rhs) const {
+  bool operator!=(const TileAtlasConfig &rhs) const {
     return !(*this == rhs);
   }
 };

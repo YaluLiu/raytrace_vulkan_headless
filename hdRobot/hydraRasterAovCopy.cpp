@@ -1,8 +1,6 @@
-#include "renderTextureExport.h"
+#include "hydraRasterAovCopy.h"
 
-#include <pxr/usd/ar/asset.h>
-#include <pxr/usd/ar/resolvedPath.h>
-#include <pxr/usd/ar/resolver.h>
+#include <pxr/imaging/hd/tokens.h>
 
 #include <cstdint>
 #include <iostream>
@@ -10,7 +8,7 @@
 #include <optional>
 
 #include "glInteropCache.h"
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 #include "renderBuffer.h"
 #include "tokens.h"
 
@@ -18,39 +16,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name)
+std::optional<RasterAov> GetRasterAov(const TfToken &name)
 {
   if(name == HdAovTokens->color)
   {
-    return HeadlessAov::Color;
+    return RasterAov::Color;
   }
   if(name == HdAovTokens->primId)
   {
-    return HeadlessAov::PrimId;
+    return RasterAov::PrimId;
   }
   if(name == HdAovTokens->instanceId)
   {
-    return HeadlessAov::InstanceId;
+    return RasterAov::InstanceId;
   }
   if(name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
   {
-    return HeadlessAov::Depth;
+    return RasterAov::Depth;
   }
   if(name == HdRobotAovTokens->tileColor)
   {
-    return HeadlessAov::TileColor;
+    return RasterAov::TileColor;
   }
   if(name == HdRobotAovTokens->tileDepth)
   {
-    return HeadlessAov::TileDepth;
+    return RasterAov::TileDepth;
   }
   if(name == HdRobotAovTokens->tileDisplayColor)
   {
-    return HeadlessAov::TileDisplayColor;
+    return RasterAov::TileDisplayColor;
   }
   if(name == HdRobotAovTokens->tileDisplayDepth)
   {
-    return HeadlessAov::TileDisplayDepth;
+    return RasterAov::TileDisplayDepth;
   }
   return std::nullopt;
 }
@@ -58,53 +56,6 @@ std::optional<HeadlessAov> GetHeadlessAov(const TfToken &name)
 bool IsFixedTileAov(const TfToken &name)
 {
   return name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDepth;
-}
-
-TextureAsset ExportResolvedTextureAsset(const TextureAsset &registeredTexture)
-{
-  TextureAsset textureAsset;
-  textureAsset.sourcePath = registeredTexture.sourcePath;
-  textureAsset.usage = registeredTexture.usage;
-  textureAsset.colorSpace = registeredTexture.colorSpace;
-
-  ArResolver &resolver = ArGetResolver();
-  ArResolvedPath resolvedPath = resolver.Resolve(textureAsset.sourcePath);
-  if(!resolvedPath)
-  {
-    std::cout << "[RenderPass]:" << textureAsset.sourcePath << "is not valid" << std::endl;
-    return textureAsset;
-  }
-
-  auto asset = resolver.OpenAsset(resolvedPath);
-  if(!asset)
-  {
-    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "failed" << std::endl;
-    return textureAsset;
-  }
-
-  const auto buffer = asset->GetBuffer();
-  const auto size = asset->GetSize();
-  if(!buffer || size == 0)
-  {
-    std::cout << "[RenderPass]:" << resolvedPath.GetPathString() << "empty texture asset" << std::endl;
-    return textureAsset;
-  }
-
-  const auto *bytes = reinterpret_cast<const uint8_t *>(buffer.get());
-  textureAsset.encodedBytes.assign(bytes, bytes + size);
-  return textureAsset;
-}
-} // namespace
-
-std::vector<TextureAsset> ExportRegisteredTextures(const std::vector<TextureAsset> &registeredTextures)
-{
-  std::vector<TextureAsset> exportedTextures;
-  exportedTextures.reserve(registeredTextures.size());
-  for(const TextureAsset &registeredTexture : registeredTextures)
-  {
-    exportedTextures.push_back(ExportResolvedTextureAsset(registeredTexture));
-  }
-  return exportedTextures;
 }
 
 void ClearGlErrors()
@@ -122,7 +73,7 @@ bool CheckGlError(const char *operation)
     return true;
   }
 
-  std::cerr << "[RenderTextureExport] " << operation << " failed with GL error 0x" << std::hex << error << std::dec
+  std::cerr << "[HydraRasterAovCopy] " << operation << " failed with GL error 0x" << std::hex << error << std::dec
             << std::endl;
   return false;
 }
@@ -138,17 +89,20 @@ void DeleteFramebuffers(GLuint readFbo, GLuint drawFbo)
     glDeleteFramebuffers(1, &drawFbo);
   }
 }
+} // namespace
 
-bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobotRenderBuffer *renderBuffer,
+bool CopyAovToRenderBuffer(const ::RasterRenderer &app,
+                           const TfToken &name,
+                           HdRobotRenderBuffer *renderBuffer,
                            ::HdRobotGlInteropCache &glInteropCache)
 {
   if(renderBuffer == nullptr)
   {
-    std::cerr << "[RenderTextureExport] Missing render buffer for AOV " << name.GetString() << std::endl;
+    std::cerr << "[HydraRasterAovCopy] Missing render buffer for AOV " << name.GetString() << std::endl;
     return false;
   }
 
-  const std::optional<HeadlessAov> aov = GetHeadlessAov(name);
+  const std::optional<RasterAov> aov = GetRasterAov(name);
   if(!aov)
   {
 #if PXR_VERSION >= 2408
@@ -157,14 +111,14 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
       return true;
     }
 #endif
-    std::cerr << "[RenderTextureExport] Unsupported AOV token " << name.GetString() << std::endl;
+    std::cerr << "[HydraRasterAovCopy] Unsupported AOV token " << name.GetString() << std::endl;
     return false;
   }
 
-  const std::optional<HeadlessAovTexture> src = app.GetAovTexture(*aov);
+  const std::optional<ExportedRasterAovTexture> src = app.GetAovTexture(*aov);
   if(!src)
   {
-    std::cerr << "[RenderTextureExport] Missing source AOV texture for " << name.GetString() << std::endl;
+    std::cerr << "[HydraRasterAovCopy] Missing source AOV texture for " << name.GetString() << std::endl;
     return false;
   }
 
@@ -172,7 +126,7 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
   const GLsizei height = static_cast<GLsizei>(renderBuffer->GetHeight());
   if(width <= 0 || height <= 0)
   {
-    std::cerr << "[RenderTextureExport] Invalid render buffer size for AOV " << name.GetString() << ": " << width << "x"
+    std::cerr << "[HydraRasterAovCopy] Invalid render buffer size for AOV " << name.GetString() << ": " << width << "x"
               << height << std::endl;
     return false;
   }
@@ -180,7 +134,7 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
   if(IsFixedTileAov(name) &&
      (src->extent.width != static_cast<uint32_t>(width) || src->extent.height != static_cast<uint32_t>(height)))
   {
-    std::cerr << "[RenderTextureExport] Fixed tile AOV " << name.GetString()
+    std::cerr << "[HydraRasterAovCopy] Fixed tile AOV " << name.GetString()
               << " render buffer size mismatch: src=" << src->extent.width << "x" << src->extent.height
               << ", dst=" << width << "x" << height << std::endl;
     return false;
@@ -190,7 +144,7 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
   const GLuint dstTextureId = renderBuffer->GetOpenGlTextureId();
   if(srcTextureId == 0 || dstTextureId == 0 || srcTextureId == dstTextureId)
   {
-    std::cerr << "[RenderTextureExport] Invalid GL texture ids for AOV " << name.GetString() << " (src=" << srcTextureId
+    std::cerr << "[HydraRasterAovCopy] Invalid GL texture ids for AOV " << name.GetString() << " (src=" << srcTextureId
               << ", dst=" << dstTextureId << ")" << std::endl;
     return false;
   }
@@ -206,7 +160,7 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
   }
   if(srcWidth <= 0 || srcHeight <= 0)
   {
-    std::cerr << "[RenderTextureExport] Invalid source AOV size for " << name.GetString() << ": " << srcWidth << "x"
+    std::cerr << "[HydraRasterAovCopy] Invalid source AOV size for " << name.GetString() << ": " << srcWidth << "x"
               << srcHeight << std::endl;
     return false;
   }
@@ -226,7 +180,7 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
   glCreateFramebuffers(1, &drawFbo);
   if(readFbo == 0 || drawFbo == 0 || !CheckGlError("glCreateFramebuffers"))
   {
-    std::cerr << "[RenderTextureExport] Failed to create blit FBOs for AOV " << name.GetString() << std::endl;
+    std::cerr << "[HydraRasterAovCopy] Failed to create blit FBOs for AOV " << name.GetString() << std::endl;
     DeleteFramebuffers(readFbo, drawFbo);
     return false;
   }
@@ -250,7 +204,7 @@ bool CopyAovToRenderBuffer(const ::HelloVulkan &app, const TfToken &name, HdRobo
 
   if(readStatus != GL_FRAMEBUFFER_COMPLETE || drawStatus != GL_FRAMEBUFFER_COMPLETE)
   {
-    std::cerr << "[RenderTextureExport] Incomplete blit FBO for AOV " << name.GetString() << " (read=0x" << std::hex
+    std::cerr << "[HydraRasterAovCopy] Incomplete blit FBO for AOV " << name.GetString() << " (read=0x" << std::hex
               << readStatus << ", draw=0x" << drawStatus << std::dec << ")" << std::endl;
     DeleteFramebuffers(readFbo, drawFbo);
     return false;

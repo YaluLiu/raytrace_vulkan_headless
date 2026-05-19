@@ -28,85 +28,81 @@ call sites with `rg`.
 
 ## Runtime Entry Points
 
-- `headless/ray_trace_app.cpp`: Headless app orchestration, raster-oriented
+- `headless/raster_session.cpp`: Headless app orchestration, raster-oriented
   Vulkan context setup, resize forwarding, frame pass sequencing, and render
   resource lifecycle.
-- `headless/ray_trace_app.hpp`: Headless app public surface and member state.
+- `headless/raster_session.hpp`: `RasterSession` public surface and renderer
+  ownership.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
   param ownership.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
-  to `HeadlessRenderBridge::RenderFrame`.
-- `hdRobot/headlessRenderBridge.cpp`: Bridge between Hydra scene data and
-  `HelloVulkan` frame execution.
-
-Naming note: `RayTraceApp` and `ray_trace_app.*` are legacy app-layer names kept
-for this branch; their current implementation is raster-oriented. Rename them in
-a separate cleanup if the public surface can absorb the churn.
+  to `HdRobotRasterBridge::RenderRasterFrame`.
+- `hdRobot/rasterBridge.cpp`: Bridge between Hydra scene data and
+  `RasterRenderer` frame execution.
 
 ## Headless Vulkan Renderer
 
-- `headless/hello_vulkan.hpp`: Main `HelloVulkan` renderer facade, public
-  controls, headless camera array storage, scene buffers, descriptor state,
-  compatibility wrappers, and `RasterPipeline` ownership.
-- `headless/hello_vulkan.cpp`: Core setup, camera array ingestion, dynamic
+- `headless/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
+  camera/tile configuration, scene upload/update entry points, AOV export, and
+  private ownership of scene buffers, descriptor state, preview pipeline, and
+  tile atlas resources.
+- `headless/raster_renderer.cpp`: Core setup, camera array ingestion, dynamic
   frame uniform slot allocation, explicit per-camera uniform updates, resize
   forwarding, AOV texture wrapper, and renderer resource lifecycle.
-- `headless/hello_vulkan_test.cpp`: Readback/debug helpers for object ID image
+- `headless/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
   downloads and offscreen color PNG output.
-- `headless/aov_texture.hpp`: Pure Vulkan headless AOV enum and texture
-  descriptor returned by `HelloVulkan::GetAovTexture`, including tile AOV
+- `headless/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
+  descriptor returned by `RasterRenderer::GetAovTexture`, including tile AOV
   values exposed to Hydra without Hydra or OpenGL types.
 - `headless/raster_scene_types.hpp`: Shared draw input types used by
-  `HelloVulkan` and `RasterPipeline`.
-- `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Main raster
-  pipeline wrapper owning offscreen AOV images, depth attachment, raster render
-  pass, framebuffer, graphics pipelines, AOV texture export backing, dynamic
-  frame-uniform descriptor binding, and draw command recording.
+  `RasterRenderer` and `PreviewRasterPipeline`.
+- `headless/preview_raster_pipeline.hpp` / `headless/preview_raster_pipeline.cpp`:
+  Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
+  depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
+  export backing, dynamic frame-uniform descriptor binding, and draw command
+  recording.
 - `headless/tile_config.hpp`: Pure headless tile output configuration contract,
   including enable flag, per-camera tile size, grid dimensions, and positive
   value normalization.
-- `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp`: Independent tile atlas
+- `headless/tile_aov_atlas.hpp` / `headless/tile_aov_atlas.cpp`: Independent tile atlas
   color/depth/id images used by the multiview path without touching main AOV
-  images; exports color/depth atlas images as `HeadlessAovTexture` for Hydra
+  images; exports color/depth atlas images as `ExportedRasterAovTexture` for Hydra
   tile AOV copy and owns layered tile image copy into atlas rects.
-- `headless/tile_layer_output.hpp` / `headless/tile_layer_output.cpp`:
+- `headless/multiview_tile_targets.hpp` / `headless/multiview_tile_targets.cpp`:
   Temporary layered color/depth/id/depth-attachment tile targets used by
   multiview tile batches before copying layers back into the 2D atlas.
-- `headless/tile_multiview_raster_pipeline.hpp` /
-  `headless/tile_multiview_raster_pipeline.cpp`: Dedicated multiview tile
+- `headless/multiview_tile_raster_pipeline.hpp` /
+  `headless/multiview_tile_raster_pipeline.cpp`: Dedicated multiview tile
   render pass, raster pipeline, dome background pipeline, and draw recording.
-- `headless/hello_vulkan_tile.cpp`: `HelloVulkan` tile orchestration, including
+- `headless/tile_atlas_renderer.cpp`: `RasterRenderer` tile orchestration, including
   multiview layered batch rendering, layer-to-atlas copy, atlas export-valid
   tracking, and disabled local tile file output.
-- `headless/hello_vulkan_hydra.cpp`: Hydra-facing scene synchronization,
-  light/material update paths, texture export allocation, and light buffer
-  uploads.
-- `headless/hello_vulkan_mesh.cpp`: Mesh upload, raster instance
+- `headless/raster_runtime_updates.cpp`: Runtime material and light update
+  paths plus light buffer uploads.
+- `headless/raster_geometry_upload.cpp`: Mesh upload, raster instance
   transform/visibility updates, and geometry buffer refresh.
-- `headless/hello_vulkan_material.cpp`: Material loading, material buffer
+- `headless/raster_scene_upload.cpp`: Material loading, material buffer
   updates, and model loading into the renderer.
-- `headless/hello_vulkan_pipeline.cpp`: Shared scene descriptor set updates
-  plus compatibility wrappers that delegate the main raster pass to
-  `RasterPipeline`.
-- `headless/hello_vulkan_barriers.hpp`: Vulkan image layout/barrier helpers.
+- `headless/raster_descriptor_sets.cpp`: Shared scene descriptor set updates
+  plus renderer entry points that create and run the preview AOV pipeline.
+- `headless/raster_image_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `headless/headless_vk.cpp`: Headless Vulkan offline app context support.
 
 ## Offscreen Rendering
 
-- `headless/aov_texture.hpp`: Public headless AOV contract, currently
+- `headless/aov_texture.hpp`: Public raster AOV contract, currently
   `color`, `depth`, `primId`, `instanceId`, `tileColor`, `tileDepth`,
   `tileDisplayColor`, and `tileDisplayDepth`.
-- `headless/raster_pipeline.hpp` / `headless/raster_pipeline.cpp`: Offscreen
+- `headless/preview_raster_pipeline.hpp` / `headless/preview_raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.
-- `headless/hello_vulkan.cpp`: Public compatibility wrappers for resize and
-  `GetAovTexture`, routing standard AOVs to the main raster pipeline and tile
-  AOVs to the current tile atlas export.
-- `headless/tile_atlas.hpp` / `headless/tile_atlas.cpp` and
-  `headless/tile_layer_output.hpp` / `headless/tile_layer_output.cpp`,
-  `headless/tile_multiview_raster_pipeline.*`, and
-  `headless/hello_vulkan_tile.cpp`: Tile atlas resources, layered multiview
+- `headless/raster_renderer.cpp`: Resize and `GetAovTexture` routing for
+  standard preview AOVs and current tile atlas export images.
+- `headless/tile_aov_atlas.hpp` / `headless/tile_aov_atlas.cpp` and
+  `headless/multiview_tile_targets.hpp` / `headless/multiview_tile_targets.cpp`,
+  `headless/multiview_tile_raster_pipeline.*`, and
+  `headless/tile_atlas_renderer.cpp`: Tile atlas resources, layered multiview
   tile resources, layer-to-atlas copy, Hydra-exportable atlas color/depth
   sources, and local save suppression.
 
@@ -132,8 +128,8 @@ a separate cleanup if the public surface can absorb the churn.
   descriptors, standard and tile AOV descriptors, and resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
-- `hdRobot/headlessRenderBridge.h` / `hdRobot/headlessRenderBridge.cpp`:
-  Converts Hydra frame state into `HelloVulkan` updates and render calls,
+- `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
+  Converts Hydra frame state into `RasterRenderer` updates and render calls,
   including the all-camera snapshot passed to headless and ordered AOV copy
   groups that copy fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
@@ -168,9 +164,12 @@ a separate cleanup if the public surface can absorb the churn.
 - `hdRobot/renderBuffer.h` / `hdRobot/renderBuffer.cpp`: Hydra render buffer
   allocation, Hgi texture descriptor creation, GL interop, and texture format
   conversion.
-- `hdRobot/renderTextureExport.h` / `hdRobot/renderTextureExport.cpp`: Render
-  texture export surface, including Hydra material texture asset byte export
-  and Hydra/debug AOV token to headless texture mapping; fixed `tileColor` and
+- `hdRobot/hydraTextureAssetExport.h` / `hdRobot/hydraTextureAssetExport.cpp`:
+  Resolves registered Hydra material texture assets and exports encoded bytes
+  for headless upload.
+- `hdRobot/hydraRasterAovCopy.h` / `hdRobot/hydraRasterAovCopy.cpp`: Maps Hydra
+  AOV tokens to `RasterAov` values and copies exported raster AOV textures into
+  Hydra render buffers through OpenGL interop; fixed `tileColor` and
   `tileDepth` copies require exact atlas-size render buffers, while display tile
   AOVs can use GL blit scaling.
 - `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
@@ -182,7 +181,7 @@ a separate cleanup if the public surface can absorb the churn.
 ## Model And Scene Loading
 
 - `common/ModelLoader.h`: Abstract model loading interface consumed by
-  `HelloVulkan::loadModel`, including legacy texture filenames and in-memory
+  `RasterRenderer::loadModel`, including legacy texture filenames and in-memory
   encoded texture assets.
 - `common/obj_loader.h` / `common/obj_loader.cpp`: OBJ loader implementation,
   vertices, indices, normals, texcoords, material assignment, and fallback
@@ -211,61 +210,61 @@ a separate cleanup if the public surface can absorb the churn.
 ## Question Routing
 
 - Frame rendering:
-  `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
-  `headless/hello_vulkan_tile.cpp`, `hdRobot/headlessRenderBridge.cpp`, then
-  search for `RenderFrame`, `rasterize`, `renderTileAtlasMultiview`,
+  `headless/raster_renderer.cpp`, `headless/raster_renderer.hpp`,
+  `headless/tile_atlas_renderer.cpp`, `hdRobot/rasterBridge.cpp`, then
+  search for `RenderRasterFrame`, `renderPreviewAovs`, `renderTileAovAtlas`,
   `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
-  `headless/hello_vulkan.cpp`, `headless/hello_vulkan.hpp`,
-  `headless/raster_pipeline.cpp`, `headless/ray_trace_app.cpp`, then search
+  `headless/raster_renderer.cpp`, `headless/raster_renderer.hpp`,
+  `headless/preview_raster_pipeline.cpp`, `headless/raster_session.cpp`, then search
   for `onResize`, `createOffscreenRender`, `getRenderSize`, and
-  `ensureHeadlessReady`.
+  `ensureRasterSessionReady`.
 - Offscreen AOV export:
-  `headless/aov_texture.hpp`, `headless/raster_pipeline.cpp`,
-  `headless/hello_vulkan.cpp`, `hdRobot/renderTextureExport.cpp`, then search
-  for `GetAovTexture`, `getAovTexture`, `HeadlessAov`, and
-  `ExportRenderTexture`.
+  `headless/aov_texture.hpp`, `headless/preview_raster_pipeline.cpp`,
+  `headless/raster_renderer.cpp`, `hdRobot/hydraRasterAovCopy.cpp`, then search
+  for `GetAovTexture`, `getAovTexture`, `RasterAov`, and
+  `CopyAovToRenderBuffer`.
 - Raster pipeline:
-  `headless/raster_pipeline.hpp`, `headless/raster_pipeline.cpp`,
-  `headless/hello_vulkan_pipeline.cpp`, `headless/shaders/raster.vert`,
-  `headless/shaders/raster.frag`, then search for `RasterPipeline`,
-  `createGraphicsPipeline`, `createFramebuffer`, `rasterize`, and
+  `headless/preview_raster_pipeline.hpp`, `headless/preview_raster_pipeline.cpp`,
+  `headless/raster_descriptor_sets.cpp`, `headless/shaders/raster.vert`,
+  `headless/shaders/raster.frag`, then search for `PreviewRasterPipeline`,
+  `createGraphicsPipeline`, `createFramebuffer`, `renderPreviewAovs`, and
   `PushConstantRaster`.
 - Hydra render flow:
-  `hdRobot/renderPass.cpp`, `hdRobot/headlessRenderBridge.cpp`,
-  `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,
+  `hdRobot/renderPass.cpp`, `hdRobot/rasterBridge.cpp`,
+  `hdRobot/renderDelegate.cpp`, then search for `RenderRasterFrame`,
   `_UpdateRenderScene`, and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/headlessRenderBridge.cpp`, `headless/hello_vulkan.hpp`, and
-  `headless/hello_vulkan.cpp`, then search for `v_camera`,
+  `hdRobot/rasterBridge.cpp`, `headless/raster_renderer.hpp`, and
+  `headless/raster_renderer.cpp`, then search for `v_camera`,
   `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
-  `renderTileAtlasMultiview`, and `HeadlessCameraData`.
+  `renderTileAovAtlas`, and `RasterCameraSpec`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.
 - Material or texture path issues:
-  `hdRobot/material.cpp`, `headless/hello_vulkan_material.cpp`,
-  `hdRobot/renderTextureExport.cpp`, `common/ModelLoader.h`,
+  `hdRobot/material.cpp`, `headless/raster_scene_upload.cpp`,
+  `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`,
   `common/obj_loader.cpp`, then search for `GetTexturePath`,
   `ExportRegisteredTextures`, `stbi_load_from_memory`, `loadMaterial`, and
   material buffer updates.
 - PBR material struct or shader material layout:
   `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `hdRobot/headlessRenderBridge.cpp`, `headless/shaders/host_device.h`,
+  `hdRobot/rasterBridge.cpp`, `headless/shaders/host_device.h`,
   then search for `baseColorFactor`, `emissionFactor`,
   `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
 - USD Preview/MaterialX surface parsing:
   `hdRobot/materialXParser.cpp`, `hdRobot/material.cpp`,
-  `hdRobot/renderTextureExport.cpp`,
+  `hdRobot/hydraTextureAssetExport.cpp`,
   `hdRobot/sceneData.h`, then search for `ParseMaterialXNetwork`,
   `SelectSurfaceShaderCandidate`, `ResolveUpstreamTexture`,
   `ResolveUpstreamPrimvar`, `MaterialInputRule`, `UsdPreviewSurface`,
   `base_color`, `metalness`, `specular_roughness`, and `normalTextureId`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,
-  `hdRobot/renderParam.cpp`, `hdRobot/renderTextureExport.cpp`,
-  `headless/hello_vulkan_material.cpp`, then search for `TextureUsage`,
+  `hdRobot/renderParam.cpp`, `hdRobot/hydraTextureAssetExport.cpp`,
+  `headless/raster_scene_upload.cpp`, then search for `TextureUsage`,
   `TextureColorSpaceForUsage`, `GetTextureAssets`, and
   `VK_FORMAT_R8G8B8A8_UNORM`.
 - Raster shader material sampling:
@@ -274,8 +273,8 @@ a separate cleanup if the public surface can absorb the churn.
   `baseColorTextureId`.
 - Raster light evaluation:
   `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
-  `hdRobot/headlessRenderBridge.cpp`, `headless/hello_vulkan_hydra.cpp`,
-  `headless/hello_vulkan_pipeline.cpp`, `headless/shaders/host_device.h`,
+  `hdRobot/rasterBridge.cpp`, `headless/raster_runtime_updates.cpp`,
+  `headless/raster_descriptor_sets.cpp`, `headless/shaders/host_device.h`,
   `headless/shaders/raster.frag`, then search for `HydraLight::toLight`,
   `updateLights`, `updateLightBuffer`, `eLights`, and `evaluateSphereLight`.
 - Normal map data flow:
@@ -291,7 +290,7 @@ a separate cleanup if the public surface can absorb the churn.
   the matching material parser fields.
 - Instancers or material subsets:
   `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
-  `hdRobot/sceneData.cpp`, `hdRobot/headlessRenderBridge.cpp`, then search
+  `hdRobot/sceneData.cpp`, `hdRobot/rasterBridge.cpp`, then search
   for `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
   `materialIds`, and `rendererInstanceIds`.
 - Render buffer or Hgi texture issues:
@@ -299,7 +298,7 @@ a separate cleanup if the public surface can absorb the churn.
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
 - Model loading:
   `common/obj_loader.cpp`, `common/obj_loader.h`, `common/ModelLoader.h`,
-  `headless/hello_vulkan_material.cpp`, then search for `loadModel`,
+  `headless/raster_scene_upload.cpp`, then search for `loadModel`,
   `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:
   Root `CMakeLists.txt`, relevant subdirectory `CMakeLists.txt`,
@@ -312,7 +311,7 @@ The graph report currently identifies these high-connectivity anchors:
 - `GetOrImportSourceGlTexture()`
 - `_CreateGiMeshes()`
 - `createDesc()`
-- `RenderFrame()`
+- `RenderRasterFrame()`
 - `setupContext()`
 - `createOffscreenRender()`
 - `updateScene()`

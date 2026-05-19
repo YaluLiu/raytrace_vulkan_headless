@@ -22,10 +22,10 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../h
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
 list(REMOVE_DUPLICATES SOURCE_FILES)
 list(APPEND SOURCE_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_layer_output.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_layer_output.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_multiview_raster_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_multiview_raster_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_raster_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_raster_pipeline.hpp
 )
 list(REMOVE_DUPLICATES SOURCE_FILES)
 file(GLOB EXTRA_COMMON ${TUTO_KHR_DIR}/common/*.*)

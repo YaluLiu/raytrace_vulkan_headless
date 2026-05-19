@@ -3,7 +3,7 @@
 #include <optional>
 #include <vulkan/vulkan_core.h>
 
-enum class HeadlessAov
+enum class RasterAov
 {
   Color,
   PrimId,
@@ -15,7 +15,7 @@ enum class HeadlessAov
   TileDisplayDepth,
 };
 
-struct HeadlessAovTexture
+struct ExportedRasterAovTexture
 {
   VkDevice       device{VK_NULL_HANDLE};
   VkImage        image{VK_NULL_HANDLE};

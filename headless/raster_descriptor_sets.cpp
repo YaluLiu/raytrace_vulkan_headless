@@ -1,21 +1,21 @@
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 
 #include "nvvk/descriptorsets_vk.hpp"
 
 extern std::vector<std::string> defaultSearchPaths;
 
-void HelloVulkan::createRasterPipeline()
+void RasterRenderer::createPreviewRasterPipeline()
 {
-  m_mainRasterPipeline.createGraphicsPipeline(m_descSetLayout);
-  m_tileMultiviewRasterPipeline.destroyGraphicsPipeline();
+  m_previewRasterPipeline.createGraphicsPipeline(m_descSetLayout);
+  m_multiviewTileRasterPipeline.destroyGraphicsPipeline();
 }
 
-void HelloVulkan::rasterize(const VkCommandBuffer& cmdBuf)
+void RasterRenderer::renderPreviewAovs(const VkCommandBuffer& cmdBuf)
 {
-  m_mainRasterPipeline.rasterize(cmdBuf, m_descSet, m_objModel, m_instances, m_instanceIds);
+  m_previewRasterPipeline.renderPreviewAovs(cmdBuf, m_descSet, m_objModel, m_instances, m_instanceIds);
 }
 
-void HelloVulkan::createDescriptorSetLayout()
+void RasterRenderer::createDescriptorSetLayout()
 {
   m_descSetLayoutBind.clear();
   auto nbTxt = static_cast<uint32_t>(m_textures.size());
@@ -36,7 +36,7 @@ void HelloVulkan::createDescriptorSetLayout()
   m_descSet       = nvvk::allocateDescriptorSet(m_device, m_descPool, m_descSetLayout);
 }
 
-void HelloVulkan::updateDescriptorSet()
+void RasterRenderer::updateDescriptorSet()
 {
   std::vector<VkWriteDescriptorSet> writes;
 

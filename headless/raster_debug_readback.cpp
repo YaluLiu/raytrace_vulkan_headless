@@ -2,14 +2,14 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 
-std::vector<uint32_t> HelloVulkan::readObjectIdImage()
+std::vector<uint32_t> RasterRenderer::readObjectIdImage()
 {
-  const VkExtent2D    aovSize         = m_mainRasterPipeline.getAovSize();
-  const nvvk::Texture& objectIdTexture = m_mainRasterPipeline.getObjectIdTextureForReadback();
+  const VkExtent2D    aovSize         = m_previewRasterPipeline.getAovSize();
+  const nvvk::Texture& objectIdTexture = m_previewRasterPipeline.getObjectIdTextureForReadback();
   std::vector<uint32_t> result(aovSize.width * aovSize.height, 0);
 
   VkDeviceSize       imageSize = aovSize.width * aovSize.height * sizeof(uint32_t);
@@ -67,13 +67,13 @@ std::vector<uint32_t> HelloVulkan::readObjectIdImage()
   return result;
 }
 
-void HelloVulkan::saveOffscreenColorToFile(const char* filename)
+void RasterRenderer::saveOffscreenColorToFile(const char* filename)
 {
   VkDevice device = m_device;
   VkQueue  queue  = m_queue;
 
-  const VkExtent2D     extent       = m_mainRasterPipeline.getRenderSize();
-  const nvvk::Texture& colorTexture = m_mainRasterPipeline.getColorTextureForReadback();
+  const VkExtent2D     extent       = m_previewRasterPipeline.getRenderSize();
+  const nvvk::Texture& colorTexture = m_previewRasterPipeline.getColorTextureForReadback();
   VkImage              srcImage     = colorTexture.image;
   uint32_t   w         = extent.width;
   uint32_t   h         = extent.height;

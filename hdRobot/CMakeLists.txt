@@ -5,10 +5,14 @@ add_library(
   ${PROJNAME} SHARED
   instancer.cpp
   instancer.h
-  headlessRenderBridge.cpp
-  headlessRenderBridge.h
+  rasterBridge.cpp
+  rasterBridge.h
   glInteropCache.cpp
   glInteropCache.h
+  hydraRasterAovCopy.cpp
+  hydraRasterAovCopy.h
+  hydraTextureAssetExport.cpp
+  hydraTextureAssetExport.h
   renderBuffer.cpp
   renderBuffer.h
   renderDelegate.cpp
@@ -17,8 +21,6 @@ add_library(
   rendererPlugin.h
   sceneData.cpp
   sceneData.h
-  renderTextureExport.cpp
-  renderTextureExport.h
   renderParam.cpp
   renderParam.h
   renderPass.cpp

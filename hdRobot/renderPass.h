@@ -12,7 +12,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRobotMesh;
 class MaterialNetworkCompiler;
 class HdRobotCamera;
-class HeadlessRenderBridge;
+class HdRobotRasterBridge;
 class HdRobotRenderParam;
 struct HdRobotCameraData;
 
@@ -52,7 +52,7 @@ protected:
 
 private:
   bool                                _isConverged;
-  std::unique_ptr<HeadlessRenderBridge> _bridge;
+  std::unique_ptr<HdRobotRasterBridge> _bridge;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

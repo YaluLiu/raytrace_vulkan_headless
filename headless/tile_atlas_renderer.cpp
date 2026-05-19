@@ -1,10 +1,10 @@
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
-void HelloVulkan::renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf)
+void RasterRenderer::renderTileAovAtlas(const VkCommandBuffer &cmdBuf)
 {
   m_tileAtlasExportValid = false;
   if(!m_tileConfig.enabled || m_cameras.empty())
@@ -12,7 +12,7 @@ void HelloVulkan::renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf)
     return;
   }
 
-  HeadlessTileConfig config = m_tileConfig;
+  TileAtlasConfig config = m_tileConfig;
   config.sanitize();
   const uint32_t capacity = config.capacity();
   if(capacity == 0)
@@ -41,19 +41,19 @@ void HelloVulkan::renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf)
   const VkExtent2D tileExtent = config.tileExtent();
   try
   {
-    if(!m_tileMultiviewRasterPipeline.ensureResources(m_descSetLayout, m_mainRasterPipeline, effectiveViewCount))
+    if(!m_multiviewTileRasterPipeline.ensureResources(m_descSetLayout, m_previewRasterPipeline, effectiveViewCount))
     {
       skip("failed to create multiview raster pipeline");
       return;
     }
 
-    if(!m_tileAtlas.ensureResources(config, m_mainRasterPipeline))
+    if(!m_tileAovAtlas.ensureResources(config, m_previewRasterPipeline))
     {
       skip("failed to create tile atlas resources");
       return;
     }
 
-    if(!m_tileLayerOutput.ensureResources(config, m_mainRasterPipeline, m_tileMultiviewRasterPipeline.getRenderPass(),
+    if(!m_multiviewTileTargets.ensureResources(config, m_previewRasterPipeline, m_multiviewTileRasterPipeline.getRenderPass(),
                                           effectiveViewCount))
     {
       skip("failed to create layered tile resources");
@@ -62,7 +62,7 @@ void HelloVulkan::renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf)
   }
   catch(const std::exception &e)
   {
-    std::cerr << "[HelloVulkan] Tile multiview setup failed: " << e.what() << std::endl;
+    std::cerr << "[RasterRenderer] Tile multiview setup failed: " << e.what() << std::endl;
     logTileMultiviewUnavailableOnce("setup failed");
     return;
   }
@@ -71,10 +71,10 @@ void HelloVulkan::renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf)
   {
     const uint32_t batchCameraCount = std::min(effectiveViewCount, cameraCount - firstCameraIndex);
     updateTileFrameUniformBufferForBatch(cmdBuf, firstCameraIndex, batchCameraCount, effectiveViewCount, tileExtent);
-    const bool rendered = m_tileMultiviewRasterPipeline.rasterize(
-        cmdBuf, m_tileLayerOutput.getFramebuffer(), tileExtent, m_descSet, m_objModel, m_instances, m_instanceIds);
+    const bool rendered = m_multiviewTileRasterPipeline.rasterize(
+        cmdBuf, m_multiviewTileTargets.getFramebuffer(), tileExtent, m_descSet, m_objModel, m_instances, m_instanceIds);
     const bool copied =
-        rendered && m_tileAtlas.copyLayersFrom(cmdBuf, m_tileLayerOutput, firstCameraIndex, batchCameraCount);
+        rendered && m_tileAovAtlas.copyLayersFrom(cmdBuf, m_multiviewTileTargets, firstCameraIndex, batchCameraCount);
     if(!copied)
     {
       skip("batch render or layer copy failed");
@@ -86,7 +86,7 @@ void HelloVulkan::renderTileAtlasMultiview(const VkCommandBuffer &cmdBuf)
   m_tileAtlasExportValid = cameraCount > 0;
 }
 
-void HelloVulkan::saveTileAtlasOutputs(const std::string & /*outputDirectory*/)
+void RasterRenderer::markTileAovAtlasConsumed(const std::string & /*outputDirectory*/)
 {
   // Local tile file output is disabled; Hydra consumes tile atlas AOVs directly.
   m_tileAtlasDirty = false;

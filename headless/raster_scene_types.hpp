@@ -6,7 +6,7 @@
 
 #include "nvvk/memallocator_dma_vk.hpp"
 
-struct RasterObjModel
+struct RasterMeshBuffers
 {
   uint32_t     nbIndices{0};
   uint32_t     nbVertices{0};
@@ -18,7 +18,7 @@ struct RasterObjModel
   nvvk::Buffer matIndexBuffer;
 };
 
-struct RasterObjInstance
+struct RasterInstance
 {
   glm::mat4 transform{1.0f};
   uint32_t  objIndex{0};

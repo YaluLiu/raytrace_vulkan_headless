@@ -7,7 +7,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/fileoperations.hpp"
 #include "nvvk/buffers_vk.hpp"
@@ -35,7 +35,7 @@ static_assert(offsetof(MaterialObj, diffuseTextureId) == offsetof(WaveFrontMater
 static_assert(offsetof(MaterialObj, normalTextureId) == offsetof(WaveFrontMaterial, normalTextureId));
 static_assert(offsetof(MaterialObj, subsurfaceTextureId) == offsetof(WaveFrontMaterial, subsurfaceTextureId));
 
-uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
+uint32_t RasterRenderer::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
 {
   ObjInstance instance;
   instance.transform = transform;
@@ -45,7 +45,7 @@ uint32_t HelloVulkan::addInstance(const glm::mat4& transform, uint32_t objIndex,
   return static_cast<uint32_t>(m_instances.size() - 1);
 }
 
-void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
+void RasterRenderer::loadModel(ModelLoader& loader, glm::mat4 transform)
 {
   for (auto& m : loader.m_materials)
   {
@@ -99,7 +99,7 @@ void HelloVulkan::loadModel(ModelLoader& loader, glm::mat4 transform)
   m_Loader.emplace_back(loader);
 }
 
-void HelloVulkan::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
+void RasterRenderer::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
 {
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer   cmdBuf = cmdBufGet.createCommandBuffer();
@@ -109,11 +109,11 @@ void HelloVulkan::loadTextureAssets(const std::vector<TextureAsset>& textureAsse
   m_alloc.finalizeAndReleaseStaging();
 }
 
-void HelloVulkan::recreateTextureResources(const std::vector<TextureAsset>& textureAssets)
+void RasterRenderer::recreateTextureResources(const std::vector<TextureAsset>& textureAssets)
 {
   vkDeviceWaitIdle(m_device);
 
-  m_mainRasterPipeline.destroyGraphicsPipeline();
+  m_previewRasterPipeline.destroyGraphicsPipeline();
 
   vkDestroyDescriptorPool(m_device, m_descPool, nullptr);
   vkDestroyDescriptorSetLayout(m_device, m_descSetLayout, nullptr);
@@ -130,10 +130,10 @@ void HelloVulkan::recreateTextureResources(const std::vector<TextureAsset>& text
   loadTextureAssets(textureAssets);
   createDescriptorSetLayout();
   updateDescriptorSet();
-  createRasterPipeline();
+  createPreviewRasterPipeline();
 }
 
-void HelloVulkan::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures,
+void RasterRenderer::createTextureImages(const VkCommandBuffer& cmdBuf, const std::vector<std::string>& textures,
                                       const std::vector<TextureAsset>& textureAssets)
 {
   VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};

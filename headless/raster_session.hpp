@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 #include <vector>
 #include <string>
 #include <chrono>
@@ -9,11 +9,11 @@
 #include "nvpsystem.hpp"
 #include "nvvk/context_vk.hpp"
 
-class RayTraceApp
+class RasterSession
 {
 public:
-  RayTraceApp();
-  ~RayTraceApp();
+  RasterSession();
+  ~RasterSession();
 
   void setup(int width = 1280, int height = 720);
   void setPluginSearchRoot(std::string pluginSearchRoot);
@@ -28,13 +28,13 @@ public:
 
   void saveFrame(std::string outputImagePath = "headless.png");
 
-  HelloVulkan& getVulkan() { return m_helloVk; };
+  RasterRenderer& getRenderer() { return m_renderer; };
 
 private:
   int m_width  = 1280;
   int m_height = 720;
 
-  HelloVulkan m_helloVk;
+  RasterRenderer m_renderer;
 
   nvvk::Context m_vkctx;
 
@@ -42,12 +42,12 @@ private:
   void UpdateCamera();
 
   void setupContext();
-  void setupHelloVulkan();
+  void setupRenderer();
 
   std::chrono::system_clock::time_point m_startTime;
 
   bool _cleaned = false;
-  bool m_helloCreated = false;
+  bool m_rendererCreated = false;
   bool m_resourcesCreated = false;
   std::string m_pluginSearchRoot;
 };

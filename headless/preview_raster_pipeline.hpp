@@ -13,7 +13,7 @@
 #include "raster_scene_types.hpp"
 #include "shaders/host_device.h"
 
-class RasterPipeline final
+class PreviewRasterPipeline final
 {
 public:
   void setup(VkDevice device,
@@ -27,14 +27,14 @@ public:
   void createGraphicsPipeline(VkDescriptorSetLayout sceneDescriptorSetLayout);
   void destroyGraphicsPipeline();
 
-  void rasterize(const VkCommandBuffer& cmdBuf,
+  void renderPreviewAovs(const VkCommandBuffer& cmdBuf,
                  VkDescriptorSet sceneDescriptorSet,
-                 std::span<const RasterObjModel> objModels,
-                 std::span<const RasterObjInstance> instances,
+                 std::span<const RasterMeshBuffers> objModels,
+                 std::span<const RasterInstance> instances,
                  std::span<const int> instanceIds,
                  uint32_t frameUniformOffset = 0);
 
-  std::optional<HeadlessAovTexture> getAovTexture(HeadlessAov aov) const;
+  std::optional<ExportedRasterAovTexture> getAovTexture(RasterAov aov) const;
   VkExtent2D getRenderSize() const { return _renderSize; }
   VkExtent2D getAovSize() const { return _aovSize; }
   VkRenderPass getRenderPass() const { return _renderPass; }
@@ -55,8 +55,8 @@ private:
                            VkViewport viewport,
                            VkRect2D scissor,
                            VkDescriptorSet sceneDescriptorSet,
-                           std::span<const RasterObjModel> objModels,
-                           std::span<const RasterObjInstance> instances,
+                           std::span<const RasterMeshBuffers> objModels,
+                           std::span<const RasterInstance> instances,
                            std::span<const int> instanceIds,
                            uint32_t frameUniformOffset);
   void createOffscreenImage(nvvk::Texture& texture, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent);

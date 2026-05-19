@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include "hello_vulkan.hpp"
+#include "raster_renderer.hpp"
 #include "nvh/alignment.hpp"
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/fileoperations.hpp"
@@ -13,7 +13,7 @@
 #include "nvvk/buffers_vk.hpp"
 #include <algorithm>
 
-void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
+void RasterRenderer::updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate>& updates)
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
   VkCommandBuffer   cmdBuf = cmdGen.createCommandBuffer();
@@ -62,17 +62,17 @@ void HelloVulkan::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& up
   cmdGen.submitAndWait(cmdBuf);
 }
 
-void HelloVulkan::addLight(const Light& light)
+void RasterRenderer::addLight(const Light& light)
 {
   m_lights.push_back(light);
 }
 
-void HelloVulkan::clearLights()
+void RasterRenderer::clearLights()
 {
   m_lights.clear();
 }
 
-void HelloVulkan::createLightBuffer()
+void RasterRenderer::createLightBuffer()
 {
   size_t maxLights  = MAX_SCENE_LIGHTS;
   size_t bufferSize = sizeof(Light) * maxLights;
@@ -83,7 +83,7 @@ void HelloVulkan::createLightBuffer()
   m_debug.setObjectName(m_bLights.buffer, "Lights");
 }
 
-void HelloVulkan::updateLightBuffer(const VkCommandBuffer& cmdBuf)
+void RasterRenderer::updateLightBuffer(const VkCommandBuffer& cmdBuf)
 {
   const size_t lightCount = std::min<size_t>(m_lights.size(), MAX_SCENE_LIGHTS);
   if(lightCount > 0)

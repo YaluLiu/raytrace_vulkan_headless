@@ -8,24 +8,24 @@
 #include <pxr/imaging/hd/renderPassState.h>
 #include <pxr/base/gf/vec2i.h>
 
-#include <ray_trace_app.hpp>
+#include <raster_session.hpp>
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HeadlessRenderBridge final
+class HdRobotRasterBridge final
 {
 public:
-  HeadlessRenderBridge(HdRobotRenderParam& renderParam, std::string resourcePath);
-  ~HeadlessRenderBridge();
+  HdRobotRasterBridge(HdRobotRenderParam& renderParam, std::string resourcePath);
+  ~HdRobotRasterBridge();
 
-  bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
+  bool RenderRasterFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
 
 private:
-  void ensureHeadlessReady(const GfVec2i& renderSize);
-  void initializeHeadless(const GfVec2i& renderSize);
-  void resizeHeadless(const GfVec2i& renderSize);
+  void ensureRasterSessionReady(const GfVec2i& renderSize);
+  void initializeRasterSession(const GfVec2i& renderSize);
+  void resizeRasterSession(const GfVec2i& renderSize);
   void uploadInitialScene();
   void refreshTextureAssetsIfNeeded();
   bool updateCameras(const HdRenderPassStateSharedPtr& renderPassState);
@@ -40,7 +40,7 @@ private:
   HdRobotRenderParam&        _renderParam;
   std::string                _resourcePath;
 
-  RayTraceApp            _renderApp;
+  RasterSession            _rasterSession;
   HdRobotGlInteropCache  _glInteropCache;
   bool          _isAppInited = false;
   TfTokenVector _activeRenderTags;

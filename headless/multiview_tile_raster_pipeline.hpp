@@ -6,10 +6,10 @@
 #include <vulkan/vulkan_core.h>
 
 #include "nvvk/debug_util_vk.hpp"
-#include "raster_pipeline.hpp"
+#include "preview_raster_pipeline.hpp"
 #include "raster_scene_types.hpp"
 
-class TileMultiviewRasterPipeline final
+class MultiviewTileRasterPipeline final
 {
 public:
   void setup(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex, nvvk::DebugUtil& debug);
@@ -17,7 +17,7 @@ public:
   void destroyGraphicsPipeline();
 
   bool ensureResources(VkDescriptorSetLayout sceneDescriptorSetLayout,
-                       const RasterPipeline& referencePipeline,
+                       const PreviewRasterPipeline& referencePipeline,
                        uint32_t viewCount);
 
   VkRenderPass getRenderPass() const { return _renderPass; }
@@ -27,8 +27,8 @@ public:
                  VkFramebuffer framebuffer,
                  VkExtent2D tileExtent,
                  VkDescriptorSet sceneDescriptorSet,
-                 std::span<const RasterObjModel> objModels,
-                 std::span<const RasterObjInstance> instances,
+                 std::span<const RasterMeshBuffers> objModels,
+                 std::span<const RasterInstance> instances,
                  std::span<const int> instanceIds);
 
 private:
