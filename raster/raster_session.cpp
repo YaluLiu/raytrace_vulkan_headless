@@ -2,7 +2,6 @@
 #include "nvh/fileoperations.hpp"
 #include "nvvk/commands_vk.hpp"
 #include <cassert>
-#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -13,25 +12,13 @@
 #include <utility>
 
 #include "obj_loader.h"
+#include "raster_frame_executor.hpp"
 
 std::vector<std::string> defaultSearchPaths;
 
 namespace fs = std::filesystem;
 
 namespace {
-enum class RasterFramePass
-{
-  UpdateUniforms,
-  UpdateLights,
-  RenderPreviewAovs,
-};
-
-constexpr std::array<RasterFramePass, 3> kRasterFramePassSequence{
-    RasterFramePass::UpdateUniforms,
-    RasterFramePass::UpdateLights,
-    RasterFramePass::RenderPreviewAovs,
-};
-
 void addSearchPathIfExists(std::vector<std::string>& paths, const fs::path& path)
 {
   if(path.empty() || !fs::exists(path))
@@ -71,25 +58,8 @@ void addExternalMemoryExtensions(nvvk::ContextCreateInfo& contextInfo)
 #else
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
   contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
-  contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+    contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
 #endif
-}
-
-void executeRasterFramePass(RasterRenderer& renderer, const VkCommandBuffer& cmdBuf, RasterFramePass pass)
-{
-  switch(pass)
-  {
-    case RasterFramePass::UpdateUniforms:
-      renderer.updateUniformBuffer(cmdBuf);
-      break;
-    case RasterFramePass::UpdateLights:
-      renderer.updateLightBuffer(cmdBuf);
-      break;
-    case RasterFramePass::RenderPreviewAovs:
-      renderer.renderTileAovAtlas(cmdBuf);
-      renderer.renderPreviewAovs(cmdBuf);
-      break;
-  }
 }
 }
 
@@ -127,8 +97,6 @@ void RasterSession::setupCamera()
   CameraManip.setWindowSize(m_width, m_height);
   CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 }
-
-void RasterSession::UpdateCamera() {}
 
 void RasterSession::setPluginSearchRoot(std::string pluginSearchRoot)
 {
@@ -220,10 +188,7 @@ void RasterSession::render()
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(cmdBuf, &beginInfo);
 
-  for(const RasterFramePass pass : kRasterFramePassSequence)
-  {
-    executeRasterFramePass(m_renderer, cmdBuf, pass);
-  }
+  raster::recordFramePasses(m_renderer, cmdBuf);
 
   vkEndCommandBuffer(cmdBuf);
   m_renderer.submitFrame();

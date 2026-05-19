@@ -22,6 +22,19 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../r
 file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
 list(REMOVE_DUPLICATES SOURCE_FILES)
 list(APPEND SOURCE_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_frame_executor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_frame_executor.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_gpu_scene.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_gpu_scene.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_output_controller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_output_controller.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_renderer_types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_scene_descriptors.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_scene_descriptors.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_view_uniforms.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/raster_view_uniforms.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tile_atlas_pass.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tile_atlas_pass.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_raster_pipeline.cpp

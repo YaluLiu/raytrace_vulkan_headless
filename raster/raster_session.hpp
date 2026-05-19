@@ -39,7 +39,6 @@ private:
   nvvk::Context m_vkctx;
 
   void setupCamera();
-  void UpdateCamera();
 
   void setupContext();
   void setupRenderer();
