@@ -279,8 +279,10 @@ void HeadlessRenderBridge::updateLidarCamera()
 
 void HeadlessRenderBridge::updateHeightScanCamera()
 {
+  const bool heightScanEnabledBySetting = GetHeightScanEnabledSetting(_settings);
+
   HdRobotHeightScanData heightScanData;
-  if (!_renderParam.GetHeightScanCamera(&heightScanData))
+  if (!heightScanEnabledBySetting || !_renderParam.GetHeightScanCamera(&heightScanData))
   {
     _renderApp.setHeightScanEnabled(false);
     return;

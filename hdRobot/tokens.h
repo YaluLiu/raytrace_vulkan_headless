@@ -9,7 +9,8 @@ PXR_NAMESPACE_OPEN_SCOPE
       (rrInvMinTermProb, "rr-inv-min-term-prob"))((nextEventEstimation, "next-event-estimation"))(                     \
       (progressiveAccumulation, "progressive-accumulation"))((dlssRRDenoise, "dlss-rr-denoise"))(                       \
       (dlssSREnable, "dlss-sr-enable"))((dlssSRScale, "dlss-sr-scale"))((lidarEnable, "lidar-enable"))(                \
-      (filterImportanceSampling, "filter-importance-sampling"))((depthOfField, "depth-of-field"))(                     \
+      (heightScanEnable, "enable_height"))((filterImportanceSampling, "filter-importance-sampling"))(                  \
+      (depthOfField, "depth-of-field"))(                                                                               \
       (lightIntensityMultiplier, "light-intensity-multiplier"))((mediumStackSize, "medium-stack-size"))(               \
       (maxVolumeWalkLength, "max-volume-walk-length"))((jitteredSampling, "jittered-sampling"))(                       \
       (clippingPlanes, "clipping-planes"))((metersPerSceneUnit, "meters-per-scene-unit"))

@@ -94,7 +94,7 @@ bool TryConvertDlssScale(const VtValue& value, float* out)
   return false;
 }
 
-bool TryConvertLidarEnable(const VtValue& value, bool* out)
+bool TryConvertSensorEnable(const VtValue& value, bool* out)
 {
   if(value.IsHolding<bool>())
   {
@@ -184,7 +184,18 @@ bool GetLidarEnabledSetting(const HdRenderSettingsMap& settings)
   bool           enabled = false;
   if(TryGetSettingValue(settings, HdRobotSettingsTokens->lidarEnable, &value))
   {
-    TryConvertLidarEnable(*value, &enabled);
+    TryConvertSensorEnable(*value, &enabled);
+  }
+  return enabled;
+}
+
+bool GetHeightScanEnabledSetting(const HdRenderSettingsMap& settings)
+{
+  const VtValue* value = nullptr;
+  bool           enabled = false;
+  if(TryGetSettingValue(settings, HdRobotSettingsTokens->heightScanEnable, &value))
+  {
+    TryConvertSensorEnable(*value, &enabled);
   }
   return enabled;
 }
