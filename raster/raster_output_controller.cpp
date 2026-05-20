@@ -72,6 +72,11 @@ void RasterOutputController::setTileConfig(TileAtlasConfig config)
   m_tileAtlasPass.setConfig(config);
 }
 
+void RasterOutputController::setRequestedTileAovChannels(TileAovChannelMask channels)
+{
+  m_tileAtlasPass.setRequestedChannels(channels);
+}
+
 void RasterOutputController::markTileAovAtlasConsumed(const std::string& outputDirectory)
 {
   m_tileAtlasPass.markConsumed(outputDirectory);

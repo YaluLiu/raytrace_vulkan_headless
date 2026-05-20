@@ -26,7 +26,6 @@ layout(location = 2) out vec3 outColor;
 layout(location = 3) out vec2 outTexCoord;
 layout(location = 4) out vec4 outWorldTangent;
 layout(location = 5) flat out uint outObjIndex;
-layout(location = 6) flat out int outInstanceId;
 
 void main()
 {
@@ -40,7 +39,6 @@ void main()
   outTexCoord = inTexCoord;
   outWorldTangent = vec4(normalize(mat3(pcRaster.model) * inTangent.xyz), inTangent.w);
   outObjIndex = pcRaster.objIndex;
-  outInstanceId = pcRaster.instanceId;
 
   gl_Position = tileFrame.cameras[viewIndex].viewProj * worldPos;
 }

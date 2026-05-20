@@ -60,6 +60,7 @@ public:
 
   // Output configuration/query.
   void setTileConfig(TileAtlasConfig config);
+  void setRequestedTileAovChannels(TileAovChannelMask channels);
   TileAtlasConfig getTileConfig() const
   {
     return m_outputController.getTileConfig();

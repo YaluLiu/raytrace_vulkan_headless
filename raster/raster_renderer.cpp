@@ -45,6 +45,11 @@ void RasterRenderer::setTileConfig(TileAtlasConfig config)
   ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
 }
 
+void RasterRenderer::setRequestedTileAovChannels(TileAovChannelMask channels)
+{
+  m_outputController.setRequestedTileAovChannels(channels);
+}
+
 void RasterRenderer::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
 {
   updateUniformBufferForExtent(cmdBuf, m_size);

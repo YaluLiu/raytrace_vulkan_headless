@@ -63,8 +63,6 @@ bool MultiviewTileRasterPipeline::ensureResources(VkDescriptorSetLayout sceneDes
                        && _domeBackgroundPipeline != VK_NULL_HANDLE && _pipelineLayout != VK_NULL_HANDLE
                        && _sceneDescriptorSetLayout == sceneDescriptorSetLayout && _viewCount == viewCount
                        && _colorFormat == referencePipeline.getColorFormat()
-                       && _objectIdFormat == referencePipeline.getObjectIdFormat()
-                       && _instanceIdFormat == referencePipeline.getInstanceIdFormat()
                        && _depthAovFormat == referencePipeline.getDepthAovFormat()
                        && _depthAttachmentFormat == referencePipeline.getDepthAttachmentFormat();
   if(matches)
@@ -76,8 +74,6 @@ bool MultiviewTileRasterPipeline::ensureResources(VkDescriptorSetLayout sceneDes
   _sceneDescriptorSetLayout = sceneDescriptorSetLayout;
   _viewCount                = viewCount;
   _colorFormat              = referencePipeline.getColorFormat();
-  _objectIdFormat           = referencePipeline.getObjectIdFormat();
-  _instanceIdFormat         = referencePipeline.getInstanceIdFormat();
   _depthAovFormat           = referencePipeline.getDepthAovFormat();
   _depthAttachmentFormat    = referencePipeline.getDepthAttachmentFormat();
 
@@ -89,8 +85,8 @@ bool MultiviewTileRasterPipeline::ensureResources(VkDescriptorSetLayout sceneDes
 
 void MultiviewTileRasterPipeline::createRenderPass()
 {
-  std::array<VkAttachmentDescription, 5> attachments{};
-  const std::array<VkFormat, 4> colorFormats{_colorFormat, _objectIdFormat, _instanceIdFormat, _depthAovFormat};
+  std::array<VkAttachmentDescription, 3> attachments{};
+  const std::array<VkFormat, 2> colorFormats{_colorFormat, _depthAovFormat};
   for(size_t attachment = 0; attachment < colorFormats.size(); ++attachment)
   {
     attachments[attachment].format         = colorFormats[attachment];
@@ -103,21 +99,21 @@ void MultiviewTileRasterPipeline::createRenderPass()
     attachments[attachment].finalLayout    = VK_IMAGE_LAYOUT_GENERAL;
   }
 
-  attachments[4].format         = _depthAttachmentFormat;
-  attachments[4].samples        = VK_SAMPLE_COUNT_1_BIT;
-  attachments[4].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  attachments[4].storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  attachments[4].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  attachments[4].initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-  attachments[4].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  attachments[2].format         = _depthAttachmentFormat;
+  attachments[2].samples        = VK_SAMPLE_COUNT_1_BIT;
+  attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[2].initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  attachments[2].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-  std::array<VkAttachmentReference, 4> colorRefs{};
+  std::array<VkAttachmentReference, 2> colorRefs{};
   for(uint32_t attachment = 0; attachment < colorRefs.size(); ++attachment)
   {
     colorRefs[attachment] = {attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
   }
-  VkAttachmentReference depthRef{4, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+  VkAttachmentReference depthRef{2, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
   VkSubpassDescription subpass{};
   subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -178,7 +174,7 @@ void MultiviewTileRasterPipeline::createGraphicsPipeline()
     throw std::runtime_error("Failed to create tile multiview pipeline layout");
   }
 
-  std::vector<VkFormat> colorAttachmentFormats{_colorFormat, _objectIdFormat, _instanceIdFormat, _depthAovFormat};
+  std::vector<VkFormat> colorAttachmentFormats{_colorFormat, _depthAovFormat};
 
   nvvk::GraphicsPipelineState pipelineState;
   pipelineState.rasterizationState.cullMode = VK_CULL_MODE_NONE;
@@ -255,15 +251,13 @@ bool MultiviewTileRasterPipeline::rasterize(const VkCommandBuffer& cmdBuf,
     _debug->beginLabel(cmdBuf, "TileMultiviewRasterize");
   }
 
-  std::array<VkClearValue, 5> clearValues{};
+  std::array<VkClearValue, 3> clearValues{};
   clearValues[0].color.float32[0] = 0.0f;
   clearValues[0].color.float32[1] = 0.0f;
   clearValues[0].color.float32[2] = 0.0f;
   clearValues[0].color.float32[3] = 1.0f;
-  clearValues[1].color.int32[0]   = -1;
-  clearValues[2].color.int32[0]   = -1;
-  clearValues[3].color.float32[0] = 1.0f;
-  clearValues[4].depthStencil     = {1.0f, 0};
+  clearValues[1].color.float32[0] = 1.0f;
+  clearValues[2].depthStencil     = {1.0f, 0};
 
   VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
   renderPassInfo.renderPass      = _renderPass;

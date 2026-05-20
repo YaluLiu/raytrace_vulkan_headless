@@ -42,8 +42,6 @@ private:
   VkDescriptorSetLayout _sceneDescriptorSetLayout{VK_NULL_HANDLE};
 
   VkFormat _colorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-  VkFormat _objectIdFormat{VK_FORMAT_R32_SINT};
-  VkFormat _instanceIdFormat{VK_FORMAT_R32_SINT};
   VkFormat _depthAovFormat{VK_FORMAT_R32_SFLOAT};
   VkFormat _depthAttachmentFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
   uint32_t _viewCount{0};

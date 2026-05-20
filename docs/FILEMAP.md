@@ -83,13 +83,13 @@ call sites with `rg`.
 - `raster/tile_config.hpp`: Pure raster tile output configuration contract,
   including enable flag, per-camera tile size, grid dimensions, and positive
   value normalization.
-- `raster/tile_aov_atlas.hpp` / `raster/tile_aov_atlas.cpp`: Independent tile atlas
-  color/depth/id images used by the multiview path without touching main AOV
-  images; exports color/depth atlas images as `ExportedRasterAovTexture` for Hydra
-  tile AOV copy and owns layered tile image copy into atlas rects.
+- `raster/tile_aov_channel.hpp` / `raster/tile_aov_channel.cpp`: Single-channel
+  tile atlas output resource used by the multiview path; owns one atlas image,
+  optional external-memory export, and layered image copies into row-major tile
+  rects. `TileAtlasPass` holds separate color and depth channel atlases.
 - `raster/multiview_tile_targets.hpp` / `raster/multiview_tile_targets.cpp`:
-  Temporary layered color/depth/id/depth-attachment tile targets used by
-  multiview tile batches before copying layers back into the 2D atlas.
+  Temporary layered color/depth-AOV/depth-attachment tile targets used by
+  multiview tile batches before copying requested channels back into 2D atlases.
 - `raster/multiview_tile_raster_pipeline.hpp` /
   `raster/multiview_tile_raster_pipeline.cpp`: Dedicated multiview tile
   render pass, raster pipeline, dome background pipeline, and draw recording.
@@ -121,12 +121,14 @@ call sites with `rg`.
   color/depth/id target selection, and framebuffer rebuilds.
 - `raster/raster_output_controller.cpp`: `GetAovTexture` routing for standard
   preview AOVs and current tile atlas export images.
-- `raster/tile_aov_atlas.hpp` / `raster/tile_aov_atlas.cpp` and
+- `raster/tile_aov_channel.hpp` / `raster/tile_aov_channel.cpp`,
   `raster/multiview_tile_targets.hpp` / `raster/multiview_tile_targets.cpp`,
   `raster/multiview_tile_raster_pipeline.*`, and
-  `raster/tile_atlas_pass.*`: Tile atlas resources, layered multiview
-  tile resources, layer-to-atlas copy, Hydra-exportable atlas color/depth
-  sources, and local save suppression.
+  `raster/tile_atlas_pass.*`: Per-channel tile atlas resources, layered
+  multiview tile resources, layer-to-atlas copy, Hydra-exportable atlas
+  color/depth sources, and local save suppression. `TileAtlasPass` intersects
+  tile settings with the current Hydra tile AOV request mask before allocating
+  and exporting channel atlases.
 
 ## Raster Baseline
 
@@ -147,13 +149,15 @@ call sites with `rg`.
 
 - `hdRobot/renderDelegate.h` / `hdRobot/renderDelegate.cpp`: Hydra delegate
   ownership, supported primitives, render param setup, tile render setting
-  descriptors, standard and tile AOV descriptors, and resource access.
+  descriptors including per-channel tile color/depth enable flags, standard and
+  tile AOV descriptors, and resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
   Converts Hydra frame state into `RasterRenderer` updates and render calls,
-  including the all-camera snapshot passed to raster renderer and ordered AOV copy
-  groups that copy fixed tile AOVs before display tile AOVs and other AOVs.
+  including the all-camera snapshot passed to raster renderer, the current
+  frame's requested tile AOV channel mask, and ordered AOV copy groups that copy
+  fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, tile config, scene dirty flags, texture
   registry, and renderer bridge ownership.
@@ -245,8 +249,9 @@ call sites with `rg`.
 - Offscreen AOV export:
   `raster/aov_texture.hpp`, `raster/preview_raster_pipeline.cpp`,
   `raster/raster_output_controller.cpp`, `raster/tile_atlas_pass.cpp`,
+  `raster/tile_aov_channel.cpp`,
   `hdRobot/hydraRasterAovCopy.cpp`, then search for `GetAovTexture`,
-  `getAovTexture`, `RasterAov`, and
+  `getAovTexture`, `setRequestedTileAovChannels`, `RasterAov`, and
   `CopyAovToRenderBuffer`.
 - Raster pipeline:
   `raster/preview_raster_pipeline.hpp`, `raster/preview_raster_pipeline.cpp`,
@@ -264,6 +269,7 @@ call sites with `rg`.
   `raster/raster_view_uniforms.cpp`, and `raster/tile_atlas_pass.cpp`, then
   search for `v_camera`,
   `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
+  `setRequestedTileAovChannels`,
   `renderTileAovAtlas`, and `RasterCameraSpec`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,

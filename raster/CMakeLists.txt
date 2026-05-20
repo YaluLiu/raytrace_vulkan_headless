@@ -35,6 +35,8 @@ list(APPEND SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/raster_view_uniforms.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tile_atlas_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tile_atlas_pass.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tile_aov_channel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tile_aov_channel.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_raster_pipeline.cpp

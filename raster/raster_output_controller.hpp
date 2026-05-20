@@ -39,6 +39,7 @@ public:
   std::optional<ExportedRasterAovTexture> getAovTexture(RasterAov aov) const;
 
   void setTileConfig(TileAtlasConfig config);
+  void setRequestedTileAovChannels(TileAovChannelMask channels);
   TileAtlasConfig getTileConfig() const { return m_tileAtlasPass.getConfig(); }
   void markTileAovAtlasConsumed(const std::string& outputDirectory = "output");
   bool isTileMultiviewSupported() const { return m_tileAtlasPass.isMultiviewSupported(); }

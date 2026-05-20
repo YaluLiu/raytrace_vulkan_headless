@@ -34,7 +34,8 @@ void TileAtlasPass::setup(VkDevice device,
             << " (maxViewCount=" << m_multiviewMaxViewCount
             << ", maxInstanceIndex=" << m_multiviewMaxInstanceIndex << ")" << std::endl;
 
-  m_tileAovAtlas.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
+  m_colorAtlas.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
+  m_depthAtlas.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
   m_multiviewTileTargets.setup(device, graphicsQueueIndex, allocator, debug);
   m_multiviewTileRasterPipeline.setup(device, physicalDevice, graphicsQueueIndex, debug);
 }
@@ -43,9 +44,12 @@ void TileAtlasPass::destroy()
 {
   m_multiviewTileTargets.destroy();
   m_multiviewTileRasterPipeline.destroy();
-  m_tileAovAtlas.destroy();
-  m_atlasDirty = false;
-  m_atlasExportValid = false;
+  m_colorAtlas.destroy();
+  m_depthAtlas.destroy();
+  m_colorDirty = false;
+  m_depthDirty = false;
+  m_colorExportValid = false;
+  m_depthExportValid = false;
 }
 
 void TileAtlasPass::destroyGraphicsPipeline()
@@ -59,11 +63,32 @@ void TileAtlasPass::setConfig(TileAtlasConfig config)
   if(config != m_config)
   {
     m_config = config;
-    if(!m_config.enabled)
+    const TileAovChannelMask enabledChannels = m_config.enabledChannels();
+    if(!enabledChannels.contains(TileAovChannel::Color))
     {
-      m_atlasDirty = false;
-      m_atlasExportValid = false;
+      m_colorDirty = false;
+      m_colorExportValid = false;
     }
+    if(!enabledChannels.contains(TileAovChannel::Depth))
+    {
+      m_depthDirty = false;
+      m_depthExportValid = false;
+    }
+  }
+}
+
+void TileAtlasPass::setRequestedChannels(TileAovChannelMask channels)
+{
+  m_requestedChannels = channels;
+  if(!m_requestedChannels.contains(TileAovChannel::Color))
+  {
+    m_colorDirty = false;
+    m_colorExportValid = false;
+  }
+  if(!m_requestedChannels.contains(TileAovChannel::Depth))
+  {
+    m_depthDirty = false;
+    m_depthExportValid = false;
   }
 }
 
@@ -73,9 +98,13 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
                            RasterViewUniforms& viewUniforms,
                            const PreviewRasterPipeline& previewPipeline)
 {
-  m_atlasExportValid = false;
+  m_colorDirty = false;
+  m_depthDirty = false;
+  m_colorExportValid = false;
+  m_depthExportValid = false;
   const auto& cameras = viewUniforms.getCameras();
-  if(!m_config.enabled || cameras.empty())
+  const TileAovChannelMask channels = effectiveChannels();
+  if(channels.none() || cameras.empty())
   {
     return;
   }
@@ -117,9 +146,17 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
       return;
     }
 
-    if(!m_tileAovAtlas.ensureResources(config, previewPipeline))
+    if(channels.contains(TileAovChannel::Color) &&
+       !m_colorAtlas.ensureResources(config, previewPipeline.getColorFormat(), "TileColorAtlas", true))
     {
-      skip("failed to create tile atlas resources");
+      skip("failed to create tile color atlas resources");
+      return;
+    }
+
+    if(channels.contains(TileAovChannel::Depth) &&
+       !m_depthAtlas.ensureResources(config, previewPipeline.getDepthAovFormat(), "TileDepthAtlas", true))
+    {
+      skip("failed to create tile depth atlas resources");
       return;
     }
 
@@ -146,8 +183,17 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
         m_multiviewTileRasterPipeline.rasterize(cmdBuf, m_multiviewTileTargets.getFramebuffer(), tileExtent,
                                                 descriptors.set(), scene.getMeshBuffers(), scene.getInstances(),
                                                 scene.getInstanceIds());
-    const bool copied =
-        rendered && m_tileAovAtlas.copyLayersFrom(cmdBuf, m_multiviewTileTargets, firstCameraIndex, batchCameraCount);
+    bool copied = rendered;
+    if(copied && channels.contains(TileAovChannel::Color))
+    {
+      copied = m_colorAtlas.copyLayersFrom(cmdBuf, m_multiviewTileTargets.getColorTexture(), firstCameraIndex,
+                                           batchCameraCount, m_multiviewTileTargets.getLayerCount());
+    }
+    if(copied && channels.contains(TileAovChannel::Depth))
+    {
+      copied = m_depthAtlas.copyLayersFrom(cmdBuf, m_multiviewTileTargets.getDepthTexture(), firstCameraIndex,
+                                           batchCameraCount, m_multiviewTileTargets.getLayerCount());
+    }
     if(!copied)
     {
       skip("batch render or layer copy failed");
@@ -155,23 +201,44 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
     }
   }
 
-  m_atlasDirty = cameraCount > 0;
-  m_atlasExportValid = cameraCount > 0;
+  m_colorDirty = cameraCount > 0 && channels.contains(TileAovChannel::Color);
+  m_depthDirty = cameraCount > 0 && channels.contains(TileAovChannel::Depth);
+  m_colorExportValid = m_colorDirty;
+  m_depthExportValid = m_depthDirty;
 }
 
 std::optional<ExportedRasterAovTexture> TileAtlasPass::getAovTexture(RasterAov aov) const
 {
-  if(!m_atlasExportValid || !m_tileAovAtlas.hasImages())
+  switch(aov)
   {
+  case RasterAov::TileColor:
+  case RasterAov::TileDisplayColor:
+    if(!m_colorExportValid || !m_colorAtlas.hasImage())
+    {
+      return std::nullopt;
+    }
+    return m_colorAtlas.getAovTexture();
+  case RasterAov::TileDepth:
+  case RasterAov::TileDisplayDepth:
+    if(!m_depthExportValid || !m_depthAtlas.hasImage())
+    {
+      return std::nullopt;
+    }
+    return m_depthAtlas.getAovTexture();
+  case RasterAov::Color:
+  case RasterAov::PrimId:
+  case RasterAov::InstanceId:
+  case RasterAov::Depth:
     return std::nullopt;
   }
-  return m_tileAovAtlas.getAovTexture(aov);
+  return std::nullopt;
 }
 
 void TileAtlasPass::markConsumed(const std::string& /*outputDirectory*/)
 {
   // Local tile file output is disabled; Hydra consumes tile atlas AOVs directly.
-  m_atlasDirty = false;
+  m_colorDirty = false;
+  m_depthDirty = false;
 }
 
 uint32_t TileAtlasPass::getEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const
@@ -188,6 +255,11 @@ uint32_t TileAtlasPass::getEffectiveViewCount(uint32_t cameraCount, uint32_t cap
   }
 
   return std::min({cameraCount, capacity, deviceCap});
+}
+
+TileAovChannelMask TileAtlasPass::effectiveChannels() const
+{
+  return m_config.enabledChannels() & m_requestedChannels;
 }
 
 void TileAtlasPass::logUnavailableOnce(const char* reason)

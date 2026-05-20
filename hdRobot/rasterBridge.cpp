@@ -84,6 +84,8 @@ TileAtlasConfig ToTileAtlasConfig(const HdRobotTileConfig &config)
 {
   TileAtlasConfig result;
   result.enabled = config.enabled;
+  result.colorEnabled = config.colorEnabled;
+  result.depthEnabled = config.depthEnabled;
   result.cameraWidth = config.cameraWidth;
   result.cameraHeight = config.cameraHeight;
   result.gridColumns = config.gridColumns;
@@ -123,6 +125,28 @@ bool IsFixedSizeTileAov(const TfToken &name)
 bool IsDisplayTileAov(const TfToken &name)
 {
   return name == HdRobotAovTokens->tileDisplayColor || name == HdRobotAovTokens->tileDisplayDepth;
+}
+
+TileAovChannelMask ComputeRequestedTileAovChannels(const HdRenderPassAovBindingVector &bindings)
+{
+  TileAovChannelMask channels = TileAovChannelMask::None();
+  for(const HdRenderPassAovBinding &binding : bindings)
+  {
+    if(binding.renderBuffer == nullptr)
+    {
+      continue;
+    }
+
+    if(binding.aovName == HdRobotAovTokens->tileColor || binding.aovName == HdRobotAovTokens->tileDisplayColor)
+    {
+      channels |= TileAovChannelMask::FromChannel(TileAovChannel::Color);
+    }
+    else if(binding.aovName == HdRobotAovTokens->tileDepth || binding.aovName == HdRobotAovTokens->tileDisplayDepth)
+    {
+      channels |= TileAovChannelMask::FromChannel(TileAovChannel::Depth);
+    }
+  }
+  return channels;
 }
 
 bool HasRenderBuffer(const HdRenderPassAovBindingVector &bindings)
@@ -220,6 +244,7 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
   }
 
   _rasterSession.getRenderer().setTileConfig(ToTileAtlasConfig(_renderParam.GetTileConfig()));
+  _rasterSession.getRenderer().setRequestedTileAovChannels(ComputeRequestedTileAovChannels(hdAovBindings));
   updateLights();
   updateScene();
   _rasterSession.render();

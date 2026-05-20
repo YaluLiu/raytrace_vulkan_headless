@@ -42,7 +42,6 @@ bool MultiviewTileTargets::ensureResources(const TileAtlasConfig& config,
 
   if(hasImages() && desiredExtent.width == _tileExtent.width && desiredExtent.height == _tileExtent.height
      && layerCount == _layerCount && renderPass == _renderPass && _colorFormat == pipeline.getColorFormat()
-     && _objectIdFormat == pipeline.getObjectIdFormat() && _instanceIdFormat == pipeline.getInstanceIdFormat()
      && _depthFormat == pipeline.getDepthAovFormat()
      && _depthAttachmentFormat == pipeline.getDepthAttachmentFormat())
   {
@@ -60,8 +59,6 @@ bool MultiviewTileTargets::ensureResources(const TileAtlasConfig& config,
   _layerCount            = layerCount;
   _renderPass            = renderPass;
   _colorFormat           = pipeline.getColorFormat();
-  _objectIdFormat        = pipeline.getObjectIdFormat();
-  _instanceIdFormat      = pipeline.getInstanceIdFormat();
   _depthFormat           = pipeline.getDepthAovFormat();
   _depthAttachmentFormat = pipeline.getDepthAttachmentFormat();
 
@@ -69,16 +66,12 @@ bool MultiviewTileTargets::ensureResources(const TileAtlasConfig& config,
                                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                                           | VK_IMAGE_USAGE_STORAGE_BIT;
   createLayerImage(_colorLayers, _colorFormat, kAovUsage, "TileMultiviewColorLayers");
-  createLayerImage(_objectIdLayers, _objectIdFormat, kAovUsage, "TileMultiviewObjectIdLayers");
-  createLayerImage(_instanceIdLayers, _instanceIdFormat, kAovUsage, "TileMultiviewInstanceIdLayers");
   createLayerImage(_depthLayers, _depthFormat, kAovUsage, "TileMultiviewDepthLayers");
   createDepthAttachment("TileMultiviewDepthAttachment");
 
   nvvk::CommandPool commandPool(_device, _graphicsQueueIndex);
   VkCommandBuffer cmdBuf = commandPool.createCommandBuffer();
   nvvk::cmdBarrierImageLayout(cmdBuf, _colorLayers.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-  nvvk::cmdBarrierImageLayout(cmdBuf, _objectIdLayers.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-  nvvk::cmdBarrierImageLayout(cmdBuf, _instanceIdLayers.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
   nvvk::cmdBarrierImageLayout(cmdBuf, _depthLayers.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
   nvvk::cmdBarrierImageLayout(cmdBuf, _depthAttachment.image, VK_IMAGE_LAYOUT_UNDEFINED,
                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -90,8 +83,7 @@ bool MultiviewTileTargets::ensureResources(const TileAtlasConfig& config,
 
 bool MultiviewTileTargets::hasImages() const
 {
-  return _colorLayers.image != VK_NULL_HANDLE && _objectIdLayers.image != VK_NULL_HANDLE
-         && _instanceIdLayers.image != VK_NULL_HANDLE && _depthLayers.image != VK_NULL_HANDLE
+  return _colorLayers.image != VK_NULL_HANDLE && _depthLayers.image != VK_NULL_HANDLE
          && _depthAttachment.image != VK_NULL_HANDLE && _tileExtent.width > 0 && _tileExtent.height > 0
          && _layerCount > 0;
 }
@@ -158,8 +150,7 @@ void MultiviewTileTargets::createFramebuffer(VkRenderPass renderPass)
 
   destroyFramebuffer();
 
-  std::array<VkImageView, 5> attachments{_colorLayers.descriptor.imageView, _objectIdLayers.descriptor.imageView,
-                                         _instanceIdLayers.descriptor.imageView, _depthLayers.descriptor.imageView,
+  std::array<VkImageView, 3> attachments{_colorLayers.descriptor.imageView, _depthLayers.descriptor.imageView,
                                          _depthAttachment.descriptor.imageView};
 
   VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
@@ -190,14 +181,10 @@ void MultiviewTileTargets::destroyImages()
   if(_allocator != nullptr)
   {
     _allocator->destroy(_colorLayers);
-    _allocator->destroy(_objectIdLayers);
-    _allocator->destroy(_instanceIdLayers);
     _allocator->destroy(_depthLayers);
     _allocator->destroy(_depthAttachment);
   }
   _colorLayers        = {};
-  _objectIdLayers     = {};
-  _instanceIdLayers   = {};
   _depthLayers        = {};
   _depthAttachment    = {};
 }

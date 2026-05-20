@@ -26,11 +26,12 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewRasterPipeli
 - `raster_descriptor_sets.cpp` keeps descriptor layout updates and renderer
   compatibility entry points that route through `RasterSceneDescriptors` and
   `RasterOutputController`.
-- `tile_config.hpp`, `tile_aov_atlas.hpp`, `multiview_tile_targets.hpp`,
+- `tile_config.hpp`, `tile_aov_channel.hpp`, `multiview_tile_targets.hpp`,
   `multiview_tile_raster_pipeline.hpp`, `tile_atlas_pass.hpp`, and
   `tile_atlas_renderer.cpp` implement multi-camera tile atlas rendering. Tile
   output renders multiview batches into layered images, copies layers into the
-  atlas, then exposes atlas color/depth through Hydra AOV export.
+  enabled and requested per-channel atlases, then exposes atlas color/depth
+  through Hydra AOV export.
 - `raster_geometry_upload.cpp`, `raster_runtime_updates.cpp`, and
   `raster_scene_upload.cpp` are `RasterRenderer` facade forwarding layers for
   scene updates now owned by `RasterGpuScene`.
@@ -56,8 +57,12 @@ uploaded through the dedicated `TileFrameUniforms` buffer used by the multiview
 shaders.
 
 When tile output is enabled, the raster renderer renders cameras from the
-current camera array into layered multiview tile targets, then copies each layer into the
-row-major atlas. It does not save tile color or tile depth files locally; Hydra
+current camera array into layered multiview tile targets, then copies each layer
+into the row-major color and/or depth atlases requested for the current frame.
+Tile color and depth channels can be enabled independently through tile config
+and are also gated by the bound Hydra tile AOVs. When both channels are active,
+they still share one multiview rasterization pass and do not repeat geometry
+draws. Tile output does not save tile color or tile depth files locally; Hydra
 consumes the atlas through tile AOV render buffers.
 
 The atlas size is controlled only by tile configuration:

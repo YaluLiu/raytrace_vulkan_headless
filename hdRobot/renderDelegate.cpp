@@ -60,6 +60,10 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
   return {
       HdRenderSettingDescriptor{"Enable tile output", HdRobotRenderSettingTokens->tileEnabled,
                                 VtValue(defaults.enabled)},
+      HdRenderSettingDescriptor{"Enable tile color output", HdRobotRenderSettingTokens->tileColorEnabled,
+                                VtValue(defaults.colorEnabled)},
+      HdRenderSettingDescriptor{"Enable tile depth output", HdRobotRenderSettingTokens->tileDepthEnabled,
+                                VtValue(defaults.depthEnabled)},
       HdRenderSettingDescriptor{"Tile camera width", HdRobotRenderSettingTokens->tileCameraWidth,
                                 VtValue(static_cast<int>(defaults.cameraWidth))},
       HdRenderSettingDescriptor{"Tile camera height", HdRobotRenderSettingTokens->tileCameraHeight,
@@ -73,7 +77,8 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
 
 bool IsTileRenderSetting(const TfToken &key)
 {
-  return key == HdRobotRenderSettingTokens->tileEnabled || key == HdRobotRenderSettingTokens->tileCameraWidth ||
+  return key == HdRobotRenderSettingTokens->tileEnabled || key == HdRobotRenderSettingTokens->tileColorEnabled ||
+         key == HdRobotRenderSettingTokens->tileDepthEnabled || key == HdRobotRenderSettingTokens->tileCameraWidth ||
          key == HdRobotRenderSettingTokens->tileCameraHeight || key == HdRobotRenderSettingTokens->tileGridColumns ||
          key == HdRobotRenderSettingTokens->tileGridRows;
 }
@@ -99,6 +104,10 @@ HdRobotTileConfig ReadTileConfig(const HdRenderDelegate &delegate)
 {
   HdRobotTileConfig config;
   config.enabled = delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileEnabled, config.enabled);
+  config.colorEnabled =
+      delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileColorEnabled, config.colorEnabled);
+  config.depthEnabled =
+      delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileDepthEnabled, config.depthEnabled);
   config.cameraWidth =
       GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraWidth, config.cameraWidth);
   config.cameraHeight =

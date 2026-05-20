@@ -16,6 +16,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdRobotTileConfig
 {
   bool     enabled = false;
+  bool     colorEnabled = true;
+  bool     depthEnabled = true;
   uint32_t cameraWidth = 1920;
   uint32_t cameraHeight = 1080;
   uint32_t gridColumns = 10;

@@ -24,8 +24,6 @@ public:
   VkFramebuffer getFramebuffer() const { return _framebuffer; }
   const nvvk::Texture& getColorTexture() const { return _colorLayers; }
   const nvvk::Texture& getDepthTexture() const { return _depthLayers; }
-  const nvvk::Texture& getObjectIdTexture() const { return _objectIdLayers; }
-  const nvvk::Texture& getInstanceIdTexture() const { return _instanceIdLayers; }
   const nvvk::Texture& getDepthAttachmentTexture() const { return _depthAttachment; }
 
 private:
@@ -47,12 +45,6 @@ private:
 
   nvvk::Texture _colorLayers;
   VkFormat _colorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
-
-  nvvk::Texture _objectIdLayers;
-  VkFormat _objectIdFormat{VK_FORMAT_R32_SINT};
-
-  nvvk::Texture _instanceIdLayers;
-  VkFormat _instanceIdFormat{VK_FORMAT_R32_SINT};
 
   nvvk::Texture _depthLayers;
   VkFormat _depthFormat{VK_FORMAT_R32_SFLOAT};

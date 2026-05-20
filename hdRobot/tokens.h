@@ -21,6 +21,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_ROBOT_RENDER_SETTING_TOKENS \
   ((tileEnabled, "hdRobot:tile:enabled")) \
+  ((tileColorEnabled, "hdRobot:tile:colorEnabled")) \
+  ((tileDepthEnabled, "hdRobot:tile:depthEnabled")) \
   ((tileCameraWidth, "hdRobot:tile:cameraWidth")) \
   ((tileCameraHeight, "hdRobot:tile:cameraHeight")) \
   ((tileGridColumns, "hdRobot:tile:gridColumns")) \
