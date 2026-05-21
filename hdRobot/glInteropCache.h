@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aov_texture.hpp"
+#include <raster/aov_texture.hpp>
 #include <nvgl/extensions_gl.hpp>
 
 #include <memory>

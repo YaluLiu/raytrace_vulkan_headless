@@ -8,7 +8,7 @@
 #include <pxr/imaging/hd/renderPassState.h>
 #include <pxr/base/gf/vec2i.h>
 
-#include <raster_session.hpp>
+#include <raster/raster_session.hpp>
 
 #include <string>
 

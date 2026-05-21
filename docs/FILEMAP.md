@@ -10,7 +10,9 @@ call sites with `rg`.
 - `CMakeLists.txt`: Root build configuration, package setup, and unconditional
   raster plus `hdRobot` subdirectory registration.
 - `install.sh`: Main local build/run helper used by Hydra workflows.
-- `raster/`: Core Vulkan rasterization library and shaders.
+- `raster/`: Core Vulkan rasterization library, split into public
+  `include/raster/`, internal `private/`, implementation `src/`, and shader
+  source `shaders/` trees.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   raster renderer.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
@@ -28,12 +30,12 @@ call sites with `rg`.
 
 ## Runtime Entry Points
 
-- `raster/raster_session.cpp`: Raster session/runtime shell, raster-oriented
+- `raster/src/runtime/raster_session.cpp`: Raster session/runtime shell, raster-oriented
   Vulkan context setup, resize forwarding, command buffer begin/end/submit, and
   render resource lifecycle.
-- `raster/raster_session.hpp`: `RasterSession` public surface and renderer
+- `raster/include/raster/raster_session.hpp`: `RasterSession` public surface and renderer
   ownership.
-- `raster/raster_frame_executor.hpp` / `raster/raster_frame_executor.cpp`:
+- `raster/private/core/raster_frame_executor.hpp` / `raster/src/core/raster_frame_executor.cpp`:
   Source of truth for per-frame raster pass sequencing.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
@@ -45,104 +47,106 @@ call sites with `rg`.
 
 ## Raster Vulkan Renderer
 
-- `raster/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
+- `raster/include/raster/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
   camera/tile configuration, scene upload/update entry points, AOV export, and
   temporary internal methods used by the frame executor while internals are
   componentized.
-- `raster/raster_renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
+- `raster/src/core/raster_renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
   AOV texture routing, and delegation into GPU scene, descriptor, view uniform,
   and output controller components.
-- `raster/raster_renderer_types.hpp`: Facade-facing data types such as
+- `raster/include/raster/raster_renderer_types.hpp`: Facade-facing data types such as
   `RasterCameraSpec` and `RasterMaterialUpdate`.
-- `raster/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
+- `raster/src/debug/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
   downloads and offscreen color PNG output.
-- `raster/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
+- `raster/include/raster/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
   descriptor returned by `RasterRenderer::GetAovTexture`, including tile AOV
   values exposed to Hydra without Hydra or OpenGL types.
-- `raster/raster_scene_types.hpp`: Shared draw input types used by
+- `raster/private/scene/raster_scene_types.hpp`: Shared draw input types used by
   `RasterRenderer` and `PreviewRasterPipeline`.
-- `raster/raster_gpu_scene.hpp` / `raster/raster_gpu_scene.cpp`: Owner of mesh,
+- `raster/private/scene/raster_gpu_scene.hpp` / `raster/src/scene/raster_gpu_scene.cpp`: Owner of mesh,
   material, instance, light, texture, object-description, and light GPU
   resources; provides read-only spans for output passes and facade methods for
   scene upload/update.
-- `raster/raster_scene_descriptors.hpp` /
-  `raster/raster_scene_descriptors.cpp`: Owner of scene descriptor bindings,
+- `raster/private/scene/raster_scene_descriptors.hpp` /
+  `raster/src/scene/raster_scene_descriptors.cpp`: Owner of scene descriptor bindings,
   pool, layout, set, and descriptor updates for frame uniforms, object
   descriptions, lights, tile uniforms, and textures.
-- `raster/raster_view_uniforms.hpp` / `raster/raster_view_uniforms.cpp`: Owner of
+- `raster/private/scene/raster_view_uniforms.hpp` / `raster/src/scene/raster_view_uniforms.cpp`: Owner of
   main frame uniforms, tile frame uniforms, camera array, main camera clip
   range, and uniform buffer update logic.
-- `raster/raster_output_controller.hpp` /
-  `raster/raster_output_controller.cpp`: Output orchestration layer that owns
+- `raster/private/core/raster_output_controller.hpp` /
+  `raster/src/core/raster_output_controller.cpp`: Output orchestration layer that owns
   the preview AOV pipeline and tile atlas pass and routes AOV texture queries.
-- `raster/preview_raster_pipeline.hpp` / `raster/preview_raster_pipeline.cpp`:
+- `raster/private/output/preview_raster_pipeline.hpp` / `raster/src/output/preview/preview_raster_pipeline.cpp`:
   Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
   depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
   export backing, dynamic frame-uniform descriptor binding, and draw command
   recording.
-- `raster/tile_config.hpp`: Pure raster tile output configuration contract,
+- `raster/include/raster/tile_config.hpp`: Pure raster tile output configuration contract,
   including enable flag, per-camera tile size, grid dimensions, and positive
   value normalization.
-- `raster/tile_aov_channel.hpp` / `raster/tile_aov_channel.cpp`: Single-channel
+- `raster/private/output/tile/tile_aov_channel.hpp` / `raster/src/output/tile/tile_aov_channel.cpp`: Single-channel
   tile atlas output resource used by the multiview path; owns one atlas image,
   optional external-memory export, and layered image copies into row-major tile
   rects. `TileAtlasPass` holds separate color and depth channel atlases.
-- `raster/multiview_tile_targets.hpp` / `raster/multiview_tile_targets.cpp`:
+- `raster/private/output/tile/multiview_tile_targets.hpp` / `raster/src/output/tile/multiview_tile_targets.cpp`:
   Temporary layered color/depth-AOV/depth-attachment tile targets used by
   multiview tile batches before copying requested channels back into 2D atlases.
-- `raster/multiview_tile_raster_pipeline.hpp` /
-  `raster/multiview_tile_raster_pipeline.cpp`: Dedicated multiview tile
+- `raster/private/output/tile/multiview_tile_raster_pipeline.hpp` /
+  `raster/src/output/tile/multiview_tile_raster_pipeline.cpp`: Dedicated multiview tile
   render pass, raster pipeline, dome background pipeline, and draw recording.
-- `raster/tile_atlas_pass.hpp` / `raster/tile_atlas_pass.cpp`: Owner of tile
+- `raster/private/output/tile/tile_atlas_pass.hpp` / `raster/src/output/tile/tile_atlas_pass.cpp`: Owner of tile
   atlas orchestration state, multiview capability state, dirty/export-valid
   state, layered tile targets, tile atlas images, and multiview tile pipeline.
-- `raster/tile_atlas_renderer.cpp`: `RasterRenderer` compatibility forwarding
+- `raster/src/output/tile/tile_atlas_renderer.cpp`: `RasterRenderer` compatibility forwarding
   for tile atlas recording and consume marking.
-- `raster/raster_runtime_updates.cpp`: `RasterRenderer` compatibility
+- `raster/src/scene/raster_runtime_updates.cpp`: `RasterRenderer` compatibility
   forwarding for runtime material and light updates into `RasterGpuScene`.
-- `raster/raster_geometry_upload.cpp`: `RasterRenderer` compatibility
+- `raster/src/scene/raster_geometry_upload.cpp`: `RasterRenderer` compatibility
   forwarding for instance and geometry updates into `RasterGpuScene`.
-- `raster/raster_scene_upload.cpp`: `RasterRenderer` compatibility forwarding
+- `raster/src/scene/raster_scene_upload.cpp`: `RasterRenderer` compatibility forwarding
   for model and texture upload into `RasterGpuScene`, with descriptor/output
   rebuild coordination.
-- `raster/raster_descriptor_sets.cpp`: `RasterRenderer` compatibility
+- `raster/src/core/raster_descriptor_sets.cpp`: `RasterRenderer` compatibility
   forwarding for descriptor creation/update and preview AOV recording through
   `RasterSceneDescriptors` and `RasterOutputController`.
-- `raster/raster_image_barriers.hpp`: Vulkan image layout/barrier helpers.
-- `raster/headless_vk.cpp`: Headless Vulkan offline app context support.
+- `raster/private/raster_image_barriers.hpp`: Vulkan image layout/barrier helpers.
+- `raster/src/runtime/headless_vk.cpp`: Headless Vulkan offline app context support.
 
 ## Offscreen Rendering
 
-- `raster/aov_texture.hpp`: Public raster AOV contract, currently
+- `raster/include/raster/aov_texture.hpp`: Public raster AOV contract, currently
   `color`, `depth`, `primId`, `instanceId`, `tileColor`, `tileDepth`,
   `tileDisplayColor`, and `tileDisplayDepth`.
-- `raster/preview_raster_pipeline.hpp` / `raster/preview_raster_pipeline.cpp`: Offscreen
+- `raster/private/output/preview_raster_pipeline.hpp` / `raster/src/output/preview/preview_raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.
-- `raster/raster_output_controller.cpp`: `GetAovTexture` routing for standard
+- `raster/src/core/raster_output_controller.cpp`: `GetAovTexture` routing for standard
   preview AOVs and current tile atlas export images.
-- `raster/tile_aov_channel.hpp` / `raster/tile_aov_channel.cpp`,
-  `raster/multiview_tile_targets.hpp` / `raster/multiview_tile_targets.cpp`,
-  `raster/multiview_tile_raster_pipeline.*`, and
-  `raster/tile_atlas_pass.*`: Per-channel tile atlas resources, layered
-  multiview tile resources, layer-to-atlas copy, Hydra-exportable atlas
-  color/depth sources, and local save suppression. `TileAtlasPass` intersects
-  tile settings with the current Hydra tile AOV request mask before allocating
-  and exporting channel atlases.
+- `raster/private/output/tile/tile_aov_channel.hpp` / `raster/src/output/tile/tile_aov_channel.cpp`,
+  `raster/private/output/tile/multiview_tile_targets.hpp` / `raster/src/output/tile/multiview_tile_targets.cpp`,
+  `raster/private/output/tile/multiview_tile_raster_pipeline.hpp` /
+  `raster/src/output/tile/multiview_tile_raster_pipeline.cpp`, and
+  `raster/private/output/tile/tile_atlas_pass.hpp` /
+  `raster/src/output/tile/tile_atlas_pass.cpp`: Per-channel tile atlas
+  resources, layered multiview tile resources, layer-to-atlas copy,
+  Hydra-exportable atlas color/depth sources, and local save suppression.
+  `TileAtlasPass` intersects tile settings with the current Hydra tile AOV
+  request mask before allocating and exporting channel atlases.
 
 ## Raster Baseline
 
-- `raster/shaders/raster.vert`: Active mesh vertex shader.
-- `raster/shaders/raster.frag`: Active mesh fragment shader for color,
+- `raster/shaders/preview/raster.vert`: Active mesh vertex shader.
+- `raster/shaders/preview/raster.frag`: Active mesh fragment shader for color,
   primitive ID, instance ID, depth AOV writes, and sphere/simple light shading
   from the renderer light buffer. DomeLight is parsed but not evaluated here.
-- `raster/shaders/tile_multiview.vert` /
-  `raster/shaders/tile_multiview.frag`: Mesh shader variants for multiview
+- `raster/shaders/tile/tile_multiview.vert` /
+  `raster/shaders/tile/tile_multiview.frag`: Mesh shader variants for multiview
   tile rendering using `gl_ViewIndex` and `TileFrameUniforms`.
-- `raster/shaders/dome_background_tile_multiview.vert` /
-  `raster/shaders/dome_background_tile_multiview.frag`: Dome background
+- `raster/shaders/tile/dome_background_tile_multiview.vert` /
+  `raster/shaders/tile/dome_background_tile_multiview.frag`: Dome background
   variants for multiview tile rendering.
-- `raster/shaders/host_device.h`: Shared raster descriptor bindings,
+- `raster/shaders/common/host_device.h`: Shared raster descriptor bindings,
   material structs, frame uniforms, tile multiview uniforms, and push constants.
 
 ## Hydra Delegate
@@ -215,48 +219,48 @@ call sites with `rg`.
 
 ## Shader Files
 
-- `raster/shaders/host_device.h`: Shared host/device structs and constants.
+- `raster/shaders/common/host_device.h`: Shared host/device structs and constants.
   `FrameUniforms` carries one camera/light-count slot selected by dynamic
   uniform offset; `TileFrameUniforms` carries per-batch multiview tile cameras;
   `PushConstantRaster` carries per-draw model/object/instance data for the
   raster path.
-- `raster/shaders/raster.vert`: Minimal raster vertex shader for mesh
+- `raster/shaders/preview/raster.vert`: Minimal raster vertex shader for mesh
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.
-- `raster/shaders/raster.frag`: Minimal raster fragment shader writing color,
+- `raster/shaders/preview/raster.frag`: Minimal raster fragment shader writing color,
   primId, instanceId, normalized depth AOV attachments, and sphere/simple light
   diffuse shading from the shared light buffer.
-- `raster/shaders/tile_multiview.vert` /
-  `raster/shaders/tile_multiview.frag`: Multiview tile mesh shader variants
+- `raster/shaders/tile/tile_multiview.vert` /
+  `raster/shaders/tile/tile_multiview.frag`: Multiview tile mesh shader variants
   that read camera arrays from `TileFrameUniforms`.
-- `raster/shaders/dome_background_tile_multiview.vert` /
-  `raster/shaders/dome_background_tile_multiview.frag`: Multiview tile dome
+- `raster/shaders/tile/dome_background_tile_multiview.vert` /
+  `raster/shaders/tile/dome_background_tile_multiview.frag`: Multiview tile dome
   background variants that reconstruct view directions per `gl_ViewIndex`.
 
 ## Question Routing
 
 - Frame rendering:
-  `raster/raster_frame_executor.cpp`, `raster/raster_renderer.cpp`,
-  `raster/raster_output_controller.cpp`, `raster/tile_atlas_pass.cpp`,
+  `raster/src/core/raster_frame_executor.cpp`, `raster/src/core/raster_renderer.cpp`,
+  `raster/src/core/raster_output_controller.cpp`, `raster/src/output/tile/tile_atlas_pass.cpp`,
   `hdRobot/rasterBridge.cpp`, then search for `RenderRasterFrame`,
   `recordFramePasses`, `recordPreviewAovs`, `recordTileAtlas`,
   `updateUniformBuffer`, and `updateScene`.
 - Resize or render target size:
-  `raster/raster_renderer.cpp`, `raster/raster_renderer.hpp`,
-  `raster/preview_raster_pipeline.cpp`, `raster/raster_session.cpp`, then search
+  `raster/src/core/raster_renderer.cpp`, `raster/include/raster/raster_renderer.hpp`,
+  `raster/src/output/preview/preview_raster_pipeline.cpp`, `raster/src/runtime/raster_session.cpp`, then search
   for `onResize`, `createOffscreenRender`, `getRenderSize`, and
   `ensureRasterSessionReady`.
 - Offscreen AOV export:
-  `raster/aov_texture.hpp`, `raster/preview_raster_pipeline.cpp`,
-  `raster/raster_output_controller.cpp`, `raster/tile_atlas_pass.cpp`,
-  `raster/tile_aov_channel.cpp`,
+  `raster/include/raster/aov_texture.hpp`, `raster/src/output/preview/preview_raster_pipeline.cpp`,
+  `raster/src/core/raster_output_controller.cpp`, `raster/src/output/tile/tile_atlas_pass.cpp`,
+  `raster/src/output/tile/tile_aov_channel.cpp`,
   `hdRobot/hydraRasterAovCopy.cpp`, then search for `GetAovTexture`,
   `getAovTexture`, `setRequestedTileAovChannels`, `RasterAov`, and
   `CopyAovToRenderBuffer`.
 - Raster pipeline:
-  `raster/preview_raster_pipeline.hpp`, `raster/preview_raster_pipeline.cpp`,
-  `raster/raster_descriptor_sets.cpp`, `raster/shaders/raster.vert`,
-  `raster/shaders/raster.frag`, then search for `PreviewRasterPipeline`,
+  `raster/private/output/preview_raster_pipeline.hpp`, `raster/src/output/preview/preview_raster_pipeline.cpp`,
+  `raster/src/core/raster_descriptor_sets.cpp`, `raster/shaders/preview/raster.vert`,
+  `raster/shaders/preview/raster.frag`, then search for `PreviewRasterPipeline`,
   `createGraphicsPipeline`, `createFramebuffer`, `renderPreviewAovs`, and
   `PushConstantRaster`.
 - Hydra render flow:
@@ -265,8 +269,8 @@ call sites with `rg`.
   `_UpdateRenderScene`, and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/rasterBridge.cpp`, `raster/raster_renderer.hpp`,
-  `raster/raster_view_uniforms.cpp`, and `raster/tile_atlas_pass.cpp`, then
+  `hdRobot/rasterBridge.cpp`, `raster/include/raster/raster_renderer.hpp`,
+  `raster/src/scene/raster_view_uniforms.cpp`, and `raster/src/output/tile/tile_atlas_pass.cpp`, then
   search for `v_camera`,
   `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
   `setRequestedTileAovChannels`,
@@ -275,14 +279,14 @@ call sites with `rg`.
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.
 - Material or texture path issues:
-  `hdRobot/material.cpp`, `raster/raster_gpu_scene.cpp`,
+  `hdRobot/material.cpp`, `raster/src/scene/raster_gpu_scene.cpp`,
   `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`,
   `common/obj_loader.cpp`, then search for `GetTexturePath`,
   `ExportRegisteredTextures`, `stbi_load_from_memory`, `loadMaterial`, and
   material buffer updates.
 - PBR material struct or shader material layout:
   `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `hdRobot/rasterBridge.cpp`, `raster/shaders/host_device.h`,
+  `hdRobot/rasterBridge.cpp`, `raster/shaders/common/host_device.h`,
   then search for `baseColorFactor`, `emissionFactor`,
   `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
 - USD Preview/MaterialX surface parsing:
@@ -295,29 +299,29 @@ call sites with `rg`.
 - Texture usage or color space:
   `common/ModelLoader.h`, `hdRobot/sceneData.h`,
   `hdRobot/renderParam.cpp`, `hdRobot/hydraTextureAssetExport.cpp`,
-  `raster/raster_gpu_scene.cpp`, then search for `TextureUsage`,
+  `raster/src/scene/raster_gpu_scene.cpp`, then search for `TextureUsage`,
   `TextureColorSpaceForUsage`, `GetTextureAssets`, and
   `VK_FORMAT_R8G8B8A8_UNORM`.
 - Raster shader material sampling:
-  `raster/shaders/raster.frag`, `raster/shaders/host_device.h`, then
+  `raster/shaders/preview/raster.frag`, `raster/shaders/common/host_device.h`, then
   search for `sampleBaseColor`, `WaveFrontMaterial`, and
   `baseColorTextureId`.
 - Raster light evaluation:
   `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
-  `hdRobot/rasterBridge.cpp`, `raster/raster_runtime_updates.cpp`,
-  `raster/raster_gpu_scene.cpp`, `raster/raster_scene_descriptors.cpp`,
-  `raster/shaders/host_device.h`, `raster/shaders/raster.frag`, then search
+  `hdRobot/rasterBridge.cpp`, `raster/src/scene/raster_runtime_updates.cpp`,
+  `raster/src/scene/raster_gpu_scene.cpp`, `raster/src/scene/raster_scene_descriptors.cpp`,
+  `raster/shaders/common/host_device.h`, `raster/shaders/preview/raster.frag`, then search
   for `HydraLight::toLight`, `updateLights`, `updateLightBuffer`, `eLights`,
   and `evaluateSphereLight`.
 - Normal map data flow:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `common/data_loader.h`, `raster/shaders/host_device.h`,
-  `raster/shaders/raster.vert`, then search for `tangent`,
+  `common/data_loader.h`, `raster/shaders/common/host_device.h`,
+  `raster/shaders/preview/raster.vert`, then search for `tangent`,
   `bitangentSigns`, and `normalTextureId`.
 - Advanced MaterialX inputs:
   `hdRobot/materialXParser.cpp`, `hdRobot/sceneData.h`,
   `hdRobot/sceneData.cpp`, `common/data_loader.h`,
-  `raster/shaders/host_device.h`, then search for `transmissionFactor`,
+  `raster/shaders/common/host_device.h`, then search for `transmissionFactor`,
   `transmissionColorFactor`, `subsurfaceFactor`, `subsurfaceTextureId`, and
   the matching material parser fields.
 - Instancers or material subsets:
@@ -330,7 +334,7 @@ call sites with `rg`.
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
 - Model loading:
   `common/obj_loader.cpp`, `common/obj_loader.h`, `common/ModelLoader.h`,
-  `raster/raster_gpu_scene.cpp`, `raster/raster_scene_upload.cpp`, then
+  `raster/src/scene/raster_gpu_scene.cpp`, `raster/src/scene/raster_scene_upload.cpp`, then
   search for `loadModel`,
   `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:

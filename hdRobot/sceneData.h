@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "shaders/host_device.h"
+#include <raster/shaders/host_device.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

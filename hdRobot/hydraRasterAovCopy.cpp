@@ -8,7 +8,7 @@
 #include <optional>
 
 #include "glInteropCache.h"
-#include "raster_renderer.hpp"
+#include <raster/raster_renderer.hpp>
 #include "renderBuffer.h"
 #include "tokens.h"
 

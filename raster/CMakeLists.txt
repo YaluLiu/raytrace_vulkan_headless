@@ -19,58 +19,115 @@ add_library(${PROJNAME})
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../raster")
 
-file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
-list(REMOVE_DUPLICATES SOURCE_FILES)
-list(APPEND SOURCE_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_frame_executor.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_frame_executor.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_gpu_scene.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_gpu_scene.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_output_controller.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_output_controller.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_renderer_types.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_scene_descriptors.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_scene_descriptors.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_view_uniforms.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/raster_view_uniforms.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_atlas_pass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_atlas_pass.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_aov_channel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/tile_aov_channel.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_targets.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_raster_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/multiview_tile_raster_pipeline.hpp
+set(RASTER_PUBLIC_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/aov_texture.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/raster_renderer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/raster_renderer_types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/raster_session.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/shaders/host_device.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/tile_config.hpp
 )
-list(REMOVE_DUPLICATES SOURCE_FILES)
+
+set(RASTER_PRIVATE_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_frame_executor.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_output_controller.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_renderer_internal.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/preview_raster_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/multiview_tile_raster_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/multiview_tile_targets.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/tile_aov_channel.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/tile_atlas_pass.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/raster_image_barriers.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/runtime/headless_vk.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_gpu_scene.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_scene_descriptors.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_scene_types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_view_uniforms.hpp
+)
+
+set(RASTER_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_descriptor_sets.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_frame_executor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_output_controller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_renderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/raster_debug_readback.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/preview/preview_raster_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/multiview_tile_raster_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/multiview_tile_targets.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/tile_aov_channel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/tile_atlas_pass.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/tile_atlas_renderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/raster_session.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_geometry_upload.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_gpu_scene.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_runtime_updates.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_scene_descriptors.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_scene_upload.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_view_uniforms.cpp
+)
+
+set(RASTER_SHADER_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/dome_background.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/dome_background.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/raster.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/raster.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/dome_background_tile_multiview.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/dome_background_tile_multiview.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/tile_multiview.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/tile_multiview.vert
+)
+
+set(RASTER_SHADER_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/dome_light.glsl
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/host_device.h
+)
+
 file(GLOB EXTRA_COMMON ${TUTO_KHR_DIR}/common/*.*)
 list(APPEND COMMON_SOURCE_FILES ${EXTRA_COMMON})
 include_directories(${TUTO_KHR_DIR}/common)
 
 
-compile_glsl_directory(
-	SRC "${CMAKE_CURRENT_SOURCE_DIR}/shaders" 
-	DST "${CMAKE_CURRENT_SOURCE_DIR}/spv" 
-	VULKAN_TARGET "vulkan1.2"
-	DEPENDENCY ON
-	)
-
-
-target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${HEADER_FILES})
-target_sources(${PROJNAME} PUBLIC ${COMMON_SOURCE_FILES})
-target_sources(${PROJNAME} PUBLIC ${PACKAGE_SOURCE_FILES})
-target_sources(${PROJNAME} PUBLIC ${GLSL_SOURCES} ${GLSL_HEADERS})
-
-target_include_directories(${PROJNAME} PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/common
+compile_glsl(
+  SOURCE_FILES ${RASTER_SHADER_SOURCES}
+  HEADER_FILES ${RASTER_SHADER_HEADERS}
+  DST "${CMAKE_CURRENT_SOURCE_DIR}/spv"
+  VULKAN_TARGET "vulkan1.2"
+  DEPENDENCY ON
+  FLAGS -g -I${CMAKE_CURRENT_SOURCE_DIR}/shaders/common
 )
 
-source_group("Common"       FILES ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
-source_group("Sources"      FILES ${SOURCE_FILES})
-source_group("Headers"      FILES ${HEADER_FILES})
-source_group("Shader Sources"  FILES ${GLSL_SOURCES})
-source_group("Shader Headers"  FILES ${GLSL_HEADERS})
+
+target_sources(${PROJNAME}
+  PUBLIC
+    ${RASTER_PUBLIC_HEADERS}
+    ${COMMON_SOURCE_FILES}
+  PRIVATE
+    ${RASTER_PRIVATE_HEADERS}
+    ${RASTER_SOURCES}
+    ${PACKAGE_SOURCE_FILES}
+    ${RASTER_SHADER_SOURCES}
+    ${RASTER_SHADER_HEADERS}
+)
+
+target_include_directories(${PROJNAME}
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/common
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
+  ${RASTER_PUBLIC_HEADERS}
+  ${RASTER_PRIVATE_HEADERS}
+  ${RASTER_SOURCES}
+  ${RASTER_SHADER_SOURCES}
+  ${RASTER_SHADER_HEADERS}
+)
+source_group("Common" FILES ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
 
 set(RASTER_PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES})
 if(OPENGL_LIBRARY)
