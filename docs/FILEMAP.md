@@ -98,6 +98,25 @@ call sites with `rg`.
 - `raster/private/output/tile/tile_atlas_pass.hpp` / `raster/src/output/tile/tile_atlas_pass.cpp`: Owner of tile
   atlas orchestration state, multiview capability state, dirty/export-valid
   state, layered tile targets, tile atlas images, and multiview tile pipeline.
+- `raster/include/raster/lidar_types.hpp`: Public Hydra-free LiDAR sensor,
+  visualization, point, per-sensor cloud, and frame cloud contract.
+- `raster/private/output/lidar/lidar_scan.hpp` /
+  `raster/src/output/lidar/lidar_scan.cpp`: Pure CPU LiDAR sample count, angle,
+  basis, beam direction, and per-sensor layout helpers.
+- `raster/private/output/lidar/lidar_point_cloud_pass.hpp` /
+  `raster/src/output/lidar/lidar_point_cloud_pass.cpp`: LiDAR output
+  coordinator owning sensors, visualization config, global point buffer,
+  sensor metadata buffer, CPU readback, range raster, compute generation, and
+  overlay pass orchestration.
+- `raster/private/output/lidar/lidar_depth_pipeline.hpp` /
+  `raster/src/output/lidar/lidar_depth_pipeline.cpp`: Single-sensor angular
+  range raster pipeline that renders scene meshes into an R32F range image.
+- `raster/private/output/lidar/lidar_point_generation_pipeline.hpp` /
+  `raster/src/output/lidar/lidar_point_generation_pipeline.cpp`: Compute
+  pipeline that back-projects range pixels into `LidarPointGpu` entries.
+- `raster/private/output/lidar/lidar_point_overlay_pipeline.hpp` /
+  `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`: Preview overlay
+  graphics pipeline that draws selected valid LiDAR hits over color.
 - `raster/src/output/tile/tile_atlas_renderer.cpp`: `RasterRenderer` compatibility forwarding
   for tile atlas recording and consume marking.
 - `raster/src/scene/raster_runtime_updates.cpp`: `RasterRenderer` compatibility
@@ -147,21 +166,32 @@ call sites with `rg`.
 - `raster/shaders/tile/dome_background_tile_multiview.vert` /
   `raster/shaders/tile/dome_background_tile_multiview.frag`: Dome background
   variants for multiview tile rendering.
+- `raster/shaders/lidar/lidar_depth.vert` /
+  `raster/shaders/lidar/lidar_depth.frag`: Mesh variants that project scene
+  geometry into a LiDAR angular range image.
+- `raster/shaders/lidar/lidar_points.comp`: Compute back-projection from range
+  image into the global LiDAR point buffer.
+- `raster/shaders/lidar/lidar_overlay.vert` /
+  `raster/shaders/lidar/lidar_overlay.frag`: Preview point overlay shaders for
+  valid LiDAR hits.
 - `raster/shaders/common/host_device.h`: Shared raster descriptor bindings,
-  material structs, frame uniforms, tile multiview uniforms, and push constants.
+  material structs, frame uniforms, tile multiview uniforms, LiDAR GPU structs,
+  and push constants.
 
 ## Hydra Delegate
 
 - `hdRobot/renderDelegate.h` / `hdRobot/renderDelegate.cpp`: Hydra delegate
   ownership, supported primitives, render param setup, tile render setting
-  descriptors including per-channel tile color/depth enable flags, standard and
-  tile AOV descriptors, and resource access.
+  descriptors including per-channel tile color/depth enable flags, LiDAR
+  visualization render settings, standard and tile AOV descriptors, and
+  resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
   Converts Hydra frame state into `RasterRenderer` updates and render calls,
   including the all-camera snapshot passed to raster renderer, the current
-  frame's requested tile AOV channel mask, and ordered AOV copy groups that copy
+  frame's requested tile AOV channel mask, sorted LiDAR sensor forwarding,
+  LiDAR visualization config forwarding, and ordered AOV copy groups that copy
   fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, LiDAR sensor array, tile config, scene dirty
@@ -244,9 +274,10 @@ call sites with `rg`.
 - Frame rendering:
   `raster/src/core/raster_frame_executor.cpp`, `raster/src/core/raster_renderer.cpp`,
   `raster/src/core/raster_output_controller.cpp`, `raster/src/output/tile/tile_atlas_pass.cpp`,
-  `hdRobot/rasterBridge.cpp`, then search for `RenderRasterFrame`,
-  `recordFramePasses`, `recordPreviewAovs`, `recordTileAtlas`,
-  `recordFrameUniformUpdate`, and `updateScene`.
+  `raster/src/output/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/rasterBridge.cpp`,
+  then search for `RenderRasterFrame`, `recordFramePasses`,
+  `recordPreviewAovs`, `recordTileAtlas`, `recordLidarPointClouds`,
+  `recordLidarPointOverlay`, `recordFrameUniformUpdate`, and `updateScene`.
 - Resize or render target size:
   `raster/src/core/raster_renderer.cpp`, `raster/include/raster/raster_renderer.hpp`,
   `raster/src/output/preview/preview_raster_pipeline.cpp`, `raster/src/runtime/raster_session.cpp`, then search
@@ -277,6 +308,21 @@ call sites with `rg`.
   `v_lidarSensor`, `GetCamerasSnapshot`, `GetLidarSensorsSnapshot`,
   `setCameras`, `setMainCamera`, `setTileConfig`, `setRequestedTileAovChannels`,
   `recordTileAovAtlas`, and `RasterCameraSpec`.
+- LiDAR point cloud generation or overlay:
+  `raster/include/raster/lidar_types.hpp`,
+  `raster/src/output/lidar/lidar_scan.cpp`,
+  `raster/src/output/lidar/lidar_point_cloud_pass.cpp`,
+  `raster/src/output/lidar/lidar_depth_pipeline.cpp`,
+  `raster/src/output/lidar/lidar_point_generation_pipeline.cpp`,
+  `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`,
+  `raster/shaders/lidar/lidar_depth.vert`,
+  `raster/shaders/lidar/lidar_points.comp`,
+  `raster/shaders/lidar/lidar_overlay.vert`,
+  `hdRobot/renderDelegate.cpp`, and `hdRobot/rasterBridge.cpp`, then search
+  for `RasterLidarSensorSpec`, `LidarPointCloudPass`,
+  `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
+  `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
+  `BuildLidarScanLayout`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.

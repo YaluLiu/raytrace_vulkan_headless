@@ -21,8 +21,9 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewRasterPipeli
   atlas rendering. Tile output renders multiview batches into layered images,
   copies layers into the enabled and requested per-channel atlases, then exposes
   atlas color/depth through Hydra AOV export.
-- `src/output/lidar/` and `shaders/lidar/` are reserved placeholders for future
-  sensor output work.
+- `private/output/lidar/`, `src/output/lidar/`, and `shaders/lidar/` implement
+  LiDAR scan layout, angular range rasterization, GPU point generation, CPU
+  point-cloud readback, and preview color point overlay.
 - `shaders/common/host_device.h` defines the shared host/device buffer and push
   constant layout. Preview shaders live in `shaders/preview/`; tile shaders live
   in `shaders/tile/`.
@@ -35,7 +36,9 @@ pass ordering to `raster::recordFramePasses()`, which executes:
 1. `UpdateUniforms`
 2. `UpdateLights`
 3. `RenderTileAovAtlas`
-4. `RenderPreviewAovs`
+4. `GenerateLidarPointClouds`
+5. `RenderPreviewAovs`
+6. `OverlayLidarPointCloud`
 
 The raster pipeline binds the shared scene descriptor set, then draws each
 visible instance with `PushConstantRaster` data for model transform, object
@@ -54,6 +57,13 @@ consumes the atlas through tile AOV render buffers.
 
 The atlas size is controlled only by tile configuration:
 `tileCameraWidth * gridColumns` by `tileCameraHeight * gridRows`.
+
+LiDAR output is a sensor-specific point-cloud contract, not a `RasterAov`.
+Hydra forwards sorted LiDAR sensors and visualization settings to
+`RasterRenderer`; raster generates a global GPU point buffer plus per-sensor
+metadata. CPU consumers use `RasterRenderer::readLidarPointCloudFrame()`.
+When visualization is enabled, the selected sorted sensor index is drawn as red
+points over the preview color attachment before Hydra copies the color AOV.
 
 ## Extension Points
 

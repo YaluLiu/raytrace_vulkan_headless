@@ -23,6 +23,7 @@
 // 娣诲姞hdlight
 #include "pxr/imaging/hdSt/light.h"
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <unordered_map>
 
@@ -72,6 +73,13 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
                                 VtValue(static_cast<int>(defaults.gridColumns))},
       HdRenderSettingDescriptor{"Tile grid rows", HdRobotRenderSettingTokens->tileGridRows,
                                 VtValue(static_cast<int>(defaults.gridRows))},
+      HdRenderSettingDescriptor{"Enable LiDAR point cloud visualization",
+                                HdRobotRenderSettingTokens->lidarVisualizeEnabled, VtValue(false)},
+      HdRenderSettingDescriptor{"LiDAR visualization sensor index",
+                                HdRobotRenderSettingTokens->lidarVisualizeSensorIndex, VtValue(0)},
+      HdRenderSettingDescriptor{"LiDAR visualization point size",
+                                HdRobotRenderSettingTokens->lidarVisualizePointSize,
+                                VtValue(HdRobotLidarParams{}.pointRadiusPixels)},
   };
 }
 
@@ -81,6 +89,13 @@ bool IsTileRenderSetting(const TfToken &key)
          key == HdRobotRenderSettingTokens->tileDepthEnabled || key == HdRobotRenderSettingTokens->tileCameraWidth ||
          key == HdRobotRenderSettingTokens->tileCameraHeight || key == HdRobotRenderSettingTokens->tileGridColumns ||
          key == HdRobotRenderSettingTokens->tileGridRows;
+}
+
+bool IsLidarRenderSetting(const TfToken &key)
+{
+  return key == HdRobotRenderSettingTokens->lidarVisualizeEnabled ||
+         key == HdRobotRenderSettingTokens->lidarVisualizeSensorIndex ||
+         key == HdRobotRenderSettingTokens->lidarVisualizePointSize;
 }
 
 bool IsColorAov(const TfToken &name)
@@ -117,6 +132,25 @@ HdRobotTileConfig ReadTileConfig(const HdRenderDelegate &delegate)
   config.gridRows = GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileGridRows, config.gridRows);
   return config;
 }
+
+float GetPositiveFloatRenderSetting(const HdRenderDelegate &delegate, const TfToken &key, float fallback)
+{
+  const float value = delegate.GetRenderSetting<float>(key, fallback);
+  return std::isfinite(value) ? std::max(value, 0.0f) : fallback;
+}
+
+HdRobotLidarVisualizationConfig ReadLidarVisualizationConfig(const HdRenderDelegate &delegate)
+{
+  HdRobotLidarVisualizationConfig config;
+  config.enabled =
+      delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->lidarVisualizeEnabled, config.enabled);
+  config.sensorIndex = static_cast<uint32_t>(
+      std::max(0, delegate.GetRenderSetting<int>(HdRobotRenderSettingTokens->lidarVisualizeSensorIndex,
+                                                 static_cast<int>(config.sensorIndex))));
+  config.pointSizePixels = GetPositiveFloatRenderSetting(
+      delegate, HdRobotRenderSettingTokens->lidarVisualizePointSize, config.pointSizePixels);
+  return config;
+}
 } // namespace
 
 HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settingsMap, std::string_view resourcePath)
@@ -126,6 +160,7 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settings
   _settingDescriptors = CreateRenderSettingDescriptors();
   _PopulateDefaultSettings(_settingDescriptors);
   _SyncTileConfigFromSettings();
+  _SyncLidarVisualizationConfigFromSettings();
 }
 
 HdRobotRenderDelegate::~HdRobotRenderDelegate() {}
@@ -141,6 +176,10 @@ void HdRobotRenderDelegate::SetRenderSetting(const TfToken &key, const VtValue &
   if(IsTileRenderSetting(key))
   {
     _SyncTileConfigFromSettings();
+  }
+  if(IsLidarRenderSetting(key))
+  {
+    _SyncLidarVisualizationConfigFromSettings();
   }
 }
 
@@ -239,6 +278,14 @@ void HdRobotRenderDelegate::_SyncTileConfigFromSettings()
   if(_renderParam)
   {
     _renderParam->SetTileConfig(ReadTileConfig(*this));
+  }
+}
+
+void HdRobotRenderDelegate::_SyncLidarVisualizationConfigFromSettings()
+{
+  if(_renderParam)
+  {
+    _renderParam->SetLidarVisualizationConfig(ReadLidarVisualizationConfig(*this));
   }
 }
 

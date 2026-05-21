@@ -30,6 +30,9 @@ END_BINDING();
 
 const uint MAX_SCENE_LIGHTS = 100;
 const uint MAX_TILE_MULTIVIEW_VIEWS = 16;
+const uint LIDAR_POINT_FLAG_VALID = 1u << 0;
+const uint LIDAR_POINT_FLAG_HIT = 1u << 1;
+const uint LIDAR_POINT_FLAG_OUT_OF_RANGE = 1u << 2;
 
 struct ObjDesc
 {
@@ -45,6 +48,70 @@ struct PushConstantRaster
   mat4 model;
   uint objIndex;
   int instanceId;
+  uint pad0;
+  uint pad1;
+};
+
+struct LidarPointGpu
+{
+  vec4 positionRange;
+  uint sensorIndex;
+  uint ringIndex;
+  uint beamIndex;
+  uint flags;
+  float intensity;
+  uint pad0;
+  uint pad1;
+  uint pad2;
+};
+
+struct LidarSensorGpu
+{
+  vec4 originMaxDistance;
+  vec4 forwardAzimuthMin;
+  vec4 rightAzimuthStep;
+  vec4 upVerticalMin;
+  vec4 azimuthMaxVerticalMaxStep;
+  uint pointOffset;
+  uint pointCount;
+  uint azimuthSampleCount;
+  uint verticalSampleCount;
+};
+
+struct LidarFrameGpu
+{
+  uint sensorCount;
+  uint totalPointCount;
+  uint frameIdLow;
+  uint frameIdHigh;
+};
+
+struct PushConstantLidarDepth
+{
+  mat4 model;
+  vec4 originMaxDistance;
+  vec4 forwardAzimuthMin;
+  vec4 rightAzimuthStep;
+  vec4 upVerticalMin;
+  vec4 azimuthMaxVerticalMaxStep;
+  uint objIndex;
+  uint sensorIndex;
+  uint azimuthSampleCount;
+  uint verticalSampleCount;
+};
+
+struct PushConstantLidarGenerate
+{
+  uint sensorIndex;
+  uint pad0;
+  uint pad1;
+  uint pad2;
+};
+
+struct PushConstantLidarOverlay
+{
+  uint sensorIndex;
+  float pointSizePixels;
   uint pad0;
   uint pad1;
 };

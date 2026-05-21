@@ -1,6 +1,8 @@
 #pragma once
 
 #include <raster/aov_texture.hpp>
+#include <raster/lidar_types.hpp>
+#include "output/lidar/lidar_point_cloud_pass.hpp"
 #include "output/preview_raster_pipeline.hpp"
 #include "output/tile/tile_atlas_pass.hpp"
 #include <raster/tile_config.hpp>
@@ -36,8 +38,16 @@ public:
   void recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                          const RasterGpuScene& scene,
                          const RasterSceneDescriptors& descriptors);
+  void recordLidarPointClouds(const VkCommandBuffer& cmdBuf,
+                              const RasterGpuScene& scene,
+                              RasterSceneDescriptors& descriptors,
+                              const PreviewRasterPipeline& previewPipeline);
+  void recordLidarPointOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors);
   std::optional<ExportedRasterAovTexture> getAovTexture(RasterAov aov) const;
 
+  void setLidarSensors(std::vector<RasterLidarSensorSpec> sensors);
+  void setLidarVisualizationConfig(RasterLidarVisualizationConfig config);
+  RasterLidarFramePointCloud readLidarPointCloudFrame();
   void setTileConfig(TileAtlasConfig config);
   void setRequestedTileAovChannels(TileAovChannelMask channels);
   TileAtlasConfig getTileConfig() const { return m_tileAtlasPass.getConfig(); }
@@ -54,4 +64,5 @@ private:
 
   PreviewRasterPipeline m_previewRasterPipeline;
   TileAtlasPass m_tileAtlasPass;
+  LidarPointCloudPass m_lidarPointCloudPass;
 };

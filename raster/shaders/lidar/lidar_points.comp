@@ -1,0 +1,80 @@
+#version 460
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "host_device.h"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(r32f, set = 0, binding = 0) uniform readonly image2D rangeImage;
+layout(set = 0, binding = 1, std430) readonly buffer LidarSensors_
+{
+  LidarSensorGpu sensors[];
+}
+lidarSensors;
+layout(set = 0, binding = 2, std430) buffer LidarPoints_
+{
+  LidarPointGpu points[];
+}
+lidarPoints;
+
+layout(push_constant) uniform _PushConstantLidarGenerate
+{
+  PushConstantLidarGenerate pc;
+};
+
+float sampleAngle(float startDeg, float endDeg, float stepDeg, uint index)
+{
+  float direction = endDeg >= startDeg ? 1.0 : -1.0;
+  return startDeg + direction * max(abs(stepDeg), 1.0e-4) * float(index);
+}
+
+void main()
+{
+  LidarSensorGpu sensor = lidarSensors.sensors[pc.sensorIndex];
+  uint beamIndex = gl_GlobalInvocationID.x;
+  uint ringIndex = gl_GlobalInvocationID.y;
+  if(beamIndex >= sensor.azimuthSampleCount || ringIndex >= sensor.verticalSampleCount)
+  {
+    return;
+  }
+
+  uint localIndex = ringIndex * sensor.azimuthSampleCount + beamIndex;
+  uint pointIndex = sensor.pointOffset + localIndex;
+  float rangeMeters = imageLoad(rangeImage, ivec2(int(beamIndex), int(ringIndex))).r;
+  float maxDistance = max(sensor.originMaxDistance.w, 1.0e-4);
+
+  float azimuthRad = radians(sampleAngle(sensor.forwardAzimuthMin.w, sensor.azimuthMaxVerticalMaxStep.x,
+                                        sensor.rightAzimuthStep.w, beamIndex));
+  float verticalRad = radians(sampleAngle(sensor.upVerticalMin.w, sensor.azimuthMaxVerticalMaxStep.y,
+                                          sensor.azimuthMaxVerticalMaxStep.z, ringIndex));
+  float cosVertical = cos(verticalRad);
+  vec3 direction = normalize(sensor.forwardAzimuthMin.xyz * (cos(azimuthRad) * cosVertical) +
+                             sensor.rightAzimuthStep.xyz * (sin(azimuthRad) * cosVertical) +
+                             sensor.upVerticalMin.xyz * sin(verticalRad));
+
+  LidarPointGpu point;
+  point.positionRange = vec4(sensor.originMaxDistance.xyz, rangeMeters);
+  point.sensorIndex = pc.sensorIndex;
+  point.ringIndex = ringIndex;
+  point.beamIndex = beamIndex;
+  point.flags = 0u;
+  point.intensity = 0.0;
+  point.pad0 = 0u;
+  point.pad1 = 0u;
+  point.pad2 = 0u;
+
+  if(rangeMeters > 0.0 && rangeMeters <= maxDistance)
+  {
+    point.positionRange = vec4(sensor.originMaxDistance.xyz + direction * rangeMeters, rangeMeters);
+    point.flags = LIDAR_POINT_FLAG_VALID | LIDAR_POINT_FLAG_HIT;
+    point.intensity = 1.0;
+  }
+  else if(rangeMeters > maxDistance)
+  {
+    point.flags = LIDAR_POINT_FLAG_OUT_OF_RANGE;
+  }
+
+  lidarPoints.points[pointIndex] = point;
+}

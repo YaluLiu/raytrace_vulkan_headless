@@ -85,6 +85,7 @@ public:
 private:
   HdRobotRenderParam* _GetRobotRenderParam() const;
   void _SyncTileConfigFromSettings();
+  void _SyncLidarVisualizationConfigFromSettings();
 
 private:
   const std::string              _resourcePath;

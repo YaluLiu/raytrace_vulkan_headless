@@ -24,6 +24,13 @@ struct HdRobotTileConfig
   uint32_t gridRows = 10;
 };
 
+struct HdRobotLidarVisualizationConfig
+{
+  bool enabled = false;
+  uint32_t sensorIndex = 0;
+  float pointSizePixels = HdRobotLidarParams{}.pointRadiusPixels;
+};
+
 class HdRobotRenderParam final : public HdRenderParam
 {
  public:
@@ -39,6 +46,8 @@ class HdRobotRenderParam final : public HdRenderParam
   std::vector<HdRobotLidarSensorData> GetLidarSensorsSnapshot() const;
   void SetTileConfig(const HdRobotTileConfig& config);
   HdRobotTileConfig GetTileConfig() const;
+  void SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config);
+  HdRobotLidarVisualizationConfig GetLidarVisualizationConfig() const;
 
   void MarkAllMeshesInstanceDirty();
   void MarkMeshInstanceDirty(size_t meshId);
@@ -58,6 +67,7 @@ class HdRobotRenderParam final : public HdRenderParam
   std::vector<HdRobotCameraData> v_camera;
   std::vector<HdRobotLidarSensorData> v_lidarSensor;
   HdRobotTileConfig tileConfig;
+  HdRobotLidarVisualizationConfig lidarVisualizationConfig;
   TextureRegistry textureRegistry;
 
 };

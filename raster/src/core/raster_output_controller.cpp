@@ -4,6 +4,8 @@
 #include "scene/raster_scene_descriptors.hpp"
 #include "scene/raster_view_uniforms.hpp"
 
+#include <utility>
+
 void RasterOutputController::setup(VkDevice device,
                                    VkPhysicalDevice physicalDevice,
                                    uint32_t graphicsQueueIndex,
@@ -12,10 +14,12 @@ void RasterOutputController::setup(VkDevice device,
 {
   m_previewRasterPipeline.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
   m_tileAtlasPass.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
+  m_lidarPointCloudPass.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
 }
 
 void RasterOutputController::destroy()
 {
+  m_lidarPointCloudPass.destroy();
   m_tileAtlasPass.destroy();
   m_previewRasterPipeline.destroy();
 }
@@ -34,12 +38,14 @@ void RasterOutputController::rebuildPipelinesForSceneLayout(VkDescriptorSetLayou
 {
   m_previewRasterPipeline.createGraphicsPipeline(sceneDescriptorSetLayout);
   m_tileAtlasPass.destroyGraphicsPipeline();
+  m_lidarPointCloudPass.rebuildPipelinesForSceneLayout(sceneDescriptorSetLayout, m_previewRasterPipeline);
 }
 
 void RasterOutputController::destroyOutputPipelines()
 {
   m_previewRasterPipeline.destroyGraphicsPipeline();
   m_tileAtlasPass.destroyGraphicsPipeline();
+  m_lidarPointCloudPass.destroyGraphicsPipeline();
 }
 
 void RasterOutputController::recordTileAtlas(const VkCommandBuffer& cmdBuf,
@@ -58,6 +64,20 @@ void RasterOutputController::recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                                             scene.getInstanceIds());
 }
 
+void RasterOutputController::recordLidarPointClouds(const VkCommandBuffer& cmdBuf,
+                                                    const RasterGpuScene& scene,
+                                                    RasterSceneDescriptors& descriptors,
+                                                    const PreviewRasterPipeline& previewPipeline)
+{
+  m_lidarPointCloudPass.recordGenerate(cmdBuf, descriptors.set(), descriptors.layout(), previewPipeline,
+                                       scene.getMeshBuffers(), scene.getInstances(), scene.getInstanceIds());
+}
+
+void RasterOutputController::recordLidarPointOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors)
+{
+  m_lidarPointCloudPass.recordOverlay(cmdBuf, descriptors.set(), descriptors.layout(), m_previewRasterPipeline);
+}
+
 std::optional<ExportedRasterAovTexture> RasterOutputController::getAovTexture(RasterAov aov) const
 {
   if(isTileAov(aov))
@@ -70,6 +90,21 @@ std::optional<ExportedRasterAovTexture> RasterOutputController::getAovTexture(Ra
 void RasterOutputController::setTileConfig(TileAtlasConfig config)
 {
   m_tileAtlasPass.setConfig(config);
+}
+
+void RasterOutputController::setLidarSensors(std::vector<RasterLidarSensorSpec> sensors)
+{
+  m_lidarPointCloudPass.setSensors(std::move(sensors));
+}
+
+void RasterOutputController::setLidarVisualizationConfig(RasterLidarVisualizationConfig config)
+{
+  m_lidarPointCloudPass.setVisualizationConfig(config);
+}
+
+RasterLidarFramePointCloud RasterOutputController::readLidarPointCloudFrame()
+{
+  return m_lidarPointCloudPass.readPointCloudFrame();
 }
 
 void RasterOutputController::setRequestedTileAovChannels(TileAovChannelMask channels)

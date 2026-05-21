@@ -62,6 +62,9 @@ test.rchit
 chatgpt/
 graphify-out/
 output/
+!raster/private/output/
+!raster/private/output/lidar/
+!raster/private/output/lidar/*
 !raster/src/output/
 !raster/src/output/lidar/
 !raster/src/output/lidar/.gitkeep
@@ -81,5 +84,3 @@ build_hydra/
 docs/*
 !docs/FILEMAP.md
 docs/PLAN/
-
-

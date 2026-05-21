@@ -1,6 +1,7 @@
 #pragma once
 
 #include <raster/aov_texture.hpp>
+#include <raster/lidar_types.hpp>
 #include <raster/raster_renderer_types.hpp>
 #include <raster/tile_config.hpp>
 
@@ -63,6 +64,9 @@ public:
   bool isTileMultiviewSupported() const;
   uint32_t getTileMultiviewMaxViewCount() const;
   std::optional<ExportedRasterAovTexture> GetAovTexture(RasterAov aov) const;
+  void setLidarSensors(std::vector<RasterLidarSensorSpec> sensors);
+  void setLidarVisualizationConfig(RasterLidarVisualizationConfig config);
+  RasterLidarFramePointCloud readLidarPointCloudFrame();
 
   // Debug helpers.
   std::vector<uint32_t> readObjectIdImage();
@@ -82,6 +86,8 @@ public:
   void createPreviewOutputPipeline();
   void recordPreviewAovs(const VkCommandBuffer &cmdBuf);
   void recordTileAovAtlas(const VkCommandBuffer &cmdBuf);
+  void recordLidarPointClouds(const VkCommandBuffer &cmdBuf);
+  void recordLidarPointOverlay(const VkCommandBuffer &cmdBuf);
   void markTileAovAtlasConsumed(const std::string &outputDirectory = "output");
   void createPreviewAovTargets();
   void recordFrameUniformUpdate(const VkCommandBuffer &cmdBuf);

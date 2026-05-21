@@ -62,6 +62,44 @@ RasterCameraSpec ToRasterCameraSpec(const HdRobotCameraData &camera)
   return result;
 }
 
+RasterLidarSensorSpec ToRasterLidarSensorSpec(const HdRobotLidarSensorData &sensor)
+{
+  RasterLidarSensorSpec result;
+  result.name = sensor.name;
+  result.position = sensor.camera.position;
+  result.forward = sensor.camera.forward;
+  result.up = sensor.camera.up;
+  result.params.azimuthMinDeg = sensor.params.azimuthMinDeg;
+  result.params.azimuthMaxDeg = sensor.params.azimuthMaxDeg;
+  result.params.azimuthStepDeg = sensor.params.azimuthStepDeg;
+  result.params.verticalMinDeg = sensor.params.verticalMinDeg;
+  result.params.verticalMaxDeg = sensor.params.verticalMaxDeg;
+  result.params.verticalStepDeg = sensor.params.verticalStepDeg;
+  result.params.pointRadiusPixels = sensor.params.pointRadiusPixels;
+  result.params.maxDistance = sensor.params.maxDistance;
+  return result;
+}
+
+std::vector<RasterLidarSensorSpec> ToRasterLidarSensorSpec(const std::vector<HdRobotLidarSensorData> &sensors)
+{
+  std::vector<RasterLidarSensorSpec> result;
+  result.reserve(sensors.size());
+  for(const HdRobotLidarSensorData &sensor : sensors)
+  {
+    result.push_back(ToRasterLidarSensorSpec(sensor));
+  }
+  return result;
+}
+
+RasterLidarVisualizationConfig ToRasterLidarVisualizationConfig(const HdRobotLidarVisualizationConfig &config)
+{
+  RasterLidarVisualizationConfig result;
+  result.enabled = config.enabled;
+  result.sensorIndex = config.sensorIndex;
+  result.pointSizePixels = config.pointSizePixels;
+  return result;
+}
+
 std::vector<RasterCameraSpec> ToRasterCameraSpec(const std::vector<HdRobotCameraData> &cameras)
 {
   std::vector<RasterCameraSpec> result;
@@ -245,6 +283,14 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
 
   _rasterSession.getRenderer().setTileConfig(ToTileAtlasConfig(_renderParam.GetTileConfig()));
   _rasterSession.getRenderer().setRequestedTileAovChannels(ComputeRequestedTileAovChannels(hdAovBindings));
+  std::vector<HdRobotLidarSensorData> lidarSensors = _renderParam.GetLidarSensorsSnapshot();
+  std::sort(lidarSensors.begin(), lidarSensors.end(), [](const HdRobotLidarSensorData &lhs,
+                                                         const HdRobotLidarSensorData &rhs) {
+    return lhs.name < rhs.name;
+  });
+  _rasterSession.getRenderer().setLidarSensors(ToRasterLidarSensorSpec(lidarSensors));
+  _rasterSession.getRenderer().setLidarVisualizationConfig(
+      ToRasterLidarVisualizationConfig(_renderParam.GetLidarVisualizationConfig()));
   updateLights();
   updateScene();
   _rasterSession.render();

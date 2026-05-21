@@ -102,6 +102,18 @@ HdRobotTileConfig HdRobotRenderParam::GetTileConfig() const
   return tileConfig;
 }
 
+void HdRobotRenderParam::SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config)
+{
+  std::lock_guard guard(mutex);
+  lidarVisualizationConfig = config;
+}
+
+HdRobotLidarVisualizationConfig HdRobotRenderParam::GetLidarVisualizationConfig() const
+{
+  std::lock_guard guard(mutex);
+  return lidarVisualizationConfig;
+}
+
 void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
 {
   for (auto& mesh : v_mesh)

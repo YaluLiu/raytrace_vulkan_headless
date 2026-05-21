@@ -43,6 +43,8 @@ public:
   VkFormat getInstanceIdFormat() const { return _offscreenInstanceIdFormat; }
   VkFormat getDepthAovFormat() const { return _offscreenDepthAovFormat; }
   VkFormat getDepthAttachmentFormat() const { return _offscreenDepthFormat; }
+  VkImageView getColorImageView() const { return _offscreenColor.descriptor.imageView; }
+  VkImageView getDepthAttachmentImageView() const { return _offscreenDepth.descriptor.imageView; }
   const nvvk::Texture& getColorTextureForReadback() const { return _offscreenColor; }
   const nvvk::Texture& getDepthAovTextureForReadback() const { return _offscreenDepthAov; }
   const nvvk::Texture& getObjectIdTextureForReadback() const { return _offscreenObjectId; }

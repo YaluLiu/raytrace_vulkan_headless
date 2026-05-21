@@ -73,6 +73,21 @@ std::optional<ExportedRasterAovTexture> RasterRenderer::GetAovTexture(RasterAov 
   return m_outputController.getAovTexture(aov);
 }
 
+void RasterRenderer::setLidarSensors(std::vector<RasterLidarSensorSpec> sensors)
+{
+  m_outputController.setLidarSensors(std::move(sensors));
+}
+
+void RasterRenderer::setLidarVisualizationConfig(RasterLidarVisualizationConfig config)
+{
+  m_outputController.setLidarVisualizationConfig(config);
+}
+
+RasterLidarFramePointCloud RasterRenderer::readLidarPointCloudFrame()
+{
+  return m_outputController.readLidarPointCloudFrame();
+}
+
 void RasterRenderer::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   m_viewUniforms.setMainCameraClipRange(clipStart, clipEnd);

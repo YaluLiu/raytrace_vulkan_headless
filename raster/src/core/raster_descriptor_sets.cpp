@@ -10,6 +10,17 @@ void RasterRenderer::recordPreviewAovs(const VkCommandBuffer& cmdBuf)
   m_outputController.recordPreviewAovs(cmdBuf, m_gpuScene, m_sceneDescriptors);
 }
 
+void RasterRenderer::recordLidarPointClouds(const VkCommandBuffer& cmdBuf)
+{
+  m_outputController.recordLidarPointClouds(cmdBuf, m_gpuScene, m_sceneDescriptors,
+                                            m_outputController.getPreviewPipeline());
+}
+
+void RasterRenderer::recordLidarPointOverlay(const VkCommandBuffer& cmdBuf)
+{
+  m_outputController.recordLidarPointOverlay(cmdBuf, m_sceneDescriptors);
+}
+
 void RasterRenderer::createSceneDescriptors()
 {
   m_sceneDescriptors.create(m_impl->device(), m_gpuScene.getTextureDescriptorCount(), true);
