@@ -28,6 +28,17 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((tileGridColumns, "hdRobot:tile:gridColumns")) \
   ((tileGridRows, "hdRobot:tile:gridRows"))
 
+#define HD_ROBOT_CAMERA_PARAM_TOKENS \
+  ((lidarIsLidar, "lidar:isLidar")) \
+  ((lidarAzimuthMinDeg, "lidar:azimuthMinDeg")) \
+  ((lidarAzimuthMaxDeg, "lidar:azimuthMaxDeg")) \
+  ((lidarAzimuthStepDeg, "lidar:azimuthStepDeg")) \
+  ((lidarVerticalMinDeg, "lidar:verticalMinDeg")) \
+  ((lidarVerticalMaxDeg, "lidar:verticalMaxDeg")) \
+  ((lidarVerticalStepDeg, "lidar:verticalStepDeg")) \
+  ((lidarPointRadiusPixels, "lidar:pointRadiusPixels")) \
+  ((lidarMaxDistance, "lidar:maxDistance"))
+
 #define HD_ROBOT_AOV_TOKENS \
   (tileColor) \
   (tileDepth) \
@@ -42,6 +53,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeContexts, HD_ROBOT_NODE_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeMetadata, HD_ROBOT_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotCommandTokens, HD_ROBOT_COMMAND_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotRenderSettingTokens, HD_ROBOT_RENDER_SETTING_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotCameraParamTokens, HD_ROBOT_CAMERA_PARAM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotAovTokens, HD_ROBOT_AOV_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -4,6 +4,32 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace
+{
+template <typename T>
+void RemoveByName(std::vector<T>& items, const std::string& name)
+{
+  items.erase(std::remove_if(items.begin(), items.end(), [&name](const T& item) {
+                  return item.name == name;
+                }),
+                items.end());
+}
+
+template <typename T>
+void UpsertByName(std::vector<T>& items, const T& item)
+{
+  auto itemIt = std::find_if(items.begin(), items.end(), [&item](const T& existingItem) {
+    return existingItem.name == item.name;
+  });
+  if(itemIt == items.end())
+  {
+    items.push_back(item);
+    return;
+  }
+  *itemIt = item;
+}
+} // namespace
+
 int HdRobotRenderParam::RegisterTexturePath(const std::string& texturePath, TextureUsage usage)
 {
   std::lock_guard guard(mutex);
@@ -28,31 +54,40 @@ uint64_t HdRobotRenderParam::GetTextureRegistryVersion() const
 void HdRobotRenderParam::UpsertCamera(const HdRobotCameraData& cameraData)
 {
   std::lock_guard guard(mutex);
-  auto cameraIt = std::find_if(v_camera.begin(), v_camera.end(), [&cameraData](const HdRobotCameraData& camera) {
-    return camera.name == cameraData.name;
-  });
-  if(cameraIt == v_camera.end())
-  {
-    v_camera.push_back(cameraData);
-    return;
-  }
-  *cameraIt = cameraData;
+  UpsertByName(v_camera, cameraData);
+}
+
+void HdRobotRenderParam::UpsertLidarSensor(const HdRobotLidarSensorData& sensorData)
+{
+  std::lock_guard guard(mutex);
+  UpsertByName(v_lidarSensor, sensorData);
 }
 
 void HdRobotRenderParam::RemoveCamera(const SdfPath& cameraId)
 {
   const std::string cameraName = cameraId.GetString();
   std::lock_guard   guard(mutex);
-  v_camera.erase(std::remove_if(v_camera.begin(), v_camera.end(), [&cameraName](const HdRobotCameraData& camera) {
-                   return camera.name == cameraName;
-                 }),
-                 v_camera.end());
+  RemoveByName(v_camera, cameraName);
+  RemoveByName(v_lidarSensor, cameraName);
+}
+
+void HdRobotRenderParam::RemoveLidarSensor(const SdfPath& sensorId)
+{
+  const std::string sensorName = sensorId.GetString();
+  std::lock_guard   guard(mutex);
+  RemoveByName(v_lidarSensor, sensorName);
 }
 
 std::vector<HdRobotCameraData> HdRobotRenderParam::GetCamerasSnapshot() const
 {
   std::lock_guard guard(mutex);
   return v_camera;
+}
+
+std::vector<HdRobotLidarSensorData> HdRobotRenderParam::GetLidarSensorsSnapshot() const
+{
+  std::lock_guard guard(mutex);
+  return v_lidarSensor;
 }
 
 void HdRobotRenderParam::SetTileConfig(const HdRobotTileConfig& config)

@@ -164,8 +164,8 @@ call sites with `rg`.
   frame's requested tile AOV channel mask, and ordered AOV copy groups that copy
   fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object, camera array, tile config, scene dirty flags, texture
-  registry, and renderer bridge ownership.
+  parameter object, camera array, LiDAR sensor array, tile config, scene dirty
+  flags, texture registry, and renderer bridge ownership.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings and tile AOV tokens.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
@@ -183,7 +183,8 @@ call sites with `rg`.
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
-  conversion, and registration into `HdRobotRenderParam::v_camera`.
+  conversion, LiDAR `lidar:*` custom parameter parsing, and derivation of
+  `HdRobotLidarSensorData` from camera state plus LiDAR-specific params.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.
@@ -273,8 +274,8 @@ call sites with `rg`.
   `hdRobot/rasterBridge.cpp`, `raster/include/raster/raster_renderer.hpp`,
   `raster/src/scene/raster_view_uniforms.cpp`, and `raster/src/output/tile/tile_atlas_pass.cpp`, then
   search for `v_camera`,
-  `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
-  `setRequestedTileAovChannels`,
+  `v_lidarSensor`, `GetCamerasSnapshot`, `GetLidarSensorsSnapshot`,
+  `setCameras`, `setMainCamera`, `setTileConfig`, `setRequestedTileAovChannels`,
   `recordTileAovAtlas`, and `RasterCameraSpec`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
