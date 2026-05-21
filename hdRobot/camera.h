@@ -16,7 +16,6 @@ struct HdRobotLidarParams
   float verticalMinDeg = -2.0f;
   float verticalMaxDeg = -20.0f;
   float verticalStepDeg = 1.0f;
-  float pointRadiusPixels = 2.0f;
   float maxDistance = 200.0f;
 };
 

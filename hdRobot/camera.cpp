@@ -133,10 +133,6 @@ HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath
   params.verticalStepDeg = ClampStep(
       ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalStepDeg, params.verticalStepDeg),
       params.verticalStepDeg);
-  params.pointRadiusPixels = ClampPositive(
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarPointRadiusPixels,
-                           params.pointRadiusPixels),
-      params.pointRadiusPixels);
   params.maxDistance = ClampPositive(
       ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxDistance, params.maxDistance),
       params.maxDistance);

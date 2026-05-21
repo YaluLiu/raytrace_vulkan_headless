@@ -28,7 +28,7 @@ struct HdRobotLidarVisualizationConfig
 {
   bool enabled = false;
   uint32_t sensorIndex = 0;
-  float pointSizePixels = HdRobotLidarParams{}.pointRadiusPixels;
+  float pointSizePixels = 2.0f;
 };
 
 class HdRobotRenderParam final : public HdRenderParam

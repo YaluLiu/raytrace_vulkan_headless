@@ -75,7 +75,6 @@ RasterLidarSensorSpec ToRasterLidarSensorSpec(const HdRobotLidarSensorData &sens
   result.params.verticalMinDeg = sensor.params.verticalMinDeg;
   result.params.verticalMaxDeg = sensor.params.verticalMaxDeg;
   result.params.verticalStepDeg = sensor.params.verticalStepDeg;
-  result.params.pointRadiusPixels = sensor.params.pointRadiusPixels;
   result.params.maxDistance = sensor.params.maxDistance;
   return result;
 }

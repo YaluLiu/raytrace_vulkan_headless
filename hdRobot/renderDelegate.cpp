@@ -78,8 +78,7 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
       HdRenderSettingDescriptor{"LiDAR visualization sensor index",
                                 HdRobotRenderSettingTokens->lidarVisualizeSensorIndex, VtValue(0)},
       HdRenderSettingDescriptor{"LiDAR visualization point size",
-                                HdRobotRenderSettingTokens->lidarVisualizePointSize,
-                                VtValue(HdRobotLidarParams{}.pointRadiusPixels)},
+                                HdRobotRenderSettingTokens->lidarVisualizePointSize, VtValue(2.0f)},
   };
 }
 

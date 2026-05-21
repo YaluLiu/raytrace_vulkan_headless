@@ -39,7 +39,6 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((lidarVerticalMinDeg, "lidar:verticalMinDeg")) \
   ((lidarVerticalMaxDeg, "lidar:verticalMaxDeg")) \
   ((lidarVerticalStepDeg, "lidar:verticalStepDeg")) \
-  ((lidarPointRadiusPixels, "lidar:pointRadiusPixels")) \
   ((lidarMaxDistance, "lidar:maxDistance"))
 
 #define HD_ROBOT_AOV_TOKENS \
