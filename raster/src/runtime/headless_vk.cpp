@@ -66,7 +66,7 @@ void nvvkhl::AppOffline::createCommandBuffers()
 #endif
 }
 
-void nvvkhl::AppOffline::submitFrame()
+void nvvkhl::AppOffline::submitCurrentCommandBufferAndWait()
 {
   const VkCommandBuffer& cmdBuf = m_commandBuffers[m_imageIndex];
 

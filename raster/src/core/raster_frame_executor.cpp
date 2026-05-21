@@ -28,16 +28,16 @@ void executeRasterFramePass(RasterRenderer& renderer, const VkCommandBuffer& cmd
   switch(pass)
   {
     case RasterFramePass::UpdateUniforms:
-      renderer.updateUniformBuffer(cmdBuf);
+      renderer.recordFrameUniformUpdate(cmdBuf);
       break;
     case RasterFramePass::UpdateLights:
       renderer.updateLightBuffer(cmdBuf);
       break;
     case RasterFramePass::RenderTileAovAtlas:
-      renderer.renderTileAovAtlas(cmdBuf);
+      renderer.recordTileAovAtlas(cmdBuf);
       break;
     case RasterFramePass::RenderPreviewAovs:
-      renderer.renderPreviewAovs(cmdBuf);
+      renderer.recordPreviewAovs(cmdBuf);
       break;
   }
 }

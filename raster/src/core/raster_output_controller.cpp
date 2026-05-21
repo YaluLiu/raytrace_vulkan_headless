@@ -20,23 +20,23 @@ void RasterOutputController::destroy()
   m_previewRasterPipeline.destroy();
 }
 
-void RasterOutputController::createResources(VkExtent2D size)
+void RasterOutputController::createPreviewTargets(VkExtent2D size)
 {
-  m_previewRasterPipeline.createOffscreenRender(size);
+  m_previewRasterPipeline.recreateAovTargets(size);
 }
 
 void RasterOutputController::resizePreview(VkExtent2D size)
 {
-  m_previewRasterPipeline.createOffscreenRender(size);
+  m_previewRasterPipeline.recreateAovTargets(size);
 }
 
-void RasterOutputController::createPreviewPipeline(VkDescriptorSetLayout sceneDescriptorSetLayout)
+void RasterOutputController::rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout)
 {
   m_previewRasterPipeline.createGraphicsPipeline(sceneDescriptorSetLayout);
   m_tileAtlasPass.destroyGraphicsPipeline();
 }
 
-void RasterOutputController::destroyPreviewPipeline()
+void RasterOutputController::destroyOutputPipelines()
 {
   m_previewRasterPipeline.destroyGraphicsPipeline();
   m_tileAtlasPass.destroyGraphicsPipeline();
@@ -54,7 +54,7 @@ void RasterOutputController::recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                                                const RasterGpuScene& scene,
                                                const RasterSceneDescriptors& descriptors)
 {
-  m_previewRasterPipeline.renderPreviewAovs(cmdBuf, descriptors.set(), scene.getMeshBuffers(), scene.getInstances(),
+  m_previewRasterPipeline.recordPreviewAovs(cmdBuf, descriptors.set(), scene.getMeshBuffers(), scene.getInstances(),
                                             scene.getInstanceIds());
 }
 

@@ -1,6 +1,6 @@
 #include "core/raster_renderer_internal.hpp"
 
-void RasterRenderer::renderTileAovAtlas(const VkCommandBuffer& cmdBuf)
+void RasterRenderer::recordTileAovAtlas(const VkCommandBuffer& cmdBuf)
 {
   m_outputController.recordTileAtlas(cmdBuf, m_gpuScene, m_sceneDescriptors, m_viewUniforms);
 }

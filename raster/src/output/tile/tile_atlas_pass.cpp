@@ -191,7 +191,7 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
     }
     if(copied && channels.contains(TileAovChannel::Depth))
     {
-      copied = m_depthAtlas.copyLayersFrom(cmdBuf, m_multiviewTileTargets.getDepthTexture(), firstCameraIndex,
+      copied = m_depthAtlas.copyLayersFrom(cmdBuf, m_multiviewTileTargets.getDepthAovTexture(), firstCameraIndex,
                                            batchCameraCount, m_multiviewTileTargets.getLayerCount());
     }
     if(!copied)

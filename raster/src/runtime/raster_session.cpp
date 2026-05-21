@@ -39,7 +39,7 @@ std::string getUsdRootFromEnvironment()
   return envValue != nullptr ? std::string(envValue) : std::string();
 }
 
-void addExternalMemoryExtensions(nvvk::ContextCreateInfo& contextInfo)
+void addExternalSharingExtensions(nvvk::ContextCreateInfo& contextInfo)
 {
   contextInfo.addInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   contextInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
@@ -131,7 +131,7 @@ void RasterSession::setupContext()
   contextInfo.verboseAvailable         = false;
   contextInfo.setVersion(1, 2);
 
-  addExternalMemoryExtensions(contextInfo);
+  addExternalSharingExtensions(contextInfo);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
   if(!m_vkctx.initInstance(contextInfo))
@@ -160,15 +160,15 @@ void RasterSession::setupRenderer()
 
 void RasterSession::createRenderResources()
 {
-  m_renderer.createOffscreenRender();
+  m_renderer.createPreviewAovTargets();
   m_renderer.createLightBuffer();
 
-  m_renderer.createDescriptorSetLayout();
-  m_renderer.createUniformBuffer();
-  m_renderer.createObjDescriptionBuffer();
-  m_renderer.updateDescriptorSet();
+  m_renderer.createSceneDescriptors();
+  m_renderer.ensureViewUniformBuffers();
+  m_renderer.createObjectDescriptionBuffer();
+  m_renderer.updateSceneDescriptorBindings();
 
-  m_renderer.createPreviewRasterPipeline();
+  m_renderer.createPreviewOutputPipeline();
   m_resourcesCreated = true;
 }
 
@@ -186,7 +186,7 @@ void RasterSession::render()
   raster::recordFramePasses(m_renderer, cmdBuf);
 
   vkEndCommandBuffer(cmdBuf);
-  m_renderer.submitFrame();
+  m_renderer.submitCurrentCommandBufferAndWait();
   try
   {
     m_renderer.markTileAovAtlasConsumed();

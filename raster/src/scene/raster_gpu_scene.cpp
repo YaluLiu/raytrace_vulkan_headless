@@ -93,7 +93,7 @@ uint32_t RasterGpuScene::addInstance(const glm::mat4& transform, uint32_t objInd
   return static_cast<uint32_t>(m_instances.size() - 1);
 }
 
-void RasterGpuScene::loadModel(ModelLoader& loader, glm::mat4 transform)
+void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transform)
 {
   for(auto& m : loader.m_materials)
   {
@@ -122,7 +122,7 @@ void RasterGpuScene::loadModel(ModelLoader& loader, glm::mat4 transform)
   model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, loader.m_matIndx, deviceAddressFlags);
 
   auto txtOffset = 0;
-  createTextureImages(cmdBuf, loader.m_textures, loader.m_textureAssets);
+  uploadTextureResources(cmdBuf, loader.m_textures, loader.m_textureAssets);
   cmdBufGet.submitAndWait(cmdBuf);
 
   m_alloc->finalizeAndReleaseStaging();
@@ -152,18 +152,18 @@ void RasterGpuScene::loadTextureAssets(const std::vector<TextureAsset>& textureA
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
   const std::vector<std::string> noLegacyTextures;
-  createTextureImages(cmdBuf, noLegacyTextures, textureAssets);
+  uploadTextureResources(cmdBuf, noLegacyTextures, textureAssets);
   cmdBufGet.submitAndWait(cmdBuf);
   m_alloc->finalizeAndReleaseStaging();
 }
 
-void RasterGpuScene::recreateTextureResources(const std::vector<TextureAsset>& textureAssets)
+void RasterGpuScene::rebuildTextureResources(const std::vector<TextureAsset>& textureAssets)
 {
   destroyTextures();
   loadTextureAssets(textureAssets);
 }
 
-void RasterGpuScene::createTextureImages(const VkCommandBuffer& cmdBuf,
+void RasterGpuScene::uploadTextureResources(const VkCommandBuffer& cmdBuf,
                                          const std::vector<std::string>& textures,
                                          const std::vector<TextureAsset>& textureAssets)
 {
@@ -407,7 +407,7 @@ void RasterGpuScene::updateMaterialsAtRuntime(const std::vector<RasterMaterialUp
   cmdGen.submitAndWait(cmdBuf);
 }
 
-void RasterGpuScene::createObjDescriptionBuffer()
+void RasterGpuScene::createObjectDescriptionBuffer()
 {
   nvvk::CommandPool cmdGen(m_device, m_graphicsQueueIndex);
 

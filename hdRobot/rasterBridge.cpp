@@ -334,7 +334,7 @@ void HdRobotRasterBridge::uploadInitialScene()
       auto materialObj = _renderParam.v_mat[matId].toMaterialObj();
       loader.m_materials.emplace_back(materialObj);
     }
-    vulkan.loadModel(loader);
+    vulkan.uploadMeshFromLoader(loader);
     const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
     const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
     const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
@@ -368,7 +368,7 @@ void HdRobotRasterBridge::refreshTextureAssetsIfNeeded()
 
   _glInteropCache.Clear();
   RasterRenderer &vulkan = _rasterSession.getRenderer();
-  vulkan.recreateTextureResources(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
+  vulkan.rebuildTextureResourcesAndSceneBindings(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
 
@@ -434,7 +434,7 @@ void HdRobotRasterBridge::updateGeometry()
   {
     if(_renderParam.ConsumeMeshGeometryDirty(meshId))
     {
-      ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.getMutableModelLoader(meshId));
+      ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.getMutableMeshSourceLoader(meshId));
       vulkan.updateMeshGeometry(meshId);
     }
   }

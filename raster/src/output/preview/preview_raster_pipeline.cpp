@@ -95,7 +95,7 @@ void PreviewRasterPipeline::destroyGraphicsPipeline()
   _renderPass             = VK_NULL_HANDLE;
 }
 
-void PreviewRasterPipeline::createOffscreenRender(VkExtent2D size)
+void PreviewRasterPipeline::recreateAovTargets(VkExtent2D size)
 {
   if(_device == VK_NULL_HANDLE || _transientAllocator == nullptr || size.width == 0 || size.height == 0)
   {
@@ -229,7 +229,7 @@ void PreviewRasterPipeline::createGraphicsPipeline(VkDescriptorSetLayout sceneDe
   createFramebuffer();
 }
 
-void PreviewRasterPipeline::renderPreviewAovs(const VkCommandBuffer& cmdBuf,
+void PreviewRasterPipeline::recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                                VkDescriptorSet sceneDescriptorSet,
                                std::span<const RasterMeshBuffers> objModels,
                                std::span<const RasterInstance> instances,

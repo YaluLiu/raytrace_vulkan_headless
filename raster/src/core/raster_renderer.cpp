@@ -43,9 +43,9 @@ uint32_t RasterRenderer::getCurFrame() const
   return m_impl->getCurFrame();
 }
 
-void RasterRenderer::submitFrame()
+void RasterRenderer::submitCurrentCommandBufferAndWait()
 {
-  m_impl->submitFrame();
+  m_impl->submitCurrentCommandBufferAndWait();
 }
 
 void RasterRenderer::setup(const VkInstance& instance,
@@ -141,27 +141,27 @@ RasterInstanceInfo RasterRenderer::getInstance(size_t index) const
   };
 }
 
-ModelLoader& RasterRenderer::getMutableModelLoader(size_t meshId)
+ModelLoader& RasterRenderer::getMutableMeshSourceLoader(size_t meshId)
 {
-  return m_gpuScene.getMutableModelLoader(meshId);
+  return m_gpuScene.getMutableMeshSourceLoader(meshId);
 }
 
-size_t RasterRenderer::getModelCount() const
+size_t RasterRenderer::getMeshSourceCount() const
 {
-  return m_gpuScene.getModelCount();
+  return m_gpuScene.getMeshSourceCount();
 }
 
-void RasterRenderer::updateUniformBuffer(const VkCommandBuffer& cmdBuf)
+void RasterRenderer::recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf)
 {
-  updateUniformBufferForExtent(cmdBuf, m_impl->sizeRef());
+  recordFrameUniformUpdateForExtent(cmdBuf, m_impl->sizeRef());
 }
 
-void RasterRenderer::updateUniformBufferForExtent(const VkCommandBuffer& cmdBuf, VkExtent2D renderSize)
+void RasterRenderer::recordFrameUniformUpdateForExtent(const VkCommandBuffer& cmdBuf, VkExtent2D renderSize)
 {
   m_viewUniforms.updateFrameUniformBuffer(cmdBuf, renderSize, m_gpuScene.getLightCount());
 }
 
-void RasterRenderer::createUniformBuffer()
+void RasterRenderer::ensureViewUniformBuffers()
 {
   ensureFrameUniformCapacity(getRequiredFrameUniformSlots());
   ensureTileFrameUniformBuffer();
@@ -223,9 +223,9 @@ void RasterRenderer::logTileMultiviewUnavailableOnce(const char* reason)
   std::cerr << std::endl;
 }
 
-void RasterRenderer::createObjDescriptionBuffer()
+void RasterRenderer::createObjectDescriptionBuffer()
 {
-  m_gpuScene.createObjDescriptionBuffer();
+  m_gpuScene.createObjectDescriptionBuffer();
 }
 
 void RasterRenderer::destroyResources()
@@ -251,10 +251,10 @@ void RasterRenderer::onResize(int w, int h)
 
   m_impl->sizeRef().width = w;
   m_impl->sizeRef().height = h;
-  createOffscreenRender();
+  createPreviewAovTargets();
 }
 
-void RasterRenderer::createOffscreenRender()
+void RasterRenderer::createPreviewAovTargets()
 {
-  m_outputController.createResources(m_impl->sizeRef());
+  m_outputController.createPreviewTargets(m_impl->sizeRef());
 }

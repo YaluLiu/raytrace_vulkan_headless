@@ -23,11 +23,11 @@ public:
              nvvk::DebugUtil& debug);
   void destroy();
 
-  void createOffscreenRender(VkExtent2D size);
+  void recreateAovTargets(VkExtent2D size);
   void createGraphicsPipeline(VkDescriptorSetLayout sceneDescriptorSetLayout);
   void destroyGraphicsPipeline();
 
-  void renderPreviewAovs(const VkCommandBuffer& cmdBuf,
+  void recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                  VkDescriptorSet sceneDescriptorSet,
                  std::span<const RasterMeshBuffers> objModels,
                  std::span<const RasterInstance> instances,

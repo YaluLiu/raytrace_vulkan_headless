@@ -30,7 +30,7 @@ public:
   virtual void destroy();
 
   virtual void createCommandBuffers();
-  virtual void submitFrame();
+  virtual void submitCurrentCommandBufferAndWait();
 
   VkInstance                          getInstance() { return m_instance; }
   VkDevice                            getDevice() { return m_device; }

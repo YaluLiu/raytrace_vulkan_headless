@@ -1,8 +1,8 @@
 #include "core/raster_renderer_internal.hpp"
 
-void RasterRenderer::loadModel(ModelLoader& loader, glm::mat4 transform)
+void RasterRenderer::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transform)
 {
-  m_gpuScene.loadModel(loader, transform);
+  m_gpuScene.uploadMeshFromLoader(loader, transform);
 }
 
 void RasterRenderer::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
@@ -10,22 +10,22 @@ void RasterRenderer::loadTextureAssets(const std::vector<TextureAsset>& textureA
   m_gpuScene.loadTextureAssets(textureAssets);
 }
 
-void RasterRenderer::recreateTextureResources(const std::vector<TextureAsset>& textureAssets)
+void RasterRenderer::rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset>& textureAssets)
 {
   vkDeviceWaitIdle(m_impl->device());
 
-  m_outputController.destroyPreviewPipeline();
+  m_outputController.destroyOutputPipelines();
   m_sceneDescriptors.destroy();
 
-  m_gpuScene.recreateTextureResources(textureAssets);
-  createDescriptorSetLayout();
-  updateDescriptorSet();
-  createPreviewRasterPipeline();
+  m_gpuScene.rebuildTextureResources(textureAssets);
+  createSceneDescriptors();
+  updateSceneDescriptorBindings();
+  createPreviewOutputPipeline();
 }
 
-void RasterRenderer::createTextureImages(const VkCommandBuffer& cmdBuf,
+void RasterRenderer::uploadTextureResources(const VkCommandBuffer& cmdBuf,
                                          const std::vector<std::string>& textures,
                                          const std::vector<TextureAsset>& textureAssets)
 {
-  m_gpuScene.createTextureImages(cmdBuf, textures, textureAssets);
+  m_gpuScene.uploadTextureResources(cmdBuf, textures, textureAssets);
 }

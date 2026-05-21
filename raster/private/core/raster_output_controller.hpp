@@ -24,10 +24,10 @@ public:
              nvvk::DebugUtil& debug);
   void destroy();
 
-  void createResources(VkExtent2D size);
+  void createPreviewTargets(VkExtent2D size);
   void resizePreview(VkExtent2D size);
-  void createPreviewPipeline(VkDescriptorSetLayout sceneDescriptorSetLayout);
-  void destroyPreviewPipeline();
+  void rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout);
+  void destroyOutputPipelines();
 
   void recordTileAtlas(const VkCommandBuffer& cmdBuf,
                        const RasterGpuScene& scene,

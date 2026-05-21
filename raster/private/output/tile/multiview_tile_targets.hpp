@@ -23,7 +23,7 @@ public:
   uint32_t getLayerCount() const { return _layerCount; }
   VkFramebuffer getFramebuffer() const { return _framebuffer; }
   const nvvk::Texture& getColorTexture() const { return _colorLayers; }
-  const nvvk::Texture& getDepthTexture() const { return _depthLayers; }
+  const nvvk::Texture& getDepthAovTexture() const { return _depthLayers; }
   const nvvk::Texture& getDepthAttachmentTexture() const { return _depthAttachment; }
 
 private:

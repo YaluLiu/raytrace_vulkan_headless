@@ -1,21 +1,21 @@
 #include "core/raster_renderer_internal.hpp"
 
-void RasterRenderer::createPreviewRasterPipeline()
+void RasterRenderer::createPreviewOutputPipeline()
 {
-  m_outputController.createPreviewPipeline(m_sceneDescriptors.layout());
+  m_outputController.rebuildPipelinesForSceneLayout(m_sceneDescriptors.layout());
 }
 
-void RasterRenderer::renderPreviewAovs(const VkCommandBuffer& cmdBuf)
+void RasterRenderer::recordPreviewAovs(const VkCommandBuffer& cmdBuf)
 {
   m_outputController.recordPreviewAovs(cmdBuf, m_gpuScene, m_sceneDescriptors);
 }
 
-void RasterRenderer::createDescriptorSetLayout()
+void RasterRenderer::createSceneDescriptors()
 {
   m_sceneDescriptors.create(m_impl->device(), m_gpuScene.getTextureDescriptorCount(), true);
 }
 
-void RasterRenderer::updateDescriptorSet()
+void RasterRenderer::updateSceneDescriptorBindings()
 {
   VkDescriptorBufferInfo dbiSceneDesc{m_gpuScene.getObjectDescriptionBuffer().buffer, 0, VK_WHOLE_SIZE};
   VkDescriptorBufferInfo dbiLights{m_gpuScene.getLightBuffer().buffer, 0, VK_WHOLE_SIZE};

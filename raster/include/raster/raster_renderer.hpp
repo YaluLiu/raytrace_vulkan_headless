@@ -31,15 +31,15 @@ public:
   VkDevice getDevice() const;
   const std::vector<VkCommandBuffer>& getCommandBuffers() const;
   uint32_t getCurFrame() const;
-  void submitFrame();
+  void submitCurrentCommandBufferAndWait();
   void onResize(int /*w*/, int /*h*/);
   void destroyResources();
 
   // Scene upload/update facade.
-  void loadModel(ModelLoader &loader, glm::mat4 transform = glm::mat4(1));
+  void uploadMeshFromLoader(ModelLoader &loader, glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset> &textureAssets);
-  void recreateTextureResources(const std::vector<TextureAsset> &textureAssets);
-  void createTextureImages(const VkCommandBuffer &cmdBuf, const std::vector<std::string> &textures,
+  void rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset> &textureAssets);
+  void uploadTextureResources(const VkCommandBuffer &cmdBuf, const std::vector<std::string> &textures,
                            const std::vector<TextureAsset> &textureAssets);
   uint32_t addInstance(const glm::mat4 &transform, uint32_t objIndex, int instanceId = 0);
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
@@ -70,22 +70,22 @@ public:
 
   size_t getInstanceCount() const;
   RasterInstanceInfo getInstance(size_t index) const;
-  ModelLoader &getMutableModelLoader(size_t meshId);
-  size_t getModelCount() const;
+  ModelLoader &getMutableMeshSourceLoader(size_t meshId);
+  size_t getMeshSourceCount() const;
 
   // Temporary internal API used by the session/frame executor while renderer
   // internals are split into dedicated components.
-  void createDescriptorSetLayout();
-  void updateDescriptorSet();
-  void createUniformBuffer();
-  void createObjDescriptionBuffer();
-  void createPreviewRasterPipeline();
-  void renderPreviewAovs(const VkCommandBuffer &cmdBuf);
-  void renderTileAovAtlas(const VkCommandBuffer &cmdBuf);
+  void createSceneDescriptors();
+  void updateSceneDescriptorBindings();
+  void ensureViewUniformBuffers();
+  void createObjectDescriptionBuffer();
+  void createPreviewOutputPipeline();
+  void recordPreviewAovs(const VkCommandBuffer &cmdBuf);
+  void recordTileAovAtlas(const VkCommandBuffer &cmdBuf);
   void markTileAovAtlasConsumed(const std::string &outputDirectory = "output");
-  void createOffscreenRender();
-  void updateUniformBuffer(const VkCommandBuffer &cmdBuf);
-  void updateUniformBufferForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize);
+  void createPreviewAovTargets();
+  void recordFrameUniformUpdate(const VkCommandBuffer &cmdBuf);
+  void recordFrameUniformUpdateForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize);
   void ensureFrameUniformCapacity(uint32_t slotCount);
   uint32_t getRequiredFrameUniformSlots() const;
   void updateFrameUniformDescriptor();

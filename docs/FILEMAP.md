@@ -105,8 +105,9 @@ call sites with `rg`.
 - `raster/src/scene/raster_geometry_upload.cpp`: `RasterRenderer` compatibility
   forwarding for instance and geometry updates into `RasterGpuScene`.
 - `raster/src/scene/raster_scene_upload.cpp`: `RasterRenderer` compatibility forwarding
-  for model and texture upload into `RasterGpuScene`, with descriptor/output
-  rebuild coordination.
+  for mesh-source and texture upload into `RasterGpuScene`, including
+  `rebuildTextureResourcesAndSceneBindings` coordination across descriptors and
+  output pipelines.
 - `raster/src/core/raster_descriptor_sets.cpp`: `RasterRenderer` compatibility
   forwarding for descriptor creation/update and preview AOV recording through
   `RasterSceneDescriptors` and `RasterOutputController`.
@@ -211,8 +212,8 @@ call sites with `rg`.
 ## Model And Scene Loading
 
 - `common/ModelLoader.h`: Abstract model loading interface consumed by
-  `RasterRenderer::loadModel`, including legacy texture filenames and in-memory
-  encoded texture assets.
+  `RasterRenderer::uploadMeshFromLoader`, including legacy texture filenames and
+  in-memory encoded texture assets.
 - `common/obj_loader.h` / `common/obj_loader.cpp`: OBJ loader implementation,
   vertices, indices, normals, texcoords, material assignment, and fallback
   normals.
@@ -244,11 +245,11 @@ call sites with `rg`.
   `raster/src/core/raster_output_controller.cpp`, `raster/src/output/tile/tile_atlas_pass.cpp`,
   `hdRobot/rasterBridge.cpp`, then search for `RenderRasterFrame`,
   `recordFramePasses`, `recordPreviewAovs`, `recordTileAtlas`,
-  `updateUniformBuffer`, and `updateScene`.
+  `recordFrameUniformUpdate`, and `updateScene`.
 - Resize or render target size:
   `raster/src/core/raster_renderer.cpp`, `raster/include/raster/raster_renderer.hpp`,
   `raster/src/output/preview/preview_raster_pipeline.cpp`, `raster/src/runtime/raster_session.cpp`, then search
-  for `onResize`, `createOffscreenRender`, `getRenderSize`, and
+  for `onResize`, `createPreviewAovTargets`, `recreateAovTargets`, `getRenderSize`, and
   `ensureRasterSessionReady`.
 - Offscreen AOV export:
   `raster/include/raster/aov_texture.hpp`, `raster/src/output/preview/preview_raster_pipeline.cpp`,
@@ -261,7 +262,7 @@ call sites with `rg`.
   `raster/private/output/preview_raster_pipeline.hpp`, `raster/src/output/preview/preview_raster_pipeline.cpp`,
   `raster/src/core/raster_descriptor_sets.cpp`, `raster/shaders/preview/raster.vert`,
   `raster/shaders/preview/raster.frag`, then search for `PreviewRasterPipeline`,
-  `createGraphicsPipeline`, `createFramebuffer`, `renderPreviewAovs`, and
+  `createGraphicsPipeline`, `createFramebuffer`, `recordPreviewAovs`, and
   `PushConstantRaster`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/rasterBridge.cpp`,
@@ -274,7 +275,7 @@ call sites with `rg`.
   search for `v_camera`,
   `GetCamerasSnapshot`, `setCameras`, `setMainCamera`, `setTileConfig`,
   `setRequestedTileAovChannels`,
-  `renderTileAovAtlas`, and `RasterCameraSpec`.
+  `recordTileAovAtlas`, and `RasterCameraSpec`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
   `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.
