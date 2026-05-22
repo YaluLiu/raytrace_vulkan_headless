@@ -6,6 +6,8 @@ custom 属性声明传感器类型和采样参数。
 
 当前 `hdRobot` + `raster` 路径支持多个 LiDAR camera。每帧会按 sensor name
 排序后传给 `RasterRenderer`，排序后的 index 用于点云输出和可视化选择。
+Height scan camera 参数会在 Hydra 侧读取并保存到独立 sensor 数组，供后续
+raster 侧扫描管线消费。
 
 ## 全局渲染设置
 
@@ -24,16 +26,16 @@ space：`+X` 向右，`+Y` 向上，`-Z` 为前方；方位角 `0` 指向前方�
 overlay 点大小由全局 `hdRobot:lidar:visualizePointSize` 控制，不再提供
 每个 LiDAR camera 独立的点半径参数。
 
-| USD 属性名                | 类型    | 默认值  | 说明                                     |
-| ------------------------- | ------- | ------- | ---------------------------------------- |
-| `lidar:isLidar`           | `bool`  | `false` | 标记该 `Camera` 是 LiDAR 传感器。        |
-| `lidar:azimuthMinDeg`     | `float` | `-90.0` | 方位角起点，单位为度。                   |
-| `lidar:azimuthMaxDeg`     | `float` | `90.0`  | 方位角终点，单位为度。                   |
-| `lidar:azimuthStepDeg`    | `float` | `0.5`   | 方位角采样间隔，实际最小值为 `1.0e-4`。  |
-| `lidar:verticalMinDeg`    | `float` | `-2.0`  | 俯仰角起点，单位为度。                   |
-| `lidar:verticalMaxDeg`    | `float` | `-20.0` | 俯仰角终点，单位为度；允许终点小于起点。 |
-| `lidar:verticalStepDeg`   | `float` | `0.2`   | 俯仰角采样间隔，实际最小值为 `1.0e-4`。  |
-| `lidar:maxDistance`       | `float` | `200.0` | 单条 LiDAR 射线最大追踪距离。            |
+| USD 属性名              | 类型    | 默认值  | 说明                                     |
+| ----------------------- | ------- | ------- | ---------------------------------------- |
+| `lidar:isLidar`         | `bool`  | `false` | 标记该 `Camera` 是 LiDAR 传感器。        |
+| `lidar:azimuthMinDeg`   | `float` | `-90.0` | 方位角起点，单位为度。                   |
+| `lidar:azimuthMaxDeg`   | `float` | `90.0`  | 方位角终点，单位为度。                   |
+| `lidar:azimuthStepDeg`  | `float` | `0.5`   | 方位角采样间隔，实际最小值为 `1.0e-4`。  |
+| `lidar:verticalMinDeg`  | `float` | `-2.0`  | 俯仰角起点，单位为度。                   |
+| `lidar:verticalMaxDeg`  | `float` | `-20.0` | 俯仰角终点，单位为度；允许终点小于起点。 |
+| `lidar:verticalStepDeg` | `float` | `0.2`   | 俯仰角采样间隔，实际最小值为 `1.0e-4`。  |
+| `lidar:maxDistance`     | `float` | `200.0` | 单条 LiDAR 射线最大追踪距离。            |
 
 等价 USDA 片段：
 
@@ -58,18 +60,17 @@ def Camera "lidar_sensor"
 推导得到。因此 `minX/maxX` 和 `minZ/maxZ` 是扫描平面上的两组偏移参数，而不是
 固定的世界坐标轴。默认方向 `(0, 0, -1)` 适合 `Z-up` 场景中的向下扫描。
 
-| USD 属性名                     | 类型     | 默认值       | 说明                                                           |
-| ------------------------------ | -------- | ------------ | -------------------------------------------------------------- |
-| `heightScan:isHeightScan`      | `bool`   | `false`      | 标记该 `Camera` 是高度扫描仪。                                 |
-| `heightScan:minX`              | `float`  | `-10.0`      | 扫描平面第一轴最小偏移。                                       |
-| `heightScan:maxX`              | `float`  | `10.0`       | 扫描平面第一轴最大偏移。                                       |
-| `heightScan:stepX`             | `float`  | `0.1`        | 扫描平面第一轴采样间隔，实际最小值为 `1.0e-4`。                |
-| `heightScan:minZ`              | `float`  | `-10.0`      | 扫描平面第二轴最小偏移。                                       |
-| `heightScan:maxZ`              | `float`  | `10.0`       | 扫描平面第二轴最大偏移。                                       |
-| `heightScan:stepZ`             | `float`  | `0.1`        | 扫描平面第二轴采样间隔，实际最小值为 `1.0e-4`。                |
-| `heightScan:rayDirection`      | `float3` | `(0, 0, -1)` | 世界空间扫描射线方向；读取后会归一化，零向量会回退到默认方向。 |
-| `heightScan:pointRadiusPixels` | `float`  | `2.0`        | 点云 splat 半径，单位为屏幕像素。                              |
-| `heightScan:maxDistance`       | `float`  | `200.0`      | 单条扫描射线最大追踪距离。                                     |
+| USD 属性名                | 类型     | 默认值       | 说明                                                           |
+| ------------------------- | -------- | ------------ | -------------------------------------------------------------- |
+| `heightScan:isHeightScan` | `bool`   | `false`      | 标记该 `Camera` 是高度扫描仪。                                 |
+| `heightScan:minX`         | `float`  | `-10.0`      | 扫描平面第一轴最小偏移。                                       |
+| `heightScan:maxX`         | `float`  | `10.0`       | 扫描平面第一轴最大偏移。                                       |
+| `heightScan:stepX`        | `float`  | `0.1`        | 扫描平面第一轴采样间隔，实际最小值为 `1.0e-4`。                |
+| `heightScan:minZ`         | `float`  | `-10.0`      | 扫描平面第二轴最小偏移。                                       |
+| `heightScan:maxZ`         | `float`  | `10.0`       | 扫描平面第二轴最大偏移。                                       |
+| `heightScan:stepZ`        | `float`  | `0.1`        | 扫描平面第二轴采样间隔，实际最小值为 `1.0e-4`。                |
+| `heightScan:rayDirection` | `float3` | `(0, 0, -1)` | 世界空间扫描射线方向；读取后会归一化，零向量会回退到默认方向。 |
+| `heightScan:maxDistance`  | `float`  | `200.0`      | 单条扫描射线最大追踪距离。                                     |
 
 等价 USDA 片段：
 
@@ -84,7 +85,6 @@ def Camera "height_scan_sensor"
     custom float heightScan:maxZ = 10
     custom float heightScan:stepZ = 0.1
     custom float3 heightScan:rayDirection = (0, 0, -1)
-    custom float heightScan:pointRadiusPixels = 2
     custom float heightScan:maxDistance = 200
 }
 ```
@@ -99,12 +99,11 @@ def Camera "height_scan_sensor"
 
 ## 实现位置
 
-- `hdRobot/tokens.h`: USD custom 属性名和 `lidar-enable` render setting token。
 - `hdRobot/tokens.h`: USD custom 属性名和 `hdRobot:lidar:*` render setting token。
-- `hdRobot/camera.h`: LiDAR 参数默认值和 sensor 数据结构。
-- `hdRobot/camera.cpp`: USD LiDAR 属性读取、类型兼容和参数 sanitize。
+- `hdRobot/camera.h`: LiDAR / height scan 参数默认值和 sensor 数据结构。
+- `hdRobot/camera.cpp`: USD LiDAR / height scan 属性读取、类型兼容和参数 sanitize。
 - `hdRobot/renderDelegate.cpp`: LiDAR visualization render settings 注册和同步。
-- `hdRobot/renderParam.cpp`: 多 LiDAR sensor 数组和 visualization config 保存。
+- `hdRobot/renderParam.cpp`: 多 LiDAR sensor 数组、height scan sensor 数组和 visualization config 保存。
 - `hdRobot/rasterBridge.cpp`: LiDAR sensor 按 name 排序，并转为
   `RasterLidarSensorSpec` / `RasterLidarVisualizationConfig`。
 - `raster/include/raster/lidar_types.hpp`: raster public point cloud contract。

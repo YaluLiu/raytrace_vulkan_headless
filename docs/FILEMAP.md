@@ -223,8 +223,9 @@ call sites with `rg`.
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
-  conversion, LiDAR `lidar:*` custom parameter parsing, and derivation of
-  `HdRobotLidarSensorData` from camera state plus LiDAR-specific params.
+  conversion, LiDAR `lidar:*` and height scan `heightScan:*` custom parameter
+  parsing, and derivation of sensor data from camera state plus
+  sensor-specific params.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.
@@ -315,7 +316,8 @@ call sites with `rg`.
   `hdRobot/rasterBridge.cpp`, `raster/include/raster/raster_renderer.hpp`,
   `raster/src/scene/raster_view_uniforms.cpp`, and `raster/src/output/tile/tile_atlas_pass.cpp`, then
   search for `v_camera`,
-  `v_lidarSensor`, `GetCamerasSnapshot`, `GetLidarSensorsSnapshot`,
+  `v_lidarSensor`, `v_heightScanSensor`, `GetCamerasSnapshot`, `GetLidarSensorsSnapshot`,
+  `GetHeightScanSensorsSnapshot`,
   `setCameras`, `setMainCamera`, `setTileConfig`, `setRequestedTileAovChannels`,
   `recordTileAovAtlas`, and `RasterCameraSpec`.
 - LiDAR point cloud generation or overlay:

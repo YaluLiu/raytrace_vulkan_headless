@@ -4,6 +4,7 @@
 #include "tokens.h"
 
 #include <pxr/base/gf/camera.h>
+#include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
@@ -106,6 +107,37 @@ float ReadFloatCameraParam(HdSceneDelegate* sceneDelegate, const SdfPath& id, co
   return std::isfinite(result) ? result : fallback;
 }
 
+glm::vec3 ReadVec3CameraParam(HdSceneDelegate* sceneDelegate,
+                              const SdfPath& id,
+                              const TfToken& token,
+                              glm::vec3 fallback)
+{
+  if(sceneDelegate == nullptr)
+  {
+    return fallback;
+  }
+
+  const VtValue value = sceneDelegate->GetCameraParamValue(id, token);
+  if(value.IsEmpty())
+  {
+    return fallback;
+  }
+
+  glm::vec3 result = fallback;
+  if(value.IsHolding<GfVec3f>())
+  {
+    const GfVec3f vec = value.UncheckedGet<GfVec3f>();
+    result = glm::vec3(vec[0], vec[1], vec[2]);
+  }
+  else if(value.IsHolding<GfVec3d>())
+  {
+    const GfVec3d vec = value.UncheckedGet<GfVec3d>();
+    result = glm::vec3(static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2]));
+  }
+
+  return std::isfinite(result.x) && std::isfinite(result.y) && std::isfinite(result.z) ? result : fallback;
+}
+
 float ClampPositive(float value, float fallback)
 {
   return std::max(std::isfinite(value) ? value : fallback, kLidarParamEpsilon);
@@ -114,6 +146,20 @@ float ClampPositive(float value, float fallback)
 float ClampStep(float value, float fallback)
 {
   return std::max(std::fabs(std::isfinite(value) ? value : fallback), kLidarParamEpsilon);
+}
+
+glm::vec3 NormalizeDirection(glm::vec3 value, glm::vec3 fallback)
+{
+  if(!std::isfinite(value.x) || !std::isfinite(value.y) || !std::isfinite(value.z)
+     || glm::length(value) < kCameraEpsilon)
+  {
+    value = fallback;
+  }
+  if(glm::length(value) < kCameraEpsilon)
+  {
+    return glm::vec3(0.0f, 0.0f, -1.0f);
+  }
+  return glm::normalize(value);
 }
 
 HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
@@ -135,6 +181,28 @@ HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath
       params.verticalStepDeg);
   params.maxDistance = ClampPositive(
       ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxDistance, params.maxDistance),
+      params.maxDistance);
+  return params;
+}
+
+HdRobotHeightScanParams ReadHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+{
+  HdRobotHeightScanParams params;
+  params.minX = ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMinX, params.minX);
+  params.maxX = ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxX, params.maxX);
+  params.stepX = ClampStep(
+      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanStepX, params.stepX),
+      params.stepX);
+  params.minZ = ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMinZ, params.minZ);
+  params.maxZ = ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxZ, params.maxZ);
+  params.stepZ = ClampStep(
+      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanStepZ, params.stepZ),
+      params.stepZ);
+  params.rayDirection = NormalizeDirection(
+      ReadVec3CameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanRayDirection, params.rayDirection),
+      params.rayDirection);
+  params.maxDistance = ClampPositive(
+      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxDistance, params.maxDistance),
       params.maxDistance);
   return params;
 }
@@ -223,18 +291,31 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   _cameraData = cameraData;
   _scene.UpsertCamera(cameraData);
 
-  const bool isLidar = ReadBoolCameraParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->lidarIsLidar, false);
-  if(!isLidar)
+  if(ReadBoolCameraParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->lidarIsLidar, false))
+  {
+    HdRobotLidarSensorData sensorData;
+    sensorData.name = cameraData.name;
+    sensorData.camera = cameraData;
+    sensorData.params = ReadLidarParams(sceneDelegate, GetId());
+    _scene.UpsertLidarSensor(sensorData);
+  }
+  else
   {
     _scene.RemoveLidarSensor(GetId());
-    return;
   }
 
-  HdRobotLidarSensorData sensorData;
-  sensorData.name = cameraData.name;
-  sensorData.camera = cameraData;
-  sensorData.params = ReadLidarParams(sceneDelegate, GetId());
-  _scene.UpsertLidarSensor(sensorData);
+  if(ReadBoolCameraParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->heightScanIsHeightScan, false))
+  {
+    HdRobotHeightScanSensorData sensorData;
+    sensorData.name = cameraData.name;
+    sensorData.camera = cameraData;
+    sensorData.params = ReadHeightScanParams(sceneDelegate, GetId());
+    _scene.UpsertHeightScanSensor(sensorData);
+  }
+  else
+  {
+    _scene.RemoveHeightScanSensor(GetId());
+  }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

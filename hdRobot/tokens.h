@@ -39,7 +39,16 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((lidarVerticalMinDeg, "lidar:verticalMinDeg")) \
   ((lidarVerticalMaxDeg, "lidar:verticalMaxDeg")) \
   ((lidarVerticalStepDeg, "lidar:verticalStepDeg")) \
-  ((lidarMaxDistance, "lidar:maxDistance"))
+  ((lidarMaxDistance, "lidar:maxDistance")) \
+  ((heightScanIsHeightScan, "heightScan:isHeightScan")) \
+  ((heightScanMinX, "heightScan:minX")) \
+  ((heightScanMaxX, "heightScan:maxX")) \
+  ((heightScanStepX, "heightScan:stepX")) \
+  ((heightScanMinZ, "heightScan:minZ")) \
+  ((heightScanMaxZ, "heightScan:maxZ")) \
+  ((heightScanStepZ, "heightScan:stepZ")) \
+  ((heightScanRayDirection, "heightScan:rayDirection")) \
+  ((heightScanMaxDistance, "heightScan:maxDistance"))
 
 #define HD_ROBOT_AOV_TOKENS \
   (tileColor) \

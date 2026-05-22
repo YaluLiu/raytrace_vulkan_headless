@@ -63,12 +63,19 @@ void HdRobotRenderParam::UpsertLidarSensor(const HdRobotLidarSensorData& sensorD
   UpsertByName(v_lidarSensor, sensorData);
 }
 
+void HdRobotRenderParam::UpsertHeightScanSensor(const HdRobotHeightScanSensorData& sensorData)
+{
+  std::lock_guard guard(mutex);
+  UpsertByName(v_heightScanSensor, sensorData);
+}
+
 void HdRobotRenderParam::RemoveCamera(const SdfPath& cameraId)
 {
   const std::string cameraName = cameraId.GetString();
   std::lock_guard   guard(mutex);
   RemoveByName(v_camera, cameraName);
   RemoveByName(v_lidarSensor, cameraName);
+  RemoveByName(v_heightScanSensor, cameraName);
 }
 
 void HdRobotRenderParam::RemoveLidarSensor(const SdfPath& sensorId)
@@ -76,6 +83,13 @@ void HdRobotRenderParam::RemoveLidarSensor(const SdfPath& sensorId)
   const std::string sensorName = sensorId.GetString();
   std::lock_guard   guard(mutex);
   RemoveByName(v_lidarSensor, sensorName);
+}
+
+void HdRobotRenderParam::RemoveHeightScanSensor(const SdfPath& sensorId)
+{
+  const std::string sensorName = sensorId.GetString();
+  std::lock_guard   guard(mutex);
+  RemoveByName(v_heightScanSensor, sensorName);
 }
 
 std::vector<HdRobotCameraData> HdRobotRenderParam::GetCamerasSnapshot() const
@@ -88,6 +102,12 @@ std::vector<HdRobotLidarSensorData> HdRobotRenderParam::GetLidarSensorsSnapshot(
 {
   std::lock_guard guard(mutex);
   return v_lidarSensor;
+}
+
+std::vector<HdRobotHeightScanSensorData> HdRobotRenderParam::GetHeightScanSensorsSnapshot() const
+{
+  std::lock_guard guard(mutex);
+  return v_heightScanSensor;
 }
 
 void HdRobotRenderParam::SetTileConfig(const HdRobotTileConfig& config)

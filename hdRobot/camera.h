@@ -19,6 +19,18 @@ struct HdRobotLidarParams
   float maxDistance = 200.0f;
 };
 
+struct HdRobotHeightScanParams
+{
+  float minX = -10.0f;
+  float maxX = 10.0f;
+  float stepX = 0.1f;
+  float minZ = -10.0f;
+  float maxZ = 10.0f;
+  float stepZ = 0.1f;
+  glm::vec3 rayDirection = glm::vec3(0.0f, 0.0f, -1.0f);
+  float maxDistance = 200.0f;
+};
+
 struct HdRobotCameraData
 {
   std::string name;
@@ -35,6 +47,13 @@ struct HdRobotLidarSensorData
   std::string name;
   HdRobotCameraData camera;
   HdRobotLidarParams params;
+};
+
+struct HdRobotHeightScanSensorData
+{
+  std::string name;
+  HdRobotCameraData camera;
+  HdRobotHeightScanParams params;
 };
 
 HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera);

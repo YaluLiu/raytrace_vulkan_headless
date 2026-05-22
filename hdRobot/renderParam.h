@@ -40,10 +40,13 @@ class HdRobotRenderParam final : public HdRenderParam
   uint64_t GetTextureRegistryVersion() const;
   void UpsertCamera(const HdRobotCameraData& cameraData);
   void UpsertLidarSensor(const HdRobotLidarSensorData& sensorData);
+  void UpsertHeightScanSensor(const HdRobotHeightScanSensorData& sensorData);
   void RemoveCamera(const SdfPath& cameraId);
   void RemoveLidarSensor(const SdfPath& sensorId);
+  void RemoveHeightScanSensor(const SdfPath& sensorId);
   std::vector<HdRobotCameraData> GetCamerasSnapshot() const;
   std::vector<HdRobotLidarSensorData> GetLidarSensorsSnapshot() const;
+  std::vector<HdRobotHeightScanSensorData> GetHeightScanSensorsSnapshot() const;
   void SetTileConfig(const HdRobotTileConfig& config);
   HdRobotTileConfig GetTileConfig() const;
   void SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config);
@@ -66,6 +69,7 @@ class HdRobotRenderParam final : public HdRenderParam
   std::vector<HydraLight> v_light;
   std::vector<HdRobotCameraData> v_camera;
   std::vector<HdRobotLidarSensorData> v_lidarSensor;
+  std::vector<HdRobotHeightScanSensorData> v_heightScanSensor;
   HdRobotTileConfig tileConfig;
   HdRobotLidarVisualizationConfig lidarVisualizationConfig;
   TextureRegistry textureRegistry;
