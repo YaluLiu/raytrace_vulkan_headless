@@ -89,6 +89,18 @@ def Camera "height_scan_sensor"
 }
 ```
 
+## Height Scan Ground Mesh 标记
+
+为了生成高度扫描专用的 TLAS 结果，需要在参与 height scan 的地面 mesh 上添加
+custom token 属性：
+
+```usda
+custom token hdRobot:traceRole = "ground"
+```
+
+只有带有 `hdRobot:traceRole = "ground"` 的 mesh 会被视为高度扫描可追踪的
+地面几何。
+
 ## 采样规则
 
 - 单轴采样数量为 `floor(abs(max - min) / max(abs(step), 1.0e-4) + 0.5) + 1`，
@@ -96,17 +108,3 @@ def Camera "height_scan_sensor"
 - LiDAR 总射线数为方位角采样数乘以俯仰角采样数。
 - Height scan 总射线数为第一轴采样数乘以第二轴采样数。
 - 当 `max < min` 时，采样会按从 `min` 到 `max` 的方向递减；`step` 的符号只取绝对值。
-
-## 实现位置
-
-- `hdRobot/tokens.h`: USD custom 属性名和 `hdRobot:lidar:*` render setting token。
-- `hdRobot/camera.h`: LiDAR / height scan 参数默认值和 sensor 数据结构。
-- `hdRobot/camera.cpp`: USD LiDAR / height scan 属性读取、类型兼容和参数 sanitize。
-- `hdRobot/renderDelegate.cpp`: LiDAR visualization render settings 注册和同步。
-- `hdRobot/renderParam.cpp`: 多 LiDAR sensor 数组、height scan sensor 数组和 visualization config 保存。
-- `hdRobot/rasterBridge.cpp`: LiDAR sensor 按 name 排序，并转为
-  `RasterLidarSensorSpec` / `RasterLidarVisualizationConfig`。
-- `raster/include/raster/lidar_types.hpp`: raster public point cloud contract。
-- `raster/src/output/lidar/`: scan layout、range raster、point generation、
-  readback 和 preview overlay 实现。
-- `raster/shaders/lidar/`: LiDAR range、compute point generation 和 overlay shader。
