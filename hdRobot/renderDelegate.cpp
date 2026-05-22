@@ -79,6 +79,12 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
                                 HdRobotRenderSettingTokens->lidarVisualizeSensorIndex, VtValue(0)},
       HdRenderSettingDescriptor{"LiDAR visualization point size",
                                 HdRobotRenderSettingTokens->lidarVisualizePointSize, VtValue(2.0f)},
+      HdRenderSettingDescriptor{"Enable height scan point cloud visualization",
+                                HdRobotRenderSettingTokens->heightScanVisualizeEnabled, VtValue(false)},
+      HdRenderSettingDescriptor{"Height scan visualization sensor index",
+                                HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex, VtValue(0)},
+      HdRenderSettingDescriptor{"Height scan visualization point size",
+                                HdRobotRenderSettingTokens->heightScanVisualizePointSize, VtValue(2.0f)},
   };
 }
 
@@ -95,6 +101,13 @@ bool IsLidarRenderSetting(const TfToken &key)
   return key == HdRobotRenderSettingTokens->lidarVisualizeEnabled ||
          key == HdRobotRenderSettingTokens->lidarVisualizeSensorIndex ||
          key == HdRobotRenderSettingTokens->lidarVisualizePointSize;
+}
+
+bool IsHeightScanRenderSetting(const TfToken &key)
+{
+  return key == HdRobotRenderSettingTokens->heightScanVisualizeEnabled ||
+         key == HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex ||
+         key == HdRobotRenderSettingTokens->heightScanVisualizePointSize;
 }
 
 bool IsColorAov(const TfToken &name)
@@ -150,6 +163,19 @@ HdRobotLidarVisualizationConfig ReadLidarVisualizationConfig(const HdRenderDeleg
       delegate, HdRobotRenderSettingTokens->lidarVisualizePointSize, config.pointSizePixels);
   return config;
 }
+
+HdRobotHeightScanVisualizationConfig ReadHeightScanVisualizationConfig(const HdRenderDelegate &delegate)
+{
+  HdRobotHeightScanVisualizationConfig config;
+  config.enabled =
+      delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->heightScanVisualizeEnabled, config.enabled);
+  config.sensorIndex = static_cast<uint32_t>(
+      std::max(0, delegate.GetRenderSetting<int>(HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex,
+                                                 static_cast<int>(config.sensorIndex))));
+  config.pointSizePixels = GetPositiveFloatRenderSetting(
+      delegate, HdRobotRenderSettingTokens->heightScanVisualizePointSize, config.pointSizePixels);
+  return config;
+}
 } // namespace
 
 HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settingsMap, std::string_view resourcePath)
@@ -160,6 +186,7 @@ HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settings
   _PopulateDefaultSettings(_settingDescriptors);
   _SyncTileConfigFromSettings();
   _SyncLidarVisualizationConfigFromSettings();
+  _SyncHeightScanVisualizationConfigFromSettings();
 }
 
 HdRobotRenderDelegate::~HdRobotRenderDelegate() {}
@@ -179,6 +206,10 @@ void HdRobotRenderDelegate::SetRenderSetting(const TfToken &key, const VtValue &
   if(IsLidarRenderSetting(key))
   {
     _SyncLidarVisualizationConfigFromSettings();
+  }
+  if(IsHeightScanRenderSetting(key))
+  {
+    _SyncHeightScanVisualizationConfigFromSettings();
   }
 }
 
@@ -285,6 +316,14 @@ void HdRobotRenderDelegate::_SyncLidarVisualizationConfigFromSettings()
   if(_renderParam)
   {
     _renderParam->SetLidarVisualizationConfig(ReadLidarVisualizationConfig(*this));
+  }
+}
+
+void HdRobotRenderDelegate::_SyncHeightScanVisualizationConfigFromSettings()
+{
+  if(_renderParam)
+  {
+    _renderParam->SetHeightScanVisualizationConfig(ReadHeightScanVisualizationConfig(*this));
   }
 }
 

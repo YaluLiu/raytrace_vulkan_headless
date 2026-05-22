@@ -7,15 +7,20 @@ custom 属性声明传感器类型和采样参数。
 当前 `hdRobot` + `raster` 路径支持多个 LiDAR camera。每帧会按 sensor name
 排序后传给 `RasterRenderer`，排序后的 index 用于点云输出和可视化选择。
 Height scan camera 参数会在 Hydra 侧读取并保存到独立 sensor 数组，供后续
-raster 侧扫描管线消费。
+raster 侧扫描管线消费。LiDAR 和 height scan 的可视化 index 分别索引各自
+按 sensor name 排序后的 sensor 列表，互不共享。两个 overlay 可以在同一帧
+同时开启。
 
 ## 全局渲染设置
 
-| 设置名                               | 类型    | 默认值  | 说明                                                  |
-| ------------------------------------ | ------- | ------- | ----------------------------------------------------- |
-| `hdRobot:lidar:visualizeEnabled`     | `bool`  | `false` | 是否把选中的 LiDAR 点云叠加画到 preview color。       |
-| `hdRobot:lidar:visualizeSensorIndex` | `int`   | `0`     | 可视化排序后第几个 LiDAR sensor；越界时跳过 overlay。 |
-| `hdRobot:lidar:visualizePointSize`   | `float` | `2.0`   | 点云 overlay 的点大小，单位为像素。                   |
+| 设置名                                    | 类型    | 默认值  | 说明                                                        |
+| ----------------------------------------- | ------- | ------- | ----------------------------------------------------------- |
+| `hdRobot:lidar:visualizeEnabled`          | `bool`  | `false` | 是否把选中的 LiDAR 点云叠加画到 preview color。             |
+| `hdRobot:lidar:visualizeSensorIndex`      | `int`   | `0`     | 可视化排序后第几个 LiDAR sensor；越界时跳过 overlay。       |
+| `hdRobot:lidar:visualizePointSize`        | `float` | `2.0`   | LiDAR 点云 overlay 的点大小，单位为像素。                   |
+| `hdRobot:heightScan:visualizeEnabled`     | `bool`  | `false` | 是否把选中的 height scan 命中点叠加画到 preview color。     |
+| `hdRobot:heightScan:visualizeSensorIndex` | `int`   | `0`     | 可视化排序后第几个 height scan sensor；越界时跳过 overlay。 |
+| `hdRobot:heightScan:visualizePointSize`   | `float` | `2.0`   | Height scan overlay 的点大小，单位为像素。                  |
 
 ## LiDAR Camera 属性
 

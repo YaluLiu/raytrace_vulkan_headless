@@ -17,9 +17,10 @@ enum class RasterFramePass
   GenerateHeightScans,
   RenderPreviewAovs,
   OverlayLidarPointCloud,
+  OverlayHeightScans,
 };
 
-constexpr std::array<RasterFramePass, 7> kRasterFramePassSequence{
+constexpr std::array<RasterFramePass, 8> kRasterFramePassSequence{
     RasterFramePass::UpdateUniforms,
     RasterFramePass::UpdateLights,
     RasterFramePass::RenderTileAovAtlas,
@@ -27,6 +28,7 @@ constexpr std::array<RasterFramePass, 7> kRasterFramePassSequence{
     RasterFramePass::GenerateHeightScans,
     RasterFramePass::RenderPreviewAovs,
     RasterFramePass::OverlayLidarPointCloud,
+    RasterFramePass::OverlayHeightScans,
 };
 
 void executeRasterFramePass(RasterRenderer& renderer, const VkCommandBuffer& cmdBuf, RasterFramePass pass)
@@ -53,6 +55,9 @@ void executeRasterFramePass(RasterRenderer& renderer, const VkCommandBuffer& cmd
       break;
     case RasterFramePass::OverlayLidarPointCloud:
       renderer.recordLidarPointOverlay(cmdBuf);
+      break;
+    case RasterFramePass::OverlayHeightScans:
+      renderer.recordHeightScanOverlay(cmdBuf);
       break;
   }
 }

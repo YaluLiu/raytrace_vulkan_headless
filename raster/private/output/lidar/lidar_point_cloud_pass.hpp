@@ -4,8 +4,8 @@
 #include <raster/raster_renderer_types.hpp>
 
 #include "output/lidar/lidar_point_generation_pipeline.hpp"
-#include "output/lidar/lidar_point_overlay_pipeline.hpp"
 #include "output/lidar/lidar_scan.hpp"
+#include "output/point_overlay/point_overlay_pipeline.hpp"
 #include "scene/raster_scene_types.hpp"
 #include "shaders/common/host_device.h"
 
@@ -71,5 +71,5 @@ private:
   std::vector<LidarSensorGpu> m_gpuSensors;
 
   LidarPointGenerationPipeline m_generationPipeline;
-  LidarPointOverlayPipeline m_overlayPipeline;
+  PointOverlayPipeline m_overlayPipeline;
 };

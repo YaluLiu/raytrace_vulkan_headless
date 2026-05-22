@@ -5,6 +5,7 @@
 
 #include "output/height_scan/height_scan.hpp"
 #include "output/height_scan/height_scan_generation_pipeline.hpp"
+#include "output/point_overlay/point_overlay_pipeline.hpp"
 #include "shaders/common/host_device.h"
 
 #include "nvvk/debug_util_vk.hpp"
@@ -15,18 +16,28 @@
 
 #include <vulkan/vulkan_core.h>
 
+class PreviewRasterPipeline;
+
 class HeightScanPass final
 {
 public:
   void setup(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex,
              nvvk::ResourceAllocatorDma& allocator, nvvk::DebugUtil& debug);
   void destroy();
+  void destroyGraphicsPipeline();
 
   void setSensors(std::vector<RasterHeightScanSensorSpec> sensors);
+  void setVisualizationConfig(RasterHeightScanVisualizationConfig config);
   const RasterHeightScanLayout& getCurrentLayout() const { return m_layout; }
   RasterHeightScanFrame readHeightScanFrame();
 
+  void rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout,
+                                      const PreviewRasterPipeline& previewPipeline);
   void recordGenerate(const VkCommandBuffer& cmdBuf, std::optional<RasterTlasDescriptorInfo> tlasInfo);
+  void recordOverlay(const VkCommandBuffer& cmdBuf,
+                     VkDescriptorSet sceneDescriptorSet,
+                     VkDescriptorSetLayout sceneDescriptorSetLayout,
+                     const PreviewRasterPipeline& previewPipeline);
 
 private:
   bool ensureSampleCapacity(uint64_t sampleCount);
@@ -48,10 +59,12 @@ private:
   uint32_t m_sensorCapacity{0};
   uint64_t m_frameId{0};
   bool m_frameGenerated{false};
+  RasterHeightScanVisualizationConfig m_visualizationConfig;
 
   nvvk::Buffer m_sampleBuffer;
   nvvk::Buffer m_sensorBuffer;
   std::vector<HeightScanSensorGpu> m_gpuSensors;
 
   HeightScanGenerationPipeline m_generationPipeline;
+  PointOverlayPipeline m_overlayPipeline;
 };

@@ -20,9 +20,9 @@ layout(set = 1, binding = 1, std430) readonly buffer LidarPoints_
 }
 lidarPoints;
 
-layout(push_constant) uniform _PushConstantLidarOverlay
+layout(push_constant) uniform _PushConstantPointOverlay
 {
-  PushConstantLidarOverlay pc;
+  PushConstantPointOverlay pc;
 };
 
 void main()

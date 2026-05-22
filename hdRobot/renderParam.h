@@ -31,6 +31,13 @@ struct HdRobotLidarVisualizationConfig
   float pointSizePixels = 2.0f;
 };
 
+struct HdRobotHeightScanVisualizationConfig
+{
+  bool enabled = false;
+  uint32_t sensorIndex = 0;
+  float pointSizePixels = 2.0f;
+};
+
 class HdRobotRenderParam final : public HdRenderParam
 {
  public:
@@ -51,6 +58,8 @@ class HdRobotRenderParam final : public HdRenderParam
   HdRobotTileConfig GetTileConfig() const;
   void SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config);
   HdRobotLidarVisualizationConfig GetLidarVisualizationConfig() const;
+  void SetHeightScanVisualizationConfig(const HdRobotHeightScanVisualizationConfig& config);
+  HdRobotHeightScanVisualizationConfig GetHeightScanVisualizationConfig() const;
 
   void MarkAllMeshesInstanceDirty();
   void MarkMeshInstanceDirty(size_t meshId);
@@ -72,6 +81,7 @@ class HdRobotRenderParam final : public HdRenderParam
   std::vector<HdRobotHeightScanSensorData> v_heightScanSensor;
   HdRobotTileConfig tileConfig;
   HdRobotLidarVisualizationConfig lidarVisualizationConfig;
+  HdRobotHeightScanVisualizationConfig heightScanVisualizationConfig;
   TextureRegistry textureRegistry;
 
 };

@@ -128,6 +128,16 @@ RasterLidarVisualizationConfig ToRasterLidarVisualizationConfig(const HdRobotLid
   return result;
 }
 
+RasterHeightScanVisualizationConfig ToRasterHeightScanVisualizationConfig(
+    const HdRobotHeightScanVisualizationConfig &config)
+{
+  RasterHeightScanVisualizationConfig result;
+  result.enabled = config.enabled;
+  result.sensorIndex = config.sensorIndex;
+  result.pointSizePixels = config.pointSizePixels;
+  return result;
+}
+
 std::vector<RasterCameraSpec> ToRasterCameraSpec(const std::vector<HdRobotCameraData> &cameras)
 {
   std::vector<RasterCameraSpec> result;
@@ -323,6 +333,8 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
     return lhs.name < rhs.name;
   });
   _rasterSession.getRenderer().setHeightScanSensors(ToRasterHeightScanSensorSpec(heightScanSensors));
+  _rasterSession.getRenderer().setHeightScanVisualizationConfig(
+      ToRasterHeightScanVisualizationConfig(_renderParam.GetHeightScanVisualizationConfig()));
   _rasterSession.getRenderer().setLidarVisualizationConfig(
       ToRasterLidarVisualizationConfig(_renderParam.GetLidarVisualizationConfig()));
   updateLights();

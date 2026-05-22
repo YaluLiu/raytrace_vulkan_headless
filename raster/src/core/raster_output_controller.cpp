@@ -41,6 +41,7 @@ void RasterOutputController::rebuildPipelinesForSceneLayout(VkDescriptorSetLayou
   m_previewRasterPipeline.createGraphicsPipeline(sceneDescriptorSetLayout);
   m_tileAtlasPass.destroyGraphicsPipeline();
   m_lidarPointCloudPass.rebuildPipelinesForSceneLayout(sceneDescriptorSetLayout, m_previewRasterPipeline);
+  m_heightScanPass.rebuildPipelinesForSceneLayout(sceneDescriptorSetLayout, m_previewRasterPipeline);
 }
 
 void RasterOutputController::destroyOutputPipelines()
@@ -48,6 +49,7 @@ void RasterOutputController::destroyOutputPipelines()
   m_previewRasterPipeline.destroyGraphicsPipeline();
   m_tileAtlasPass.destroyGraphicsPipeline();
   m_lidarPointCloudPass.destroyGraphicsPipeline();
+  m_heightScanPass.destroyGraphicsPipeline();
 }
 
 void RasterOutputController::recordTileAtlas(const VkCommandBuffer& cmdBuf,
@@ -86,6 +88,11 @@ void RasterOutputController::recordLidarPointOverlay(const VkCommandBuffer& cmdB
   m_lidarPointCloudPass.recordOverlay(cmdBuf, descriptors.set(), descriptors.layout(), m_previewRasterPipeline);
 }
 
+void RasterOutputController::recordHeightScanOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors)
+{
+  m_heightScanPass.recordOverlay(cmdBuf, descriptors.set(), descriptors.layout(), m_previewRasterPipeline);
+}
+
 std::optional<ExportedRasterAovTexture> RasterOutputController::getAovTexture(RasterAov aov) const
 {
   if(isTileAov(aov))
@@ -118,6 +125,11 @@ RasterLidarFramePointCloud RasterOutputController::readLidarPointCloudFrame()
 void RasterOutputController::setHeightScanSensors(std::vector<RasterHeightScanSensorSpec> sensors)
 {
   m_heightScanPass.setSensors(std::move(sensors));
+}
+
+void RasterOutputController::setHeightScanVisualizationConfig(RasterHeightScanVisualizationConfig config)
+{
+  m_heightScanPass.setVisualizationConfig(config);
 }
 
 RasterHeightScanFrame RasterOutputController::readHeightScanFrame()

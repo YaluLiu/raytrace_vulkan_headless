@@ -1,10 +1,12 @@
 #include "output/height_scan/height_scan_pass.hpp"
 
 #include "nvvk/commands_vk.hpp"
+#include "output/preview_raster_pipeline.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <limits>
 #include <utility>
 
@@ -37,10 +39,15 @@ void HeightScanPass::setup(VkDevice device, VkPhysicalDevice physicalDevice, uin
   m_debug = &debug;
   (void)physicalDevice;
   m_generationPipeline.setup(device, debug);
+  m_overlayPipeline.setup(device, debug,
+                          PointOverlayPipelineConfig{"HeightScanOverlay", "spv/height_scan_overlay.vert.spv",
+                                                     "spv/height_scan_overlay.frag.spv",
+                                                     "height scan overlay"});
 }
 
 void HeightScanPass::destroy()
 {
+  m_overlayPipeline.destroy();
   m_generationPipeline.destroy();
   destroyBuffers();
   m_sensors.clear();
@@ -51,6 +58,11 @@ void HeightScanPass::destroy()
   m_graphicsQueueIndex = 0;
   m_allocator = nullptr;
   m_debug = nullptr;
+}
+
+void HeightScanPass::destroyGraphicsPipeline()
+{
+  m_overlayPipeline.destroyGraphicsPipeline();
 }
 
 void HeightScanPass::setSensors(std::vector<RasterHeightScanSensorSpec> sensors)
@@ -65,6 +77,19 @@ void HeightScanPass::setSensors(std::vector<RasterHeightScanSensorSpec> sensors)
     m_gpuSensors.clear();
     destroyBuffers();
   }
+}
+
+void HeightScanPass::setVisualizationConfig(RasterHeightScanVisualizationConfig config)
+{
+  m_visualizationConfig = config;
+}
+
+void HeightScanPass::rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout,
+                                                    const PreviewRasterPipeline& previewPipeline)
+{
+  m_overlayPipeline.destroyGraphicsPipeline();
+  (void)sceneDescriptorSetLayout;
+  (void)previewPipeline;
 }
 
 RasterHeightScanFrame HeightScanPass::readHeightScanFrame()
@@ -181,14 +206,48 @@ void HeightScanPass::recordGenerate(const VkCommandBuffer& cmdBuf,
 
     VkBufferMemoryBarrier sampleBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     sampleBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    sampleBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    sampleBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
     sampleBarrier.buffer = m_sampleBuffer.buffer;
     sampleBarrier.offset = metadata.sampleOffset * sizeof(HeightScanSampleGpu);
     sampleBarrier.size = metadata.sampleCount * sizeof(HeightScanSampleGpu);
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
-                         nullptr, 1, &sampleBarrier, 0, nullptr);
+    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
+                         &sampleBarrier, 0, nullptr);
   }
   m_frameGenerated = generatedAnySensor;
+}
+
+void HeightScanPass::recordOverlay(const VkCommandBuffer& cmdBuf,
+                                   VkDescriptorSet sceneDescriptorSet,
+                                   VkDescriptorSetLayout sceneDescriptorSetLayout,
+                                   const PreviewRasterPipeline& previewPipeline)
+{
+  if(!currentLayoutGenerated() || !m_visualizationConfig.enabled ||
+     m_visualizationConfig.pointSizePixels <= 0.0f ||
+     m_visualizationConfig.sensorIndex >= m_layout.sensors.size() ||
+     m_sampleBuffer.buffer == VK_NULL_HANDLE || m_sensorBuffer.buffer == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  try
+  {
+    if(!m_overlayPipeline.ensureResources(sceneDescriptorSetLayout, previewPipeline, m_sensorBuffer.buffer,
+                                          m_sampleBuffer.buffer))
+    {
+      return;
+    }
+  }
+  catch(const std::exception&)
+  {
+    return;
+  }
+
+  const RasterHeightScanSensorMetadata& metadata = m_layout.sensors[m_visualizationConfig.sensorIndex];
+  m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, m_visualizationConfig.sensorIndex,
+                         m_visualizationConfig.pointSizePixels,
+                         static_cast<uint32_t>(std::min<uint64_t>(metadata.sampleCount,
+                                                                  std::numeric_limits<uint32_t>::max())));
 }
 
 bool HeightScanPass::ensureSampleCapacity(uint64_t sampleCount)

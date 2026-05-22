@@ -46,12 +46,14 @@ public:
                               const PreviewRasterPipeline& previewPipeline);
   void recordHeightScans(const VkCommandBuffer& cmdBuf, const RasterGpuScene& scene);
   void recordLidarPointOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors);
+  void recordHeightScanOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors);
   std::optional<ExportedRasterAovTexture> getAovTexture(RasterAov aov) const;
 
   void setLidarSensors(std::vector<RasterLidarSensorSpec> sensors);
   void setLidarVisualizationConfig(RasterLidarVisualizationConfig config);
   RasterLidarFramePointCloud readLidarPointCloudFrame();
   void setHeightScanSensors(std::vector<RasterHeightScanSensorSpec> sensors);
+  void setHeightScanVisualizationConfig(RasterHeightScanVisualizationConfig config);
   RasterHeightScanFrame readHeightScanFrame();
   void setTileConfig(TileAtlasConfig config);
   void setRequestedTileAovChannels(TileAovChannelMask channels);

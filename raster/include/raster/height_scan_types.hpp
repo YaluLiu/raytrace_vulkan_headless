@@ -25,6 +25,13 @@ struct RasterHeightScanSensorSpec
   RasterHeightScanParams params;
 };
 
+struct RasterHeightScanVisualizationConfig
+{
+  bool enabled{false};
+  uint32_t sensorIndex{0};
+  float pointSizePixels{2.0f};
+};
+
 enum RasterHeightScanSampleFlags : uint32_t
 {
   RasterHeightScanSampleFlagValid = 1u << 0,

@@ -26,6 +26,11 @@ void RasterRenderer::recordLidarPointOverlay(const VkCommandBuffer& cmdBuf)
   m_outputController.recordLidarPointOverlay(cmdBuf, m_sceneDescriptors);
 }
 
+void RasterRenderer::recordHeightScanOverlay(const VkCommandBuffer& cmdBuf)
+{
+  m_outputController.recordHeightScanOverlay(cmdBuf, m_sceneDescriptors);
+}
+
 void RasterRenderer::createSceneDescriptors()
 {
   m_sceneDescriptors.create(m_impl->device(), m_gpuScene.getTextureDescriptorCount(), true);

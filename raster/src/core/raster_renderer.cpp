@@ -93,6 +93,11 @@ void RasterRenderer::setHeightScanSensors(std::vector<RasterHeightScanSensorSpec
   m_outputController.setHeightScanSensors(std::move(sensors));
 }
 
+void RasterRenderer::setHeightScanVisualizationConfig(RasterHeightScanVisualizationConfig config)
+{
+  m_outputController.setHeightScanVisualizationConfig(config);
+}
+
 RasterHeightScanFrame RasterRenderer::readHeightScanFrame()
 {
   return m_outputController.readHeightScanFrame();

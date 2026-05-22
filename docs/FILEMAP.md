@@ -38,7 +38,8 @@ call sites with `rg`.
 - `raster/include/raster/raster_session.hpp`: `RasterSession` public surface and renderer
   ownership.
 - `raster/private/core/raster_frame_executor.hpp` / `raster/src/core/raster_frame_executor.cpp`:
-  Source of truth for per-frame raster pass sequencing.
+  Source of truth for per-frame raster pass sequencing; preview AOV rendering
+  is followed by LiDAR point overlay and then height scan overlay.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
   param ownership.
@@ -126,8 +127,13 @@ call sites with `rg`.
   pipeline that binds the scene TLAS and traces one ray query per LiDAR beam
   into `LidarPointGpu` entries.
 - `raster/private/output/lidar/lidar_point_overlay_pipeline.hpp` /
-  `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`: Preview overlay
-  graphics pipeline that draws selected valid LiDAR hits over color.
+  `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`: Thin LiDAR
+  compatibility wrapper around the shared point overlay pipeline.
+- `raster/private/output/point_overlay/point_overlay_pipeline.hpp` /
+  `raster/src/output/point_overlay/point_overlay_pipeline.cpp`: Shared preview
+  point overlay graphics pipeline infrastructure for render pass, framebuffer,
+  descriptor resources, push constants, and point-list draw binding. Sensor and
+  point/sample layout details stay in overlay-specific vertex shaders.
 - `raster/include/raster/height_scan_types.hpp`: Public Hydra-free height scan
   sensor, sample, per-sensor grid, and frame readback contract.
 - `raster/private/output/height_scan/height_scan.hpp` /
@@ -139,8 +145,9 @@ call sites with `rg`.
   height scan grid sample.
 - `raster/private/output/height_scan/height_scan_pass.hpp` /
   `raster/src/output/height_scan/height_scan_pass.cpp`: Height scan output
-  coordinator owning sensors, GPU metadata, sample buffers, Vulkan RT generation,
-  and CPU readback frames.
+  coordinator owning sensors, visualization config, GPU metadata, sample
+  buffers, Vulkan RT generation, preview overlay orchestration, and CPU
+  readback frames.
 - `raster/src/output/tile/tile_atlas_renderer.cpp`: `RasterRenderer` compatibility forwarding
   for tile atlas recording and consume marking.
 - `raster/src/scene/raster_runtime_updates.cpp`: `RasterRenderer` compatibility
@@ -202,6 +209,10 @@ call sites with `rg`.
 - `raster/shaders/lidar/lidar_overlay.vert` /
   `raster/shaders/lidar/lidar_overlay.frag`: Preview point overlay shaders for
   valid LiDAR hits.
+- `raster/shaders/height_scan/height_scan_overlay.vert` /
+  `raster/shaders/height_scan/height_scan_overlay.frag`: Preview point overlay
+  shaders for valid height scan hit samples, drawn from generated GPU sample
+  buffers after preview rendering.
 - `raster/shaders/common/host_device.h`: Shared raster descriptor bindings,
   material structs, frame uniforms, tile multiview uniforms, LiDAR and height
   scan GPU structs, trace mask constants, and push constants.
@@ -210,24 +221,27 @@ call sites with `rg`.
 
 - `hdRobot/renderDelegate.h` / `hdRobot/renderDelegate.cpp`: Hydra delegate
   ownership, supported primitives, render param setup, tile render setting
-  descriptors including per-channel tile color/depth enable flags, LiDAR
-  visualization render settings, standard and tile AOV descriptors, and
-  resource access.
+  descriptors including per-channel tile color/depth enable flags, LiDAR and
+  height scan visualization render settings, standard and tile AOV descriptors,
+  and resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
   Converts Hydra frame state into `RasterRenderer` updates and render calls,
   including the all-camera snapshot passed to raster renderer, the current
   frame's requested tile AOV channel mask, sorted LiDAR and height scan sensor
-  forwarding, LiDAR visualization config forwarding, `hdRobot:traceRole =
-  "ground"` routing into raster instance trace masks, and ordered AOV copy
-  groups that copy fixed tile AOVs before display tile AOVs and other AOVs.
+  forwarding, LiDAR and height scan visualization config forwarding,
+  `hdRobot:traceRole = "ground"` routing into raster instance trace masks, and
+  ordered AOV copy groups that copy fixed tile AOVs before display tile AOVs
+  and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, LiDAR and height scan sensor arrays, tile
-  config, scene dirty flags, texture registry, and renderer bridge ownership.
+  config, LiDAR and height scan visualization config, scene dirty flags,
+  texture registry, and renderer bridge ownership.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
-  including tile render settings, LiDAR/height scan camera params, mesh
-  `hdRobot:traceRole`, `ground`, and tile AOV tokens.
+  including tile render settings, LiDAR/height scan visualization settings,
+  LiDAR/height scan camera params, mesh `hdRobot:traceRole`, `ground`, and tile
+  AOV tokens.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
 
 ## Hydra Scene Primitives
@@ -355,7 +369,7 @@ call sites with `rg`.
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
   `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
-- Height scan generation:
+- Height scan generation or overlay:
   `raster/include/raster/height_scan_types.hpp`,
   `raster/private/output/height_scan/height_scan.hpp`,
   `raster/src/output/height_scan/height_scan.cpp`,
@@ -364,13 +378,19 @@ call sites with `rg`.
   `raster/private/output/height_scan/height_scan_pass.hpp`,
   `raster/src/output/height_scan/height_scan_pass.cpp`,
   `raster/shaders/height_scan/height_scan.comp`,
+  `raster/shaders/height_scan/height_scan_overlay.vert`,
+  `raster/shaders/height_scan/height_scan_overlay.frag`,
+  `raster/src/output/point_overlay/point_overlay_pipeline.cpp`,
   `raster/src/core/raster_frame_executor.cpp`,
   `raster/src/core/raster_output_controller.cpp`,
   `hdRobot/camera.cpp`, `hdRobot/rasterBridge.cpp`, and
   `raster/src/scene/raster_rt_scene.cpp`, then search for
-  `RasterHeightScanSensorSpec`, `HeightScanPass`, `GenerateHeightScans`,
-  `hdRobot:traceRole`, `kRasterTraceMaskGround`, `RASTER_TRACE_MASK_GROUND`,
-  `setHeightScanSensors`, and `readHeightScanFrame`.
+  `RasterHeightScanSensorSpec`, `RasterHeightScanVisualizationConfig`,
+  `HeightScanPass`, `GenerateHeightScans`, `OverlayHeightScans`,
+  `hdRobot:heightScan:visualize`, `hdRobot:traceRole`,
+  `kRasterTraceMaskGround`, `RASTER_TRACE_MASK_GROUND`,
+  `setHeightScanSensors`, `setHeightScanVisualizationConfig`, and
+  `readHeightScanFrame`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, `hdRobot/tokens.h`,
   `hdRobot/rasterBridge.cpp`, and `raster/private/scene/raster_scene_types.hpp`,

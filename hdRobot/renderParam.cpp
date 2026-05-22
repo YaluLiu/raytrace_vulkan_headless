@@ -134,6 +134,18 @@ HdRobotLidarVisualizationConfig HdRobotRenderParam::GetLidarVisualizationConfig(
   return lidarVisualizationConfig;
 }
 
+void HdRobotRenderParam::SetHeightScanVisualizationConfig(const HdRobotHeightScanVisualizationConfig& config)
+{
+  std::lock_guard guard(mutex);
+  heightScanVisualizationConfig = config;
+}
+
+HdRobotHeightScanVisualizationConfig HdRobotRenderParam::GetHeightScanVisualizationConfig() const
+{
+  std::lock_guard guard(mutex);
+  return heightScanVisualizationConfig;
+}
+
 void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
 {
   for (auto& mesh : v_mesh)

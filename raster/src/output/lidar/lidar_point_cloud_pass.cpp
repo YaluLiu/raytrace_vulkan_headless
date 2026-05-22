@@ -21,7 +21,9 @@ void LidarPointCloudPass::setup(VkDevice device,
   m_debug = &debug;
   (void)physicalDevice;
   m_generationPipeline.setup(device, debug);
-  m_overlayPipeline.setup(device, debug);
+  m_overlayPipeline.setup(device, debug,
+                          PointOverlayPipelineConfig{"LidarPointOverlay", "spv/lidar_overlay.vert.spv",
+                                                     "spv/lidar_overlay.frag.spv", "LiDAR overlay"});
 }
 
 void LidarPointCloudPass::destroy()
@@ -214,7 +216,8 @@ void LidarPointCloudPass::recordOverlay(const VkCommandBuffer& cmdBuf,
   }
 
   const RasterLidarSensorMetadata& metadata = m_layout.sensors[m_visualization.sensorIndex];
-  m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, m_visualization,
+  m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, m_visualization.sensorIndex,
+                         m_visualization.pointSizePixels,
                          static_cast<uint32_t>(std::min<uint64_t>(metadata.pointCount,
                                                                   std::numeric_limits<uint32_t>::max())));
 }

@@ -143,7 +143,7 @@ struct PushConstantHeightScanGenerate
   uint pad2;
 };
 
-struct PushConstantLidarOverlay
+struct PushConstantPointOverlay
 {
   uint sensorIndex;
   float pointSizePixels;

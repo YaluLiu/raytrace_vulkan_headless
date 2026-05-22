@@ -78,6 +78,7 @@ public:
   void setLidarVisualizationConfig(RasterLidarVisualizationConfig config);
   RasterLidarFramePointCloud readLidarPointCloudFrame();
   void setHeightScanSensors(std::vector<RasterHeightScanSensorSpec> sensors);
+  void setHeightScanVisualizationConfig(RasterHeightScanVisualizationConfig config);
   RasterHeightScanFrame readHeightScanFrame();
 
   // Debug helpers.
@@ -101,6 +102,7 @@ public:
   void recordLidarPointClouds(const VkCommandBuffer &cmdBuf);
   void recordHeightScans(const VkCommandBuffer &cmdBuf);
   void recordLidarPointOverlay(const VkCommandBuffer &cmdBuf);
+  void recordHeightScanOverlay(const VkCommandBuffer &cmdBuf);
   void markTileAovAtlasConsumed(const std::string &outputDirectory = "output");
   void createPreviewAovTargets();
   void recordFrameUniformUpdate(const VkCommandBuffer &cmdBuf);

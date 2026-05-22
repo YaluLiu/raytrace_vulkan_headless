@@ -42,6 +42,7 @@ set(RASTER_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_point_generation_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_point_overlay_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_scan.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/point_overlay/point_overlay_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/output/preview_raster_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/multiview_tile_raster_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/multiview_tile_targets.hpp
@@ -70,6 +71,7 @@ set(RASTER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_point_generation_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_point_overlay_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_scan.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/point_overlay/point_overlay_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/output/preview/preview_raster_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/multiview_tile_raster_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/multiview_tile_targets.cpp
@@ -89,6 +91,8 @@ set(RASTER_SOURCES
 
 set(RASTER_SHADER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/shaders/height_scan/height_scan.comp
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/height_scan/height_scan_overlay.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/height_scan/height_scan_overlay.vert
   ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_depth.frag
   ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_depth.vert
   ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_overlay.frag
