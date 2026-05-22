@@ -46,6 +46,7 @@ set(RASTER_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/private/raster_image_barriers.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/runtime/headless_vk.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_gpu_scene.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_rt_scene.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_scene_descriptors.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_scene_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_view_uniforms.hpp
@@ -72,6 +73,7 @@ set(RASTER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/raster_session.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_geometry_upload.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_gpu_scene.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_rt_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_runtime_updates.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_scene_descriptors.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_scene_upload.cpp

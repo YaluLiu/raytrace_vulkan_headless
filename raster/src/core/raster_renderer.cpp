@@ -166,6 +166,36 @@ size_t RasterRenderer::getMeshSourceCount() const
   return m_gpuScene.getMeshSourceCount();
 }
 
+void RasterRenderer::createRayTracingResources()
+{
+  m_gpuScene.createRayTracingResources();
+}
+
+void RasterRenderer::destroyRayTracingResources()
+{
+  m_gpuScene.destroyRayTracingResources();
+}
+
+void RasterRenderer::flushRayTracingUpdates()
+{
+  m_gpuScene.flushRayTracingUpdates();
+}
+
+bool RasterRenderer::hasRayTracingTlas() const
+{
+  return m_gpuScene.hasRayTracingTlas();
+}
+
+VkAccelerationStructureKHR RasterRenderer::getRayTracingTlas() const
+{
+  return m_gpuScene.getRayTracingTlas();
+}
+
+std::optional<RasterTlasDescriptorInfo> RasterRenderer::getRayTracingTlasDescriptorInfo() const
+{
+  return m_gpuScene.getRayTracingTlasDescriptorInfo();
+}
+
 void RasterRenderer::recordFrameUniformUpdate(const VkCommandBuffer& cmdBuf)
 {
   recordFrameUniformUpdateForExtent(cmdBuf, m_impl->sizeRef());
@@ -248,6 +278,7 @@ void RasterRenderer::destroyResources()
   m_outputController.destroy();
   m_sceneDescriptors.destroy();
   m_viewUniforms.destroy();
+  m_gpuScene.destroyRayTracingResources();
   m_gpuScene.destroy();
   m_alloc.deinit();
 }

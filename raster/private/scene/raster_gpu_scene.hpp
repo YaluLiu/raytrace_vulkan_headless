@@ -5,9 +5,11 @@
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
 #include <raster/raster_renderer_types.hpp>
+#include "scene/raster_rt_scene.hpp"
 #include "scene/raster_scene_types.hpp"
 #include "shaders/common/host_device.h"
 
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -37,6 +39,12 @@ public:
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
   void updateMeshGeometry(uint32_t meshId);
   void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate>& updates);
+  void createRayTracingResources();
+  void destroyRayTracingResources();
+  void flushRayTracingUpdates();
+  bool hasRayTracingTlas() const;
+  VkAccelerationStructureKHR getRayTracingTlas() const;
+  std::optional<RasterTlasDescriptorInfo> getRayTracingTlasDescriptorInfo() const;
 
   void createObjectDescriptionBuffer();
   void addLight(const Light& light);
@@ -74,6 +82,7 @@ private:
   std::vector<int> m_instanceIds;
   std::vector<nvvk::Texture> m_textures;
   std::vector<Light> m_lights;
+  RasterRtScene m_rtScene;
 
   nvvk::Buffer m_bObjDesc;
   nvvk::Buffer m_bLights;

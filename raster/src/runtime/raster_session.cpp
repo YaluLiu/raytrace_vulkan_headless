@@ -131,6 +131,17 @@ void RasterSession::setupContext()
   contextInfo.verboseAvailable         = false;
   contextInfo.setVersion(1, 2);
 
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+  contextInfo.addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, false, &accelFeature);
+
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  contextInfo.addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeature);
+
+  contextInfo.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+  contextInfo.addDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+
   addExternalSharingExtensions(contextInfo);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
@@ -142,7 +153,8 @@ void RasterSession::setupContext()
   auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
   if(compatibleDevices.empty())
   {
-    throw std::runtime_error("No compatible Vulkan device found for rasterization and external memory extensions");
+    throw std::runtime_error(
+        "No compatible Vulkan device found for rasterization, ray tracing, and external memory extensions");
   }
 
   if(!m_vkctx.initDevice(compatibleDevices[0], contextInfo))
@@ -167,6 +179,7 @@ void RasterSession::createRenderResources()
   m_renderer.ensureViewUniformBuffers();
   m_renderer.createObjectDescriptionBuffer();
   m_renderer.updateSceneDescriptorBindings();
+  m_renderer.createRayTracingResources();
 
   m_renderer.createPreviewOutputPipeline();
   m_resourcesCreated = true;
@@ -175,6 +188,7 @@ void RasterSession::createRenderResources()
 void RasterSession::render()
 {
   m_renderer.ensureFrameUniformCapacity(m_renderer.getRequiredFrameUniformSlots());
+  m_renderer.flushRayTracingUpdates();
 
   auto                   curFrame = m_renderer.getCurFrame();
   const VkCommandBuffer& cmdBuf   = m_renderer.getCommandBuffers()[curFrame];

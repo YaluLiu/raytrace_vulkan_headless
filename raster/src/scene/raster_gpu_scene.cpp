@@ -63,6 +63,7 @@ void RasterGpuScene::setup(VkDevice device,
   m_graphicsQueueIndex = graphicsQueueIndex;
   m_alloc = &allocator;
   m_debug = &debug;
+  m_rtScene.setup(m_device, m_graphicsQueueIndex, *m_alloc);
 }
 
 void RasterGpuScene::destroy()
@@ -74,6 +75,7 @@ void RasterGpuScene::destroy()
   }
   m_bObjDesc = {};
   m_bLights = {};
+  destroyRayTracingResources();
   destroyMeshBuffers();
   destroyTextures();
   m_loaders.clear();
@@ -113,7 +115,9 @@ void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transfo
 
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
-  VkBufferUsageFlags deviceAddressFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  VkBufferUsageFlags deviceAddressFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                          VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
   model.vertexBuffer =
       m_alloc->createBuffer(cmdBuf, loader.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
   model.indexBuffer =
@@ -274,6 +278,7 @@ void RasterGpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bo
   }
   m_instances[instanceId].transform = transform;
   m_instances[instanceId].visible = visible;
+  m_rtScene.markTlasDirty();
 }
 
 void RasterGpuScene::updateMeshGeometry(uint32_t meshId)
@@ -290,7 +295,9 @@ void RasterGpuScene::updateMeshGeometry(uint32_t meshId)
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = genCmdBuf.createCommandBuffer();
 
-  VkBufferUsageFlags storageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  VkBufferUsageFlags storageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
   const uint32_t newNbVertices = static_cast<uint32_t>(now_vertices.size());
   const uint32_t newNbIndices = static_cast<uint32_t>(now_indices.size());
@@ -352,6 +359,7 @@ void RasterGpuScene::updateMeshGeometry(uint32_t meshId)
 
   model.nbVertices = newNbVertices;
   model.nbIndices = newNbIndices;
+  m_rtScene.markBlasDirty(meshId);
 
   genCmdBuf.submitAndWait(cmdBuf);
   m_alloc->finalizeAndReleaseStaging();
@@ -405,6 +413,36 @@ void RasterGpuScene::updateMaterialsAtRuntime(const std::vector<RasterMaterialUp
                        static_cast<uint32_t>(postBarriers.size()), postBarriers.data(), 0, nullptr);
 
   cmdGen.submitAndWait(cmdBuf);
+}
+
+void RasterGpuScene::createRayTracingResources()
+{
+  m_rtScene.build(m_objModel, m_instances);
+}
+
+void RasterGpuScene::destroyRayTracingResources()
+{
+  m_rtScene.destroy();
+}
+
+void RasterGpuScene::flushRayTracingUpdates()
+{
+  m_rtScene.flush(m_objModel, m_instances);
+}
+
+bool RasterGpuScene::hasRayTracingTlas() const
+{
+  return m_rtScene.hasTlas();
+}
+
+VkAccelerationStructureKHR RasterGpuScene::getRayTracingTlas() const
+{
+  return m_rtScene.getTlas();
+}
+
+std::optional<RasterTlasDescriptorInfo> RasterGpuScene::getRayTracingTlasDescriptorInfo() const
+{
+  return m_rtScene.getTlasDescriptorInfo();
 }
 
 void RasterGpuScene::createObjectDescriptionBuffer()

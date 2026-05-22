@@ -5,6 +5,7 @@
 #include <string>
 
 #include <glm/glm.hpp>
+#include <vulkan/vulkan_core.h>
 
 struct RasterCameraSpec
 {
@@ -30,4 +31,9 @@ struct RasterInstanceInfo
   uint32_t objIndex{0};
   int instanceId{0};
   bool visible{true};
+};
+
+struct RasterTlasDescriptorInfo
+{
+  VkAccelerationStructureKHR accelerationStructure{VK_NULL_HANDLE};
 };

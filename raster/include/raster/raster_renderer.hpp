@@ -46,6 +46,12 @@ public:
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
   void updateMeshGeometry(uint32_t meshId);
   void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate> &updates);
+  void createRayTracingResources();
+  void destroyRayTracingResources();
+  void flushRayTracingUpdates();
+  bool hasRayTracingTlas() const;
+  VkAccelerationStructureKHR getRayTracingTlas() const;
+  std::optional<RasterTlasDescriptorInfo> getRayTracingTlasDescriptorInfo() const;
   void addLight(const Light &light);
   void clearLights();
 
