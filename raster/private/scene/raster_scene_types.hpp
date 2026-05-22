@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-#include "nvvk/memallocator_dma_vk.hpp"
+#include "nvvk/resourceallocator_vk.hpp"
 
 struct RasterMeshBuffers
 {

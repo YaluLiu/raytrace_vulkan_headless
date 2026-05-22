@@ -2,7 +2,6 @@
 
 #include "nvvk/commands_vk.hpp"
 #include "output/preview_raster_pipeline.hpp"
-#include "raster_image_barriers.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +19,7 @@ void LidarPointCloudPass::setup(VkDevice device,
   m_graphicsQueueIndex = graphicsQueueIndex;
   m_allocator = &allocator;
   m_debug = &debug;
-  m_depthPipeline.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
+  (void)physicalDevice;
   m_generationPipeline.setup(device, debug);
   m_overlayPipeline.setup(device, debug);
 }
@@ -29,7 +28,6 @@ void LidarPointCloudPass::destroy()
 {
   m_overlayPipeline.destroy();
   m_generationPipeline.destroy();
-  m_depthPipeline.destroy();
   destroyBuffers();
   m_sensors.clear();
   m_gpuSensors.clear();
@@ -44,7 +42,6 @@ void LidarPointCloudPass::destroy()
 void LidarPointCloudPass::destroyGraphicsPipeline()
 {
   m_overlayPipeline.destroyGraphicsPipeline();
-  m_depthPipeline.destroyGraphicsPipeline();
 }
 
 void LidarPointCloudPass::setSensors(std::vector<RasterLidarSensorSpec> sensors)
@@ -145,21 +142,16 @@ RasterLidarFramePointCloud LidarPointCloudPass::readPointCloudFrame()
 void LidarPointCloudPass::rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout,
                                                          const PreviewRasterPipeline& previewPipeline)
 {
-  m_depthPipeline.ensureResources(sceneDescriptorSetLayout, {1, 1});
   m_overlayPipeline.destroyGraphicsPipeline();
+  (void)sceneDescriptorSetLayout;
   (void)previewPipeline;
 }
 
 void LidarPointCloudPass::recordGenerate(const VkCommandBuffer& cmdBuf,
-                                         VkDescriptorSet sceneDescriptorSet,
-                                         VkDescriptorSetLayout sceneDescriptorSetLayout,
-                                         const PreviewRasterPipeline&,
-                                         std::span<const RasterMeshBuffers> objModels,
-                                         std::span<const RasterInstance> instances,
-                                         std::span<const int> instanceIds)
+                                         std::optional<RasterTlasDescriptorInfo> tlasInfo)
 {
   ++m_frameId;
-  if(m_layout.empty() || sceneDescriptorSet == VK_NULL_HANDLE || sceneDescriptorSetLayout == VK_NULL_HANDLE)
+  if(m_layout.empty() || !tlasInfo.has_value() || tlasInfo->accelerationStructure == VK_NULL_HANDLE)
   {
     m_frameGenerated = false;
     return;
@@ -172,21 +164,7 @@ void LidarPointCloudPass::recordGenerate(const VkCommandBuffer& cmdBuf,
   }
   uploadSensorMetadata();
 
-  VkExtent2D maxExtent{1, 1};
-  for(const RasterLidarSensorMetadata& metadata : m_layout.sensors)
-  {
-    maxExtent.width = std::max(maxExtent.width, metadata.azimuthSampleCount);
-    maxExtent.height = std::max(maxExtent.height, metadata.verticalSampleCount);
-  }
-
-  if(!m_depthPipeline.ensureResources(sceneDescriptorSetLayout, maxExtent))
-  {
-    m_frameGenerated = false;
-    return;
-  }
-
-  const nvvk::Texture& rangeTexture = m_depthPipeline.getRangeTexture();
-  if(!m_generationPipeline.ensureResources(rangeTexture.descriptor.imageView, m_sensorBuffer.buffer, m_pointBuffer.buffer))
+  if(!m_generationPipeline.ensureResources(*tlasInfo, m_sensorBuffer.buffer, m_pointBuffer.buffer))
   {
     m_frameGenerated = false;
     return;
@@ -201,16 +179,6 @@ void LidarPointCloudPass::recordGenerate(const VkCommandBuffer& cmdBuf,
       continue;
     }
 
-    const bool rasterized = m_depthPipeline.rasterize(cmdBuf, m_sensors[metadata.sensorIndex], metadata,
-                                                      sceneDescriptorSet, objModels, instances, instanceIds);
-    if(!rasterized)
-    {
-      continue;
-    }
-
-    insertGeneralImageBarrier(cmdBuf, rangeTexture.image, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                              VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     m_generationPipeline.dispatch(cmdBuf, metadata.sensorIndex, metadata.azimuthSampleCount,
                                   metadata.verticalSampleCount);
     generatedAnySensor = true;

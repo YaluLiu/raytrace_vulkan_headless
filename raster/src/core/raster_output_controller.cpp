@@ -69,8 +69,9 @@ void RasterOutputController::recordLidarPointClouds(const VkCommandBuffer& cmdBu
                                                     RasterSceneDescriptors& descriptors,
                                                     const PreviewRasterPipeline& previewPipeline)
 {
-  m_lidarPointCloudPass.recordGenerate(cmdBuf, descriptors.set(), descriptors.layout(), previewPipeline,
-                                       scene.getMeshBuffers(), scene.getInstances(), scene.getInstanceIds());
+  (void)descriptors;
+  (void)previewPipeline;
+  m_lidarPointCloudPass.recordGenerate(cmdBuf, scene.getRayTracingTlasDescriptorInfo());
 }
 
 void RasterOutputController::recordLidarPointOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors)

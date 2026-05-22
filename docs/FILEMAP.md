@@ -18,6 +18,8 @@ call sites with `rg`.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
+- `docs/ray_trace_lidar.md`: Chinese implementation plan for the Vulkan
+  RT/ray-query based LiDAR path and related subtask ownership notes.
 
 ## Build And Test Routing
 
@@ -48,14 +50,14 @@ call sites with `rg`.
 ## Raster Vulkan Renderer
 
 - `raster/include/raster/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
-  camera/tile configuration, scene upload/update entry points, AOV export, and
-  temporary internal methods used by the frame executor while internals are
-  componentized.
+  camera/tile configuration, scene upload/update entry points, RT TLAS lifecycle
+  and query entry points, AOV export, and temporary internal methods used by the
+  frame executor while internals are componentized.
 - `raster/src/core/raster_renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
   AOV texture routing, and delegation into GPU scene, descriptor, view uniform,
   and output controller components.
 - `raster/include/raster/raster_renderer_types.hpp`: Facade-facing data types such as
-  `RasterCameraSpec` and `RasterMaterialUpdate`.
+  `RasterCameraSpec`, `RasterMaterialUpdate`, and `RasterTlasDescriptorInfo`.
 - `raster/src/debug/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
   downloads and offscreen color PNG output.
 - `raster/include/raster/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
@@ -66,7 +68,12 @@ call sites with `rg`.
 - `raster/private/scene/raster_gpu_scene.hpp` / `raster/src/scene/raster_gpu_scene.cpp`: Owner of mesh,
   material, instance, light, texture, object-description, and light GPU
   resources; provides read-only spans for output passes and facade methods for
-  scene upload/update.
+  scene upload/update; forwards RT acceleration-structure lifecycle and dirty
+  updates into `RasterRtScene`.
+- `raster/private/scene/raster_rt_scene.hpp` / `raster/src/scene/raster_rt_scene.cpp`: RT
+  acceleration-structure mirror for the raster scene; builds BLAS from uploaded
+  mesh buffers, builds/updates TLAS from renderer instances, and exposes the
+  TLAS descriptor primitive for future RT LiDAR passes.
 - `raster/private/scene/raster_scene_descriptors.hpp` /
   `raster/src/scene/raster_scene_descriptors.cpp`: Owner of scene descriptor bindings,
   pool, layout, set, and descriptor updates for frame uniforms, object
@@ -106,14 +113,16 @@ call sites with `rg`.
 - `raster/private/output/lidar/lidar_point_cloud_pass.hpp` /
   `raster/src/output/lidar/lidar_point_cloud_pass.cpp`: LiDAR output
   coordinator owning sensors, visualization config, global point buffer,
-  sensor metadata buffer, CPU readback, range raster, compute generation, and
-  overlay pass orchestration.
+  sensor metadata buffer, CPU readback, Vulkan RT point generation, and overlay
+  pass orchestration.
 - `raster/private/output/lidar/lidar_depth_pipeline.hpp` /
-  `raster/src/output/lidar/lidar_depth_pipeline.cpp`: Single-sensor angular
-  range raster pipeline that renders scene meshes into an R32F range image.
+  `raster/src/output/lidar/lidar_depth_pipeline.cpp`: Legacy single-sensor
+  angular range raster pipeline. The active LiDAR point path now uses Vulkan RT
+  ray queries through `lidar_points.comp`.
 - `raster/private/output/lidar/lidar_point_generation_pipeline.hpp` /
   `raster/src/output/lidar/lidar_point_generation_pipeline.cpp`: Compute
-  pipeline that back-projects range pixels into `LidarPointGpu` entries.
+  pipeline that binds the scene TLAS and traces one ray query per LiDAR beam
+  into `LidarPointGpu` entries.
 - `raster/private/output/lidar/lidar_point_overlay_pipeline.hpp` /
   `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`: Preview overlay
   graphics pipeline that draws selected valid LiDAR hits over color.
@@ -167,10 +176,11 @@ call sites with `rg`.
   `raster/shaders/tile/dome_background_tile_multiview.frag`: Dome background
   variants for multiview tile rendering.
 - `raster/shaders/lidar/lidar_depth.vert` /
-  `raster/shaders/lidar/lidar_depth.frag`: Mesh variants that project scene
-  geometry into a LiDAR angular range image.
-- `raster/shaders/lidar/lidar_points.comp`: Compute back-projection from range
-  image into the global LiDAR point buffer.
+  `raster/shaders/lidar/lidar_depth.frag`: Legacy mesh variants that project
+  scene geometry into a LiDAR angular range image.
+- `raster/shaders/lidar/lidar_points.comp`: Active Vulkan RT LiDAR compute
+  shader; performs one ray query against the scene TLAS per beam and writes the
+  global LiDAR point buffer.
 - `raster/shaders/lidar/lidar_overlay.vert` /
   `raster/shaders/lidar/lidar_overlay.frag`: Preview point overlay shaders for
   valid LiDAR hits.
@@ -312,10 +322,9 @@ call sites with `rg`.
   `raster/include/raster/lidar_types.hpp`,
   `raster/src/output/lidar/lidar_scan.cpp`,
   `raster/src/output/lidar/lidar_point_cloud_pass.cpp`,
-  `raster/src/output/lidar/lidar_depth_pipeline.cpp`,
   `raster/src/output/lidar/lidar_point_generation_pipeline.cpp`,
   `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`,
-  `raster/shaders/lidar/lidar_depth.vert`,
+  `raster/src/scene/raster_rt_scene.cpp`,
   `raster/shaders/lidar/lidar_points.comp`,
   `raster/shaders/lidar/lidar_overlay.vert`,
   `hdRobot/renderDelegate.cpp`, and `hdRobot/rasterBridge.cpp`, then search

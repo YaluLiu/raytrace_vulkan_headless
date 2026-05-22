@@ -1,8 +1,8 @@
 #pragma once
 
 #include <raster/lidar_types.hpp>
+#include <raster/raster_renderer_types.hpp>
 
-#include "output/lidar/lidar_depth_pipeline.hpp"
 #include "output/lidar/lidar_point_generation_pipeline.hpp"
 #include "output/lidar/lidar_point_overlay_pipeline.hpp"
 #include "output/lidar/lidar_scan.hpp"
@@ -12,6 +12,7 @@
 #include "nvvk/debug_util_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
 
+#include <optional>
 #include <span>
 
 #include <vulkan/vulkan_core.h>
@@ -37,12 +38,7 @@ public:
   void rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout,
                                       const PreviewRasterPipeline& previewPipeline);
   void recordGenerate(const VkCommandBuffer& cmdBuf,
-                      VkDescriptorSet sceneDescriptorSet,
-                      VkDescriptorSetLayout sceneDescriptorSetLayout,
-                      const PreviewRasterPipeline& previewPipeline,
-                      std::span<const RasterMeshBuffers> objModels,
-                      std::span<const RasterInstance> instances,
-                      std::span<const int> instanceIds);
+                      std::optional<RasterTlasDescriptorInfo> tlasInfo);
   void recordOverlay(const VkCommandBuffer& cmdBuf,
                      VkDescriptorSet sceneDescriptorSet,
                      VkDescriptorSetLayout sceneDescriptorSetLayout,
@@ -74,7 +70,6 @@ private:
   nvvk::Buffer m_sensorBuffer;
   std::vector<LidarSensorGpu> m_gpuSensors;
 
-  LidarDepthPipeline m_depthPipeline;
   LidarPointGenerationPipeline m_generationPipeline;
   LidarPointOverlayPipeline m_overlayPipeline;
 };

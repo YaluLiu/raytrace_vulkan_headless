@@ -30,17 +30,19 @@ void LidarPointGenerationPipeline::destroy()
   m_descriptorPool = VK_NULL_HANDLE;
   m_descriptorSetLayout = VK_NULL_HANDLE;
   m_descriptorSet = VK_NULL_HANDLE;
-  m_boundRangeImageView = VK_NULL_HANDLE;
+  m_boundTlas = VK_NULL_HANDLE;
   m_boundSensorBuffer = VK_NULL_HANDLE;
   m_boundPointBuffer = VK_NULL_HANDLE;
   m_device = VK_NULL_HANDLE;
   m_debug = nullptr;
 }
 
-bool LidarPointGenerationPipeline::ensureResources(VkImageView rangeImageView, VkBuffer sensorBuffer, VkBuffer pointBuffer)
+bool LidarPointGenerationPipeline::ensureResources(const RasterTlasDescriptorInfo& tlasInfo,
+                                                   VkBuffer sensorBuffer,
+                                                   VkBuffer pointBuffer)
 {
-  if(m_device == VK_NULL_HANDLE || rangeImageView == VK_NULL_HANDLE || sensorBuffer == VK_NULL_HANDLE ||
-     pointBuffer == VK_NULL_HANDLE)
+  if(m_device == VK_NULL_HANDLE || tlasInfo.accelerationStructure == VK_NULL_HANDLE ||
+     sensorBuffer == VK_NULL_HANDLE || pointBuffer == VK_NULL_HANDLE)
   {
     return false;
   }
@@ -52,10 +54,10 @@ bool LidarPointGenerationPipeline::ensureResources(VkImageView rangeImageView, V
   {
     createPipeline();
   }
-  if(m_boundRangeImageView != rangeImageView || m_boundSensorBuffer != sensorBuffer ||
+  if(m_boundTlas != tlasInfo.accelerationStructure || m_boundSensorBuffer != sensorBuffer ||
      m_boundPointBuffer != pointBuffer)
   {
-    updateDescriptorSet(rangeImageView, sensorBuffer, pointBuffer);
+    updateDescriptorSet(tlasInfo, sensorBuffer, pointBuffer);
   }
   return m_descriptorSet != VK_NULL_HANDLE && m_pipeline != VK_NULL_HANDLE && m_pipelineLayout != VK_NULL_HANDLE;
 }
@@ -95,7 +97,7 @@ void LidarPointGenerationPipeline::dispatch(const VkCommandBuffer& cmdBuf,
 void LidarPointGenerationPipeline::createDescriptorResources()
 {
   m_bindings.clear();
-  m_bindings.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT);
+  m_bindings.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_COMPUTE_BIT);
   m_bindings.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT);
   m_bindings.addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT);
   m_descriptorSetLayout = m_bindings.createLayout(m_device);
@@ -131,22 +133,31 @@ void LidarPointGenerationPipeline::createPipeline()
   vkDestroyShaderModule(m_device, pipelineInfo.stage.module, nullptr);
 }
 
-void LidarPointGenerationPipeline::updateDescriptorSet(VkImageView rangeImageView, VkBuffer sensorBuffer, VkBuffer pointBuffer)
+void LidarPointGenerationPipeline::updateDescriptorSet(const RasterTlasDescriptorInfo& tlasInfo,
+                                                       VkBuffer sensorBuffer,
+                                                       VkBuffer pointBuffer)
 {
-  VkDescriptorImageInfo rangeImage{};
-  rangeImage.imageView = rangeImageView;
-  rangeImage.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+  VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure{
+      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
+  accelerationStructure.accelerationStructureCount = 1;
+  accelerationStructure.pAccelerationStructures = &tlasInfo.accelerationStructure;
 
   VkDescriptorBufferInfo sensors{sensorBuffer, 0, VK_WHOLE_SIZE};
   VkDescriptorBufferInfo points{pointBuffer, 0, VK_WHOLE_SIZE};
 
   std::vector<VkWriteDescriptorSet> writes;
-  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 0, &rangeImage));
+  VkWriteDescriptorSet tlasWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+  tlasWrite.pNext = &accelerationStructure;
+  tlasWrite.dstSet = m_descriptorSet;
+  tlasWrite.dstBinding = 0;
+  tlasWrite.descriptorCount = 1;
+  tlasWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  writes.emplace_back(tlasWrite);
   writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 1, &sensors));
   writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 2, &points));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 
-  m_boundRangeImageView = rangeImageView;
+  m_boundTlas = tlasInfo.accelerationStructure;
   m_boundSensorBuffer = sensorBuffer;
   m_boundPointBuffer = pointBuffer;
 }
