@@ -33,6 +33,11 @@ const uint MAX_TILE_MULTIVIEW_VIEWS = 16;
 const uint LIDAR_POINT_FLAG_VALID = 1u << 0;
 const uint LIDAR_POINT_FLAG_HIT = 1u << 1;
 const uint LIDAR_POINT_FLAG_OUT_OF_RANGE = 1u << 2;
+const uint HEIGHT_SCAN_SAMPLE_FLAG_VALID = 1u << 0;
+const uint HEIGHT_SCAN_SAMPLE_FLAG_HIT = 1u << 1;
+const uint HEIGHT_SCAN_SAMPLE_FLAG_OUT_OF_RANGE = 1u << 2;
+const uint RASTER_TRACE_MASK_DEFAULT_GEOMETRY = 0x01u;
+const uint RASTER_TRACE_MASK_GROUND = 0x02u;
 
 struct ObjDesc
 {
@@ -78,6 +83,28 @@ struct LidarSensorGpu
   uint verticalSampleCount;
 };
 
+struct HeightScanSampleGpu
+{
+  vec4 positionDistance;
+  uint sensorIndex;
+  uint xIndex;
+  uint zIndex;
+  uint flags;
+};
+
+struct HeightScanSensorGpu
+{
+  vec4 originMaxDistance;
+  vec4 rayDirectionMinX;
+  vec4 axisXMaxX;
+  vec4 axisZMinZ;
+  vec4 stepXMaxZStepZ;
+  uint sampleOffset;
+  uint sampleCount;
+  uint xSampleCount;
+  uint zSampleCount;
+};
+
 struct LidarFrameGpu
 {
   uint sensorCount;
@@ -101,6 +128,14 @@ struct PushConstantLidarDepth
 };
 
 struct PushConstantLidarGenerate
+{
+  uint sensorIndex;
+  uint pad0;
+  uint pad1;
+  uint pad2;
+};
+
+struct PushConstantHeightScanGenerate
 {
   uint sensorIndex;
   uint pad0;

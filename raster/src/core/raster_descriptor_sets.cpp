@@ -16,6 +16,11 @@ void RasterRenderer::recordLidarPointClouds(const VkCommandBuffer& cmdBuf)
                                             m_outputController.getPreviewPipeline());
 }
 
+void RasterRenderer::recordHeightScans(const VkCommandBuffer& cmdBuf)
+{
+  m_outputController.recordHeightScans(cmdBuf, m_gpuScene);
+}
+
 void RasterRenderer::recordLidarPointOverlay(const VkCommandBuffer& cmdBuf)
 {
   m_outputController.recordLidarPointOverlay(cmdBuf, m_sceneDescriptors);

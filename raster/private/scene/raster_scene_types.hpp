@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <raster/raster_renderer_types.hpp>
+
 #include <glm/glm.hpp>
 
 #include "nvvk/resourceallocator_vk.hpp"
@@ -22,5 +24,6 @@ struct RasterInstance
 {
   glm::mat4 transform{1.0f};
   uint32_t  objIndex{0};
+  uint32_t  traceMask{kRasterTraceMaskDefaultGeometry};
   bool      visible{true};
 };

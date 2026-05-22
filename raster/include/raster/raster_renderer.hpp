@@ -1,6 +1,7 @@
 #pragma once
 
 #include <raster/aov_texture.hpp>
+#include <raster/height_scan_types.hpp>
 #include <raster/lidar_types.hpp>
 #include <raster/raster_renderer_types.hpp>
 #include <raster/tile_config.hpp>
@@ -43,7 +44,10 @@ public:
   void uploadTextureResources(const VkCommandBuffer &cmdBuf, const std::vector<std::string> &textures,
                            const std::vector<TextureAsset> &textureAssets);
   uint32_t addInstance(const glm::mat4 &transform, uint32_t objIndex, int instanceId = 0);
-  void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
+  void updateInstance(uint32_t instanceId,
+                      glm::mat4 transform,
+                      bool visible,
+                      uint32_t traceMask = kRasterTraceMaskDefaultGeometry);
   void updateMeshGeometry(uint32_t meshId);
   void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate> &updates);
   void createRayTracingResources();
@@ -73,6 +77,8 @@ public:
   void setLidarSensors(std::vector<RasterLidarSensorSpec> sensors);
   void setLidarVisualizationConfig(RasterLidarVisualizationConfig config);
   RasterLidarFramePointCloud readLidarPointCloudFrame();
+  void setHeightScanSensors(std::vector<RasterHeightScanSensorSpec> sensors);
+  RasterHeightScanFrame readHeightScanFrame();
 
   // Debug helpers.
   std::vector<uint32_t> readObjectIdImage();
@@ -93,6 +99,7 @@ public:
   void recordPreviewAovs(const VkCommandBuffer &cmdBuf);
   void recordTileAovAtlas(const VkCommandBuffer &cmdBuf);
   void recordLidarPointClouds(const VkCommandBuffer &cmdBuf);
+  void recordHeightScans(const VkCommandBuffer &cmdBuf);
   void recordLidarPointOverlay(const VkCommandBuffer &cmdBuf);
   void markTileAovAtlasConsumed(const std::string &outputDirectory = "output");
   void createPreviewAovTargets();

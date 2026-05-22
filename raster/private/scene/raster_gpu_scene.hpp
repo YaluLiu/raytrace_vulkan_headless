@@ -36,7 +36,7 @@ public:
                            const std::vector<std::string>& textures,
                            const std::vector<TextureAsset>& textureAssets);
 
-  void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible);
+  void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask);
   void updateMeshGeometry(uint32_t meshId);
   void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate>& updates);
   void createRayTracingResources();

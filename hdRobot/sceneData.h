@@ -30,6 +30,7 @@ struct HydraMesh
   bool visible = true;
   bool valid = true;
   TfToken renderTag = HdRenderTagTokens->geometry;
+  TfToken traceRole;
 
   bool geometry_changed = false;
   bool instance_changed = false;

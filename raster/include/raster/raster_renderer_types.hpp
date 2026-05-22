@@ -2,10 +2,15 @@
 
 #include <raster/shaders/host_device.h>
 
+#include <cstdint>
 #include <string>
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
+
+constexpr uint32_t kRasterTraceMaskInvisible = 0x00u;
+constexpr uint32_t kRasterTraceMaskDefaultGeometry = 0x01u;
+constexpr uint32_t kRasterTraceMaskGround = 0x02u;
 
 struct RasterCameraSpec
 {

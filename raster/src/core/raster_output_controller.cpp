@@ -15,10 +15,12 @@ void RasterOutputController::setup(VkDevice device,
   m_previewRasterPipeline.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
   m_tileAtlasPass.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
   m_lidarPointCloudPass.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
+  m_heightScanPass.setup(device, physicalDevice, graphicsQueueIndex, allocator, debug);
 }
 
 void RasterOutputController::destroy()
 {
+  m_heightScanPass.destroy();
   m_lidarPointCloudPass.destroy();
   m_tileAtlasPass.destroy();
   m_previewRasterPipeline.destroy();
@@ -74,6 +76,11 @@ void RasterOutputController::recordLidarPointClouds(const VkCommandBuffer& cmdBu
   m_lidarPointCloudPass.recordGenerate(cmdBuf, scene.getRayTracingTlasDescriptorInfo());
 }
 
+void RasterOutputController::recordHeightScans(const VkCommandBuffer& cmdBuf, const RasterGpuScene& scene)
+{
+  m_heightScanPass.recordGenerate(cmdBuf, scene.getRayTracingTlasDescriptorInfo());
+}
+
 void RasterOutputController::recordLidarPointOverlay(const VkCommandBuffer& cmdBuf, RasterSceneDescriptors& descriptors)
 {
   m_lidarPointCloudPass.recordOverlay(cmdBuf, descriptors.set(), descriptors.layout(), m_previewRasterPipeline);
@@ -106,6 +113,16 @@ void RasterOutputController::setLidarVisualizationConfig(RasterLidarVisualizatio
 RasterLidarFramePointCloud RasterOutputController::readLidarPointCloudFrame()
 {
   return m_lidarPointCloudPass.readPointCloudFrame();
+}
+
+void RasterOutputController::setHeightScanSensors(std::vector<RasterHeightScanSensorSpec> sensors)
+{
+  m_heightScanPass.setSensors(std::move(sensors));
+}
+
+RasterHeightScanFrame RasterOutputController::readHeightScanFrame()
+{
+  return m_heightScanPass.readHeightScanFrame();
 }
 
 void RasterOutputController::setRequestedTileAovChannels(TileAovChannelMask channels)

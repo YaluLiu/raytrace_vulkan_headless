@@ -50,9 +50,9 @@ call sites with `rg`.
 ## Raster Vulkan Renderer
 
 - `raster/include/raster/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
-  camera/tile configuration, scene upload/update entry points, RT TLAS lifecycle
-  and query entry points, AOV export, and temporary internal methods used by the
-  frame executor while internals are componentized.
+  camera/tile/LiDAR/height-scan configuration, scene upload/update entry
+  points, RT TLAS lifecycle and query entry points, AOV export, and temporary
+  internal methods used by the frame executor while internals are componentized.
 - `raster/src/core/raster_renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
   AOV texture routing, and delegation into GPU scene, descriptor, view uniform,
   and output controller components.
@@ -72,8 +72,9 @@ call sites with `rg`.
   updates into `RasterRtScene`.
 - `raster/private/scene/raster_rt_scene.hpp` / `raster/src/scene/raster_rt_scene.cpp`: RT
   acceleration-structure mirror for the raster scene; builds BLAS from uploaded
-  mesh buffers, builds/updates TLAS from renderer instances, and exposes the
-  TLAS descriptor primitive for future RT LiDAR passes.
+  mesh buffers, builds/updates TLAS from renderer instances, applies per-instance
+  trace masks for normal geometry versus height-scan ground geometry, and
+  exposes the TLAS descriptor primitive for RT LiDAR and height-scan passes.
 - `raster/private/scene/raster_scene_descriptors.hpp` /
   `raster/src/scene/raster_scene_descriptors.cpp`: Owner of scene descriptor bindings,
   pool, layout, set, and descriptor updates for frame uniforms, object
@@ -83,7 +84,8 @@ call sites with `rg`.
   range, and uniform buffer update logic.
 - `raster/private/core/raster_output_controller.hpp` /
   `raster/src/core/raster_output_controller.cpp`: Output orchestration layer that owns
-  the preview AOV pipeline and tile atlas pass and routes AOV texture queries.
+  the preview AOV pipeline, tile atlas pass, LiDAR point cloud pass, height scan
+  pass, and AOV texture query routing.
 - `raster/private/output/preview_raster_pipeline.hpp` / `raster/src/output/preview/preview_raster_pipeline.cpp`:
   Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
   depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
@@ -126,6 +128,19 @@ call sites with `rg`.
 - `raster/private/output/lidar/lidar_point_overlay_pipeline.hpp` /
   `raster/src/output/lidar/lidar_point_overlay_pipeline.cpp`: Preview overlay
   graphics pipeline that draws selected valid LiDAR hits over color.
+- `raster/include/raster/height_scan_types.hpp`: Public Hydra-free height scan
+  sensor, sample, per-sensor grid, and frame readback contract.
+- `raster/private/output/height_scan/height_scan.hpp` /
+  `raster/src/output/height_scan/height_scan.cpp`: Pure CPU height scan sample
+  count, offset, basis, layout, and world-space origin helpers.
+- `raster/private/output/height_scan/height_scan_generation_pipeline.hpp` /
+  `raster/src/output/height_scan/height_scan_generation_pipeline.cpp`: Compute
+  pipeline that binds the scene TLAS and traces one ground-mask ray query per
+  height scan grid sample.
+- `raster/private/output/height_scan/height_scan_pass.hpp` /
+  `raster/src/output/height_scan/height_scan_pass.cpp`: Height scan output
+  coordinator owning sensors, GPU metadata, sample buffers, Vulkan RT generation,
+  and CPU readback frames.
 - `raster/src/output/tile/tile_atlas_renderer.cpp`: `RasterRenderer` compatibility forwarding
   for tile atlas recording and consume marking.
 - `raster/src/scene/raster_runtime_updates.cpp`: `RasterRenderer` compatibility
@@ -181,12 +196,15 @@ call sites with `rg`.
 - `raster/shaders/lidar/lidar_points.comp`: Active Vulkan RT LiDAR compute
   shader; performs one ray query against the scene TLAS per beam and writes the
   global LiDAR point buffer.
+- `raster/shaders/height_scan/height_scan.comp`: Active Vulkan RT height scan
+  compute shader; traces only TLAS instances carrying the ground trace mask and
+  writes height scan sample buffers for CPU readback.
 - `raster/shaders/lidar/lidar_overlay.vert` /
   `raster/shaders/lidar/lidar_overlay.frag`: Preview point overlay shaders for
   valid LiDAR hits.
 - `raster/shaders/common/host_device.h`: Shared raster descriptor bindings,
-  material structs, frame uniforms, tile multiview uniforms, LiDAR GPU structs,
-  and push constants.
+  material structs, frame uniforms, tile multiview uniforms, LiDAR and height
+  scan GPU structs, trace mask constants, and push constants.
 
 ## Hydra Delegate
 
@@ -200,21 +218,24 @@ call sites with `rg`.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
   Converts Hydra frame state into `RasterRenderer` updates and render calls,
   including the all-camera snapshot passed to raster renderer, the current
-  frame's requested tile AOV channel mask, sorted LiDAR sensor forwarding,
-  LiDAR visualization config forwarding, and ordered AOV copy groups that copy
-  fixed tile AOVs before display tile AOVs and other AOVs.
+  frame's requested tile AOV channel mask, sorted LiDAR and height scan sensor
+  forwarding, LiDAR visualization config forwarding, `hdRobot:traceRole =
+  "ground"` routing into raster instance trace masks, and ordered AOV copy
+  groups that copy fixed tile AOVs before display tile AOVs and other AOVs.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object, camera array, LiDAR sensor array, tile config, scene dirty
-  flags, texture registry, and renderer bridge ownership.
+  parameter object, camera array, LiDAR and height scan sensor arrays, tile
+  config, scene dirty flags, texture registry, and renderer bridge ownership.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
-  including tile render settings and tile AOV tokens.
+  including tile render settings, LiDAR/height scan camera params, mesh
+  `hdRobot:traceRole`, `ground`, and tile AOV tokens.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
 
 ## Hydra Scene Primitives
 
 - `hdRobot/mesh.h` / `hdRobot/mesh.cpp`: Mesh sync, topology/primvar analysis,
-  tangent generation, material binding, visibility, transforms, and conversion
-  into renderer mesh data.
+  tangent generation, material binding, visibility, transforms,
+  `hdRobot:traceRole = "ground"` ingestion, and conversion into renderer mesh
+  data.
 - `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync lifecycle,
   MaterialX parser invocation, texture registration, and dirty marking.
 - `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: USD Preview
@@ -334,9 +355,27 @@ call sites with `rg`.
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
   `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
+- Height scan generation:
+  `raster/include/raster/height_scan_types.hpp`,
+  `raster/private/output/height_scan/height_scan.hpp`,
+  `raster/src/output/height_scan/height_scan.cpp`,
+  `raster/private/output/height_scan/height_scan_generation_pipeline.hpp`,
+  `raster/src/output/height_scan/height_scan_generation_pipeline.cpp`,
+  `raster/private/output/height_scan/height_scan_pass.hpp`,
+  `raster/src/output/height_scan/height_scan_pass.cpp`,
+  `raster/shaders/height_scan/height_scan.comp`,
+  `raster/src/core/raster_frame_executor.cpp`,
+  `raster/src/core/raster_output_controller.cpp`,
+  `hdRobot/camera.cpp`, `hdRobot/rasterBridge.cpp`, and
+  `raster/src/scene/raster_rt_scene.cpp`, then search for
+  `RasterHeightScanSensorSpec`, `HeightScanPass`, `GenerateHeightScans`,
+  `hdRobot:traceRole`, `kRasterTraceMaskGround`, `RASTER_TRACE_MASK_GROUND`,
+  `setHeightScanSensors`, and `readHeightScanFrame`.
 - Hydra mesh sync:
-  `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, then search for `_CreateGiMeshes`,
-  `_UpdateGeometry`, `_AnalyzePrimvars`, and tangent calculation helpers.
+  `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, `hdRobot/tokens.h`,
+  `hdRobot/rasterBridge.cpp`, and `raster/private/scene/raster_scene_types.hpp`,
+  then search for `_CreateGiMeshes`, `_UpdateGeometry`, `_AnalyzePrimvars`,
+  `traceRole`, `ground`, `traceMask`, and tangent calculation helpers.
 - Material or texture path issues:
   `hdRobot/material.cpp`, `raster/src/scene/raster_gpu_scene.cpp`,
   `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`,

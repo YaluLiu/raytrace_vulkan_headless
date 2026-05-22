@@ -270,7 +270,7 @@ void RasterGpuScene::uploadTextureResources(const VkCommandBuffer& cmdBuf,
   }
 }
 
-void RasterGpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible)
+void RasterGpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask)
 {
   if(instanceId >= m_instances.size())
   {
@@ -278,6 +278,7 @@ void RasterGpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bo
   }
   m_instances[instanceId].transform = transform;
   m_instances[instanceId].visible = visible;
+  m_instances[instanceId].traceMask = traceMask;
   m_rtScene.markTlasDirty();
 }
 

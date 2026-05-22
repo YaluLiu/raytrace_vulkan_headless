@@ -50,6 +50,10 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((heightScanRayDirection, "heightScan:rayDirection")) \
   ((heightScanMaxDistance, "heightScan:maxDistance"))
 
+#define HD_ROBOT_MESH_PARAM_TOKENS ((traceRole, "hdRobot:traceRole"))
+
+#define HD_ROBOT_TRACE_ROLE_TOKENS (ground)
+
 #define HD_ROBOT_AOV_TOKENS \
   (tileColor) \
   (tileDepth) \
@@ -65,6 +69,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeMetadata, HD_ROBOT_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotCommandTokens, HD_ROBOT_COMMAND_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotRenderSettingTokens, HD_ROBOT_RENDER_SETTING_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotCameraParamTokens, HD_ROBOT_CAMERA_PARAM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotMeshParamTokens, HD_ROBOT_MESH_PARAM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRobotTraceRoleTokens, HD_ROBOT_TRACE_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotAovTokens, HD_ROBOT_AOV_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

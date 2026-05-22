@@ -1,6 +1,7 @@
 #include "mesh.h"
 #include "material.h"
 #include "instancer.h"
+#include "tokens.h"
 #include "utils.h"
 
 
@@ -19,6 +20,7 @@
 #include <future>
 #include <algorithm>
 #include <format>
+#include <string>
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (st)(st0)(st_0)(st1)(st_1)(UV0)(UV1)(tangents)(tangentSigns)(bitangentSigns)(leftHanded));
@@ -386,6 +388,21 @@ std::optional<GfVec4f> _GetFirstDisplayColor(const VtValue& value, const SdfPath
   }
   return std::nullopt;
 }
+
+TfToken _TraceRoleFromValue(const VtValue& value)
+{
+  if(value.IsHolding<TfToken>() && value.Get<TfToken>() == HdRobotTraceRoleTokens->ground)
+  {
+    return HdRobotTraceRoleTokens->ground;
+  }
+
+  if(value.IsHolding<std::string>() && value.Get<std::string>() == HdRobotTraceRoleTokens->ground.GetString())
+  {
+    return HdRobotTraceRoleTokens->ground;
+  }
+
+  return TfToken();
+}
 }  // namespace
 
 HdRobotMesh::HdRobotMesh(const SdfPath& id, HdRobotRenderParam& scene)
@@ -498,6 +515,14 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
   setValid(true);
 
   auto& _mesh = _scene.v_mesh[_mesh_id];
+  const TfToken traceRole =
+      _TraceRoleFromValue(sceneDelegate->Get(id, HdRobotMeshParamTokens->traceRole));
+  if(_mesh.traceRole != traceRole)
+  {
+    _mesh.traceRole = traceRole;
+    _scene.MarkMeshInstanceDirty(_mesh_id);
+  }
+
   if(*dirtyBits & HdChangeTracker::DirtyRenderTag)
   {
     const TfToken newRenderTag = sceneDelegate->GetRenderTag(id);

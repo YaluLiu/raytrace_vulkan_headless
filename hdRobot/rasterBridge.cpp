@@ -1,6 +1,7 @@
 #include "rasterBridge.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <utility>
@@ -86,6 +87,34 @@ std::vector<RasterLidarSensorSpec> ToRasterLidarSensorSpec(const std::vector<HdR
   for(const HdRobotLidarSensorData &sensor : sensors)
   {
     result.push_back(ToRasterLidarSensorSpec(sensor));
+  }
+  return result;
+}
+
+RasterHeightScanSensorSpec ToRasterHeightScanSensorSpec(const HdRobotHeightScanSensorData &sensor)
+{
+  RasterHeightScanSensorSpec result;
+  result.name = sensor.name;
+  result.position = sensor.camera.position;
+  result.params.minX = sensor.params.minX;
+  result.params.maxX = sensor.params.maxX;
+  result.params.stepX = sensor.params.stepX;
+  result.params.minZ = sensor.params.minZ;
+  result.params.maxZ = sensor.params.maxZ;
+  result.params.stepZ = sensor.params.stepZ;
+  result.params.rayDirection = sensor.params.rayDirection;
+  result.params.maxDistance = sensor.params.maxDistance;
+  return result;
+}
+
+std::vector<RasterHeightScanSensorSpec> ToRasterHeightScanSensorSpec(
+    const std::vector<HdRobotHeightScanSensorData> &sensors)
+{
+  std::vector<RasterHeightScanSensorSpec> result;
+  result.reserve(sensors.size());
+  for(const HdRobotHeightScanSensorData &sensor : sensors)
+  {
+    result.push_back(ToRasterHeightScanSensorSpec(sensor));
   }
   return result;
 }
@@ -288,6 +317,12 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
     return lhs.name < rhs.name;
   });
   _rasterSession.getRenderer().setLidarSensors(ToRasterLidarSensorSpec(lidarSensors));
+  std::vector<HdRobotHeightScanSensorData> heightScanSensors = _renderParam.GetHeightScanSensorsSnapshot();
+  std::sort(heightScanSensors.begin(), heightScanSensors.end(), [](const HdRobotHeightScanSensorData &lhs,
+                                                                   const HdRobotHeightScanSensorData &rhs) {
+    return lhs.name < rhs.name;
+  });
+  _rasterSession.getRenderer().setHeightScanSensors(ToRasterHeightScanSensorSpec(heightScanSensors));
   _rasterSession.getRenderer().setLidarVisualizationConfig(
       ToRasterLidarVisualizationConfig(_renderParam.GetLidarVisualizationConfig()));
   updateLights();
@@ -496,6 +531,9 @@ void HdRobotRasterBridge::updateInstances()
     {
       const bool tagMatched = isMeshRenderTagMatched(curMesh);
       const bool meshVisible = curMesh.visible && curMesh.valid && tagMatched;
+      const uint32_t traceMask = curMesh.traceRole == HdRobotTraceRoleTokens->ground
+                                   ? kRasterTraceMaskGround
+                                   : kRasterTraceMaskDefaultGeometry;
       for(size_t instanceId = 0; instanceId < curMesh.rendererInstanceIds.size(); ++instanceId)
       {
         auto rendererInstanceId = curMesh.rendererInstanceIds[instanceId];
@@ -506,7 +544,7 @@ void HdRobotRasterBridge::updateInstances()
         {
           transform = glm::transpose(curMesh.transform * curMesh.instanceTransforms[instanceId]);
         }
-        vulkan.updateInstance(rendererInstanceId, transform, visible);
+        vulkan.updateInstance(rendererInstanceId, transform, visible, traceMask);
       }
     }
   }

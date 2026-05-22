@@ -225,7 +225,7 @@ std::vector<VkAccelerationStructureInstanceKHR> RasterRtScene::makeTlasInstances
     rayInstance.instanceCustomIndex = static_cast<uint32_t>(instanceIndex);
     rayInstance.accelerationStructureReference = m_builder.getBlasDeviceAddress(blasIndex);
     rayInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-    rayInstance.mask = instance.visible ? 0xFF : 0x00;
+    rayInstance.mask = instance.visible ? instance.traceMask : kRasterTraceMaskInvisible;
     rayInstance.instanceShaderBindingTableRecordOffset = 0;
     tlasInstances.emplace_back(rayInstance);
   }

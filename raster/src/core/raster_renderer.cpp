@@ -88,6 +88,16 @@ RasterLidarFramePointCloud RasterRenderer::readLidarPointCloudFrame()
   return m_outputController.readLidarPointCloudFrame();
 }
 
+void RasterRenderer::setHeightScanSensors(std::vector<RasterHeightScanSensorSpec> sensors)
+{
+  m_outputController.setHeightScanSensors(std::move(sensors));
+}
+
+RasterHeightScanFrame RasterRenderer::readHeightScanFrame()
+{
+  return m_outputController.readHeightScanFrame();
+}
+
 void RasterRenderer::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   m_viewUniforms.setMainCameraClipRange(clipStart, clipEnd);
