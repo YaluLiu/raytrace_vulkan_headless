@@ -162,29 +162,6 @@ glm::vec3 NormalizeDirection(glm::vec3 value, glm::vec3 fallback)
   return glm::normalize(value);
 }
 
-HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
-{
-  HdRobotLidarParams params;
-  params.azimuthMinDeg =
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthMinDeg, params.azimuthMinDeg);
-  params.azimuthMaxDeg =
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthMaxDeg, params.azimuthMaxDeg);
-  params.azimuthStepDeg = ClampStep(
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthStepDeg, params.azimuthStepDeg),
-      params.azimuthStepDeg);
-  params.verticalMinDeg =
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalMinDeg, params.verticalMinDeg);
-  params.verticalMaxDeg =
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalMaxDeg, params.verticalMaxDeg);
-  params.verticalStepDeg = ClampStep(
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalStepDeg, params.verticalStepDeg),
-      params.verticalStepDeg);
-  params.maxDistance = ClampPositive(
-      ReadFloatCameraParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxDistance, params.maxDistance),
-      params.maxDistance);
-  return params;
-}
-
 HdRobotHeightScanParams ReadHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
 {
   HdRobotHeightScanParams params;
@@ -290,19 +267,6 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   cameraData.name = GetId().GetString();
   _cameraData = cameraData;
   _scene.UpsertCamera(cameraData);
-
-  if(ReadBoolCameraParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->lidarIsLidar, false))
-  {
-    HdRobotLidarSensorData sensorData;
-    sensorData.name = cameraData.name;
-    sensorData.camera = cameraData;
-    sensorData.params = ReadLidarParams(sceneDelegate, GetId());
-    _scene.UpsertLidarSensor(sensorData);
-  }
-  else
-  {
-    _scene.RemoveLidarSensor(GetId());
-  }
 
   if(ReadBoolCameraParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->heightScanIsHeightScan, false))
   {

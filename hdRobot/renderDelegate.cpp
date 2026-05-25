@@ -5,6 +5,7 @@
 
 // robot or hdstorm
 #include "camera.h"
+#include "lidarSensor.h"
 #include "light.h"
 #include "material.h"
 #include "mesh.h"
@@ -48,7 +49,7 @@ const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rp
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
     //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
-    HdPrimTypeTokens->domeLight,
+    HdPrimTypeTokens->domeLight, HdRobotPrimTypeTokens->lidarSensor,
     HdPrimTypeTokens->simpleLight, // Required for usdview camera light creation
                                    //  HdPrimTypeTokens->extComputation
 };
@@ -369,6 +370,10 @@ HdSprim *HdRobotRenderDelegate::CreateSprim(const TfToken &typeId, const SdfPath
   if(typeId == HdPrimTypeTokens->camera)
   {
     return new HdRobotCamera(sprimId, *robotRenderParam);
+  }
+  else if(typeId == HdRobotPrimTypeTokens->lidarSensor)
+  {
+    return new HdRobotLidarSensor(sprimId, *robotRenderParam);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {

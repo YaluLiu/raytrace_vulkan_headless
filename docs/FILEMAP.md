@@ -240,8 +240,8 @@ call sites with `rg`.
   texture registry, and renderer bridge ownership.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings, LiDAR/height scan visualization settings,
-  LiDAR/height scan camera params, mesh `hdRobot:traceRole`, `ground`, and tile
-  AOV tokens.
+  LiDAR/height scan params, custom `lidarSensor` sprim type, mesh
+  `hdRobot:traceRole`, `ground`, and tile AOV tokens.
 - `hdRobot/plugInfo.json`: Hydra plugin metadata template.
 
 ## Hydra Scene Primitives
@@ -258,9 +258,14 @@ call sites with `rg`.
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, camera data
-  conversion, LiDAR `lidar:*` and height scan `heightScan:*` custom parameter
-  parsing, and derivation of sensor data from camera state plus
-  sensor-specific params.
+  conversion, and height scan `heightScan:*` custom parameter parsing. LiDAR
+  is no longer read from camera prims.
+- `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
+  USD `LidarSensor` prims; reads `lidar:*` attributes from `/lidars/*`,
+  resolves sensor transform, and upserts `HdRobotLidarSensorData`.
+- `hdRobot/lidarSensorAdapter.h` / `hdRobot/lidarSensorAdapter.cpp`: UsdImaging
+  adapter for USD `LidarSensor`; inserts the custom `lidarSensor` sprim,
+  forwards `lidar:*` attributes, and handles transform/dependency dirtying.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.
@@ -369,6 +374,11 @@ call sites with `rg`.
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
   `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
+  For Hydra-side LiDAR discovery, start with `hdRobot/lidarSensorAdapter.cpp`,
+  `hdRobot/lidarSensor.cpp`, `hdRobot/renderDelegate.cpp`, and
+  `hdRobot/rasterBridge.cpp`, then search for `LidarSensor`,
+  `HdRobotPrimTypeTokens->lidarSensor`, `UpsertLidarSensor`, and
+  `GetLidarSensorsSnapshot`.
 - Height scan generation or overlay:
   `raster/include/raster/height_scan_types.hpp`,
   `raster/private/output/height_scan/height_scan.hpp`,
