@@ -64,7 +64,8 @@ PXR_NAMESPACE_OPEN_SCOPE
   (tileDisplayDepth)
 
 #define HD_ROBOT_PRIM_TYPE_TOKENS \
-  ((lidarSensor, "lidarSensor"))
+  ((lidarSensor, "lidarSensor")) \
+  ((heightScanSensor, "heightScanSensor"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdRobotNodeIdentifiers, HD_ROBOT_NODE_IDENTIFIER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRobotSourceTypes, HD_ROBOT_SOURCE_TYPE_TOKENS);

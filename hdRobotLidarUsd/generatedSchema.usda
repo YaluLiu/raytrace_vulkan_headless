@@ -24,3 +24,26 @@ class LidarSensor "LidarSensor" (
     float lidar:verticalStepDeg = 1
     float lidar:maxDistance = 200
 }
+
+class HeightScanSensor "HeightScanSensor" (
+    doc = "Concrete transformable height scan sensor schema consumed by hdRobot."
+)
+{
+    rel proxyPrim
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+    )
+
+    bool heightScan:isHeightScan = true
+    float heightScan:minX = -10
+    float heightScan:maxX = 10
+    float heightScan:stepX = 0.1
+    float heightScan:minZ = -10
+    float heightScan:maxZ = 10
+    float heightScan:stepZ = 0.1
+    float3 heightScan:rayDirection = (0, 0, -1)
+    float heightScan:maxDistance = 200
+}

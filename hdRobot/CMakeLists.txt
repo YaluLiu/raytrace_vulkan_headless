@@ -33,6 +33,8 @@ add_library(
   light.h
   camera.cpp
   camera.h
+  heightScanSensor.cpp
+  heightScanSensor.h
   lidarSensor.cpp
   lidarSensor.h
   mesh.cpp
