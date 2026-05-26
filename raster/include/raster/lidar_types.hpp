@@ -15,6 +15,7 @@ struct RasterLidarParams
   float verticalMaxDeg = -20.0f;
   float verticalStepDeg = 1.0f;
   float maxDistance = 200.0f;
+  float intensity = 1.0f;
 };
 
 struct RasterLidarSensorSpec

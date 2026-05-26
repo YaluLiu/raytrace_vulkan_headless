@@ -1,7 +1,6 @@
 #include "lidarSensorAdapter.h"
 
 #include <pxr/base/tf/registryManager.h>
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/perfLog.h>
 #include <pxr/imaging/hd/sprim.h>
@@ -27,7 +26,11 @@ const TfToken& GetHydraLidarSensorType()
 
 bool IsLidarProperty(const TfToken& propertyName)
 {
-  return TfStringStartsWith(propertyName.GetString(), "lidar:");
+  return propertyName == TfToken("enabled") || propertyName == TfToken("azimuthMinDeg") ||
+         propertyName == TfToken("azimuthMaxDeg") || propertyName == TfToken("azimuthStepDeg") ||
+         propertyName == TfToken("verticalMinDeg") || propertyName == TfToken("verticalMaxDeg") ||
+         propertyName == TfToken("verticalStepDeg") || propertyName == TfToken("maxDistance") ||
+         propertyName == TfToken("intensity");
 }
 
 bool IsXformProperty(const TfToken& propertyName)

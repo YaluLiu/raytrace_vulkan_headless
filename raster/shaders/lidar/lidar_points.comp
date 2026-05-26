@@ -77,7 +77,7 @@ void main()
   {
     point.positionRange = vec4(sensor.originMaxDistance.xyz + direction * rangeMeters, rangeMeters);
     point.flags = LIDAR_POINT_FLAG_VALID | LIDAR_POINT_FLAG_HIT;
-    point.intensity = 1.0;
+    point.intensity = max(sensor.intensity, 0.0);
   }
   else if(rangeMeters > maxDistance)
   {

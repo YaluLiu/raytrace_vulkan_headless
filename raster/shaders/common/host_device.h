@@ -81,6 +81,10 @@ struct LidarSensorGpu
   uint pointCount;
   uint azimuthSampleCount;
   uint verticalSampleCount;
+  float intensity;
+  uint pad0;
+  uint pad1;
+  uint pad2;
 };
 
 struct HeightScanSampleGpu

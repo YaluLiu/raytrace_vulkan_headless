@@ -1,7 +1,6 @@
 #include "heightScanSensorAdapter.h"
 
 #include <pxr/base/tf/registryManager.h>
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/perfLog.h>
 #include <pxr/imaging/hd/sprim.h>
@@ -27,7 +26,11 @@ const TfToken& GetHydraHeightScanSensorType()
 
 bool IsHeightScanProperty(const TfToken& propertyName)
 {
-  return TfStringStartsWith(propertyName.GetString(), "heightScan:");
+  return propertyName == TfToken("enabled") || propertyName == TfToken("minX") ||
+         propertyName == TfToken("maxX") || propertyName == TfToken("stepX") ||
+         propertyName == TfToken("minZ") || propertyName == TfToken("maxZ") ||
+         propertyName == TfToken("stepZ") || propertyName == TfToken("rayDirection") ||
+         propertyName == TfToken("maxDistance");
 }
 
 bool IsXformProperty(const TfToken& propertyName)

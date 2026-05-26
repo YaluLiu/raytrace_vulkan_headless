@@ -107,6 +107,11 @@ float ClampPositive(float value, float fallback)
   return std::max(std::isfinite(value) ? value : fallback, kLidarParamEpsilon);
 }
 
+float ClampNonNegative(float value, float fallback)
+{
+  return std::max(std::isfinite(value) ? value : fallback, 0.0f);
+}
+
 float ClampStep(float value, float fallback)
 {
   return std::max(std::fabs(std::isfinite(value) ? value : fallback), kLidarParamEpsilon);
@@ -132,6 +137,8 @@ HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath
   params.maxDistance = ClampPositive(
       ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxDistance, params.maxDistance),
       params.maxDistance);
+  params.intensity = ClampNonNegative(
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarIntensity, params.intensity), params.intensity);
   return params;
 }
 
@@ -186,7 +193,7 @@ void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, Hd
     return;
   }
 
-  if(!ReadBoolParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->lidarIsLidar, true))
+  if(!ReadBoolParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->lidarEnabled, true))
   {
     _scene.RemoveLidarSensor(GetId());
     *dirtyBits = Clean;

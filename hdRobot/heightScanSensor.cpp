@@ -228,7 +228,7 @@ void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam
     return;
   }
 
-  if(!ReadBoolParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->heightScanIsHeightScan, true))
+  if(!ReadBoolParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->heightScanEnabled, true))
   {
     _scene.RemoveHeightScanSensor(GetId());
     *dirtyBits = Clean;

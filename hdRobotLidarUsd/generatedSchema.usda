@@ -15,14 +15,15 @@ class LidarSensor "LidarSensor" (
         allowedTokens = ["inherited", "invisible"]
     )
 
-    bool lidar:isLidar = true
-    float lidar:azimuthMinDeg = -90
-    float lidar:azimuthMaxDeg = 90
-    float lidar:azimuthStepDeg = 0.5
-    float lidar:verticalMinDeg = -2
-    float lidar:verticalMaxDeg = -20
-    float lidar:verticalStepDeg = 1
-    float lidar:maxDistance = 200
+    bool enabled = true
+    float azimuthMinDeg = -90
+    float azimuthMaxDeg = 90
+    float azimuthStepDeg = 0.5
+    float verticalMinDeg = -2
+    float verticalMaxDeg = -20
+    float verticalStepDeg = 1
+    float maxDistance = 200
+    float intensity = 1
 }
 
 class HeightScanSensor "HeightScanSensor" (
@@ -37,13 +38,13 @@ class HeightScanSensor "HeightScanSensor" (
         allowedTokens = ["inherited", "invisible"]
     )
 
-    bool heightScan:isHeightScan = true
-    float heightScan:minX = -10
-    float heightScan:maxX = 10
-    float heightScan:stepX = 0.1
-    float heightScan:minZ = -10
-    float heightScan:maxZ = 10
-    float heightScan:stepZ = 0.1
-    float3 heightScan:rayDirection = (0, 0, -1)
-    float heightScan:maxDistance = 200
+    bool enabled = true
+    float minX = -10
+    float maxX = 10
+    float stepX = 0.1
+    float minZ = -10
+    float maxZ = 10
+    float stepZ = 0.1
+    float3 rayDirection = (0, 0, -1)
+    float maxDistance = 200
 }

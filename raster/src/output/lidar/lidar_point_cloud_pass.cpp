@@ -315,6 +315,7 @@ std::vector<LidarSensorGpu> LidarPointCloudPass::buildGpuSensorMetadata() const
     gpu.pointCount = static_cast<uint32_t>(metadata.pointCount);
     gpu.azimuthSampleCount = metadata.azimuthSampleCount;
     gpu.verticalSampleCount = metadata.verticalSampleCount;
+    gpu.intensity = std::max(sensor.params.intensity, 0.0f);
     result.push_back(gpu);
   }
   return result;

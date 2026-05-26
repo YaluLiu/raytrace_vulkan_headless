@@ -257,18 +257,17 @@ call sites with `rg`.
   `HdRobotLidarSensorSchema`, `HdRobotLidarSensorAdapter`,
   `HdRobotHeightScanSensorSchema`, and `HdRobotHeightScanSensorAdapter`.
 - `hdRobotLidarUsd/generatedSchema.usda`: Codeless concrete `LidarSensor` and
-  `HeightScanSensor` schema definitions and fallback `lidar:*` /
-  `heightScan:*` attributes.
+  `HeightScanSensor` schema definitions and fallback typed sensor attributes.
 - `hdRobotLidarUsd/lidarSensorAdapter.h` /
   `hdRobotLidarUsd/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
-  `LidarSensor`; inserts the custom `lidarSensor` sprim, forwards `lidar:*`
+  `LidarSensor`; inserts the custom `lidarSensor` sprim, forwards sensor
   attributes, and handles transform/dependency dirtying. It uses the literal
   Hydra sprim type token so this USD recognition plugin does not link against
   the `hdRobot` render delegate target.
 - `hdRobotLidarUsd/heightScanSensorAdapter.h` /
   `hdRobotLidarUsd/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
   `HeightScanSensor`; inserts the custom `heightScanSensor` sprim, forwards
-  `heightScan:*` attributes, and handles transform/dependency dirtying without
+  sensor attributes, and handles transform/dependency dirtying without
   linking against the `hdRobot` render delegate target.
 
 ## Hydra Scene Primitives
@@ -287,11 +286,11 @@ call sites with `rg`.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
   conversion. Sensor parameters are no longer read from camera prims.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
-  USD `LidarSensor` prims; reads `lidar:*` attributes from `/lidars/*`,
-  resolves sensor transform, and upserts `HdRobotLidarSensorData`.
+  USD `LidarSensor` prims; reads unprefixed typed sensor attributes from
+  `/lidars/*`, resolves sensor transform, and upserts `HdRobotLidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
-  for custom USD `HeightScanSensor` prims; reads `heightScan:*` attributes,
-  resolves sensor transform, and upserts `HdRobotHeightScanSensorData`.
+  for custom USD `HeightScanSensor` prims; reads unprefixed typed sensor
+  attributes, resolves sensor transform, and upserts `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.

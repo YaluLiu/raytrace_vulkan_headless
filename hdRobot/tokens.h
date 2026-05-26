@@ -35,23 +35,24 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((heightScanVisualizePointSize, "hdRobot:heightScan:visualizePointSize"))
 
 #define HD_ROBOT_CAMERA_PARAM_TOKENS \
-  ((lidarIsLidar, "lidar:isLidar")) \
-  ((lidarAzimuthMinDeg, "lidar:azimuthMinDeg")) \
-  ((lidarAzimuthMaxDeg, "lidar:azimuthMaxDeg")) \
-  ((lidarAzimuthStepDeg, "lidar:azimuthStepDeg")) \
-  ((lidarVerticalMinDeg, "lidar:verticalMinDeg")) \
-  ((lidarVerticalMaxDeg, "lidar:verticalMaxDeg")) \
-  ((lidarVerticalStepDeg, "lidar:verticalStepDeg")) \
-  ((lidarMaxDistance, "lidar:maxDistance")) \
-  ((heightScanIsHeightScan, "heightScan:isHeightScan")) \
-  ((heightScanMinX, "heightScan:minX")) \
-  ((heightScanMaxX, "heightScan:maxX")) \
-  ((heightScanStepX, "heightScan:stepX")) \
-  ((heightScanMinZ, "heightScan:minZ")) \
-  ((heightScanMaxZ, "heightScan:maxZ")) \
-  ((heightScanStepZ, "heightScan:stepZ")) \
-  ((heightScanRayDirection, "heightScan:rayDirection")) \
-  ((heightScanMaxDistance, "heightScan:maxDistance"))
+  ((lidarEnabled, "enabled")) \
+  ((lidarAzimuthMinDeg, "azimuthMinDeg")) \
+  ((lidarAzimuthMaxDeg, "azimuthMaxDeg")) \
+  ((lidarAzimuthStepDeg, "azimuthStepDeg")) \
+  ((lidarVerticalMinDeg, "verticalMinDeg")) \
+  ((lidarVerticalMaxDeg, "verticalMaxDeg")) \
+  ((lidarVerticalStepDeg, "verticalStepDeg")) \
+  ((lidarMaxDistance, "maxDistance")) \
+  ((lidarIntensity, "intensity")) \
+  ((heightScanEnabled, "enabled")) \
+  ((heightScanMinX, "minX")) \
+  ((heightScanMaxX, "maxX")) \
+  ((heightScanStepX, "stepX")) \
+  ((heightScanMinZ, "minZ")) \
+  ((heightScanMaxZ, "maxZ")) \
+  ((heightScanStepZ, "stepZ")) \
+  ((heightScanRayDirection, "rayDirection")) \
+  ((heightScanMaxDistance, "maxDistance"))
 
 #define HD_ROBOT_MESH_PARAM_TOKENS ((traceRole, "hdRobot:traceRole"))
 
