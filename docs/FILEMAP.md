@@ -242,7 +242,9 @@ call sites with `rg`.
   including tile render settings, LiDAR/height scan visualization settings,
   LiDAR/height scan params, custom `lidarSensor` sprim type, mesh
   `hdRobot:traceRole`, `ground`, and tile AOV tokens.
-- `hdRobot/plugInfo.json`: Hydra plugin metadata template.
+- `hdRobot/plugInfo.json` / `hdRobot/generatedSchema.usda`: Hydra plugin
+  metadata and codeless concrete `LidarSensor` schema definition required for
+  UsdImaging adapter lookup and USD fallback values on custom LiDAR prims.
 
 ## Hydra Scene Primitives
 
@@ -375,10 +377,10 @@ call sites with `rg`.
   `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
   For Hydra-side LiDAR discovery, start with `hdRobot/lidarSensorAdapter.cpp`,
-  `hdRobot/lidarSensor.cpp`, `hdRobot/renderDelegate.cpp`, and
-  `hdRobot/rasterBridge.cpp`, then search for `LidarSensor`,
-  `HdRobotPrimTypeTokens->lidarSensor`, `UpsertLidarSensor`, and
-  `GetLidarSensorsSnapshot`.
+  `hdRobot/plugInfo.json`, `hdRobot/generatedSchema.usda`, `hdRobot/lidarSensor.cpp`,
+  `hdRobot/renderDelegate.cpp`, and `hdRobot/rasterBridge.cpp`, then search
+  for `LidarSensor`, `schemaIdentifier`, `HdRobotPrimTypeTokens->lidarSensor`,
+  `UpsertLidarSensor`, and `GetLidarSensorsSnapshot`.
 - Height scan generation or overlay:
   `raster/include/raster/height_scan_types.hpp`,
   `raster/private/output/height_scan/height_scan.hpp`,

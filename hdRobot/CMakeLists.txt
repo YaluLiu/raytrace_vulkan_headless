@@ -113,6 +113,7 @@ configure_file(plugInfo.json "${PLUGINFO_PATH}" @ONLY)
 install(
   FILES
     "${PLUGINFO_PATH}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/generatedSchema.usda"
     "${PROJECT_SOURCE_DIR}/LICENSE"
   DESTINATION
     "./${PROJNAME}/resources"

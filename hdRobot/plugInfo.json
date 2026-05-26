@@ -8,6 +8,14 @@
                         "displayName": "Robot",
                         "priority": 99
                     },
+                    "HdRobotLidarSensorSchema": {
+                        "alias": {
+                            "UsdSchemaBase": "LidarSensor"
+                        },
+                        "bases": ["UsdGeomXformable"],
+                        "schemaIdentifier": "LidarSensor",
+                        "schemaKind": "concreteTyped"
+                    },
                     "HdRobotLidarSensorAdapter": {
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,

@@ -46,6 +46,14 @@ public:
               UsdTimeCode time,
               VtIntArray* outIndices) const override;
 
+  bool GetVisible(UsdPrim const& prim,
+                  SdfPath const& cachePath,
+                  UsdTimeCode time) const override;
+
+  TfToken GetPurpose(UsdPrim const& prim,
+                     SdfPath const& cachePath,
+                     TfToken const& instanceInheritablePurpose) const override;
+
   GfMatrix4d GetTransform(UsdPrim const& prim,
                           SdfPath const& cachePath,
                           UsdTimeCode time,

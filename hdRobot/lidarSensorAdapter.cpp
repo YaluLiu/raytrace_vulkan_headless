@@ -8,6 +8,7 @@
 #include <pxr/imaging/hd/sprim.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/inherits.h>
+#include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usdImaging/usdImaging/indexProxy.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
@@ -29,20 +30,6 @@ bool IsXformProperty(const TfToken& propertyName)
   return UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName);
 }
 
-GfMatrix4d ReadComposedXformOpTransform(const UsdPrim& prim, UsdTimeCode time)
-{
-  GfMatrix4d result(1.0);
-  UsdAttribute transformAttr = prim.GetAttribute(TfToken("xformOp:transform"));
-  if(transformAttr)
-  {
-    GfMatrix4d authored(1.0);
-    if(transformAttr.Get(&authored, time))
-    {
-      result = authored;
-    }
-  }
-  return result;
-}
 } // namespace
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -103,8 +90,8 @@ void HdRobotLidarSensorAdapter::TrackVariability(UsdPrim const& prim,
     return;
   }
 
-  UsdAttribute transformAttr = prim.GetAttribute(TfToken("xformOp:transform"));
-  if(transformAttr && transformAttr.ValueMightBeTimeVarying())
+  const UsdGeomXformable xformable(prim);
+  if(xformable && xformable.TransformMightBeTimeVarying())
   {
     *timeVaryingBits |= kDirtyTransform;
   }
@@ -167,20 +154,37 @@ VtValue HdRobotLidarSensorAdapter::Get(UsdPrim const& prim,
       return value;
     }
   }
+  if(key == UsdGeomTokens->purpose)
+  {
+    return VtValue(UsdGeomTokens->default_);
+  }
+  if(key == UsdGeomTokens->visibility)
+  {
+    return VtValue(UsdGeomTokens->inherited);
+  }
   return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
+bool HdRobotLidarSensorAdapter::GetVisible(UsdPrim const&,
+                                           SdfPath const&,
+                                           UsdTimeCode) const
+{
+  return true;
+}
+
+TfToken HdRobotLidarSensorAdapter::GetPurpose(UsdPrim const&,
+                                              SdfPath const&,
+                                              TfToken const&) const
+{
+  return UsdGeomTokens->default_;
+}
+
 GfMatrix4d HdRobotLidarSensorAdapter::GetTransform(UsdPrim const& prim,
-                                                   SdfPath const&,
+                                                   SdfPath const& cachePath,
                                                    UsdTimeCode time,
                                                    bool ignoreRootTransform) const
 {
-  GfMatrix4d local = ReadComposedXformOpTransform(prim, time);
-  if(ignoreRootTransform)
-  {
-    return local;
-  }
-  return local * GetRootTransform();
+  return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
 void HdRobotLidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
