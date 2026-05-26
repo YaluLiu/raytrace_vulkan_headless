@@ -72,11 +72,11 @@ struct LidarPointGpu
 
 struct LidarSensorGpu
 {
-  vec4 originMaxDistance;
-  vec4 forwardAzimuthMin;
+  vec4 originMaxRange;
+  vec4 forwardAzimuthStart;
   vec4 rightAzimuthStep;
-  vec4 upVerticalMin;
-  vec4 azimuthMaxVerticalMaxStep;
+  vec4 upVerticalStart;
+  vec4 azimuthEndVerticalEndStep;
   uint pointOffset;
   uint pointCount;
   uint azimuthSampleCount;
@@ -91,22 +91,22 @@ struct HeightScanSampleGpu
 {
   vec4 positionDistance;
   uint sensorIndex;
-  uint xIndex;
-  uint zIndex;
+  uint uIndex;
+  uint vIndex;
   uint flags;
 };
 
 struct HeightScanSensorGpu
 {
-  vec4 originMaxDistance;
-  vec4 rayDirectionMinX;
-  vec4 axisXMaxX;
-  vec4 axisZMinZ;
-  vec4 stepXMaxZStepZ;
+  vec4 originMaxRange;
+  vec4 rayDirectionUStart;
+  vec4 axisUAndUEnd;
+  vec4 axisVAndVStart;
+  vec4 uStepVEndVStep;
   uint sampleOffset;
   uint sampleCount;
-  uint xSampleCount;
-  uint zSampleCount;
+  uint uSampleCount;
+  uint vSampleCount;
 };
 
 struct LidarFrameGpu
@@ -120,11 +120,11 @@ struct LidarFrameGpu
 struct PushConstantLidarDepth
 {
   mat4 model;
-  vec4 originMaxDistance;
-  vec4 forwardAzimuthMin;
+  vec4 originMaxRange;
+  vec4 forwardAzimuthStart;
   vec4 rightAzimuthStep;
-  vec4 upVerticalMin;
-  vec4 azimuthMaxVerticalMaxStep;
+  vec4 upVerticalStart;
+  vec4 azimuthEndVerticalEndStep;
   uint objIndex;
   uint sensorIndex;
   uint azimuthSampleCount;

@@ -36,23 +36,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_ROBOT_CAMERA_PARAM_TOKENS \
   ((lidarEnabled, "enabled")) \
-  ((lidarAzimuthMinDeg, "azimuthMinDeg")) \
-  ((lidarAzimuthMaxDeg, "azimuthMaxDeg")) \
+  ((lidarAzimuthStartDeg, "azimuthStartDeg")) \
+  ((lidarAzimuthEndDeg, "azimuthEndDeg")) \
   ((lidarAzimuthStepDeg, "azimuthStepDeg")) \
-  ((lidarVerticalMinDeg, "verticalMinDeg")) \
-  ((lidarVerticalMaxDeg, "verticalMaxDeg")) \
+  ((lidarVerticalStartDeg, "verticalStartDeg")) \
+  ((lidarVerticalEndDeg, "verticalEndDeg")) \
   ((lidarVerticalStepDeg, "verticalStepDeg")) \
-  ((lidarMaxDistance, "maxDistance")) \
+  ((lidarMaxRange, "maxRange")) \
   ((lidarIntensity, "intensity")) \
   ((heightScanEnabled, "enabled")) \
-  ((heightScanMinX, "minX")) \
-  ((heightScanMaxX, "maxX")) \
-  ((heightScanStepX, "stepX")) \
-  ((heightScanMinZ, "minZ")) \
-  ((heightScanMaxZ, "maxZ")) \
-  ((heightScanStepZ, "stepZ")) \
+  ((heightScanUStart, "uStart")) \
+  ((heightScanUEnd, "uEnd")) \
+  ((heightScanUStep, "uStep")) \
+  ((heightScanVStart, "vStart")) \
+  ((heightScanVEnd, "vEnd")) \
+  ((heightScanVStep, "vStep")) \
   ((heightScanRayDirection, "rayDirection")) \
-  ((heightScanMaxDistance, "maxDistance"))
+  ((heightScanMaxRange, "maxRange"))
 
 #define HD_ROBOT_MESH_PARAM_TOKENS ((traceRole, "hdRobot:traceRole"))
 

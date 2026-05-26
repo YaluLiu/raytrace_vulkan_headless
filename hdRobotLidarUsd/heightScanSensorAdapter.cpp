@@ -26,11 +26,11 @@ const TfToken& GetHydraHeightScanSensorType()
 
 bool IsHeightScanProperty(const TfToken& propertyName)
 {
-  return propertyName == TfToken("enabled") || propertyName == TfToken("minX") ||
-         propertyName == TfToken("maxX") || propertyName == TfToken("stepX") ||
-         propertyName == TfToken("minZ") || propertyName == TfToken("maxZ") ||
-         propertyName == TfToken("stepZ") || propertyName == TfToken("rayDirection") ||
-         propertyName == TfToken("maxDistance");
+  return propertyName == TfToken("enabled") || propertyName == TfToken("uStart") ||
+         propertyName == TfToken("uEnd") || propertyName == TfToken("uStep") ||
+         propertyName == TfToken("vStart") || propertyName == TfToken("vEnd") ||
+         propertyName == TfToken("vStep") || propertyName == TfToken("rayDirection") ||
+         propertyName == TfToken("maxRange");
 }
 
 bool IsXformProperty(const TfToken& propertyName)

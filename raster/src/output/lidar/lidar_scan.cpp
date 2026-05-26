@@ -20,13 +20,13 @@ float sanitizeStep(float stepDeg)
   return std::max(std::fabs(stepDeg), kLidarParamEpsilon);
 }
 
-float sanitizeMaxDistance(float maxDistance)
+float sanitizeMaxRange(float maxRange)
 {
-  if(!std::isfinite(maxDistance))
+  if(!std::isfinite(maxRange))
   {
     return kLidarParamEpsilon;
   }
-  return std::max(maxDistance, kLidarParamEpsilon);
+  return std::max(maxRange, kLidarParamEpsilon);
 }
 
 glm::vec3 safeNormalize(glm::vec3 value, glm::vec3 fallback)
@@ -86,9 +86,9 @@ RasterLidarScanLayout BuildLidarScanLayout(std::span<const RasterLidarSensorSpec
   {
     const RasterLidarSensorSpec& sensor = sensors[sensorIndex];
     const uint32_t azimuthCount =
-        ComputeLidarSampleCount(sensor.params.azimuthMinDeg, sensor.params.azimuthMaxDeg, sensor.params.azimuthStepDeg);
+        ComputeLidarSampleCount(sensor.params.azimuthStartDeg, sensor.params.azimuthEndDeg, sensor.params.azimuthStepDeg);
     const uint32_t verticalCount =
-        ComputeLidarSampleCount(sensor.params.verticalMinDeg, sensor.params.verticalMaxDeg, sensor.params.verticalStepDeg);
+        ComputeLidarSampleCount(sensor.params.verticalStartDeg, sensor.params.verticalEndDeg, sensor.params.verticalStepDeg);
     const uint64_t pointCount = static_cast<uint64_t>(azimuthCount) * static_cast<uint64_t>(verticalCount);
 
     RasterLidarSensorMetadata metadata;
@@ -98,7 +98,7 @@ RasterLidarScanLayout BuildLidarScanLayout(std::span<const RasterLidarSensorSpec
     metadata.pointCount = pointCount;
     metadata.azimuthSampleCount = azimuthCount;
     metadata.verticalSampleCount = verticalCount;
-    metadata.maxDistance = sanitizeMaxDistance(sensor.params.maxDistance);
+    metadata.maxRange = sanitizeMaxRange(sensor.params.maxRange);
     layout.sensors.push_back(std::move(metadata));
 
     if(std::numeric_limits<uint64_t>::max() - nextOffset < pointCount)
@@ -136,9 +136,9 @@ RasterLidarBasis BuildLidarBasis(const RasterLidarSensorSpec& sensor)
 glm::vec3 ComputeLidarBeamDirectionWs(const RasterLidarSensorSpec& sensor, uint32_t ringIndex, uint32_t beamIndex)
 {
   const RasterLidarBasis basis = BuildLidarBasis(sensor);
-  const float azimuthDeg = ComputeLidarSampleAngleDeg(sensor.params.azimuthMinDeg, sensor.params.azimuthMaxDeg,
+  const float azimuthDeg = ComputeLidarSampleAngleDeg(sensor.params.azimuthStartDeg, sensor.params.azimuthEndDeg,
                                                       sensor.params.azimuthStepDeg, beamIndex);
-  const float verticalDeg = ComputeLidarSampleAngleDeg(sensor.params.verticalMinDeg, sensor.params.verticalMaxDeg,
+  const float verticalDeg = ComputeLidarSampleAngleDeg(sensor.params.verticalStartDeg, sensor.params.verticalEndDeg,
                                                        sensor.params.verticalStepDeg, ringIndex);
   const float azimuthRad = glm::radians(azimuthDeg);
   const float verticalRad = glm::radians(verticalDeg);

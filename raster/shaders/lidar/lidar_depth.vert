@@ -25,13 +25,13 @@ float signedStep(float startDeg, float endDeg, float absStep)
 void main()
 {
   vec4 worldPos = pc.model * vec4(inPosition, 1.0);
-  vec3 origin = pc.originMaxDistance.xyz;
-  float maxDistance = max(pc.originMaxDistance.w, 1.0e-4);
+  vec3 origin = pc.originMaxRange.xyz;
+  float maxRange = max(pc.originMaxRange.w, 1.0e-4);
   vec3 rel = worldPos.xyz - origin;
 
-  vec3 forward = normalize(pc.forwardAzimuthMin.xyz);
+  vec3 forward = normalize(pc.forwardAzimuthStart.xyz);
   vec3 right = normalize(pc.rightAzimuthStep.xyz);
-  vec3 up = normalize(pc.upVerticalMin.xyz);
+  vec3 up = normalize(pc.upVerticalStart.xyz);
   float forwardMeters = dot(rel, forward);
   float rightMeters = dot(rel, right);
   float upMeters = dot(rel, up);
@@ -40,23 +40,23 @@ void main()
 
   float azimuthDeg = degrees(atan(rightMeters, forwardMeters));
   float verticalDeg = degrees(atan(upMeters, max(planarMeters, 1.0e-6)));
-  float azimuthStep = signedStep(pc.forwardAzimuthMin.w, pc.azimuthMaxVerticalMaxStep.x, pc.rightAzimuthStep.w);
-  float verticalStep = signedStep(pc.upVerticalMin.w, pc.azimuthMaxVerticalMaxStep.y, pc.azimuthMaxVerticalMaxStep.z);
+  float azimuthStep = signedStep(pc.forwardAzimuthStart.w, pc.azimuthEndVerticalEndStep.x, pc.rightAzimuthStep.w);
+  float verticalStep = signedStep(pc.upVerticalStart.w, pc.azimuthEndVerticalEndStep.y, pc.azimuthEndVerticalEndStep.z);
 
-  float azimuthCoord = (azimuthDeg - pc.forwardAzimuthMin.w) / max(abs(azimuthStep), 1.0e-4);
+  float azimuthCoord = (azimuthDeg - pc.forwardAzimuthStart.w) / max(abs(azimuthStep), 1.0e-4);
   if(azimuthStep < 0.0)
   {
-    azimuthCoord = (pc.forwardAzimuthMin.w - azimuthDeg) / max(abs(azimuthStep), 1.0e-4);
+    azimuthCoord = (pc.forwardAzimuthStart.w - azimuthDeg) / max(abs(azimuthStep), 1.0e-4);
   }
-  float verticalCoord = (verticalDeg - pc.upVerticalMin.w) / max(abs(verticalStep), 1.0e-4);
+  float verticalCoord = (verticalDeg - pc.upVerticalStart.w) / max(abs(verticalStep), 1.0e-4);
   if(verticalStep < 0.0)
   {
-    verticalCoord = (pc.upVerticalMin.w - verticalDeg) / max(abs(verticalStep), 1.0e-4);
+    verticalCoord = (pc.upVerticalStart.w - verticalDeg) / max(abs(verticalStep), 1.0e-4);
   }
 
   float maxAzimuthCoord = max(float(pc.azimuthSampleCount) - 1.0, 1.0);
   float maxVerticalCoord = max(float(pc.verticalSampleCount) - 1.0, 1.0);
-  bool outside = forwardMeters <= 0.0 || rangeMeters <= 0.0 || rangeMeters > maxDistance ||
+  bool outside = forwardMeters <= 0.0 || rangeMeters <= 0.0 || rangeMeters > maxRange ||
                  azimuthCoord < -0.5 || verticalCoord < -0.5 ||
                  azimuthCoord > maxAzimuthCoord + 0.5 || verticalCoord > maxVerticalCoord + 0.5;
 
@@ -69,5 +69,5 @@ void main()
 
   vec2 uv = vec2(azimuthCoord / maxAzimuthCoord, verticalCoord / maxVerticalCoord);
   outRangeMeters = rangeMeters;
-  gl_Position = vec4(uv * 2.0 - 1.0, clamp(rangeMeters / maxDistance, 0.0, 1.0), 1.0);
+  gl_Position = vec4(uv * 2.0 - 1.0, clamp(rangeMeters / maxRange, 0.0, 1.0), 1.0);
 }

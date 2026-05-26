@@ -43,19 +43,19 @@ void main()
 
   uint localIndex = ringIndex * sensor.azimuthSampleCount + beamIndex;
   uint pointIndex = sensor.pointOffset + localIndex;
-  float maxDistance = max(sensor.originMaxDistance.w, 1.0e-4);
+  float maxRange = max(sensor.originMaxRange.w, 1.0e-4);
 
-  float azimuthRad = radians(sampleAngle(sensor.forwardAzimuthMin.w, sensor.azimuthMaxVerticalMaxStep.x,
+  float azimuthRad = radians(sampleAngle(sensor.forwardAzimuthStart.w, sensor.azimuthEndVerticalEndStep.x,
                                         sensor.rightAzimuthStep.w, beamIndex));
-  float verticalRad = radians(sampleAngle(sensor.upVerticalMin.w, sensor.azimuthMaxVerticalMaxStep.y,
-                                          sensor.azimuthMaxVerticalMaxStep.z, ringIndex));
+  float verticalRad = radians(sampleAngle(sensor.upVerticalStart.w, sensor.azimuthEndVerticalEndStep.y,
+                                          sensor.azimuthEndVerticalEndStep.z, ringIndex));
   float cosVertical = cos(verticalRad);
-  vec3 direction = normalize(sensor.forwardAzimuthMin.xyz * (cos(azimuthRad) * cosVertical) +
+  vec3 direction = normalize(sensor.forwardAzimuthStart.xyz * (cos(azimuthRad) * cosVertical) +
                              sensor.rightAzimuthStep.xyz * (sin(azimuthRad) * cosVertical) +
-                             sensor.upVerticalMin.xyz * sin(verticalRad));
+                             sensor.upVerticalStart.xyz * sin(verticalRad));
   rayQueryEXT query;
-  rayQueryInitializeEXT(query, lidarTlas, gl_RayFlagsOpaqueEXT, 0xffu, sensor.originMaxDistance.xyz, 0.001,
-                        direction, maxDistance);
+  rayQueryInitializeEXT(query, lidarTlas, gl_RayFlagsOpaqueEXT, 0xffu, sensor.originMaxRange.xyz, 0.001,
+                        direction, maxRange);
   while(rayQueryProceedEXT(query))
   {
   }
@@ -63,7 +63,7 @@ void main()
   float rangeMeters = hit ? rayQueryGetIntersectionTEXT(query, true) : 0.0;
 
   LidarPointGpu point;
-  point.positionRange = vec4(sensor.originMaxDistance.xyz, rangeMeters);
+  point.positionRange = vec4(sensor.originMaxRange.xyz, rangeMeters);
   point.sensorIndex = pc.sensorIndex;
   point.ringIndex = ringIndex;
   point.beamIndex = beamIndex;
@@ -73,13 +73,13 @@ void main()
   point.pad1 = 0u;
   point.pad2 = 0u;
 
-  if(hit && rangeMeters > 0.0 && rangeMeters <= maxDistance)
+  if(hit && rangeMeters > 0.0 && rangeMeters <= maxRange)
   {
-    point.positionRange = vec4(sensor.originMaxDistance.xyz + direction * rangeMeters, rangeMeters);
+    point.positionRange = vec4(sensor.originMaxRange.xyz + direction * rangeMeters, rangeMeters);
     point.flags = LIDAR_POINT_FLAG_VALID | LIDAR_POINT_FLAG_HIT;
     point.intensity = max(sensor.intensity, 0.0);
   }
-  else if(rangeMeters > maxDistance)
+  else if(rangeMeters > maxRange)
   {
     point.flags = LIDAR_POINT_FLAG_OUT_OF_RANGE;
   }

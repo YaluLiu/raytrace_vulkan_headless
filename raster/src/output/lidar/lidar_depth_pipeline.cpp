@@ -168,12 +168,12 @@ bool LidarDepthPipeline::rasterize(const VkCommandBuffer& cmdBuf,
 
     PushConstantLidarDepth pushConstant{};
     pushConstant.model = instance.transform;
-    pushConstant.originMaxDistance = vec4(basis.origin, metadata.maxDistance);
-    pushConstant.forwardAzimuthMin = vec4(basis.forward, sensor.params.azimuthMinDeg);
+    pushConstant.originMaxRange = vec4(basis.origin, metadata.maxRange);
+    pushConstant.forwardAzimuthStart = vec4(basis.forward, sensor.params.azimuthStartDeg);
     pushConstant.rightAzimuthStep = vec4(basis.right, std::max(std::fabs(sensor.params.azimuthStepDeg), 1.0e-4f));
-    pushConstant.upVerticalMin = vec4(basis.up, sensor.params.verticalMinDeg);
-    pushConstant.azimuthMaxVerticalMaxStep =
-        vec4(sensor.params.azimuthMaxDeg, sensor.params.verticalMaxDeg,
+    pushConstant.upVerticalStart = vec4(basis.up, sensor.params.verticalStartDeg);
+    pushConstant.azimuthEndVerticalEndStep =
+        vec4(sensor.params.azimuthEndDeg, sensor.params.verticalEndDeg,
              std::max(std::fabs(sensor.params.verticalStepDeg), 1.0e-4f), 0.0f);
     pushConstant.objIndex = instance.objIndex;
     pushConstant.sensorIndex = metadata.sensorIndex;

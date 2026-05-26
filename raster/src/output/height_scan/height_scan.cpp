@@ -19,13 +19,13 @@ float sanitizeStep(float step)
   return std::max(std::fabs(step), kHeightScanParamEpsilon);
 }
 
-float sanitizeMaxDistance(float maxDistance)
+float sanitizeMaxRange(float maxRange)
 {
-  if(!std::isfinite(maxDistance))
+  if(!std::isfinite(maxRange))
   {
     return kHeightScanParamEpsilon;
   }
-  return std::max(maxDistance, kHeightScanParamEpsilon);
+  return std::max(maxRange, kHeightScanParamEpsilon);
 }
 
 glm::vec3 safeNormalize(glm::vec3 value, glm::vec3 fallback)
@@ -86,18 +86,18 @@ RasterHeightScanLayout BuildHeightScanLayout(std::span<const RasterHeightScanSen
   for(size_t sensorIndex = 0; sensorIndex < sensors.size(); ++sensorIndex)
   {
     const RasterHeightScanSensorSpec& sensor = sensors[sensorIndex];
-    const uint32_t xCount = ComputeHeightScanSampleCount(sensor.params.minX, sensor.params.maxX, sensor.params.stepX);
-    const uint32_t zCount = ComputeHeightScanSampleCount(sensor.params.minZ, sensor.params.maxZ, sensor.params.stepZ);
-    const uint64_t sampleCount = static_cast<uint64_t>(xCount) * static_cast<uint64_t>(zCount);
+    const uint32_t uCount = ComputeHeightScanSampleCount(sensor.params.uStart, sensor.params.uEnd, sensor.params.uStep);
+    const uint32_t vCount = ComputeHeightScanSampleCount(sensor.params.vStart, sensor.params.vEnd, sensor.params.vStep);
+    const uint64_t sampleCount = static_cast<uint64_t>(uCount) * static_cast<uint64_t>(vCount);
 
     RasterHeightScanSensorMetadata metadata;
     metadata.name = sensor.name;
     metadata.sensorIndex = static_cast<uint32_t>(sensorIndex);
     metadata.sampleOffset = nextOffset;
     metadata.sampleCount = sampleCount;
-    metadata.xSampleCount = xCount;
-    metadata.zSampleCount = zCount;
-    metadata.maxDistance = sanitizeMaxDistance(sensor.params.maxDistance);
+    metadata.uSampleCount = uCount;
+    metadata.vSampleCount = vCount;
+    metadata.maxRange = sanitizeMaxRange(sensor.params.maxRange);
     layout.sensors.push_back(std::move(metadata));
 
     if(std::numeric_limits<uint64_t>::max() - nextOffset < sampleCount)
@@ -123,17 +123,17 @@ RasterHeightScanBasis BuildHeightScanBasis(const RasterHeightScanSensorSpec& sen
       std::fabs(glm::dot(basis.rayDirection, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.95f ?
           glm::vec3(0.0f, 1.0f, 0.0f) :
           glm::vec3(1.0f, 0.0f, 0.0f);
-  basis.axisX = safeNormalize(glm::cross(basis.rayDirection, referenceAxis), glm::vec3(1.0f, 0.0f, 0.0f));
-  basis.axisZ = safeNormalize(glm::cross(basis.axisX, basis.rayDirection), glm::vec3(0.0f, 1.0f, 0.0f));
+  basis.axisU = safeNormalize(glm::cross(basis.rayDirection, referenceAxis), glm::vec3(1.0f, 0.0f, 0.0f));
+  basis.axisV = safeNormalize(glm::cross(basis.axisU, basis.rayDirection), glm::vec3(0.0f, 1.0f, 0.0f));
   return basis;
 }
 
-glm::vec3 ComputeHeightScanOriginWs(const RasterHeightScanSensorSpec& sensor, uint32_t xIndex, uint32_t zIndex)
+glm::vec3 ComputeHeightScanOriginWs(const RasterHeightScanSensorSpec& sensor, uint32_t uIndex, uint32_t vIndex)
 {
   const RasterHeightScanBasis basis = BuildHeightScanBasis(sensor);
-  const float xOffset =
-      ComputeHeightScanSampleOffset(sensor.params.minX, sensor.params.maxX, sensor.params.stepX, xIndex);
-  const float zOffset =
-      ComputeHeightScanSampleOffset(sensor.params.minZ, sensor.params.maxZ, sensor.params.stepZ, zIndex);
-  return basis.origin + basis.axisX * xOffset + basis.axisZ * zOffset;
+  const float uOffset =
+      ComputeHeightScanSampleOffset(sensor.params.uStart, sensor.params.uEnd, sensor.params.uStep, uIndex);
+  const float vOffset =
+      ComputeHeightScanSampleOffset(sensor.params.vStart, sensor.params.vEnd, sensor.params.vStep, vIndex);
+  return basis.origin + basis.axisU * uOffset + basis.axisV * vOffset;
 }

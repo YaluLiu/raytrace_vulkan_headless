@@ -26,10 +26,10 @@ const TfToken& GetHydraLidarSensorType()
 
 bool IsLidarProperty(const TfToken& propertyName)
 {
-  return propertyName == TfToken("enabled") || propertyName == TfToken("azimuthMinDeg") ||
-         propertyName == TfToken("azimuthMaxDeg") || propertyName == TfToken("azimuthStepDeg") ||
-         propertyName == TfToken("verticalMinDeg") || propertyName == TfToken("verticalMaxDeg") ||
-         propertyName == TfToken("verticalStepDeg") || propertyName == TfToken("maxDistance") ||
+  return propertyName == TfToken("enabled") || propertyName == TfToken("azimuthStartDeg") ||
+         propertyName == TfToken("azimuthEndDeg") || propertyName == TfToken("azimuthStepDeg") ||
+         propertyName == TfToken("verticalStartDeg") || propertyName == TfToken("verticalEndDeg") ||
+         propertyName == TfToken("verticalStepDeg") || propertyName == TfToken("maxRange") ||
          propertyName == TfToken("intensity");
 }
 

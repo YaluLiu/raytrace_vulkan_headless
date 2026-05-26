@@ -34,13 +34,13 @@ sensor local space：`+X` 向右，`+Y` 向上，`-Z` 为前方；方位角 `0` 
 | USD 属性名          | 类型    | 默认值  | 说明                                           |
 | ------------------- | ------- | ------- | ---------------------------------------------- |
 | `enabled`           | `bool`  | `true`  | 是否启用该 `LidarSensor`。                     |
-| `azimuthMinDeg`     | `float` | `-90.0` | 方位角起点，单位为度。                         |
-| `azimuthMaxDeg`     | `float` | `90.0`  | 方位角终点，单位为度。                         |
+| `azimuthStartDeg`   | `float` | `-90.0` | 方位角起点，单位为度。                         |
+| `azimuthEndDeg`     | `float` | `90.0`  | 方位角终点，单位为度。                         |
 | `azimuthStepDeg`    | `float` | `0.5`   | 方位角采样间隔，实际最小值为 `1.0e-4`。        |
-| `verticalMinDeg`    | `float` | `-2.0`  | 俯仰角起点，单位为度。                         |
-| `verticalMaxDeg`    | `float` | `-20.0` | 俯仰角终点，单位为度；允许终点小于起点。       |
+| `verticalStartDeg`  | `float` | `-2.0`  | 俯仰角起点，单位为度。                         |
+| `verticalEndDeg`    | `float` | `-20.0` | 俯仰角终点，单位为度；允许终点小于起点。       |
 | `verticalStepDeg`   | `float` | `1.0`   | 俯仰角采样间隔，实际最小值为 `1.0e-4`。        |
-| `maxDistance`       | `float` | `200.0` | 单条 LiDAR 射线最大追踪距离。                  |
+| `maxRange`          | `float` | `200.0` | 单条 LiDAR 射线最大追踪距离。                  |
 | `intensity`         | `float` | `1.0`   | 命中点写入点云输出的强度值；负值会被夹到 `0`。 |
 
 等价 USDA 片段：
@@ -49,13 +49,13 @@ sensor local space：`+X` 向右，`+Y` 向上，`-Z` 为前方；方位角 `0` 
 def LidarSensor "lidar_sensor"
 {
     bool enabled = true
-    float azimuthMinDeg = -90
-    float azimuthMaxDeg = 90
+    float azimuthStartDeg = -90
+    float azimuthEndDeg = 90
     float azimuthStepDeg = 0.5
-    float verticalMinDeg = -2
-    float verticalMaxDeg = -20
+    float verticalStartDeg = -2
+    float verticalEndDeg = -20
     float verticalStepDeg = 1
-    float maxDistance = 200
+    float maxRange = 200
     float intensity = 1
 }
 ```
@@ -64,20 +64,20 @@ def LidarSensor "lidar_sensor"
 
 高度扫描仪使用 `HeightScanSensor` prim。prim transform 的平移提供扫描平面中心；
 `rayDirection` 是世界空间射线方向，扫描平面的两个采样轴会由该方向
-推导得到。因此 `minX/maxX` 和 `minZ/maxZ` 是扫描平面上的两组偏移参数，而不是
+推导得到。因此 `uStart/uEnd` 和 `vStart/vEnd` 是扫描平面上的两组偏移参数，而不是
 固定的世界坐标轴。默认方向 `(0, 0, -1)` 适合 `Z-up` 场景中的向下扫描。
 
 | USD 属性名     | 类型     | 默认值       | 说明                                                           |
 | -------------- | -------- | ------------ | -------------------------------------------------------------- |
 | `enabled`      | `bool`   | `true`       | 是否启用该 `HeightScanSensor`。                                |
-| `minX`         | `float`  | `-10.0`      | 扫描平面第一轴最小偏移。                                       |
-| `maxX`         | `float`  | `10.0`       | 扫描平面第一轴最大偏移。                                       |
-| `stepX`        | `float`  | `0.1`        | 扫描平面第一轴采样间隔，实际最小值为 `1.0e-4`。                |
-| `minZ`         | `float`  | `-10.0`      | 扫描平面第二轴最小偏移。                                       |
-| `maxZ`         | `float`  | `10.0`       | 扫描平面第二轴最大偏移。                                       |
-| `stepZ`        | `float`  | `0.1`        | 扫描平面第二轴采样间隔，实际最小值为 `1.0e-4`。                |
+| `uStart`       | `float`  | `-10.0`      | 扫描平面第一轴起点偏移。                                       |
+| `uEnd`         | `float`  | `10.0`       | 扫描平面第一轴终点偏移。                                       |
+| `uStep`        | `float`  | `0.1`        | 扫描平面第一轴采样间隔，实际最小值为 `1.0e-4`。                |
+| `vStart`       | `float`  | `-10.0`      | 扫描平面第二轴起点偏移。                                       |
+| `vEnd`         | `float`  | `10.0`       | 扫描平面第二轴终点偏移。                                       |
+| `vStep`        | `float`  | `0.1`        | 扫描平面第二轴采样间隔，实际最小值为 `1.0e-4`。                |
 | `rayDirection` | `float3` | `(0, 0, -1)` | 世界空间扫描射线方向；读取后会归一化，零向量会回退到默认方向。 |
-| `maxDistance`  | `float`  | `200.0`      | 单条扫描射线最大追踪距离。                                     |
+| `maxRange`     | `float`  | `200.0`      | 单条扫描射线最大追踪距离。                                     |
 
 等价 USDA 片段：
 
@@ -85,14 +85,14 @@ def LidarSensor "lidar_sensor"
 def HeightScanSensor "height_scan_sensor"
 {
     bool enabled = true
-    float minX = -10
-    float maxX = 10
-    float stepX = 0.1
-    float minZ = -10
-    float maxZ = 10
-    float stepZ = 0.1
+    float uStart = -10
+    float uEnd = 10
+    float uStep = 0.1
+    float vStart = -10
+    float vEnd = 10
+    float vStep = 0.1
     float3 rayDirection = (0, 0, -1)
-    float maxDistance = 200
+    float maxRange = 200
 }
 ```
 
@@ -110,8 +110,8 @@ custom token hdRobot:traceRole = "ground"
 
 ## 采样规则
 
-- 单轴采样数量为 `floor(abs(max - min) / max(abs(step), 1.0e-4) + 0.5) + 1`，
+- 单轴采样数量为 `floor(abs(end - start) / max(abs(step), 1.0e-4) + 0.5) + 1`，
   且至少为 `1`。
 - LiDAR 总射线数为方位角采样数乘以俯仰角采样数。
 - Height scan 总射线数为第一轴采样数乘以第二轴采样数。
-- 当 `max < min` 时，采样会按从 `min` 到 `max` 的方向递减；`step` 的符号只取绝对值。
+- 当 `end < start` 时，采样会按从 `start` 到 `end` 的方向递减；`step` 的符号只取绝对值。

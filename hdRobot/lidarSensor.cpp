@@ -120,23 +120,23 @@ float ClampStep(float value, float fallback)
 HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
 {
   HdRobotLidarParams params;
-  params.azimuthMinDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthMinDeg, params.azimuthMinDeg);
-  params.azimuthMaxDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthMaxDeg, params.azimuthMaxDeg);
+  params.azimuthStartDeg =
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthStartDeg, params.azimuthStartDeg);
+  params.azimuthEndDeg =
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthEndDeg, params.azimuthEndDeg);
   params.azimuthStepDeg = ClampStep(
       ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthStepDeg, params.azimuthStepDeg),
       params.azimuthStepDeg);
-  params.verticalMinDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalMinDeg, params.verticalMinDeg);
-  params.verticalMaxDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalMaxDeg, params.verticalMaxDeg);
+  params.verticalStartDeg =
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalStartDeg, params.verticalStartDeg);
+  params.verticalEndDeg =
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalEndDeg, params.verticalEndDeg);
   params.verticalStepDeg = ClampStep(
       ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalStepDeg, params.verticalStepDeg),
       params.verticalStepDeg);
-  params.maxDistance = ClampPositive(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxDistance, params.maxDistance),
-      params.maxDistance);
+  params.maxRange = ClampPositive(
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxRange, params.maxRange),
+      params.maxRange);
   params.intensity = ClampNonNegative(
       ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarIntensity, params.intensity), params.intensity);
   return params;

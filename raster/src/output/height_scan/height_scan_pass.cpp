@@ -140,8 +140,8 @@ RasterHeightScanFrame HeightScanPass::readHeightScanFrame()
     RasterHeightScanSensorGrid grid;
     grid.name = metadata.name;
     grid.sensorIndex = metadata.sensorIndex;
-    grid.width = metadata.xSampleCount;
-    grid.height = metadata.zSampleCount;
+    grid.width = metadata.uSampleCount;
+    grid.height = metadata.vSampleCount;
     if(metadata.sampleOffset <= static_cast<uint64_t>(std::numeric_limits<size_t>::max()))
     {
       const size_t begin = static_cast<size_t>(metadata.sampleOffset);
@@ -156,8 +156,8 @@ RasterHeightScanFrame HeightScanPass::readHeightScanFrame()
           sample.positionWs = glm::vec3(gpuSample.positionDistance);
           sample.distanceMeters = gpuSample.positionDistance.w;
           sample.sensorIndex = gpuSample.sensorIndex;
-          sample.xIndex = gpuSample.xIndex;
-          sample.zIndex = gpuSample.zIndex;
+          sample.uIndex = gpuSample.uIndex;
+          sample.vIndex = gpuSample.vIndex;
           sample.flags = gpuSample.flags;
           grid.samples.push_back(sample);
         }
@@ -196,12 +196,12 @@ void HeightScanPass::recordGenerate(const VkCommandBuffer& cmdBuf,
   bool generatedAnySensor = false;
   for(const RasterHeightScanSensorMetadata& metadata : m_layout.sensors)
   {
-    if(metadata.sensorIndex >= m_sensors.size() || metadata.xSampleCount == 0 || metadata.zSampleCount == 0)
+    if(metadata.sensorIndex >= m_sensors.size() || metadata.uSampleCount == 0 || metadata.vSampleCount == 0)
     {
       continue;
     }
 
-    m_generationPipeline.dispatch(cmdBuf, metadata.sensorIndex, metadata.xSampleCount, metadata.zSampleCount);
+    m_generationPipeline.dispatch(cmdBuf, metadata.sensorIndex, metadata.uSampleCount, metadata.vSampleCount);
     generatedAnySensor = true;
 
     VkBufferMemoryBarrier sampleBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
@@ -336,22 +336,22 @@ std::vector<HeightScanSensorGpu> HeightScanPass::buildGpuSensorMetadata() const
 
     const RasterHeightScanSensorSpec& sensor = m_sensors[metadata.sensorIndex];
     const RasterHeightScanBasis basis = BuildHeightScanBasis(sensor);
-    const float minX = sanitizeRangeValue(sensor.params.minX, sensor.params.maxX);
-    const float maxX = sanitizeRangeValue(sensor.params.maxX, sensor.params.minX);
-    const float minZ = sanitizeRangeValue(sensor.params.minZ, sensor.params.maxZ);
-    const float maxZ = sanitizeRangeValue(sensor.params.maxZ, sensor.params.minZ);
+    const float uStart = sanitizeRangeValue(sensor.params.uStart, sensor.params.uEnd);
+    const float uEnd = sanitizeRangeValue(sensor.params.uEnd, sensor.params.uStart);
+    const float vStart = sanitizeRangeValue(sensor.params.vStart, sensor.params.vEnd);
+    const float vEnd = sanitizeRangeValue(sensor.params.vEnd, sensor.params.vStart);
 
     HeightScanSensorGpu gpu{};
-    gpu.originMaxDistance = vec4(basis.origin, metadata.maxDistance);
-    gpu.rayDirectionMinX = vec4(basis.rayDirection, minX);
-    gpu.axisXMaxX = vec4(basis.axisX, maxX);
-    gpu.axisZMinZ = vec4(basis.axisZ, minZ);
-    gpu.stepXMaxZStepZ =
-        vec4(sanitizeStep(sensor.params.stepX), maxZ, sanitizeStep(sensor.params.stepZ), 0.0f);
+    gpu.originMaxRange = vec4(basis.origin, metadata.maxRange);
+    gpu.rayDirectionUStart = vec4(basis.rayDirection, uStart);
+    gpu.axisUAndUEnd = vec4(basis.axisU, uEnd);
+    gpu.axisVAndVStart = vec4(basis.axisV, vStart);
+    gpu.uStepVEndVStep =
+        vec4(sanitizeStep(sensor.params.uStep), vEnd, sanitizeStep(sensor.params.vStep), 0.0f);
     gpu.sampleOffset = static_cast<uint32_t>(metadata.sampleOffset);
     gpu.sampleCount = static_cast<uint32_t>(metadata.sampleCount);
-    gpu.xSampleCount = metadata.xSampleCount;
-    gpu.zSampleCount = metadata.zSampleCount;
+    gpu.uSampleCount = metadata.uSampleCount;
+    gpu.vSampleCount = metadata.vSampleCount;
     result.push_back(gpu);
   }
   return result;

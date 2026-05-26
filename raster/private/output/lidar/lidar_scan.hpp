@@ -25,7 +25,7 @@ struct RasterLidarSensorMetadata
   uint64_t pointCount{0};
   uint32_t azimuthSampleCount{0};
   uint32_t verticalSampleCount{0};
-  float maxDistance{0.0f};
+  float maxRange{0.0f};
 };
 
 struct RasterLidarScanLayout

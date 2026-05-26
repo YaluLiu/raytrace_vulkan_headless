@@ -10,26 +10,26 @@ class HdRobotRenderParam;
 
 struct HdRobotLidarParams
 {
-  float azimuthMinDeg = -90.0f;
-  float azimuthMaxDeg = 90.0f;
+  float azimuthStartDeg = -90.0f;
+  float azimuthEndDeg = 90.0f;
   float azimuthStepDeg = 0.5f;
-  float verticalMinDeg = -2.0f;
-  float verticalMaxDeg = -20.0f;
+  float verticalStartDeg = -2.0f;
+  float verticalEndDeg = -20.0f;
   float verticalStepDeg = 1.0f;
-  float maxDistance = 200.0f;
+  float maxRange = 200.0f;
   float intensity = 1.0f;
 };
 
 struct HdRobotHeightScanParams
 {
-  float minX = -10.0f;
-  float maxX = 10.0f;
-  float stepX = 0.1f;
-  float minZ = -10.0f;
-  float maxZ = 10.0f;
-  float stepZ = 0.1f;
+  float uStart = -10.0f;
+  float uEnd = 10.0f;
+  float uStep = 0.1f;
+  float vStart = -10.0f;
+  float vEnd = 10.0f;
+  float vStep = 0.1f;
   glm::vec3 rayDirection = glm::vec3(0.0f, 0.0f, -1.0f);
-  float maxDistance = 200.0f;
+  float maxRange = 200.0f;
 };
 
 struct HdRobotCameraData

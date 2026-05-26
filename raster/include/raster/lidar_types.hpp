@@ -8,13 +8,13 @@
 
 struct RasterLidarParams
 {
-  float azimuthMinDeg = -90.0f;
-  float azimuthMaxDeg = 90.0f;
+  float azimuthStartDeg = -90.0f;
+  float azimuthEndDeg = 90.0f;
   float azimuthStepDeg = 0.5f;
-  float verticalMinDeg = -2.0f;
-  float verticalMaxDeg = -20.0f;
+  float verticalStartDeg = -2.0f;
+  float verticalEndDeg = -20.0f;
   float verticalStepDeg = 1.0f;
-  float maxDistance = 200.0f;
+  float maxRange = 200.0f;
   float intensity = 1.0f;
 };
 

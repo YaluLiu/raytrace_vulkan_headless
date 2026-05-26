@@ -158,22 +158,22 @@ glm::vec3 NormalizeDirection(glm::vec3 value, glm::vec3 fallback)
 HdRobotHeightScanParams ReadHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
 {
   HdRobotHeightScanParams params;
-  params.minX = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMinX, params.minX);
-  params.maxX = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxX, params.maxX);
-  params.stepX = ClampStep(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanStepX, params.stepX),
-      params.stepX);
-  params.minZ = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMinZ, params.minZ);
-  params.maxZ = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxZ, params.maxZ);
-  params.stepZ = ClampStep(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanStepZ, params.stepZ),
-      params.stepZ);
+  params.uStart = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanUStart, params.uStart);
+  params.uEnd = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanUEnd, params.uEnd);
+  params.uStep = ClampStep(
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanUStep, params.uStep),
+      params.uStep);
+  params.vStart = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanVStart, params.vStart);
+  params.vEnd = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanVEnd, params.vEnd);
+  params.vStep = ClampStep(
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanVStep, params.vStep),
+      params.vStep);
   params.rayDirection = NormalizeDirection(
       ReadVec3Param(sceneDelegate, id, HdRobotCameraParamTokens->heightScanRayDirection, params.rayDirection),
       params.rayDirection);
-  params.maxDistance = ClampPositive(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxDistance, params.maxDistance),
-      params.maxDistance);
+  params.maxRange = ClampPositive(
+      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxRange, params.maxRange),
+      params.maxRange);
   return params;
 }
 

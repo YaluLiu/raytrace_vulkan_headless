@@ -8,14 +8,14 @@
 
 struct RasterHeightScanParams
 {
-  float minX = -10.0f;
-  float maxX = 10.0f;
-  float stepX = 0.1f;
-  float minZ = -10.0f;
-  float maxZ = 10.0f;
-  float stepZ = 0.1f;
+  float uStart = -10.0f;
+  float uEnd = 10.0f;
+  float uStep = 0.1f;
+  float vStart = -10.0f;
+  float vEnd = 10.0f;
+  float vStep = 0.1f;
   glm::vec3 rayDirection{0.0f, 0.0f, -1.0f};
-  float maxDistance = 200.0f;
+  float maxRange = 200.0f;
 };
 
 struct RasterHeightScanSensorSpec
@@ -44,8 +44,8 @@ struct RasterHeightScanSample
   glm::vec3 positionWs{0.0f, 0.0f, 0.0f};
   float distanceMeters{0.0f};
   uint32_t sensorIndex{0};
-  uint32_t xIndex{0};
-  uint32_t zIndex{0};
+  uint32_t uIndex{0};
+  uint32_t vIndex{0};
   uint32_t flags{0};
 };
 

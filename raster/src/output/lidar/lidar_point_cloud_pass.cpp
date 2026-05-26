@@ -305,11 +305,11 @@ std::vector<LidarSensorGpu> LidarPointCloudPass::buildGpuSensorMetadata() const
     const RasterLidarBasis basis = BuildLidarBasis(sensor);
 
     LidarSensorGpu gpu{};
-    gpu.originMaxDistance = vec4(basis.origin, metadata.maxDistance);
-    gpu.forwardAzimuthMin = vec4(basis.forward, sensor.params.azimuthMinDeg);
+    gpu.originMaxRange = vec4(basis.origin, metadata.maxRange);
+    gpu.forwardAzimuthStart = vec4(basis.forward, sensor.params.azimuthStartDeg);
     gpu.rightAzimuthStep = vec4(basis.right, std::max(std::fabs(sensor.params.azimuthStepDeg), 1.0e-4f));
-    gpu.upVerticalMin = vec4(basis.up, sensor.params.verticalMinDeg);
-    gpu.azimuthMaxVerticalMaxStep = vec4(sensor.params.azimuthMaxDeg, sensor.params.verticalMaxDeg,
+    gpu.upVerticalStart = vec4(basis.up, sensor.params.verticalStartDeg);
+    gpu.azimuthEndVerticalEndStep = vec4(sensor.params.azimuthEndDeg, sensor.params.verticalEndDeg,
                                          std::max(std::fabs(sensor.params.verticalStepDeg), 1.0e-4f), 0.0f);
     gpu.pointOffset = static_cast<uint32_t>(metadata.pointOffset);
     gpu.pointCount = static_cast<uint32_t>(metadata.pointCount);

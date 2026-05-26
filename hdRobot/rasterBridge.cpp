@@ -70,13 +70,13 @@ RasterLidarSensorSpec ToRasterLidarSensorSpec(const HdRobotLidarSensorData &sens
   result.position = sensor.camera.position;
   result.forward = sensor.camera.forward;
   result.up = sensor.camera.up;
-  result.params.azimuthMinDeg = sensor.params.azimuthMinDeg;
-  result.params.azimuthMaxDeg = sensor.params.azimuthMaxDeg;
+  result.params.azimuthStartDeg = sensor.params.azimuthStartDeg;
+  result.params.azimuthEndDeg = sensor.params.azimuthEndDeg;
   result.params.azimuthStepDeg = sensor.params.azimuthStepDeg;
-  result.params.verticalMinDeg = sensor.params.verticalMinDeg;
-  result.params.verticalMaxDeg = sensor.params.verticalMaxDeg;
+  result.params.verticalStartDeg = sensor.params.verticalStartDeg;
+  result.params.verticalEndDeg = sensor.params.verticalEndDeg;
   result.params.verticalStepDeg = sensor.params.verticalStepDeg;
-  result.params.maxDistance = sensor.params.maxDistance;
+  result.params.maxRange = sensor.params.maxRange;
   result.params.intensity = sensor.params.intensity;
   return result;
 }
@@ -97,14 +97,14 @@ RasterHeightScanSensorSpec ToRasterHeightScanSensorSpec(const HdRobotHeightScanS
   RasterHeightScanSensorSpec result;
   result.name = sensor.name;
   result.position = sensor.camera.position;
-  result.params.minX = sensor.params.minX;
-  result.params.maxX = sensor.params.maxX;
-  result.params.stepX = sensor.params.stepX;
-  result.params.minZ = sensor.params.minZ;
-  result.params.maxZ = sensor.params.maxZ;
-  result.params.stepZ = sensor.params.stepZ;
+  result.params.uStart = sensor.params.uStart;
+  result.params.uEnd = sensor.params.uEnd;
+  result.params.uStep = sensor.params.uStep;
+  result.params.vStart = sensor.params.vStart;
+  result.params.vEnd = sensor.params.vEnd;
+  result.params.vStep = sensor.params.vStep;
   result.params.rayDirection = sensor.params.rayDirection;
-  result.params.maxDistance = sensor.params.maxDistance;
+  result.params.maxRange = sensor.params.maxRange;
   return result;
 }
 

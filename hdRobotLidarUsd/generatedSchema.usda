@@ -16,13 +16,13 @@ class LidarSensor "LidarSensor" (
     )
 
     bool enabled = true
-    float azimuthMinDeg = -90
-    float azimuthMaxDeg = 90
+    float azimuthStartDeg = -90
+    float azimuthEndDeg = 90
     float azimuthStepDeg = 0.5
-    float verticalMinDeg = -2
-    float verticalMaxDeg = -20
+    float verticalStartDeg = -2
+    float verticalEndDeg = -20
     float verticalStepDeg = 1
-    float maxDistance = 200
+    float maxRange = 200
     float intensity = 1
 }
 
@@ -39,12 +39,12 @@ class HeightScanSensor "HeightScanSensor" (
     )
 
     bool enabled = true
-    float minX = -10
-    float maxX = 10
-    float stepX = 0.1
-    float minZ = -10
-    float maxZ = 10
-    float stepZ = 0.1
+    float uStart = -10
+    float uEnd = 10
+    float uStep = 0.1
+    float vStart = -10
+    float vEnd = 10
+    float vStep = 0.1
     float3 rayDirection = (0, 0, -1)
-    float maxDistance = 200
+    float maxRange = 200
 }
