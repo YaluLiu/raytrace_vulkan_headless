@@ -1,9 +1,8 @@
 #include "lidarSensorAdapter.h"
 
-#include "tokens.h"
-
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/perfLog.h>
 #include <pxr/imaging/hd/sprim.h>
 #include <pxr/usd/usd/attribute.h>
@@ -19,6 +18,12 @@ namespace
 {
 constexpr HdDirtyBits kDirtyTransform = 1 << 0;
 constexpr HdDirtyBits kDirtyParams = 1 << 1;
+
+const TfToken& GetHydraLidarSensorType()
+{
+  static const TfToken token("lidarSensor");
+  return token;
+}
 
 bool IsLidarProperty(const TfToken& propertyName)
 {
@@ -48,12 +53,12 @@ TfTokenVector HdRobotLidarSensorAdapter::GetImagingSubprims(UsdPrim const&)
 
 TfToken HdRobotLidarSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
-  return subprim.IsEmpty() ? HdRobotPrimTypeTokens->lidarSensor : TfToken();
+  return subprim.IsEmpty() ? GetHydraLidarSensorType() : TfToken();
 }
 
 bool HdRobotLidarSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-  return index != nullptr && index->IsSprimTypeSupported(HdRobotPrimTypeTokens->lidarSensor);
+  return index != nullptr && index->IsSprimTypeSupported(GetHydraLidarSensorType());
 }
 
 SdfPath HdRobotLidarSensorAdapter::Populate(UsdPrim const& prim,
@@ -66,7 +71,7 @@ SdfPath HdRobotLidarSensorAdapter::Populate(UsdPrim const& prim,
   }
 
   const SdfPath cachePath = ResolveCachePath(prim.GetPath(), instancerContext);
-  index->InsertSprim(HdRobotPrimTypeTokens->lidarSensor, cachePath, prim);
+  index->InsertSprim(GetHydraLidarSensorType(), cachePath, prim);
 
   for(const SdfPath& inheritPath : prim.GetInherits().GetAllDirectInherits())
   {
@@ -192,7 +197,7 @@ void HdRobotLidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
 {
   if(index != nullptr)
   {
-    index->RemoveSprim(HdRobotPrimTypeTokens->lidarSensor, cachePath);
+    index->RemoveSprim(GetHydraLidarSensorType(), cachePath);
   }
 }
 

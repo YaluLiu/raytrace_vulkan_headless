@@ -10,7 +10,7 @@ function format(){
 function hydra(){
     set -e
     usd_path="/home/${USER}/software/USD"
-    plugin_name="hdRobot"
+    plugin_names=("hdRobotLidarUsd" "hdRobot")
     project_root="$(pwd)"
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
 
@@ -21,8 +21,10 @@ function hydra(){
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
     
-    cmake --build . --target ${plugin_name} --config Release -j20
-    cmake --install . --component ${plugin_name}
+    cmake --build . --target "${plugin_names[@]}" --config Release -j20
+    for plugin_name in "${plugin_names[@]}"; do
+        cmake --install . --component "${plugin_name}"
+    done
     cd ..
 
     echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"

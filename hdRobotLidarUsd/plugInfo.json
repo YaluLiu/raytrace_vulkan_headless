@@ -1,0 +1,28 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HdRobotLidarSensorSchema": {
+                        "alias": {
+                            "UsdSchemaBase": "LidarSensor"
+                        },
+                        "bases": ["UsdGeomXformable"],
+                        "schemaIdentifier": "LidarSensor",
+                        "schemaKind": "concreteTyped"
+                    },
+                    "HdRobotLidarSensorAdapter": {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "LidarSensor"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "hdRobotLidarUsd",
+            "ResourcePath": "resources",
+            "Root": "..",
+            "Type": "library"
+        }
+    ]
+}

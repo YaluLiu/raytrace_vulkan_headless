@@ -8,13 +8,16 @@ call sites with `rg`.
 ## Top-Level Structure
 
 - `CMakeLists.txt`: Root build configuration, package setup, and unconditional
-  raster plus `hdRobot` subdirectory registration.
+  raster, `hdRobotLidarUsd`, and `hdRobot` subdirectory registration.
 - `install.sh`: Main local build/run helper used by Hydra workflows.
 - `raster/`: Core Vulkan rasterization library, split into public
   `include/raster/`, internal `private/`, implementation `src/`, and shader
   source `shaders/` trees.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   raster renderer.
+- `hdRobotLidarUsd/`: Standalone USD recognition plugin for the custom
+  `LidarSensor` schema and UsdImaging adapter; it inserts the `lidarSensor`
+  Hydra sprim type without depending on the `hdRobot` target.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
@@ -29,6 +32,8 @@ call sites with `rg`.
   compilation, and renderer compile definitions.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
+- `hdRobotLidarUsd/CMakeLists.txt`: Standalone LiDAR USD schema/adapter plugin
+  target, plugin metadata generation, and schema resource install layout.
 
 ## Runtime Entry Points
 
@@ -242,9 +247,21 @@ call sites with `rg`.
   including tile render settings, LiDAR/height scan visualization settings,
   LiDAR/height scan params, custom `lidarSensor` sprim type, mesh
   `hdRobot:traceRole`, `ground`, and tile AOV tokens.
-- `hdRobot/plugInfo.json` / `hdRobot/generatedSchema.usda`: Hydra plugin
-  metadata and codeless concrete `LidarSensor` schema definition required for
-  UsdImaging adapter lookup and USD fallback values on custom LiDAR prims.
+- `hdRobot/plugInfo.json`: Hydra render delegate plugin metadata. The custom
+  LiDAR USD schema and adapter metadata now live in `hdRobotLidarUsd/`.
+
+## USD LiDAR Recognition
+
+- `hdRobotLidarUsd/plugInfo.json`: Standalone plugin metadata for
+  `HdRobotLidarSensorSchema` and `HdRobotLidarSensorAdapter`.
+- `hdRobotLidarUsd/generatedSchema.usda`: Codeless concrete `LidarSensor`
+  schema definition and fallback `lidar:*` attributes.
+- `hdRobotLidarUsd/lidarSensorAdapter.h` /
+  `hdRobotLidarUsd/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
+  `LidarSensor`; inserts the custom `lidarSensor` sprim, forwards `lidar:*`
+  attributes, and handles transform/dependency dirtying. It uses the literal
+  Hydra sprim type token so this USD recognition plugin does not link against
+  the `hdRobot` render delegate target.
 
 ## Hydra Scene Primitives
 
@@ -265,9 +282,6 @@ call sites with `rg`.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
   USD `LidarSensor` prims; reads `lidar:*` attributes from `/lidars/*`,
   resolves sensor transform, and upserts `HdRobotLidarSensorData`.
-- `hdRobot/lidarSensorAdapter.h` / `hdRobot/lidarSensorAdapter.cpp`: UsdImaging
-  adapter for USD `LidarSensor`; inserts the custom `lidarSensor` sprim,
-  forwards `lidar:*` attributes, and handles transform/dependency dirtying.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.
@@ -376,10 +390,12 @@ call sites with `rg`.
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
   `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
-  For Hydra-side LiDAR discovery, start with `hdRobot/lidarSensorAdapter.cpp`,
-  `hdRobot/plugInfo.json`, `hdRobot/generatedSchema.usda`, `hdRobot/lidarSensor.cpp`,
+  For Hydra-side LiDAR discovery, start with
+  `hdRobotLidarUsd/lidarSensorAdapter.cpp`,
+  `hdRobotLidarUsd/plugInfo.json`,
+  `hdRobotLidarUsd/generatedSchema.usda`, `hdRobot/lidarSensor.cpp`,
   `hdRobot/renderDelegate.cpp`, and `hdRobot/rasterBridge.cpp`, then search
-  for `LidarSensor`, `schemaIdentifier`, `HdRobotPrimTypeTokens->lidarSensor`,
+  for `LidarSensor`, `schemaIdentifier`, `lidarSensor`,
   `UpsertLidarSensor`, and `GetLidarSensorsSnapshot`.
 - Height scan generation or overlay:
   `raster/include/raster/height_scan_types.hpp`,
