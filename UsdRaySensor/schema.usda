@@ -9,8 +9,9 @@ over "GLOBAL" (
     customData = {
         string libraryName = "UsdRaySensor"
         string libraryPath = "."
-        string libraryPrefix = ""
-        bool useLiteralIdentifier = true
+        string libraryPrefix = "UsdGeom"
+        string tokensPrefix = "UsdRaySensor"
+        bool useLiteralIdentifier = false
         dictionary libraryTokens = {
             dictionary heightScanSensorParams = {
                 string doc = "Hydra data key for the complete HeightScanSensor parameter block."

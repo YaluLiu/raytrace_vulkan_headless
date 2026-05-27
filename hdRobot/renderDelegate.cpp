@@ -14,6 +14,7 @@
 #include "renderBuffer.h"
 // #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "tokens.h"
+#include "../UsdRaySensor/hydraSensor.h"
 
 #include <pxr/base/arch/fileSystem.h>
 #include <pxr/base/gf/vec2f.h>
@@ -50,7 +51,7 @@ const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rp
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,
     //  HdPrimTypeTokens->rectLight,     HdPrimTypeTokens->diskLight,
-    HdPrimTypeTokens->domeLight, HdRobotPrimTypeTokens->lidarSensor, HdRobotPrimTypeTokens->heightScanSensor,
+    HdPrimTypeTokens->domeLight, HdRaySensorPrimTypeTokens->lidarSensor, HdRaySensorPrimTypeTokens->heightScanSensor,
     HdPrimTypeTokens->simpleLight, // Required for usdview camera light creation
                                    //  HdPrimTypeTokens->extComputation
 };
@@ -372,11 +373,11 @@ HdSprim *HdRobotRenderDelegate::CreateSprim(const TfToken &typeId, const SdfPath
   {
     return new HdRobotCamera(sprimId, *robotRenderParam);
   }
-  else if(typeId == HdRobotPrimTypeTokens->lidarSensor)
+  else if(typeId == HdRaySensorPrimTypeTokens->lidarSensor)
   {
     return new HdRobotLidarSensor(sprimId, *robotRenderParam);
   }
-  else if(typeId == HdRobotPrimTypeTokens->heightScanSensor)
+  else if(typeId == HdRaySensorPrimTypeTokens->heightScanSensor)
   {
     return new HdRobotHeightScanSensor(sprimId, *robotRenderParam);
   }

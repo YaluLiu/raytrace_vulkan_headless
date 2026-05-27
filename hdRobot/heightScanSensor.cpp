@@ -1,9 +1,9 @@
 #include "heightScanSensor.h"
 
-#include "../UsdRaySensor/heightScanSensor.h"
 #include "../UsdRaySensor/tokens.h"
 #include "renderParam.h"
 
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/gf/vec3f.h>
@@ -49,33 +49,48 @@ glm::vec3 ToGlm(const GfVec3f& value)
   return glm::vec3(value[0], value[1], value[2]);
 }
 
-HeightScanSensor::Params ReadRawHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+template <typename T>
+void ReadCachedParam(HdSceneDelegate* sceneDelegate,
+                     const SdfPath& id,
+                     const TfToken& key,
+                     T* target,
+                     const char* expectedType)
 {
-  HeightScanSensor::Params params;
-  if(sceneDelegate == nullptr)
+  if(sceneDelegate == nullptr || target == nullptr)
   {
-    return params;
+    return;
   }
 
-  const VtValue paramsValue = sceneDelegate->Get(id, UsdRaySensorTokens->heightScanSensorParams);
-  if(paramsValue.IsHolding<HeightScanSensor::Params>())
+  const VtValue value = sceneDelegate->Get(id, key);
+  if(value.IsEmpty())
   {
-    return paramsValue.UncheckedGet<HeightScanSensor::Params>();
+    return;
   }
-  return params;
+
+  if(!value.IsHolding<T>())
+  {
+    TF_WARN("Ignoring height scan sensor parameter %s on <%s>: expected %s, got %s.",
+            key.GetText(),
+            id.GetText(),
+            expectedType,
+            value.GetTypeName().c_str());
+    return;
+  }
+
+  *target = value.UncheckedGet<T>();
 }
 
-HdRobotHeightScanParams SanitizeHeightScanParams(const HeightScanSensor::Params& source)
+HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotHeightScanParams& source)
 {
   HdRobotHeightScanParams params;
-  params.uStart = source.GetUStart();
-  params.uEnd = source.GetUEnd();
-  params.uStep = ClampStep(source.GetUStep(), params.uStep);
-  params.vStart = source.GetVStart();
-  params.vEnd = source.GetVEnd();
-  params.vStep = ClampStep(source.GetVStep(), params.vStep);
-  params.rayDirection = NormalizeDirection(ToGlm(source.GetRayDirection()), params.rayDirection);
-  params.maxRange = ClampPositive(source.GetMaxRange(), params.maxRange);
+  params.uStart = source.uStart;
+  params.uEnd = source.uEnd;
+  params.uStep = ClampStep(source.uStep, params.uStep);
+  params.vStart = source.vStart;
+  params.vEnd = source.vEnd;
+  params.vStep = ClampStep(source.vStep, params.vStep);
+  params.rayDirection = NormalizeDirection(source.rayDirection, params.rayDirection);
+  params.maxRange = ClampPositive(source.maxRange, params.maxRange);
   return params;
 }
 
@@ -117,6 +132,38 @@ void HdRobotHeightScanSensor::Finalize(HdRenderParam*)
   _scene.RemoveHeightScanSensor(GetId());
 }
 
+void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
+{
+  GfVec3f rayDirection(_params.rayDirection.x, _params.rayDirection.y, _params.rayDirection.z);
+
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->enabled, &_enabled, "bool");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->uStart, &_params.uStart, "float");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->uEnd, &_params.uEnd, "float");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->uStep, &_params.uStep, "float");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->vStart, &_params.vStart, "float");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->vEnd, &_params.vEnd, "float");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->vStep, &_params.vStep, "float");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->rayDirection, &rayDirection, "GfVec3f");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->maxRange, &_params.maxRange, "float");
+
+  _params.rayDirection = ToGlm(rayDirection);
+}
+
+void HdRobotHeightScanSensor::_UpdateRenderParam()
+{
+  if(!_enabled)
+  {
+    _scene.RemoveHeightScanSensor(GetId());
+    return;
+  }
+
+  HdRobotHeightScanSensorData sensorData;
+  sensorData.name = GetId().GetString();
+  sensorData.camera = ComputeSensorCameraData(GetId(), _transform);
+  sensorData.params = SanitizeHeightScanParams(_params);
+  _scene.UpsertHeightScanSensor(sensorData);
+}
+
 void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, HdDirtyBits* dirtyBits)
 {
   if(dirtyBits == nullptr)
@@ -136,19 +183,17 @@ void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam
     return;
   }
 
-  const HeightScanSensor::Params rawParams = ReadRawHeightScanParams(sceneDelegate, GetId());
-  if(!rawParams.GetEnabled())
+  if(bits & DirtyTransform)
   {
-    _scene.RemoveHeightScanSensor(GetId());
-    *dirtyBits = Clean;
-    return;
+    _transform = sceneDelegate->GetTransform(GetId());
   }
 
-  HdRobotHeightScanSensorData sensorData;
-  sensorData.name = GetId().GetString();
-  sensorData.camera = ComputeSensorCameraData(GetId(), sceneDelegate->GetTransform(GetId()));
-  sensorData.params = SanitizeHeightScanParams(rawParams);
-  _scene.UpsertHeightScanSensor(sensorData);
+  if(bits & DirtyParams)
+  {
+    _SyncParams(sceneDelegate);
+  }
+
+  _UpdateRenderParam();
 
   *dirtyBits = Clean;
 }

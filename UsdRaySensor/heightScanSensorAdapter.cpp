@@ -1,6 +1,7 @@
 #include "heightScanSensorAdapter.h"
 
 #include "heightScanSensor.h"
+#include "hydraSensor.h"
 #include "tokens.h"
 
 #include <pxr/base/tf/registryManager.h>
@@ -20,18 +21,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-constexpr HdDirtyBits kDirtyTransform = 1 << 0;
-constexpr HdDirtyBits kDirtyParams = 1 << 1;
-
-const TfToken& GetHydraHeightScanSensorType()
-{
-  static const TfToken token("heightScanSensor");
-  return token;
-}
-
 bool IsHeightScanProperty(const TfToken& propertyName)
 {
-  const TfTokenVector& names = HeightScanSensor::GetSchemaAttributeNames(false);
+  const TfTokenVector& names = UsdGeomHeightScanSensor::GetSchemaAttributeNames(false);
   return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
@@ -58,12 +50,12 @@ TfTokenVector HeightScanSensorAdapter::GetImagingSubprims(UsdPrim const&)
 
 TfToken HeightScanSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
-  return subprim.IsEmpty() ? GetHydraHeightScanSensorType() : TfToken();
+  return subprim.IsEmpty() ? HdRaySensorPrimTypeTokens->heightScanSensor : TfToken();
 }
 
 bool HeightScanSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-  return index != nullptr && index->IsSprimTypeSupported(GetHydraHeightScanSensorType());
+  return index != nullptr && index->IsSprimTypeSupported(HdRaySensorPrimTypeTokens->heightScanSensor);
 }
 
 SdfPath HeightScanSensorAdapter::Populate(UsdPrim const& prim,
@@ -76,7 +68,7 @@ SdfPath HeightScanSensorAdapter::Populate(UsdPrim const& prim,
   }
 
   const SdfPath cachePath = ResolveCachePath(prim.GetPath(), instancerContext);
-  index->InsertSprim(GetHydraHeightScanSensorType(), cachePath, prim);
+  index->InsertSprim(HdRaySensorPrimTypeTokens->heightScanSensor, cachePath, prim);
 
   for(const SdfPath& inheritPath : prim.GetInherits().GetAllDirectInherits())
   {
@@ -103,14 +95,14 @@ void HeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
   const UsdGeomXformable xformable(prim);
   if(xformable && xformable.TransformMightBeTimeVarying())
   {
-    *timeVaryingBits |= kDirtyTransform;
+    *timeVaryingBits |= HdRaySensorDirtyBits::DirtyTransform;
   }
 
   for(const UsdAttribute& attr : prim.GetAttributes())
   {
     if(IsHeightScanProperty(attr.GetName()) && attr.ValueMightBeTimeVarying())
     {
-      *timeVaryingBits |= kDirtyParams;
+      *timeVaryingBits |= HdRaySensorDirtyBits::DirtyParams;
       break;
     }
   }
@@ -130,13 +122,13 @@ HdDirtyBits HeightScanSensorAdapter::ProcessPropertyChange(UsdPrim const&,
 {
   if(IsXformProperty(propertyName))
   {
-    return kDirtyTransform;
+    return HdRaySensorDirtyBits::DirtyTransform;
   }
   if(IsHeightScanProperty(propertyName))
   {
-    return kDirtyParams;
+    return HdRaySensorDirtyBits::DirtyParams;
   }
-  return kDirtyParams;
+  return HdRaySensorDirtyBits::DirtyParams;
 }
 
 void HeightScanSensorAdapter::MarkDirty(UsdPrim const&,
@@ -156,7 +148,7 @@ VtValue HeightScanSensorAdapter::Get(UsdPrim const& prim,
                                             UsdTimeCode time,
                                             VtIntArray* outIndices) const
 {
-  const HeightScanSensor sensor(prim);
+  const UsdGeomHeightScanSensor sensor(prim);
   if(key == UsdRaySensorTokens->heightScanSensorParams)
   {
     return VtValue(sensor.GetParams(time));
@@ -244,7 +236,7 @@ void HeightScanSensorAdapter::_RemovePrim(SdfPath const& cachePath,
 {
   if(index != nullptr)
   {
-    index->RemoveSprim(GetHydraHeightScanSensorType(), cachePath);
+    index->RemoveSprim(HdRaySensorPrimTypeTokens->heightScanSensor, cachePath);
   }
 }
 

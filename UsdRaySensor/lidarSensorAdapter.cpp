@@ -1,5 +1,6 @@
 #include "lidarSensorAdapter.h"
 
+#include "hydraSensor.h"
 #include "lidarSensor.h"
 #include "tokens.h"
 
@@ -20,18 +21,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-constexpr HdDirtyBits kDirtyTransform = 1 << 0;
-constexpr HdDirtyBits kDirtyParams = 1 << 1;
-
-const TfToken& GetHydraLidarSensorType()
-{
-  static const TfToken token("lidarSensor");
-  return token;
-}
-
 bool IsLidarProperty(const TfToken& propertyName)
 {
-  const TfTokenVector& names = LidarSensor::GetSchemaAttributeNames(false);
+  const TfTokenVector& names = UsdGeomLidarSensor::GetSchemaAttributeNames(false);
   return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
@@ -58,12 +50,12 @@ TfTokenVector LidarSensorAdapter::GetImagingSubprims(UsdPrim const&)
 
 TfToken LidarSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
-  return subprim.IsEmpty() ? GetHydraLidarSensorType() : TfToken();
+  return subprim.IsEmpty() ? HdRaySensorPrimTypeTokens->lidarSensor : TfToken();
 }
 
 bool LidarSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-  return index != nullptr && index->IsSprimTypeSupported(GetHydraLidarSensorType());
+  return index != nullptr && index->IsSprimTypeSupported(HdRaySensorPrimTypeTokens->lidarSensor);
 }
 
 SdfPath LidarSensorAdapter::Populate(UsdPrim const& prim,
@@ -76,7 +68,7 @@ SdfPath LidarSensorAdapter::Populate(UsdPrim const& prim,
   }
 
   const SdfPath cachePath = ResolveCachePath(prim.GetPath(), instancerContext);
-  index->InsertSprim(GetHydraLidarSensorType(), cachePath, prim);
+  index->InsertSprim(HdRaySensorPrimTypeTokens->lidarSensor, cachePath, prim);
 
   for(const SdfPath& inheritPath : prim.GetInherits().GetAllDirectInherits())
   {
@@ -103,14 +95,14 @@ void LidarSensorAdapter::TrackVariability(UsdPrim const& prim,
   const UsdGeomXformable xformable(prim);
   if(xformable && xformable.TransformMightBeTimeVarying())
   {
-    *timeVaryingBits |= kDirtyTransform;
+    *timeVaryingBits |= HdRaySensorDirtyBits::DirtyTransform;
   }
 
   for(const UsdAttribute& attr : prim.GetAttributes())
   {
     if(IsLidarProperty(attr.GetName()) && attr.ValueMightBeTimeVarying())
     {
-      *timeVaryingBits |= kDirtyParams;
+      *timeVaryingBits |= HdRaySensorDirtyBits::DirtyParams;
       break;
     }
   }
@@ -130,13 +122,13 @@ HdDirtyBits LidarSensorAdapter::ProcessPropertyChange(UsdPrim const&,
 {
   if(IsXformProperty(propertyName))
   {
-    return kDirtyTransform;
+    return HdRaySensorDirtyBits::DirtyTransform;
   }
   if(IsLidarProperty(propertyName))
   {
-    return kDirtyParams;
+    return HdRaySensorDirtyBits::DirtyParams;
   }
-  return kDirtyParams;
+  return HdRaySensorDirtyBits::DirtyParams;
 }
 
 void LidarSensorAdapter::MarkDirty(UsdPrim const&,
@@ -156,7 +148,7 @@ VtValue LidarSensorAdapter::Get(UsdPrim const& prim,
                                        UsdTimeCode time,
                                        VtIntArray* outIndices) const
 {
-  const LidarSensor sensor(prim);
+  const UsdGeomLidarSensor sensor(prim);
   if(key == UsdRaySensorTokens->lidarSensorParams)
   {
     return VtValue(sensor.GetParams(time));
@@ -244,7 +236,7 @@ void LidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
 {
   if(index != nullptr)
   {
-    index->RemoveSprim(GetHydraLidarSensorType(), cachePath);
+    index->RemoveSprim(HdRaySensorPrimTypeTokens->lidarSensor, cachePath);
   }
 }
 

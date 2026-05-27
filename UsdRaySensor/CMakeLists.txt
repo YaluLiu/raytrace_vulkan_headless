@@ -3,6 +3,8 @@ set(PROJNAME UsdRaySensor)
 add_library(
   ${PROJNAME} SHARED
   api.h
+  hydraSensor.cpp
+  hydraSensor.h
   heightScanSensor.cpp
   heightScanSensor.h
   heightScanSensorAdapter.cpp

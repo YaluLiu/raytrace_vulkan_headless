@@ -34,11 +34,11 @@ class SdfAssetPath;
 // LIDARSENSOR                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \class LidarSensor
+/// \class UsdGeomLidarSensor
 ///
 /// Concrete transformable LiDAR sensor schema for ray-sensor consumers.
 ///
-class LidarSensor : public UsdGeomXformable
+class UsdGeomLidarSensor : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -46,26 +46,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a LidarSensor on UsdPrim \p prim .
-    /// Equivalent to LidarSensor::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdGeomLidarSensor on UsdPrim \p prim .
+    /// Equivalent to UsdGeomLidarSensor::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit LidarSensor(const UsdPrim& prim=UsdPrim())
+    explicit UsdGeomLidarSensor(const UsdPrim& prim=UsdPrim())
         : UsdGeomXformable(prim)
     {
     }
 
-    /// Construct a LidarSensor on the prim held by \p schemaObj .
-    /// Should be preferred over LidarSensor(schemaObj.GetPrim()),
+    /// Construct a UsdGeomLidarSensor on the prim held by \p schemaObj .
+    /// Should be preferred over UsdGeomLidarSensor(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit LidarSensor(const UsdSchemaBase& schemaObj)
+    explicit UsdGeomLidarSensor(const UsdSchemaBase& schemaObj)
         : UsdGeomXformable(schemaObj)
     {
     }
 
     /// Destructor.
     USDRAYSENSOR_API
-    virtual ~LidarSensor();
+    virtual ~UsdGeomLidarSensor();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -74,17 +74,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a LidarSensor holding the prim adhering to this
+    /// Return a UsdGeomLidarSensor holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// LidarSensor(stage->GetPrimAtPath(path));
+    /// UsdGeomLidarSensor(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDRAYSENSOR_API
-    static LidarSensor
+    static UsdGeomLidarSensor
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -110,7 +110,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDRAYSENSOR_API
-    static LidarSensor
+    static UsdGeomLidarSensor
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:

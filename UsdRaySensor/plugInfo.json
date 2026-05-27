@@ -3,7 +3,7 @@
         {
             "Info": {
                 "Types": {
-                    "LidarSensor": {
+                    "UsdGeomLidarSensor": {
                         "alias": {
                             "UsdSchemaBase": "LidarSensor"
                         },
@@ -17,7 +17,7 @@
                         "isInternal": true,
                         "primTypeName": "LidarSensor"
                     },
-                    "HeightScanSensor": {
+                    "UsdGeomHeightScanSensor": {
                         "alias": {
                             "UsdSchemaBase": "HeightScanSensor"
                         },

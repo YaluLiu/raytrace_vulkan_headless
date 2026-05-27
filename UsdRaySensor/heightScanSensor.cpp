@@ -15,60 +15,60 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HeightScanSensor,
+    TfType::Define<UsdGeomHeightScanSensor,
         TfType::Bases< UsdGeomXformable > >();
 
     // Register the usd prim typename as an alias under UsdSchemaBase.
-    TfType::AddAlias<UsdSchemaBase, HeightScanSensor>("HeightScanSensor");
+    TfType::AddAlias<UsdSchemaBase, UsdGeomHeightScanSensor>("HeightScanSensor");
 }
 
 /* virtual */
-HeightScanSensor::~HeightScanSensor()
+UsdGeomHeightScanSensor::~UsdGeomHeightScanSensor()
 {
 }
 
 /* static */
-HeightScanSensor
-HeightScanSensor::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdGeomHeightScanSensor
+UsdGeomHeightScanSensor::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return HeightScanSensor();
+        return UsdGeomHeightScanSensor();
     }
-    return HeightScanSensor(stage->GetPrimAtPath(path));
+    return UsdGeomHeightScanSensor(stage->GetPrimAtPath(path));
 }
 
 /* static */
-HeightScanSensor
-HeightScanSensor::Define(
+UsdGeomHeightScanSensor
+UsdGeomHeightScanSensor::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("HeightScanSensor");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return HeightScanSensor();
+        return UsdGeomHeightScanSensor();
     }
-    return HeightScanSensor(
+    return UsdGeomHeightScanSensor(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaKind HeightScanSensor::_GetSchemaKind() const
+UsdSchemaKind UsdGeomHeightScanSensor::_GetSchemaKind() const
 {
-    return HeightScanSensor::schemaKind;
+    return UsdGeomHeightScanSensor::schemaKind;
 }
 
 /* static */
 const TfType &
-HeightScanSensor::_GetStaticTfType()
+UsdGeomHeightScanSensor::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<HeightScanSensor>();
+    static TfType tfType = TfType::Find<UsdGeomHeightScanSensor>();
     return tfType;
 }
 
 /* static */
 bool
-HeightScanSensor::_IsTypedSchema()
+UsdGeomHeightScanSensor::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -76,19 +76,19 @@ HeightScanSensor::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-HeightScanSensor::_GetTfType() const
+UsdGeomHeightScanSensor::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-HeightScanSensor::GetEnabledAttr() const
+UsdGeomHeightScanSensor::GetEnabledAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->enabled);
 }
 
 UsdAttribute
-HeightScanSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->enabled,
                        SdfValueTypeNames->Bool,
@@ -99,13 +99,13 @@ HeightScanSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSpars
 }
 
 UsdAttribute
-HeightScanSensor::GetUStartAttr() const
+UsdGeomHeightScanSensor::GetUStartAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->uStart);
 }
 
 UsdAttribute
-HeightScanSensor::CreateUStartAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateUStartAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->uStart,
                        SdfValueTypeNames->Float,
@@ -116,13 +116,13 @@ HeightScanSensor::CreateUStartAttr(VtValue const &defaultValue, bool writeSparse
 }
 
 UsdAttribute
-HeightScanSensor::GetUEndAttr() const
+UsdGeomHeightScanSensor::GetUEndAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->uEnd);
 }
 
 UsdAttribute
-HeightScanSensor::CreateUEndAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateUEndAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->uEnd,
                        SdfValueTypeNames->Float,
@@ -133,13 +133,13 @@ HeightScanSensor::CreateUEndAttr(VtValue const &defaultValue, bool writeSparsely
 }
 
 UsdAttribute
-HeightScanSensor::GetUStepAttr() const
+UsdGeomHeightScanSensor::GetUStepAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->uStep);
 }
 
 UsdAttribute
-HeightScanSensor::CreateUStepAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateUStepAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->uStep,
                        SdfValueTypeNames->Float,
@@ -150,13 +150,13 @@ HeightScanSensor::CreateUStepAttr(VtValue const &defaultValue, bool writeSparsel
 }
 
 UsdAttribute
-HeightScanSensor::GetVStartAttr() const
+UsdGeomHeightScanSensor::GetVStartAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->vStart);
 }
 
 UsdAttribute
-HeightScanSensor::CreateVStartAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateVStartAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->vStart,
                        SdfValueTypeNames->Float,
@@ -167,13 +167,13 @@ HeightScanSensor::CreateVStartAttr(VtValue const &defaultValue, bool writeSparse
 }
 
 UsdAttribute
-HeightScanSensor::GetVEndAttr() const
+UsdGeomHeightScanSensor::GetVEndAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->vEnd);
 }
 
 UsdAttribute
-HeightScanSensor::CreateVEndAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateVEndAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->vEnd,
                        SdfValueTypeNames->Float,
@@ -184,13 +184,13 @@ HeightScanSensor::CreateVEndAttr(VtValue const &defaultValue, bool writeSparsely
 }
 
 UsdAttribute
-HeightScanSensor::GetVStepAttr() const
+UsdGeomHeightScanSensor::GetVStepAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->vStep);
 }
 
 UsdAttribute
-HeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->vStep,
                        SdfValueTypeNames->Float,
@@ -201,13 +201,13 @@ HeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bool writeSparsel
 }
 
 UsdAttribute
-HeightScanSensor::GetRayDirectionAttr() const
+UsdGeomHeightScanSensor::GetRayDirectionAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->rayDirection);
 }
 
 UsdAttribute
-HeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->rayDirection,
                        SdfValueTypeNames->Float3,
@@ -218,13 +218,13 @@ HeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultValue, bool write
 }
 
 UsdAttribute
-HeightScanSensor::GetMaxRangeAttr() const
+UsdGeomHeightScanSensor::GetMaxRangeAttr() const
 {
     return GetPrim().GetAttribute(UsdRaySensorTokens->maxRange);
 }
 
 UsdAttribute
-HeightScanSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->maxRange,
                        SdfValueTypeNames->Float,
@@ -248,7 +248,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-HeightScanSensor::GetSchemaAttributeNames(bool includeInherited)
+UsdGeomHeightScanSensor::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRaySensorTokens->enabled,
@@ -293,61 +293,61 @@ T _GetAttrValue(const UsdAttribute& attr, UsdTimeCode time, T fallback)
 } // namespace
 
 bool
-HeightScanSensor::GetEnabled(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetEnabled(UsdTimeCode time) const
 {
     return _GetAttrValue(GetEnabledAttr(), time, true);
 }
 
 float
-HeightScanSensor::GetUStart(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetUStart(UsdTimeCode time) const
 {
     return _GetAttrValue(GetUStartAttr(), time, -10.0f);
 }
 
 float
-HeightScanSensor::GetUEnd(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetUEnd(UsdTimeCode time) const
 {
     return _GetAttrValue(GetUEndAttr(), time, 10.0f);
 }
 
 float
-HeightScanSensor::GetUStep(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetUStep(UsdTimeCode time) const
 {
     return _GetAttrValue(GetUStepAttr(), time, 0.1f);
 }
 
 float
-HeightScanSensor::GetVStart(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetVStart(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVStartAttr(), time, -10.0f);
 }
 
 float
-HeightScanSensor::GetVEnd(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetVEnd(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVEndAttr(), time, 10.0f);
 }
 
 float
-HeightScanSensor::GetVStep(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetVStep(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVStepAttr(), time, 0.1f);
 }
 
 GfVec3f
-HeightScanSensor::GetRayDirection(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetRayDirection(UsdTimeCode time) const
 {
     return _GetAttrValue(GetRayDirectionAttr(), time, GfVec3f(0.0f, 0.0f, -1.0f));
 }
 
 float
-HeightScanSensor::GetMaxRange(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetMaxRange(UsdTimeCode time) const
 {
     return _GetAttrValue(GetMaxRangeAttr(), time, 200.0f);
 }
 
-HeightScanSensor::Params
-HeightScanSensor::GetParams(UsdTimeCode time) const
+UsdGeomHeightScanSensor::Params
+UsdGeomHeightScanSensor::GetParams(UsdTimeCode time) const
 {
     Params params;
     params.enabled = GetEnabled(time);
