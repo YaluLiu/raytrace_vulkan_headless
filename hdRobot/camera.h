@@ -1,6 +1,8 @@
 #pragma once
 
+#include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/camera.h>
+#include <pxr/usd/sdf/path.h>
 #include <glm/glm.hpp>
 #include <string>
 
@@ -57,6 +59,7 @@ struct HdRobotHeightScanSensorData
   HdRobotHeightScanParams params;
 };
 
+HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform);
 HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera);
 
 class HdRobotCamera final : public HdCamera

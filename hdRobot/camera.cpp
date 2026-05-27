@@ -16,10 +16,8 @@ namespace
 constexpr float kCameraEpsilon = 1.0e-6f;
 } // namespace
 
-HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
+HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform)
 {
-  const GfMatrix4d& transform = camera.GetTransform();
-
   GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
   GfVec3d forward  = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
   GfVec3d up       = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
@@ -28,6 +26,7 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
   up.Normalize();
 
   HdRobotCameraData data;
+  data.name     = id.GetString();
   data.position = glm::vec3(position[0], position[1], position[2]);
   data.forward  = glm::vec3(forward[0], forward[1], forward[2]);
   data.up       = glm::vec3(up[0], up[1], up[2]);
@@ -36,6 +35,13 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
   {
     data.up = glm::vec3(0.0f, 1.0f, 0.0f);
   }
+
+  return data;
+}
+
+HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
+{
+  HdRobotCameraData data = HdRobotComputeTransformCameraData(camera.GetId(), camera.GetTransform());
 
   const float aperture    = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
   const float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
@@ -95,7 +101,6 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
   }
 
   HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
-  cameraData.name = GetId().GetString();
   _cameraData = cameraData;
   _scene.UpsertCamera(cameraData);
 }

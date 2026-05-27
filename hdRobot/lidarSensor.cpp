@@ -4,8 +4,6 @@
 #include "renderParam.h"
 
 #include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/vec3d.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
@@ -16,7 +14,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-constexpr float kSensorEpsilon = 1.0e-6f;
 constexpr float kLidarParamEpsilon = 1.0e-4f;
 
 float ClampPositive(float value, float fallback)
@@ -78,27 +75,6 @@ HdRobotLidarParams SanitizeLidarParams(const HdRobotLidarParams& source)
   params.intensity = ClampNonNegative(source.intensity, params.intensity);
   return params;
 }
-
-HdRobotCameraData ComputeSensorCameraData(const SdfPath& id, const GfMatrix4d& transform)
-{
-  GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
-  GfVec3d forward = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
-  GfVec3d up = transform.TransformDir(GfVec3d(0.0, 1.0, 0.0));
-
-  forward.Normalize();
-  up.Normalize();
-
-  HdRobotCameraData data;
-  data.name = id.GetString();
-  data.position = glm::vec3(position[0], position[1], position[2]);
-  data.forward = glm::vec3(forward[0], forward[1], forward[2]);
-  data.up = glm::vec3(up[0], up[1], up[2]);
-  if(glm::length(glm::cross(data.forward, data.up)) < kSensorEpsilon)
-  {
-    data.up = glm::vec3(0.0f, 1.0f, 0.0f);
-  }
-  return data;
-}
 } // namespace
 
 HdRobotLidarSensor::HdRobotLidarSensor(const SdfPath& id, HdRobotRenderParam& scene)
@@ -140,7 +116,7 @@ void HdRobotLidarSensor::_UpdateRenderParam()
 
   HdRobotLidarSensorData sensorData;
   sensorData.name = GetId().GetString();
-  sensorData.camera = ComputeSensorCameraData(GetId(), _transform);
+  sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeLidarParams(_params);
   _scene.UpsertLidarSensor(sensorData);
 }
