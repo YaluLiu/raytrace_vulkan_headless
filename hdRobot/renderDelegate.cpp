@@ -14,7 +14,7 @@
 #include "renderBuffer.h"
 // #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "tokens.h"
-#include "../UsdRaySensor/hydraSensor.h"
+#include "../UsdRaySensorImaging/hydraSensor.h"
 
 #include <pxr/base/arch/fileSystem.h>
 #include <pxr/base/gf/vec2f.h>

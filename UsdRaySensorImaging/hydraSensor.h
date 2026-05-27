@@ -13,7 +13,7 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((heightScanSensor, "heightScanSensor"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdRaySensorPrimTypeTokens,
-                         USDRAYSENSOR_API,
+                         USDRAYSENSORIMAGING_API,
                          HD_RAY_SENSOR_PRIM_TYPE_TOKENS);
 
 struct HdRaySensorDirtyBits

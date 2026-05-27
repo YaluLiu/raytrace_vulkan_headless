@@ -1,8 +1,8 @@
 #include "lidarSensorAdapter.h"
 
 #include "hydraSensor.h"
-#include "lidarSensor.h"
-#include "tokens.h"
+#include "../UsdRaySensor/lidarSensor.h"
+#include "../UsdRaySensor/tokens.h"
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/token.h>

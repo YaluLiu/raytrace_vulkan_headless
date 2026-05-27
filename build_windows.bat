@@ -2,10 +2,12 @@
 setlocal EnableExtensions
 
 rem Usage:
+rem   build_windows.bat schema
 rem   build_windows.bat hydra
 rem   build_windows.bat help
 rem
 rem Branches:
+rem   schema Build and install only the schema plugin component.
 rem   hydra  Configure, build Hydra plugin targets, then install the USD plugin
 rem          components into the USD plugin directory.
 rem
@@ -31,6 +33,8 @@ if "%TARGET%"=="" (
   call :usage_ok
 ) else if /i "%TARGET%"=="hydra" (
   call :run_hydra
+) else if /i "%TARGET%"=="schema" (
+  call :run_schema
 ) else (
   call :unknown_target "%TARGET%"
 )
@@ -62,10 +66,33 @@ set "BUILD_DIR=%BUILD_ROOT%_hydra"
 call :print_hydra_settings
 call :configure_hydra
 if errorlevel 1 exit /b %errorlevel%
-call :build_targets UsdRaySensor hdRobot
+call :build_targets UsdRaySensor UsdRaySensorImaging hdRobot
 if errorlevel 1 exit /b %errorlevel%
 call :install_hydra
 exit /b %errorlevel%
+
+:run_schema
+set "BUILD_DIR=%BUILD_ROOT%_schema"
+call :print_schema_settings
+call :configure_schema
+if errorlevel 1 exit /b %errorlevel%
+call :build_targets UsdRaySensor
+if errorlevel 1 exit /b %errorlevel%
+call cmake --install "%BUILD_DIR%" --config "%CONFIG%" --component UsdRaySensor --prefix "%INSTALL_PREFIX%"
+exit /b %errorlevel%
+
+:configure_schema
+call cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
+  -DROBOT_RASTER_SCHEMA_ONLY=ON ^
+  -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%"
+exit /b %errorlevel%
+
+:print_schema_settings
+echo [build_windows] branch=schema
+echo [build_windows] config=%CONFIG%
+echo [build_windows] build_dir=%BUILD_DIR%
+echo [build_windows] install_prefix=%INSTALL_PREFIX%
+exit /b 0
 
 :print_hydra_settings
 echo [build_windows] branch=hydra
@@ -86,6 +113,8 @@ exit /b %errorlevel%
 :install_hydra
 call cmake --install "%BUILD_DIR%" --config "%CONFIG%" --component UsdRaySensor --prefix "%INSTALL_PREFIX%"
 if errorlevel 1 exit /b %errorlevel%
+call cmake --install "%BUILD_DIR%" --config "%CONFIG%" --component UsdRaySensorImaging --prefix "%INSTALL_PREFIX%"
+if errorlevel 1 exit /b %errorlevel%
 call cmake --install "%BUILD_DIR%" --config "%CONFIG%" --component hdRobot --prefix "%INSTALL_PREFIX%"
 exit /b %errorlevel%
 
@@ -93,6 +122,7 @@ exit /b %errorlevel%
 echo Usage: %~nx0 ^<hydra^>
 echo.
 echo Branches:
+echo   schema Build and install only UsdRaySensor schema plugin to INSTALL_PREFIX.
 echo   hydra  Build Hydra plugin targets and install USD plugins to INSTALL_PREFIX.
 echo.
 echo Defaults:

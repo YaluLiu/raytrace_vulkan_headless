@@ -10,7 +10,7 @@ function format(){
 function hydra(){
     set -e
     usd_path="/home/${USER}/software/USD"
-    plugin_names=("UsdRaySensor" "hdRobot")
+    plugin_names=("UsdRaySensor" "UsdRaySensorImaging" "hdRobot")
     project_root="$(pwd)"
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
 
@@ -28,6 +28,22 @@ function hydra(){
     cd ..
 
     echo "[hydra] HYDRA_SCENE_PATH=${hydra_scene_path}"
+}
+
+function schema(){
+    set -e
+    usd_path="/home/${USER}/software/USD"
+
+    mkdir -p build_schema
+    cd build_schema
+    cmake .. -Wno-dev \
+        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DROBOT_RASTER_SCHEMA_ONLY=ON \
+        -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
+
+    cmake --build . --target UsdRaySensor --config Release -j20
+    cmake --install . --component UsdRaySensor
+    cd ..
 }
 
 function show()

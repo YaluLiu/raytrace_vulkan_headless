@@ -8,20 +8,25 @@ call sites with `rg`.
 ## Top-Level Structure
 
 - `CMakeLists.txt`: Root build configuration, package setup, and unconditional
-  raster, `UsdRaySensor`, and `hdRobot` subdirectory registration.
+  raster, `UsdRaySensor`, `UsdRaySensorImaging`, and `hdRobot` subdirectory
+  registration. `ROBOT_RASTER_SCHEMA_ONLY=ON` configures only the
+  `UsdRaySensor` schema plugin and skips Vulkan/raster/Hydra setup.
 - `install.sh`: Main local build/run helper used by Hydra workflows.
 - `build_windows.bat`: Windows Hydra build helper; builds and installs
-  `UsdRaySensor` before `hdRobot`.
+  `UsdRaySensor`, `UsdRaySensorImaging`, and `hdRobot`.
 - `raster/`: Core Vulkan rasterization library, split into public
   `include/raster/`, internal `private/`, implementation `src/`, and shader
   source `shaders/` trees.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   raster renderer.
-- `UsdRaySensor/`: Standalone USD recognition plugin for the custom
+- `UsdRaySensor/`: Schema-only USD plugin for the custom
   `UsdGeomLidarSensor` and `UsdGeomHeightScanSensor` C++ schema APIs backed by
-  stable `LidarSensor` and `HeightScanSensor` prim types, plus UsdImaging adapters; it
-  inserts the `lidarSensor` and `heightScanSensor` Hydra sprim types without
-  depending on the `hdRobot` target.
+  stable `LidarSensor` and `HeightScanSensor` prim types; this target is the
+  schema-only install component for non-Hydra consumers such as physics
+  engines.
+- `UsdRaySensorImaging/`: UsdImaging adapter plugin and shared Hydra sensor
+  contract for exposing `LidarSensor` and `HeightScanSensor` prims as custom
+  `lidarSensor` and `heightScanSensor` sprims.
 - `common/`: Shared model loader interfaces and OBJ loading implementation.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
@@ -31,14 +36,16 @@ call sites with `rg`.
 ## Build And Test Routing
 
 - `CMakeLists.txt`: Start here for project-wide package setup and target
-  registration.
+  registration; use `-DROBOT_RASTER_SCHEMA_ONLY=ON` for schema-only builds.
 - `raster/CMakeLists.txt`: Raster renderer library sources, shader
   compilation, and renderer compile definitions.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
-- `UsdRaySensor/CMakeLists.txt`: Standalone ray-sensor USD schema/adapter plugin
-  target, plugin metadata generation, and schema resource install layout.
-- `build_windows.bat`: Windows route for building and installing the two USD
+- `UsdRaySensor/CMakeLists.txt`: Schema-only ray-sensor USD plugin target,
+  plugin metadata generation, and schema resource install layout.
+- `UsdRaySensorImaging/CMakeLists.txt`: UsdImaging adapter plugin target,
+  shared Hydra sensor token export, metadata generation, and install layout.
+- `build_windows.bat`: Windows route for building and installing the three USD
   plugin components into the configured USD plugin prefix.
 
 ## Runtime Entry Points
@@ -252,16 +259,16 @@ call sites with `rg`.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings, LiDAR/height scan visualization settings,
   mesh `hdRobot:traceRole`, `ground`, and tile AOV tokens. Sensor parameter
-  attribute tokens plus shared ray-sensor sprim type tokens and dirty bits live
-  in `UsdRaySensor/`.
+  attribute tokens live in `UsdRaySensor/`; shared ray-sensor sprim type tokens
+  and dirty bits live in `UsdRaySensorImaging/`.
 - `hdRobot/plugInfo.json`: Hydra render delegate plugin metadata. The custom
-  sensor USD schema and adapter metadata now live in `UsdRaySensor/`.
+  sensor USD schema metadata lives in `UsdRaySensor/`, and adapter metadata
+  lives in `UsdRaySensorImaging/`.
 
 ## USD Sensor Recognition
 
-- `UsdRaySensor/plugInfo.json`: Standalone plugin metadata for
-  generated `UsdGeomLidarSensor`, `LidarSensorAdapter`,
-  `UsdGeomHeightScanSensor`, and `HeightScanSensorAdapter`, while preserving
+- `UsdRaySensor/plugInfo.json`: Schema-only plugin metadata for generated
+  `UsdGeomLidarSensor` and `UsdGeomHeightScanSensor`, while preserving
   authored prim type/schema identifiers `LidarSensor` and `HeightScanSensor`.
 - `UsdRaySensor/schema.usda`: Code-generation source for the concrete
   typed `UsdGeomLidarSensor` and `UsdGeomHeightScanSensor` C++ APIs,
@@ -270,11 +277,6 @@ call sites with `rg`.
 - `UsdRaySensor/generatedSchema.usda`: Runtime schema resource containing
   generated `LidarSensor` and `HeightScanSensor` fallback attributes and
   mirrored sensor attribute docs.
-- `UsdRaySensor/hydraSensor.h` / `UsdRaySensor/hydraSensor.cpp`: Shared
-  Hydra-facing contract for the custom `lidarSensor` and `heightScanSensor`
-  sprim type tokens plus sensor dirty bits; this is owned by `UsdRaySensor`
-  so the adapters and `hdRobot` render delegate share one ABI without a
-  reverse dependency on `hdRobot`.
 - `UsdRaySensor/api.h`, `UsdRaySensor/lidarSensor.h` /
   `UsdRaySensor/lidarSensor.cpp`, `UsdRaySensor/heightScanSensor.h` /
   `UsdRaySensor/heightScanSensor.cpp`, and `UsdRaySensor/tokens.h` /
@@ -283,14 +285,25 @@ call sites with `rg`.
   `GetLidarSensor()` / `GetHeightScanSensor()` with legacy `GetParams()`
   forwarding retained for source compatibility. Hydra transport uses
   individual schema attribute tokens rather than aggregate params tokens.
-- `UsdRaySensor/lidarSensorAdapter.h` /
-  `UsdRaySensor/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
+
+## USD Sensor Imaging
+
+- `UsdRaySensorImaging/plugInfo.json`: UsdImaging adapter plugin metadata for
+  `LidarSensorAdapter` and `HeightScanSensorAdapter`.
+- `UsdRaySensorImaging/api.h`: Export macros for the imaging plugin.
+- `UsdRaySensorImaging/hydraSensor.h` /
+  `UsdRaySensorImaging/hydraSensor.cpp`: Shared Hydra-facing contract for the
+  custom `lidarSensor` and `heightScanSensor` sprim type tokens plus sensor
+  dirty bits; this is owned by the imaging plugin so schema-only consumers do
+  not link against Hydra.
+- `UsdRaySensorImaging/lidarSensorAdapter.h` /
+  `UsdRaySensorImaging/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
   `LidarSensor` prims through the `UsdGeomLidarSensor` C++ schema; inserts
   the custom `lidarSensor` sprim via the shared Hydra sensor contract,
   forwards individual sensor attributes through generated schema getters, and
   handles transform/dependency dirtying.
-- `UsdRaySensor/heightScanSensorAdapter.h` /
-  `UsdRaySensor/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
+- `UsdRaySensorImaging/heightScanSensorAdapter.h` /
+  `UsdRaySensorImaging/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
   `HeightScanSensor` prims through the `UsdGeomHeightScanSensor` C++ schema;
   inserts the custom `heightScanSensor` sprim via the shared Hydra sensor
   contract, forwards individual sensor attributes through generated schema
@@ -435,7 +448,8 @@ call sites with `rg`.
   `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
   For Hydra-side LiDAR discovery, start with
-  `UsdRaySensor/lidarSensorAdapter.cpp`,
+  `UsdRaySensorImaging/lidarSensorAdapter.cpp`,
+  `UsdRaySensorImaging/plugInfo.json`,
   `UsdRaySensor/plugInfo.json`,
   `UsdRaySensor/generatedSchema.usda`, `hdRobot/lidarSensor.cpp`,
   `hdRobot/renderDelegate.cpp`, and `hdRobot/rasterBridge.cpp`, then search
@@ -455,7 +469,8 @@ call sites with `rg`.
   `raster/src/output/point_overlay/point_overlay_pipeline.cpp`,
   `raster/src/core/raster_frame_executor.cpp`,
   `raster/src/core/raster_output_controller.cpp`,
-  `UsdRaySensor/heightScanSensorAdapter.cpp`,
+  `UsdRaySensorImaging/heightScanSensorAdapter.cpp`,
+  `UsdRaySensorImaging/plugInfo.json`,
   `UsdRaySensor/plugInfo.json`,
   `UsdRaySensor/generatedSchema.usda`,
   `hdRobot/heightScanSensor.cpp`, `hdRobot/renderDelegate.cpp`,

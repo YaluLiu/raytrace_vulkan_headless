@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
 project(vk_raster)
 
+option(ROBOT_RASTER_SCHEMA_ONLY "Configure only the UsdRaySensor schema plugin." OFF)
+
+if(ROBOT_RASTER_SCHEMA_ONLY)
+  add_subdirectory(UsdRaySensor)
+  return()
+endif()
+
 #--------------------------------------------------------------------------------------------------
 # look for nvpro_core 1) as a sub-folder 2) at some other locations
 # this cannot be put anywhere else since we still didn't find setup.cmake yet
@@ -45,6 +52,7 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 # Sub examples
 add_subdirectory(raster)
 add_subdirectory(UsdRaySensor)
+add_subdirectory(UsdRaySensorImaging)
 add_subdirectory(hdRobot)
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory

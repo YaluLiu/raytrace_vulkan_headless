@@ -1,15 +1,14 @@
-set(PROJNAME UsdRaySensor)
+set(PROJNAME UsdRaySensorImaging)
 
 add_library(
   ${PROJNAME} SHARED
   api.h
-  heightScanSensor.cpp
-  heightScanSensor.h
-  lidarSensor.cpp
-  lidarSensor.h
-  schema.usda
-  tokens.cpp
-  tokens.h
+  hydraSensor.cpp
+  hydraSensor.h
+  heightScanSensorAdapter.cpp
+  heightScanSensorAdapter.h
+  lidarSensorAdapter.cpp
+  lidarSensorAdapter.h
 )
 
 set_target_properties(
@@ -29,15 +28,19 @@ find_package(pxr REQUIRED)
 if(TARGET usd_ms)
   set(USD_LIBS_PUBLIC usd_ms)
 else()
-  set(USD_LIBS_PUBLIC usd usdGeom)
+  set(USD_LIBS_PUBLIC hd)
+  set(USD_LIBS_PRIVATE usd usdGeom usdImaging)
 endif()
 
-target_compile_definitions(${PROJNAME} PRIVATE USDRAYSENSOR_EXPORTS)
+target_compile_definitions(${PROJNAME} PRIVATE USDRAYSENSORIMAGING_EXPORTS)
 
 target_link_libraries(
   ${PROJNAME}
   PUBLIC
     ${USD_LIBS_PUBLIC}
+    UsdRaySensor
+  PRIVATE
+    ${USD_LIBS_PRIVATE}
 )
 
 if(NOT DEFINED PLUGINFO_LIBPATH_PREFIX)
@@ -51,8 +54,6 @@ configure_file(plugInfo.json "${PLUGINFO_PATH}" @ONLY)
 install(
   FILES
     "${PLUGINFO_PATH}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/generatedSchema.usda"
-    "${CMAKE_CURRENT_SOURCE_DIR}/schema.usda"
   DESTINATION
     "./${PROJNAME}/resources"
   COMPONENT

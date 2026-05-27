@@ -1,0 +1,25 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "LidarSensorAdapter": {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "LidarSensor"
+                    },
+                    "HeightScanSensorAdapter": {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "HeightScanSensor"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "UsdRaySensorImaging",
+            "ResourcePath": "resources",
+            "Root": "..",
+            "Type": "library"
+        }
+    ]
+}

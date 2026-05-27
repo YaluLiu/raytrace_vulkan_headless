@@ -98,6 +98,7 @@ target_link_libraries(
   PRIVATE
     ${USD_LIBS_PRIVATE}
     UsdRaySensor
+    UsdRaySensorImaging
 )
 
 # Allow custom prefix for houdini directory structure

@@ -12,11 +12,6 @@
                         "schemaIdentifier": "LidarSensor",
                         "schemaKind": "concreteTyped"
                     },
-                    "LidarSensorAdapter": {
-                        "bases": ["UsdImagingPrimAdapter"],
-                        "isInternal": true,
-                        "primTypeName": "LidarSensor"
-                    },
                     "UsdGeomHeightScanSensor": {
                         "alias": {
                             "UsdSchemaBase": "HeightScanSensor"
@@ -25,11 +20,6 @@
                         "bases": ["UsdGeomXformable"],
                         "schemaIdentifier": "HeightScanSensor",
                         "schemaKind": "concreteTyped"
-                    },
-                    "HeightScanSensorAdapter": {
-                        "bases": ["UsdImagingPrimAdapter"],
-                        "isInternal": true,
-                        "primTypeName": "HeightScanSensor"
                     }
                 }
             },

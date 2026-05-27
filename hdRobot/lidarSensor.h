@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../UsdRaySensor/hydraSensor.h"
+#include "../UsdRaySensorImaging/hydraSensor.h"
 #include "camera.h"
 
 #include <pxr/base/gf/matrix4d.h>
