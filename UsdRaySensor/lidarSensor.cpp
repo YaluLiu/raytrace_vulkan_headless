@@ -350,26 +350,4 @@ UsdGeomLidarSensor::GetIntensity(UsdTimeCode time) const
 {
     return _GetAttrValue(GetIntensityAttr(), time, 1.0f);
 }
-
-UsdGeomLidarSensor::LidarSensorSpec
-UsdGeomLidarSensor::GetLidarSensor(UsdTimeCode time) const
-{
-    LidarSensorSpec spec;
-    spec.enabled = GetEnabled(time);
-    spec.azimuthStartDeg = GetAzimuthStartDeg(time);
-    spec.azimuthEndDeg = GetAzimuthEndDeg(time);
-    spec.azimuthStepDeg = GetAzimuthStepDeg(time);
-    spec.verticalStartDeg = GetVerticalStartDeg(time);
-    spec.verticalEndDeg = GetVerticalEndDeg(time);
-    spec.verticalStepDeg = GetVerticalStepDeg(time);
-    spec.maxRange = GetMaxRange(time);
-    spec.intensity = GetIntensity(time);
-    return spec;
-}
-
-UsdGeomLidarSensor::Params
-UsdGeomLidarSensor::GetParams(UsdTimeCode time) const
-{
-    return GetLidarSensor(time);
-}
 PXR_NAMESPACE_CLOSE_SCOPE

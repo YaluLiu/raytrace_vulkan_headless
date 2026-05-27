@@ -281,10 +281,8 @@ call sites with `rg`.
   `UsdRaySensor/lidarSensor.cpp`, `UsdRaySensor/heightScanSensor.h` /
   `UsdRaySensor/heightScanSensor.cpp`, and `UsdRaySensor/tokens.h` /
   `UsdRaySensor/tokens.cpp`: Generated sensor typed schema APIs, schema
-  tokens, generated attribute getters, and custom semantic aggregate helpers
-  `GetLidarSensor()` / `GetHeightScanSensor()` with legacy `GetParams()`
-  forwarding retained for source compatibility. Hydra transport uses
-  individual schema attribute tokens rather than aggregate params tokens.
+  tokens, generated attribute getters, and custom typed scalar value getters.
+  Hydra transport uses individual schema attribute tokens.
 
 ## USD Sensor Imaging
 

@@ -341,49 +341,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-    struct LidarSensorSpec
-    {
-        bool enabled = true;
-        float azimuthStartDeg = -90.0f;
-        float azimuthEndDeg = 90.0f;
-        float azimuthStepDeg = 0.5f;
-        float verticalStartDeg = -2.0f;
-        float verticalEndDeg = -20.0f;
-        float verticalStepDeg = 1.0f;
-        float maxRange = 200.0f;
-        float intensity = 1.0f;
-
-        bool GetEnabled() const { return enabled; }
-        float GetAzimuthStartDeg() const { return azimuthStartDeg; }
-        float GetAzimuthEndDeg() const { return azimuthEndDeg; }
-        float GetAzimuthStepDeg() const { return azimuthStepDeg; }
-        float GetVerticalStartDeg() const { return verticalStartDeg; }
-        float GetVerticalEndDeg() const { return verticalEndDeg; }
-        float GetVerticalStepDeg() const { return verticalStepDeg; }
-        float GetMaxRange() const { return maxRange; }
-        float GetIntensity() const { return intensity; }
-
-        bool operator==(const LidarSensorSpec& other) const
-        {
-            return enabled == other.enabled &&
-                   azimuthStartDeg == other.azimuthStartDeg &&
-                   azimuthEndDeg == other.azimuthEndDeg &&
-                   azimuthStepDeg == other.azimuthStepDeg &&
-                   verticalStartDeg == other.verticalStartDeg &&
-                   verticalEndDeg == other.verticalEndDeg &&
-                   verticalStepDeg == other.verticalStepDeg &&
-                   maxRange == other.maxRange &&
-                   intensity == other.intensity;
-        }
-
-        bool operator!=(const LidarSensorSpec& other) const
-        {
-            return !(*this == other);
-        }
-    };
-
-    using Params = LidarSensorSpec;
-
     USDRAYSENSOR_API
     bool GetEnabled(UsdTimeCode time = UsdTimeCode::Default()) const;
 
@@ -410,12 +367,6 @@ public:
 
     USDRAYSENSOR_API
     float GetIntensity(UsdTimeCode time = UsdTimeCode::Default()) const;
-
-    USDRAYSENSOR_API
-    LidarSensorSpec GetLidarSensor(UsdTimeCode time = UsdTimeCode::Default()) const;
-
-    USDRAYSENSOR_API
-    Params GetParams(UsdTimeCode time = UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

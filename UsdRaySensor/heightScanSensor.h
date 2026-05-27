@@ -195,49 +195,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-    struct HeightScanSensorSpec
-    {
-        bool enabled = true;
-        float uStart = -10.0f;
-        float uEnd = 10.0f;
-        float uStep = 0.1f;
-        float vStart = -10.0f;
-        float vEnd = 10.0f;
-        float vStep = 0.1f;
-        GfVec3f gravityDirectionWs = GfVec3f(0.0f, 0.0f, -1.0f);
-        float maxRange = 200.0f;
-
-        bool GetEnabled() const { return enabled; }
-        float GetUStart() const { return uStart; }
-        float GetUEnd() const { return uEnd; }
-        float GetUStep() const { return uStep; }
-        float GetVStart() const { return vStart; }
-        float GetVEnd() const { return vEnd; }
-        float GetVStep() const { return vStep; }
-        GfVec3f GetGravityDirectionWs() const { return gravityDirectionWs; }
-        float GetMaxRange() const { return maxRange; }
-
-        bool operator==(const HeightScanSensorSpec& other) const
-        {
-            return enabled == other.enabled &&
-                   uStart == other.uStart &&
-                   uEnd == other.uEnd &&
-                   uStep == other.uStep &&
-                   vStart == other.vStart &&
-                   vEnd == other.vEnd &&
-                   vStep == other.vStep &&
-                   gravityDirectionWs == other.gravityDirectionWs &&
-                   maxRange == other.maxRange;
-        }
-
-        bool operator!=(const HeightScanSensorSpec& other) const
-        {
-            return !(*this == other);
-        }
-    };
-
-    using Params = HeightScanSensorSpec;
-
     USDRAYSENSOR_API
     bool GetEnabled(UsdTimeCode time = UsdTimeCode::Default()) const;
 
@@ -264,12 +221,6 @@ public:
 
     USDRAYSENSOR_API
     float GetMaxRange(UsdTimeCode time = UsdTimeCode::Default()) const;
-
-    USDRAYSENSOR_API
-    HeightScanSensorSpec GetHeightScanSensor(UsdTimeCode time = UsdTimeCode::Default()) const;
-
-    USDRAYSENSOR_API
-    Params GetParams(UsdTimeCode time = UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
