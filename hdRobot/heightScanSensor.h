@@ -6,9 +6,30 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/sprim.h>
 
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderParam;
+
+struct HdRobotHeightScanParams
+{
+  float uStart = -10.0f;
+  float uEnd = 10.0f;
+  float uStep = 0.1f;
+  float vStart = -10.0f;
+  float vEnd = 10.0f;
+  float vStep = 0.1f;
+  glm::vec3 gravityDirectionWs = glm::vec3(0.0f, 0.0f, -1.0f);
+  float maxRange = 200.0f;
+};
+
+struct HdRobotHeightScanSensorData
+{
+  std::string name;
+  HdRobotCameraData camera;
+  HdRobotHeightScanParams params;
+};
 
 class HdRobotHeightScanSensor final : public HdSprim
 {

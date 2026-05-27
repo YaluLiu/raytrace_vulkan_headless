@@ -10,30 +10,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderParam;
 
-struct HdRobotLidarParams
-{
-  float azimuthStartDeg = -90.0f;
-  float azimuthEndDeg = 90.0f;
-  float azimuthStepDeg = 0.5f;
-  float verticalStartDeg = -2.0f;
-  float verticalEndDeg = -20.0f;
-  float verticalStepDeg = 1.0f;
-  float maxRange = 200.0f;
-  float intensity = 1.0f;
-};
-
-struct HdRobotHeightScanParams
-{
-  float uStart = -10.0f;
-  float uEnd = 10.0f;
-  float uStep = 0.1f;
-  float vStart = -10.0f;
-  float vEnd = 10.0f;
-  float vStep = 0.1f;
-  glm::vec3 gravityDirectionWs = glm::vec3(0.0f, 0.0f, -1.0f);
-  float maxRange = 200.0f;
-};
-
 struct HdRobotCameraData
 {
   std::string name;
@@ -43,20 +19,6 @@ struct HdRobotCameraData
   float       vfov_deg  = 45.0f;
   float       clipStart = 0.1f;
   float       clipEnd   = 1000.0f;
-};
-
-struct HdRobotLidarSensorData
-{
-  std::string name;
-  HdRobotCameraData camera;
-  HdRobotLidarParams params;
-};
-
-struct HdRobotHeightScanSensorData
-{
-  std::string name;
-  HdRobotCameraData camera;
-  HdRobotHeightScanParams params;
 };
 
 HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform);

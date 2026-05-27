@@ -309,18 +309,22 @@ call sites with `rg`.
   standard surface/OpenPBR and selected BSDF/EDF input rules, upstream texture
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
-- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
-  conversion. Sensor parameters are no longer read from camera prims.
+- `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, shared
+  `HdRobotCameraData` pose/projection data, and transform-to-camera-data
+  conversion used by cameras and sensor sprims. Sensor-specific params live in
+  their sensor headers.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
   USD `LidarSensor` prims; caches transform and individual sensor parameters
   from `HdSceneDelegate::Get(id, token)` with type diagnostics, leaves cached
   defaults intact for empty values, validates/clamps params, and upserts
+  `HdRobotLidarSensorData`. The header owns `HdRobotLidarParams` and
   `HdRobotLidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
   for custom USD `HeightScanSensor` prims; caches transform and individual
   sensor parameters from `HdSceneDelegate::Get(id, token)` with type
   diagnostics, leaves cached defaults intact for empty values,
   validates/clamps params, and upserts
+  `HdRobotHeightScanSensorData`. The header owns `HdRobotHeightScanParams` and
   `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the

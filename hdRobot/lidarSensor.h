@@ -6,9 +6,30 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/sprim.h>
 
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderParam;
+
+struct HdRobotLidarParams
+{
+  float azimuthStartDeg = -90.0f;
+  float azimuthEndDeg = 90.0f;
+  float azimuthStepDeg = 0.5f;
+  float verticalStartDeg = -2.0f;
+  float verticalEndDeg = -20.0f;
+  float verticalStepDeg = 1.0f;
+  float maxRange = 200.0f;
+  float intensity = 1.0f;
+};
+
+struct HdRobotLidarSensorData
+{
+  std::string name;
+  HdRobotCameraData camera;
+  HdRobotLidarParams params;
+};
 
 class HdRobotLidarSensor final : public HdSprim
 {

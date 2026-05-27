@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "camera.h"
+#include "heightScanSensor.h"
+#include "lidarSensor.h"
 #include "sceneData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
