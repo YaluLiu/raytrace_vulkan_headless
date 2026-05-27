@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
 project(vk_raster)
 
+include(CTest)
+
 option(ROBOT_RASTER_SCHEMA_ONLY "Configure only the UsdRaySensor schema plugin." OFF)
 
 if(ROBOT_RASTER_SCHEMA_ONLY)

@@ -97,6 +97,8 @@ RasterHeightScanSensorSpec ToRasterHeightScanSensorSpec(const HdRobotHeightScanS
   RasterHeightScanSensorSpec result;
   result.name = sensor.name;
   result.position = sensor.camera.position;
+  result.forward = sensor.camera.forward;
+  result.up = sensor.camera.up;
   result.params.uStart = sensor.params.uStart;
   result.params.uEnd = sensor.params.uEnd;
   result.params.uStep = sensor.params.uStep;

@@ -43,6 +43,18 @@ glm::vec3 safeNormalize(glm::vec3 value, glm::vec3 fallback)
   }
   return glm::normalize(value);
 }
+
+glm::vec3 projectOntoPlane(glm::vec3 value, glm::vec3 planeNormal)
+{
+  return value - planeNormal * glm::dot(value, planeNormal);
+}
+
+bool hasUsableDirection(glm::vec3 value)
+{
+  const float length = glm::length(value);
+  return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z) && std::isfinite(length) &&
+         length >= kHeightScanBasisEpsilon;
+}
 } // namespace
 
 uint32_t ComputeHeightScanSampleCount(float start, float end, float step)
@@ -119,11 +131,22 @@ RasterHeightScanBasis BuildHeightScanBasis(const RasterHeightScanSensorSpec& sen
   basis.origin = sensor.position;
   basis.gravityDirectionWs = safeNormalize(sensor.params.gravityDirectionWs, glm::vec3(0.0f, 0.0f, -1.0f));
 
-  const glm::vec3 referenceAxis =
-      std::fabs(glm::dot(basis.gravityDirectionWs, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.95f ?
-          glm::vec3(0.0f, 1.0f, 0.0f) :
-          glm::vec3(1.0f, 0.0f, 0.0f);
-  basis.axisU = safeNormalize(glm::cross(basis.gravityDirectionWs, referenceAxis), glm::vec3(1.0f, 0.0f, 0.0f));
+  glm::vec3 forwardInPlane = projectOntoPlane(sensor.forward, basis.gravityDirectionWs);
+  if(!hasUsableDirection(forwardInPlane))
+  {
+    forwardInPlane = projectOntoPlane(sensor.up, basis.gravityDirectionWs);
+  }
+  if(!hasUsableDirection(forwardInPlane))
+  {
+    const glm::vec3 referenceAxis =
+        std::fabs(glm::dot(basis.gravityDirectionWs, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.95f ?
+            glm::vec3(0.0f, 1.0f, 0.0f) :
+            glm::vec3(1.0f, 0.0f, 0.0f);
+    forwardInPlane = projectOntoPlane(referenceAxis, basis.gravityDirectionWs);
+  }
+
+  basis.axisV = safeNormalize(forwardInPlane, glm::vec3(0.0f, 1.0f, 0.0f));
+  basis.axisU = safeNormalize(glm::cross(basis.gravityDirectionWs, basis.axisV), glm::vec3(1.0f, 0.0f, 0.0f));
   basis.axisV = safeNormalize(glm::cross(basis.axisU, basis.gravityDirectionWs), glm::vec3(0.0f, 1.0f, 0.0f));
   return basis;
 }

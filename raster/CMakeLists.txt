@@ -175,6 +175,19 @@ endforeach(RELEASELIB)
 
 _finalize_target( ${PROJNAME} )
 
+if(BUILD_TESTING)
+  add_executable(raster_height_scan_basis_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/height_scan_basis_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/output/height_scan/height_scan.cpp
+  )
+  target_include_directories(raster_height_scan_basis_test
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/private
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  add_test(NAME raster_height_scan_basis_test COMMAND raster_height_scan_basis_test)
+endif()
+
 
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Release DESTINATION "bin_${ARCH}/${PROJNAME}/spv")
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Debug DESTINATION "bin_${ARCH}_debug/${PROJNAME}/spv")

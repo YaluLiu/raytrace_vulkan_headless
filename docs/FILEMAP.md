@@ -38,7 +38,8 @@ call sites with `rg`.
 - `CMakeLists.txt`: Start here for project-wide package setup and target
   registration; use `-DROBOT_RASTER_SCHEMA_ONLY=ON` for schema-only builds.
 - `raster/CMakeLists.txt`: Raster renderer library sources, shader
-  compilation, and renderer compile definitions.
+  compilation, renderer compile definitions, and the focused
+  `raster_height_scan_basis_test` CTest target.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
 - `UsdRaySensor/CMakeLists.txt`: Schema-only ray-sensor USD plugin target,
@@ -153,10 +154,12 @@ call sites with `rg`.
   descriptor resources, push constants, and point-list draw binding. Sensor and
   point/sample layout details stay in overlay-specific vertex shaders.
 - `raster/include/raster/height_scan_types.hpp`: Public Hydra-free height scan
-  sensor, sample, per-sensor grid, and frame readback contract.
+  sensor pose/params, sample, per-sensor grid, and frame readback contract.
 - `raster/private/output/height_scan/height_scan.hpp` /
   `raster/src/output/height_scan/height_scan.cpp`: Pure CPU height scan sample
-  count, offset, basis, layout, and world-space origin helpers.
+  count, offset, forward-oriented basis, layout, and world-space origin helpers.
+- `raster/tests/height_scan_basis_test.cpp`: Focused CTest coverage for height
+  scan basis construction, including forward projection and degenerate fallback.
 - `raster/private/output/height_scan/height_scan_generation_pipeline.hpp` /
   `raster/src/output/height_scan/height_scan_generation_pipeline.cpp`: Compute
   pipeline that binds the scene TLAS and traces one ground-mask ray query per
@@ -334,7 +337,7 @@ call sites with `rg`.
   for custom USD `HeightScanSensor` prims; caches transform and individual
   sensor parameters from `HdSceneDelegate::Get(id, token)` with type
   diagnostics, leaves cached defaults intact for empty values,
-  validates/clamps params, and upserts
+  validates/clamps params, derives camera forward/up from the transform, and upserts
   `HdRobotHeightScanSensorData`. The header owns `HdRobotHeightScanParams` and
   `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
@@ -476,7 +479,7 @@ call sites with `rg`.
   `raster/src/scene/raster_rt_scene.cpp`, then search for
   `RasterHeightScanSensorSpec`, `RasterHeightScanVisualizationConfig`,
   `HeightScanPass`, `GenerateHeightScans`, `OverlayHeightScans`,
-  `hdRobot:heightScan:visualize`, `hdRobot:traceRole`,
+  `BuildHeightScanBasis`, `camera.forward`, `hdRobot:heightScan:visualize`, `hdRobot:traceRole`,
   `kRasterTraceMaskGround`, `RASTER_TRACE_MASK_GROUND`,
   `UsdGeomHeightScanSensor`, `heightScanSensor`, `UpsertHeightScanSensor`,
   `setHeightScanSensors`, `setHeightScanVisualizationConfig`, and
