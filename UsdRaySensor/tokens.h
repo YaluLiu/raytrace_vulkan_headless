@@ -69,10 +69,10 @@ struct UsdRaySensorTokensType {
     ///
     /// HeightScanSensor, LidarSensor
     const TfToken maxRange;
-    /// \brief "rayDirection"
+    /// \brief "gravityDirectionWs"
     ///
     /// HeightScanSensor
-    const TfToken rayDirection;
+    const TfToken gravityDirectionWs;
     /// \brief "uEnd"
     ///
     /// HeightScanSensor

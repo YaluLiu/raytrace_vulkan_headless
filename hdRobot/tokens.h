@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((heightScanVStart, "vStart")) \
   ((heightScanVEnd, "vEnd")) \
   ((heightScanVStep, "vStep")) \
-  ((heightScanRayDirection, "rayDirection")) \
+  ((heightScanGravityDirectionWs, "gravityDirectionWs")) \
   ((heightScanMaxRange, "maxRange"))
 
 #define HD_ROBOT_MESH_PARAM_TOKENS ((traceRole, "hdRobot:traceRole"))

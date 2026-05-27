@@ -63,9 +63,10 @@ def LidarSensor "lidar_sensor"
 ## HeightScanSensor 属性
 
 高度扫描仪使用 `HeightScanSensor` prim。prim transform 的平移提供扫描平面中心；
-`rayDirection` 是世界空间射线方向，扫描平面的两个采样轴会由该方向
-推导得到。因此 `uStart/uEnd` 和 `vStart/vEnd` 是扫描平面上的两组偏移参数，而不是
-固定的世界坐标轴。默认方向 `(0, 0, -1)` 适合 `Z-up` 场景中的向下扫描。
+`gravityDirectionWs` 是世界空间重力方向，高度扫描射线沿该方向发出，扫描平面的
+两个采样轴会由该方向推导得到。因此 `uStart/uEnd` 和 `vStart/vEnd` 是扫描平面上的
+两组偏移参数，而不是固定的世界坐标轴。默认方向 `(0, 0, -1)` 适合 `Z-up`
+场景中的向下扫描。
 
 | USD 属性名     | 类型     | 默认值       | 说明                                                           |
 | -------------- | -------- | ------------ | -------------------------------------------------------------- |
@@ -76,7 +77,7 @@ def LidarSensor "lidar_sensor"
 | `vStart`       | `float`  | `-10.0`      | 扫描平面第二轴起点偏移。                                       |
 | `vEnd`         | `float`  | `10.0`       | 扫描平面第二轴终点偏移。                                       |
 | `vStep`        | `float`  | `0.1`        | 扫描平面第二轴采样间隔，实际最小值为 `1.0e-4`。                |
-| `rayDirection` | `float3` | `(0, 0, -1)` | 世界空间扫描射线方向；读取后会归一化，零向量会回退到默认方向。 |
+| `gravityDirectionWs` | `float3` | `(0, 0, -1)` | 世界空间重力方向；读取后会归一化，零向量会回退到默认方向。 |
 | `maxRange`     | `float`  | `200.0`      | 单条扫描射线最大追踪距离。                                     |
 
 等价 USDA 片段：
@@ -91,7 +92,7 @@ def HeightScanSensor "height_scan_sensor"
     float vStart = -10
     float vEnd = 10
     float vStep = 0.1
-    float3 rayDirection = (0, 0, -1)
+    float3 gravityDirectionWs = (0, 0, -1)
     float maxRange = 200
 }
 ```

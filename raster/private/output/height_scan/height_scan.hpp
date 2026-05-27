@@ -12,7 +12,7 @@
 struct RasterHeightScanBasis
 {
   glm::vec3 origin{0.0f, 0.0f, 0.0f};
-  glm::vec3 rayDirection{0.0f, 0.0f, -1.0f};
+  glm::vec3 gravityDirectionWs{0.0f, 0.0f, -1.0f};
   glm::vec3 axisU{1.0f, 0.0f, 0.0f};
   glm::vec3 axisV{0.0f, 1.0f, 0.0f};
 };

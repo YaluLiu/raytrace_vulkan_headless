@@ -56,11 +56,11 @@ void main()
   uint sampleIndex = sensor.sampleOffset + localIndex;
 
   float uOffset =
-      sampleOffset(sensor.rayDirectionUStart.w, sensor.axisUAndUEnd.w, sensor.uStepVEndVStep.x, uIndex);
+      sampleOffset(sensor.gravityDirectionWsUStart.w, sensor.axisUAndUEnd.w, sensor.uStepVEndVStep.x, uIndex);
   float vOffset = sampleOffset(sensor.axisVAndVStart.w, sensor.uStepVEndVStep.y, sensor.uStepVEndVStep.z, vIndex);
   vec3 rayOrigin =
       sensor.originMaxRange.xyz + sensor.axisUAndUEnd.xyz * uOffset + sensor.axisVAndVStart.xyz * vOffset;
-  vec3 rayDirection = safeNormalize(sensor.rayDirectionUStart.xyz, vec3(0.0, 0.0, -1.0));
+  vec3 gravityDirectionWs = safeNormalize(sensor.gravityDirectionWsUStart.xyz, vec3(0.0, 0.0, -1.0));
   float maxRange = max(sensor.originMaxRange.w, 1.0e-4);
 
   HeightScanSampleGpu outSample;
@@ -72,7 +72,7 @@ void main()
 
   rayQueryEXT query;
   rayQueryInitializeEXT(query, heightScanTlas, gl_RayFlagsOpaqueEXT, RASTER_TRACE_MASK_GROUND, rayOrigin,
-                        0.001, rayDirection, maxRange);
+                        0.001, gravityDirectionWs, maxRange);
   while(rayQueryProceedEXT(query))
   {
   }
@@ -81,7 +81,7 @@ void main()
   float distanceMeters = hit ? rayQueryGetIntersectionTEXT(query, true) : 0.0;
   if(hit && distanceMeters > 0.0 && distanceMeters <= maxRange)
   {
-    outSample.positionDistance = vec4(rayOrigin + rayDirection * distanceMeters, distanceMeters);
+    outSample.positionDistance = vec4(rayOrigin + gravityDirectionWs * distanceMeters, distanceMeters);
     outSample.flags = HEIGHT_SCAN_SAMPLE_FLAG_VALID | HEIGHT_SCAN_SAMPLE_FLAG_HIT;
   }
   else

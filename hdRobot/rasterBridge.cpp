@@ -103,7 +103,7 @@ RasterHeightScanSensorSpec ToRasterHeightScanSensorSpec(const HdRobotHeightScanS
   result.params.vStart = sensor.params.vStart;
   result.params.vEnd = sensor.params.vEnd;
   result.params.vStep = sensor.params.vStep;
-  result.params.rayDirection = sensor.params.rayDirection;
+  result.params.gravityDirectionWs = sensor.params.gravityDirectionWs;
   result.params.maxRange = sensor.params.maxRange;
   return result;
 }

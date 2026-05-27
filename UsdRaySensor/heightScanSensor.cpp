@@ -201,15 +201,15 @@ UsdGeomHeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bool write
 }
 
 UsdAttribute
-UsdGeomHeightScanSensor::GetRayDirectionAttr() const
+UsdGeomHeightScanSensor::GetGravityDirectionWsAttr() const
 {
-    return GetPrim().GetAttribute(UsdRaySensorTokens->rayDirection);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->gravityDirectionWs);
 }
 
 UsdAttribute
-UsdGeomHeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomHeightScanSensor::CreateGravityDirectionWsAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->rayDirection,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->gravityDirectionWs,
                        SdfValueTypeNames->Float3,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -258,7 +258,7 @@ UsdGeomHeightScanSensor::GetSchemaAttributeNames(bool includeInherited)
         UsdRaySensorTokens->vStart,
         UsdRaySensorTokens->vEnd,
         UsdRaySensorTokens->vStep,
-        UsdRaySensorTokens->rayDirection,
+        UsdRaySensorTokens->gravityDirectionWs,
         UsdRaySensorTokens->maxRange,
     };
     static TfTokenVector allNames =
@@ -335,9 +335,9 @@ UsdGeomHeightScanSensor::GetVStep(UsdTimeCode time) const
 }
 
 GfVec3f
-UsdGeomHeightScanSensor::GetRayDirection(UsdTimeCode time) const
+UsdGeomHeightScanSensor::GetGravityDirectionWs(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetRayDirectionAttr(), time, GfVec3f(0.0f, 0.0f, -1.0f));
+    return _GetAttrValue(GetGravityDirectionWsAttr(), time, GfVec3f(0.0f, 0.0f, -1.0f));
 }
 
 float
@@ -357,7 +357,7 @@ UsdGeomHeightScanSensor::GetHeightScanSensor(UsdTimeCode time) const
     spec.vStart = GetVStart(time);
     spec.vEnd = GetVEnd(time);
     spec.vStep = GetVStep(time);
-    spec.rayDirection = GetRayDirection(time);
+    spec.gravityDirectionWs = GetGravityDirectionWs(time);
     spec.maxRange = GetMaxRange(time);
     return spec;
 }

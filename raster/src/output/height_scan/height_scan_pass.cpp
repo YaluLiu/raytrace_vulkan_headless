@@ -343,7 +343,7 @@ std::vector<HeightScanSensorGpu> HeightScanPass::buildGpuSensorMetadata() const
 
     HeightScanSensorGpu gpu{};
     gpu.originMaxRange = vec4(basis.origin, metadata.maxRange);
-    gpu.rayDirectionUStart = vec4(basis.rayDirection, uStart);
+    gpu.gravityDirectionWsUStart = vec4(basis.gravityDirectionWs, uStart);
     gpu.axisUAndUEnd = vec4(basis.axisU, uEnd);
     gpu.axisVAndVStart = vec4(basis.axisV, vStart);
     gpu.uStepVEndVStep =

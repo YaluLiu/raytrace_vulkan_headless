@@ -117,14 +117,14 @@ RasterHeightScanBasis BuildHeightScanBasis(const RasterHeightScanSensorSpec& sen
 {
   RasterHeightScanBasis basis;
   basis.origin = sensor.position;
-  basis.rayDirection = safeNormalize(sensor.params.rayDirection, glm::vec3(0.0f, 0.0f, -1.0f));
+  basis.gravityDirectionWs = safeNormalize(sensor.params.gravityDirectionWs, glm::vec3(0.0f, 0.0f, -1.0f));
 
   const glm::vec3 referenceAxis =
-      std::fabs(glm::dot(basis.rayDirection, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.95f ?
+      std::fabs(glm::dot(basis.gravityDirectionWs, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.95f ?
           glm::vec3(0.0f, 1.0f, 0.0f) :
           glm::vec3(1.0f, 0.0f, 0.0f);
-  basis.axisU = safeNormalize(glm::cross(basis.rayDirection, referenceAxis), glm::vec3(1.0f, 0.0f, 0.0f));
-  basis.axisV = safeNormalize(glm::cross(basis.axisU, basis.rayDirection), glm::vec3(0.0f, 1.0f, 0.0f));
+  basis.axisU = safeNormalize(glm::cross(basis.gravityDirectionWs, referenceAxis), glm::vec3(1.0f, 0.0f, 0.0f));
+  basis.axisV = safeNormalize(glm::cross(basis.axisU, basis.gravityDirectionWs), glm::vec3(0.0f, 1.0f, 0.0f));
   return basis;
 }
 

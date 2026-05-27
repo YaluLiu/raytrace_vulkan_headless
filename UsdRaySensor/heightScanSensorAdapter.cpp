@@ -177,9 +177,9 @@ VtValue HeightScanSensorAdapter::Get(UsdPrim const& prim,
   {
     return VtValue(sensor.GetVStep(time));
   }
-  if(key == UsdRaySensorTokens->rayDirection)
+  if(key == UsdRaySensorTokens->gravityDirectionWs)
   {
-    return VtValue(sensor.GetRayDirection(time));
+    return VtValue(sensor.GetGravityDirectionWs(time));
   }
   if(key == UsdRaySensorTokens->maxRange)
   {

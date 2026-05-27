@@ -166,13 +166,13 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // RAYDIRECTION
+    // GRAVITYDIRECTIONWS
     // --------------------------------------------------------------------- //
     USDRAYSENSOR_API
-    UsdAttribute GetRayDirectionAttr() const;
+    UsdAttribute GetGravityDirectionWsAttr() const;
 
     USDRAYSENSOR_API
-    UsdAttribute CreateRayDirectionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateGravityDirectionWsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -204,7 +204,7 @@ public:
         float vStart = -10.0f;
         float vEnd = 10.0f;
         float vStep = 0.1f;
-        GfVec3f rayDirection = GfVec3f(0.0f, 0.0f, -1.0f);
+        GfVec3f gravityDirectionWs = GfVec3f(0.0f, 0.0f, -1.0f);
         float maxRange = 200.0f;
 
         bool GetEnabled() const { return enabled; }
@@ -214,7 +214,7 @@ public:
         float GetVStart() const { return vStart; }
         float GetVEnd() const { return vEnd; }
         float GetVStep() const { return vStep; }
-        GfVec3f GetRayDirection() const { return rayDirection; }
+        GfVec3f GetGravityDirectionWs() const { return gravityDirectionWs; }
         float GetMaxRange() const { return maxRange; }
 
         bool operator==(const HeightScanSensorSpec& other) const
@@ -226,7 +226,7 @@ public:
                    vStart == other.vStart &&
                    vEnd == other.vEnd &&
                    vStep == other.vStep &&
-                   rayDirection == other.rayDirection &&
+                   gravityDirectionWs == other.gravityDirectionWs &&
                    maxRange == other.maxRange;
         }
 
@@ -260,7 +260,7 @@ public:
     float GetVStep(UsdTimeCode time = UsdTimeCode::Default()) const;
 
     USDRAYSENSOR_API
-    GfVec3f GetRayDirection(UsdTimeCode time = UsdTimeCode::Default()) const;
+    GfVec3f GetGravityDirectionWs(UsdTimeCode time = UsdTimeCode::Default()) const;
 
     USDRAYSENSOR_API
     float GetMaxRange(UsdTimeCode time = UsdTimeCode::Default()) const;

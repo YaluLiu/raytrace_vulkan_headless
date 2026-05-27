@@ -99,7 +99,7 @@ struct HeightScanSampleGpu
 struct HeightScanSensorGpu
 {
   vec4 originMaxRange;
-  vec4 rayDirectionUStart;
+  vec4 gravityDirectionWsUStart;
   vec4 axisUAndUEnd;
   vec4 axisVAndVStart;
   vec4 uStepVEndVStep;

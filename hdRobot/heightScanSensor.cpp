@@ -89,7 +89,7 @@ HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotHeightScanParams& 
   params.vStart = source.vStart;
   params.vEnd = source.vEnd;
   params.vStep = ClampStep(source.vStep, params.vStep);
-  params.rayDirection = NormalizeDirection(source.rayDirection, params.rayDirection);
+  params.gravityDirectionWs = NormalizeDirection(source.gravityDirectionWs, params.gravityDirectionWs);
   params.maxRange = ClampPositive(source.maxRange, params.maxRange);
   return params;
 }
@@ -134,7 +134,9 @@ void HdRobotHeightScanSensor::Finalize(HdRenderParam*)
 
 void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
 {
-  GfVec3f rayDirection(_params.rayDirection.x, _params.rayDirection.y, _params.rayDirection.z);
+  GfVec3f gravityDirectionWs(_params.gravityDirectionWs.x,
+                             _params.gravityDirectionWs.y,
+                             _params.gravityDirectionWs.z);
 
   ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->enabled, &_enabled, "bool");
   ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->uStart, &_params.uStart, "float");
@@ -143,10 +145,10 @@ void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
   ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->vStart, &_params.vStart, "float");
   ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->vEnd, &_params.vEnd, "float");
   ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->vStep, &_params.vStep, "float");
-  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->rayDirection, &rayDirection, "GfVec3f");
+  ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->gravityDirectionWs, &gravityDirectionWs, "GfVec3f");
   ReadCachedParam(sceneDelegate, GetId(), UsdRaySensorTokens->maxRange, &_params.maxRange, "float");
 
-  _params.rayDirection = ToGlm(rayDirection);
+  _params.gravityDirectionWs = ToGlm(gravityDirectionWs);
 }
 
 void HdRobotHeightScanSensor::_UpdateRenderParam()

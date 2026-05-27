@@ -28,7 +28,7 @@ struct HdRobotHeightScanParams
   float vStart = -10.0f;
   float vEnd = 10.0f;
   float vStep = 0.1f;
-  glm::vec3 rayDirection = glm::vec3(0.0f, 0.0f, -1.0f);
+  glm::vec3 gravityDirectionWs = glm::vec3(0.0f, 0.0f, -1.0f);
   float maxRange = 200.0f;
 };
 
