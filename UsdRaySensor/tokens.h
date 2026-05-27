@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef HDROBOTLIDARUSD_TOKENS_H
-#define HDROBOTLIDARUSD_TOKENS_H
+#ifndef USDRAYSENSOR_TOKENS_H
+#define USDRAYSENSOR_TOKENS_H
 
-/// \file hdRobotLidarUsd/tokens.h
+/// \file UsdRaySensor/tokens.h
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
@@ -25,9 +25,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdRobotLidarUsdTokensType
+/// \class UsdRaySensorTokensType
 ///
-/// \link HdRobotLidarUsdTokens \endlink provides static, efficient
+/// \link UsdRaySensorTokens \endlink provides static, efficient
 /// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
@@ -36,30 +36,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// HdRobotLidarUsdTokens also contains all of the \em allowedTokens values
+/// UsdRaySensorTokens also contains all of the \em allowedTokens values
 /// declared for schema builtin attributes of 'token' scene description type.
-/// Use HdRobotLidarUsdTokens like so:
+/// Use UsdRaySensorTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(HdRobotLidarUsdTokens->azimuthEndDeg);
+///     gprim.GetMyTokenValuedAttr().Set(UsdRaySensorTokens->azimuthEndDeg);
 /// \endcode
-struct HdRobotLidarUsdTokensType {
-    HDROBOTLIDARUSD_API HdRobotLidarUsdTokensType();
+struct UsdRaySensorTokensType {
+    USDRAYSENSOR_API UsdRaySensorTokensType();
     /// \brief "azimuthEndDeg"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken azimuthEndDeg;
     /// \brief "azimuthStartDeg"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken azimuthStartDeg;
     /// \brief "azimuthStepDeg"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken azimuthStepDeg;
     /// \brief "enabled"
     ///
-    /// HdRobotLidarUsdHeightScanSensor, HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorHeightScanSensor, UsdRaySensorLidarSensor
     const TfToken enabled;
     /// \brief "heightScanSensorParams"
     ///
@@ -67,7 +67,7 @@ struct HdRobotLidarUsdTokensType {
     const TfToken heightScanSensorParams;
     /// \brief "intensity"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken intensity;
     /// \brief "lidarSensorParams"
     ///
@@ -75,65 +75,65 @@ struct HdRobotLidarUsdTokensType {
     const TfToken lidarSensorParams;
     /// \brief "maxRange"
     ///
-    /// HdRobotLidarUsdHeightScanSensor, HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorHeightScanSensor, UsdRaySensorLidarSensor
     const TfToken maxRange;
     /// \brief "rayDirection"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken rayDirection;
     /// \brief "uEnd"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken uEnd;
     /// \brief "uStart"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken uStart;
     /// \brief "uStep"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken uStep;
     /// \brief "vEnd"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken vEnd;
     /// \brief "vStart"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken vStart;
     /// \brief "vStep"
     ///
-    /// HdRobotLidarUsdHeightScanSensor
+    /// UsdRaySensorHeightScanSensor
     const TfToken vStep;
     /// \brief "verticalEndDeg"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken verticalEndDeg;
     /// \brief "verticalStartDeg"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken verticalStartDeg;
     /// \brief "verticalStepDeg"
     ///
-    /// HdRobotLidarUsdLidarSensor
+    /// UsdRaySensorLidarSensor
     const TfToken verticalStepDeg;
     /// \brief "LidarSensor"
     ///
-    /// Schema identifer and family for HdRobotLidarUsdLidarSensor
+    /// Schema identifer and family for UsdRaySensorLidarSensor
     const TfToken LidarSensor;
     /// \brief "HeightScanSensor"
     ///
-    /// Schema identifer and family for HdRobotLidarUsdHeightScanSensor
+    /// Schema identifer and family for UsdRaySensorHeightScanSensor
     const TfToken HeightScanSensor;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };
 
-/// \var HdRobotLidarUsdTokens
+/// \var UsdRaySensorTokens
 ///
 /// A global variable with static, efficient \link TfToken TfTokens\endlink
-/// for use in all public USD API.  \sa HdRobotLidarUsdTokensType
-extern HDROBOTLIDARUSD_API TfStaticData<HdRobotLidarUsdTokensType> HdRobotLidarUsdTokens;
+/// for use in all public USD API.  \sa UsdRaySensorTokensType
+extern USDRAYSENSOR_API TfStaticData<UsdRaySensorTokensType> UsdRaySensorTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -31,7 +31,7 @@ const TfToken& GetHydraLidarSensorType()
 
 bool IsLidarProperty(const TfToken& propertyName)
 {
-  const TfTokenVector& names = HdRobotLidarUsdLidarSensor::GetSchemaAttributeNames(false);
+  const TfTokenVector& names = UsdRaySensorLidarSensor::GetSchemaAttributeNames(false);
   return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
@@ -44,29 +44,29 @@ bool IsXformProperty(const TfToken& propertyName)
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-  using Adapter = HdRobotLidarSensorAdapter;
+  using Adapter = UsdRaySensorLidarSensorAdapter;
   TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter>>();
   t.SetFactory<UsdImagingPrimAdapterFactory<Adapter>>();
 }
 
-HdRobotLidarSensorAdapter::~HdRobotLidarSensorAdapter() = default;
+UsdRaySensorLidarSensorAdapter::~UsdRaySensorLidarSensorAdapter() = default;
 
-TfTokenVector HdRobotLidarSensorAdapter::GetImagingSubprims(UsdPrim const&)
+TfTokenVector UsdRaySensorLidarSensorAdapter::GetImagingSubprims(UsdPrim const&)
 {
   return {TfToken()};
 }
 
-TfToken HdRobotLidarSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
+TfToken UsdRaySensorLidarSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
   return subprim.IsEmpty() ? GetHydraLidarSensorType() : TfToken();
 }
 
-bool HdRobotLidarSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
+bool UsdRaySensorLidarSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
   return index != nullptr && index->IsSprimTypeSupported(GetHydraLidarSensorType());
 }
 
-SdfPath HdRobotLidarSensorAdapter::Populate(UsdPrim const& prim,
+SdfPath UsdRaySensorLidarSensorAdapter::Populate(UsdPrim const& prim,
                                             UsdImagingIndexProxy* index,
                                             UsdImagingInstancerContext const* instancerContext)
 {
@@ -90,7 +90,7 @@ SdfPath HdRobotLidarSensorAdapter::Populate(UsdPrim const& prim,
   return cachePath;
 }
 
-void HdRobotLidarSensorAdapter::TrackVariability(UsdPrim const& prim,
+void UsdRaySensorLidarSensorAdapter::TrackVariability(UsdPrim const& prim,
                                                  SdfPath const&,
                                                  HdDirtyBits* timeVaryingBits,
                                                  UsdImagingInstancerContext const*) const
@@ -116,7 +116,7 @@ void HdRobotLidarSensorAdapter::TrackVariability(UsdPrim const& prim,
   }
 }
 
-void HdRobotLidarSensorAdapter::UpdateForTime(UsdPrim const&,
+void UsdRaySensorLidarSensorAdapter::UpdateForTime(UsdPrim const&,
                                               SdfPath const&,
                                               UsdTimeCode,
                                               HdDirtyBits,
@@ -124,7 +124,7 @@ void HdRobotLidarSensorAdapter::UpdateForTime(UsdPrim const&,
 {
 }
 
-HdDirtyBits HdRobotLidarSensorAdapter::ProcessPropertyChange(UsdPrim const&,
+HdDirtyBits UsdRaySensorLidarSensorAdapter::ProcessPropertyChange(UsdPrim const&,
                                                              SdfPath const&,
                                                              TfToken const& propertyName)
 {
@@ -139,7 +139,7 @@ HdDirtyBits HdRobotLidarSensorAdapter::ProcessPropertyChange(UsdPrim const&,
   return kDirtyParams;
 }
 
-void HdRobotLidarSensorAdapter::MarkDirty(UsdPrim const&,
+void UsdRaySensorLidarSensorAdapter::MarkDirty(UsdPrim const&,
                                           SdfPath const& cachePath,
                                           HdDirtyBits dirty,
                                           UsdImagingIndexProxy* index)
@@ -150,50 +150,50 @@ void HdRobotLidarSensorAdapter::MarkDirty(UsdPrim const&,
   }
 }
 
-VtValue HdRobotLidarSensorAdapter::Get(UsdPrim const& prim,
+VtValue UsdRaySensorLidarSensorAdapter::Get(UsdPrim const& prim,
                                        SdfPath const& cachePath,
                                        TfToken const& key,
                                        UsdTimeCode time,
                                        VtIntArray* outIndices) const
 {
-  const HdRobotLidarUsdLidarSensor sensor(prim);
-  if(key == HdRobotLidarUsdTokens->lidarSensorParams)
+  const UsdRaySensorLidarSensor sensor(prim);
+  if(key == UsdRaySensorTokens->lidarSensorParams)
   {
     return VtValue(sensor.GetParams(time));
   }
-  if(key == HdRobotLidarUsdTokens->enabled)
+  if(key == UsdRaySensorTokens->enabled)
   {
     return VtValue(sensor.GetEnabled(time));
   }
-  if(key == HdRobotLidarUsdTokens->azimuthStartDeg)
+  if(key == UsdRaySensorTokens->azimuthStartDeg)
   {
     return VtValue(sensor.GetAzimuthStartDeg(time));
   }
-  if(key == HdRobotLidarUsdTokens->azimuthEndDeg)
+  if(key == UsdRaySensorTokens->azimuthEndDeg)
   {
     return VtValue(sensor.GetAzimuthEndDeg(time));
   }
-  if(key == HdRobotLidarUsdTokens->azimuthStepDeg)
+  if(key == UsdRaySensorTokens->azimuthStepDeg)
   {
     return VtValue(sensor.GetAzimuthStepDeg(time));
   }
-  if(key == HdRobotLidarUsdTokens->verticalStartDeg)
+  if(key == UsdRaySensorTokens->verticalStartDeg)
   {
     return VtValue(sensor.GetVerticalStartDeg(time));
   }
-  if(key == HdRobotLidarUsdTokens->verticalEndDeg)
+  if(key == UsdRaySensorTokens->verticalEndDeg)
   {
     return VtValue(sensor.GetVerticalEndDeg(time));
   }
-  if(key == HdRobotLidarUsdTokens->verticalStepDeg)
+  if(key == UsdRaySensorTokens->verticalStepDeg)
   {
     return VtValue(sensor.GetVerticalStepDeg(time));
   }
-  if(key == HdRobotLidarUsdTokens->maxRange)
+  if(key == UsdRaySensorTokens->maxRange)
   {
     return VtValue(sensor.GetMaxRange(time));
   }
-  if(key == HdRobotLidarUsdTokens->intensity)
+  if(key == UsdRaySensorTokens->intensity)
   {
     return VtValue(sensor.GetIntensity(time));
   }
@@ -217,21 +217,21 @@ VtValue HdRobotLidarSensorAdapter::Get(UsdPrim const& prim,
   return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
-bool HdRobotLidarSensorAdapter::GetVisible(UsdPrim const&,
+bool UsdRaySensorLidarSensorAdapter::GetVisible(UsdPrim const&,
                                            SdfPath const&,
                                            UsdTimeCode) const
 {
   return true;
 }
 
-TfToken HdRobotLidarSensorAdapter::GetPurpose(UsdPrim const&,
+TfToken UsdRaySensorLidarSensorAdapter::GetPurpose(UsdPrim const&,
                                               SdfPath const&,
                                               TfToken const&) const
 {
   return UsdGeomTokens->default_;
 }
 
-GfMatrix4d HdRobotLidarSensorAdapter::GetTransform(UsdPrim const& prim,
+GfMatrix4d UsdRaySensorLidarSensorAdapter::GetTransform(UsdPrim const& prim,
                                                    SdfPath const& cachePath,
                                                    UsdTimeCode time,
                                                    bool ignoreRootTransform) const
@@ -239,7 +239,7 @@ GfMatrix4d HdRobotLidarSensorAdapter::GetTransform(UsdPrim const& prim,
   return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
-void HdRobotLidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
+void UsdRaySensorLidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
   if(index != nullptr)

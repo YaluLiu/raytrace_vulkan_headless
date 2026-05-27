@@ -15,60 +15,60 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdRobotLidarUsdHeightScanSensor,
+    TfType::Define<UsdRaySensorHeightScanSensor,
         TfType::Bases< UsdGeomXformable > >();
 
     // Register the usd prim typename as an alias under UsdSchemaBase.
-    TfType::AddAlias<UsdSchemaBase, HdRobotLidarUsdHeightScanSensor>("HeightScanSensor");
+    TfType::AddAlias<UsdSchemaBase, UsdRaySensorHeightScanSensor>("HeightScanSensor");
 }
 
 /* virtual */
-HdRobotLidarUsdHeightScanSensor::~HdRobotLidarUsdHeightScanSensor()
+UsdRaySensorHeightScanSensor::~UsdRaySensorHeightScanSensor()
 {
 }
 
 /* static */
-HdRobotLidarUsdHeightScanSensor
-HdRobotLidarUsdHeightScanSensor::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdRaySensorHeightScanSensor
+UsdRaySensorHeightScanSensor::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return HdRobotLidarUsdHeightScanSensor();
+        return UsdRaySensorHeightScanSensor();
     }
-    return HdRobotLidarUsdHeightScanSensor(stage->GetPrimAtPath(path));
+    return UsdRaySensorHeightScanSensor(stage->GetPrimAtPath(path));
 }
 
 /* static */
-HdRobotLidarUsdHeightScanSensor
-HdRobotLidarUsdHeightScanSensor::Define(
+UsdRaySensorHeightScanSensor
+UsdRaySensorHeightScanSensor::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("HeightScanSensor");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return HdRobotLidarUsdHeightScanSensor();
+        return UsdRaySensorHeightScanSensor();
     }
-    return HdRobotLidarUsdHeightScanSensor(
+    return UsdRaySensorHeightScanSensor(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaKind HdRobotLidarUsdHeightScanSensor::_GetSchemaKind() const
+UsdSchemaKind UsdRaySensorHeightScanSensor::_GetSchemaKind() const
 {
-    return HdRobotLidarUsdHeightScanSensor::schemaKind;
+    return UsdRaySensorHeightScanSensor::schemaKind;
 }
 
 /* static */
 const TfType &
-HdRobotLidarUsdHeightScanSensor::_GetStaticTfType()
+UsdRaySensorHeightScanSensor::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<HdRobotLidarUsdHeightScanSensor>();
+    static TfType tfType = TfType::Find<UsdRaySensorHeightScanSensor>();
     return tfType;
 }
 
 /* static */
 bool
-HdRobotLidarUsdHeightScanSensor::_IsTypedSchema()
+UsdRaySensorHeightScanSensor::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -76,21 +76,21 @@ HdRobotLidarUsdHeightScanSensor::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-HdRobotLidarUsdHeightScanSensor::_GetTfType() const
+UsdRaySensorHeightScanSensor::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetEnabledAttr() const
+UsdRaySensorHeightScanSensor::GetEnabledAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->enabled);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->enabled);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->enabled,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->enabled,
                        SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -99,15 +99,15 @@ HdRobotLidarUsdHeightScanSensor::CreateEnabledAttr(VtValue const &defaultValue, 
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetUStartAttr() const
+UsdRaySensorHeightScanSensor::GetUStartAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->uStart);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->uStart);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateUStartAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateUStartAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->uStart,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->uStart,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -116,15 +116,15 @@ HdRobotLidarUsdHeightScanSensor::CreateUStartAttr(VtValue const &defaultValue, b
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetUEndAttr() const
+UsdRaySensorHeightScanSensor::GetUEndAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->uEnd);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->uEnd);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateUEndAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateUEndAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->uEnd,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->uEnd,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -133,15 +133,15 @@ HdRobotLidarUsdHeightScanSensor::CreateUEndAttr(VtValue const &defaultValue, boo
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetUStepAttr() const
+UsdRaySensorHeightScanSensor::GetUStepAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->uStep);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->uStep);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateUStepAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateUStepAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->uStep,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->uStep,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -150,15 +150,15 @@ HdRobotLidarUsdHeightScanSensor::CreateUStepAttr(VtValue const &defaultValue, bo
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetVStartAttr() const
+UsdRaySensorHeightScanSensor::GetVStartAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->vStart);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->vStart);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateVStartAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateVStartAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->vStart,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->vStart,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -167,15 +167,15 @@ HdRobotLidarUsdHeightScanSensor::CreateVStartAttr(VtValue const &defaultValue, b
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetVEndAttr() const
+UsdRaySensorHeightScanSensor::GetVEndAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->vEnd);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->vEnd);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateVEndAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateVEndAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->vEnd,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->vEnd,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -184,15 +184,15 @@ HdRobotLidarUsdHeightScanSensor::CreateVEndAttr(VtValue const &defaultValue, boo
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetVStepAttr() const
+UsdRaySensorHeightScanSensor::GetVStepAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->vStep);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->vStep);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->vStep,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->vStep,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -201,15 +201,15 @@ HdRobotLidarUsdHeightScanSensor::CreateVStepAttr(VtValue const &defaultValue, bo
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetRayDirectionAttr() const
+UsdRaySensorHeightScanSensor::GetRayDirectionAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->rayDirection);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->rayDirection);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->rayDirection,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->rayDirection,
                        SdfValueTypeNames->Float3,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -218,15 +218,15 @@ HdRobotLidarUsdHeightScanSensor::CreateRayDirectionAttr(VtValue const &defaultVa
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::GetMaxRangeAttr() const
+UsdRaySensorHeightScanSensor::GetMaxRangeAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->maxRange);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->maxRange);
 }
 
 UsdAttribute
-HdRobotLidarUsdHeightScanSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorHeightScanSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->maxRange,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->maxRange,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -248,18 +248,18 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-HdRobotLidarUsdHeightScanSensor::GetSchemaAttributeNames(bool includeInherited)
+UsdRaySensorHeightScanSensor::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        HdRobotLidarUsdTokens->enabled,
-        HdRobotLidarUsdTokens->uStart,
-        HdRobotLidarUsdTokens->uEnd,
-        HdRobotLidarUsdTokens->uStep,
-        HdRobotLidarUsdTokens->vStart,
-        HdRobotLidarUsdTokens->vEnd,
-        HdRobotLidarUsdTokens->vStep,
-        HdRobotLidarUsdTokens->rayDirection,
-        HdRobotLidarUsdTokens->maxRange,
+        UsdRaySensorTokens->enabled,
+        UsdRaySensorTokens->uStart,
+        UsdRaySensorTokens->uEnd,
+        UsdRaySensorTokens->uStep,
+        UsdRaySensorTokens->vStart,
+        UsdRaySensorTokens->vEnd,
+        UsdRaySensorTokens->vStep,
+        UsdRaySensorTokens->rayDirection,
+        UsdRaySensorTokens->maxRange,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -293,61 +293,61 @@ T _GetAttrValue(const UsdAttribute& attr, UsdTimeCode time, T fallback)
 } // namespace
 
 bool
-HdRobotLidarUsdHeightScanSensor::GetEnabled(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetEnabled(UsdTimeCode time) const
 {
     return _GetAttrValue(GetEnabledAttr(), time, true);
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetUStart(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetUStart(UsdTimeCode time) const
 {
     return _GetAttrValue(GetUStartAttr(), time, -10.0f);
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetUEnd(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetUEnd(UsdTimeCode time) const
 {
     return _GetAttrValue(GetUEndAttr(), time, 10.0f);
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetUStep(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetUStep(UsdTimeCode time) const
 {
     return _GetAttrValue(GetUStepAttr(), time, 0.1f);
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetVStart(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetVStart(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVStartAttr(), time, -10.0f);
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetVEnd(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetVEnd(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVEndAttr(), time, 10.0f);
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetVStep(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetVStep(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVStepAttr(), time, 0.1f);
 }
 
 GfVec3f
-HdRobotLidarUsdHeightScanSensor::GetRayDirection(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetRayDirection(UsdTimeCode time) const
 {
     return _GetAttrValue(GetRayDirectionAttr(), time, GfVec3f(0.0f, 0.0f, -1.0f));
 }
 
 float
-HdRobotLidarUsdHeightScanSensor::GetMaxRange(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::GetMaxRange(UsdTimeCode time) const
 {
     return _GetAttrValue(GetMaxRangeAttr(), time, 200.0f);
 }
 
-HdRobotLidarUsdHeightScanSensor::Params
-HdRobotLidarUsdHeightScanSensor::GetParams(UsdTimeCode time) const
+UsdRaySensorHeightScanSensor::Params
+UsdRaySensorHeightScanSensor::GetParams(UsdTimeCode time) const
 {
     Params params;
     params.enabled = GetEnabled(time);

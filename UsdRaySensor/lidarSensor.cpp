@@ -16,64 +16,64 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdRobotLidarUsdLidarSensor,
+    TfType::Define<UsdRaySensorLidarSensor,
         TfType::Bases< UsdGeomXformable > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
     // TfType::Find<UsdSchemaBase>().FindDerivedByName("LidarSensor")
-    // to find TfType<HdRobotLidarUsdLidarSensor>, which is how IsA queries are
+    // to find TfType<UsdRaySensorLidarSensor>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, HdRobotLidarUsdLidarSensor>("LidarSensor");
+    TfType::AddAlias<UsdSchemaBase, UsdRaySensorLidarSensor>("LidarSensor");
 }
 
 /* virtual */
-HdRobotLidarUsdLidarSensor::~HdRobotLidarUsdLidarSensor()
+UsdRaySensorLidarSensor::~UsdRaySensorLidarSensor()
 {
 }
 
 /* static */
-HdRobotLidarUsdLidarSensor
-HdRobotLidarUsdLidarSensor::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdRaySensorLidarSensor
+UsdRaySensorLidarSensor::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return HdRobotLidarUsdLidarSensor();
+        return UsdRaySensorLidarSensor();
     }
-    return HdRobotLidarUsdLidarSensor(stage->GetPrimAtPath(path));
+    return UsdRaySensorLidarSensor(stage->GetPrimAtPath(path));
 }
 
 /* static */
-HdRobotLidarUsdLidarSensor
-HdRobotLidarUsdLidarSensor::Define(
+UsdRaySensorLidarSensor
+UsdRaySensorLidarSensor::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("LidarSensor");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return HdRobotLidarUsdLidarSensor();
+        return UsdRaySensorLidarSensor();
     }
-    return HdRobotLidarUsdLidarSensor(
+    return UsdRaySensorLidarSensor(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaKind HdRobotLidarUsdLidarSensor::_GetSchemaKind() const
+UsdSchemaKind UsdRaySensorLidarSensor::_GetSchemaKind() const
 {
-    return HdRobotLidarUsdLidarSensor::schemaKind;
+    return UsdRaySensorLidarSensor::schemaKind;
 }
 
 /* static */
 const TfType &
-HdRobotLidarUsdLidarSensor::_GetStaticTfType()
+UsdRaySensorLidarSensor::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<HdRobotLidarUsdLidarSensor>();
+    static TfType tfType = TfType::Find<UsdRaySensorLidarSensor>();
     return tfType;
 }
 
 /* static */
 bool 
-HdRobotLidarUsdLidarSensor::_IsTypedSchema()
+UsdRaySensorLidarSensor::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -81,21 +81,21 @@ HdRobotLidarUsdLidarSensor::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-HdRobotLidarUsdLidarSensor::_GetTfType() const
+UsdRaySensorLidarSensor::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetEnabledAttr() const
+UsdRaySensorLidarSensor::GetEnabledAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->enabled);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->enabled);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateEnabledAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->enabled,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->enabled,
                        SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -104,15 +104,15 @@ HdRobotLidarUsdLidarSensor::CreateEnabledAttr(VtValue const &defaultValue, bool 
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetAzimuthStartDegAttr() const
+UsdRaySensorLidarSensor::GetAzimuthStartDegAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->azimuthStartDeg);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->azimuthStartDeg);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateAzimuthStartDegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateAzimuthStartDegAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->azimuthStartDeg,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->azimuthStartDeg,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -121,15 +121,15 @@ HdRobotLidarUsdLidarSensor::CreateAzimuthStartDegAttr(VtValue const &defaultValu
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetAzimuthEndDegAttr() const
+UsdRaySensorLidarSensor::GetAzimuthEndDegAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->azimuthEndDeg);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->azimuthEndDeg);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateAzimuthEndDegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateAzimuthEndDegAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->azimuthEndDeg,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->azimuthEndDeg,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -138,15 +138,15 @@ HdRobotLidarUsdLidarSensor::CreateAzimuthEndDegAttr(VtValue const &defaultValue,
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetAzimuthStepDegAttr() const
+UsdRaySensorLidarSensor::GetAzimuthStepDegAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->azimuthStepDeg);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->azimuthStepDeg);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateAzimuthStepDegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateAzimuthStepDegAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->azimuthStepDeg,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->azimuthStepDeg,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -155,15 +155,15 @@ HdRobotLidarUsdLidarSensor::CreateAzimuthStepDegAttr(VtValue const &defaultValue
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetVerticalStartDegAttr() const
+UsdRaySensorLidarSensor::GetVerticalStartDegAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->verticalStartDeg);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->verticalStartDeg);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateVerticalStartDegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateVerticalStartDegAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->verticalStartDeg,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->verticalStartDeg,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -172,15 +172,15 @@ HdRobotLidarUsdLidarSensor::CreateVerticalStartDegAttr(VtValue const &defaultVal
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetVerticalEndDegAttr() const
+UsdRaySensorLidarSensor::GetVerticalEndDegAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->verticalEndDeg);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->verticalEndDeg);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateVerticalEndDegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateVerticalEndDegAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->verticalEndDeg,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->verticalEndDeg,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -189,15 +189,15 @@ HdRobotLidarUsdLidarSensor::CreateVerticalEndDegAttr(VtValue const &defaultValue
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetVerticalStepDegAttr() const
+UsdRaySensorLidarSensor::GetVerticalStepDegAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->verticalStepDeg);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->verticalStepDeg);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateVerticalStepDegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateVerticalStepDegAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->verticalStepDeg,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->verticalStepDeg,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -206,15 +206,15 @@ HdRobotLidarUsdLidarSensor::CreateVerticalStepDegAttr(VtValue const &defaultValu
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetMaxRangeAttr() const
+UsdRaySensorLidarSensor::GetMaxRangeAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->maxRange);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->maxRange);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->maxRange,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->maxRange,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -223,15 +223,15 @@ HdRobotLidarUsdLidarSensor::CreateMaxRangeAttr(VtValue const &defaultValue, bool
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::GetIntensityAttr() const
+UsdRaySensorLidarSensor::GetIntensityAttr() const
 {
-    return GetPrim().GetAttribute(HdRobotLidarUsdTokens->intensity);
+    return GetPrim().GetAttribute(UsdRaySensorTokens->intensity);
 }
 
 UsdAttribute
-HdRobotLidarUsdLidarSensor::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRaySensorLidarSensor::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(HdRobotLidarUsdTokens->intensity,
+    return UsdSchemaBase::_CreateAttr(UsdRaySensorTokens->intensity,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -253,18 +253,18 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-HdRobotLidarUsdLidarSensor::GetSchemaAttributeNames(bool includeInherited)
+UsdRaySensorLidarSensor::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        HdRobotLidarUsdTokens->enabled,
-        HdRobotLidarUsdTokens->azimuthStartDeg,
-        HdRobotLidarUsdTokens->azimuthEndDeg,
-        HdRobotLidarUsdTokens->azimuthStepDeg,
-        HdRobotLidarUsdTokens->verticalStartDeg,
-        HdRobotLidarUsdTokens->verticalEndDeg,
-        HdRobotLidarUsdTokens->verticalStepDeg,
-        HdRobotLidarUsdTokens->maxRange,
-        HdRobotLidarUsdTokens->intensity,
+        UsdRaySensorTokens->enabled,
+        UsdRaySensorTokens->azimuthStartDeg,
+        UsdRaySensorTokens->azimuthEndDeg,
+        UsdRaySensorTokens->azimuthStepDeg,
+        UsdRaySensorTokens->verticalStartDeg,
+        UsdRaySensorTokens->verticalEndDeg,
+        UsdRaySensorTokens->verticalStepDeg,
+        UsdRaySensorTokens->maxRange,
+        UsdRaySensorTokens->intensity,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -298,61 +298,61 @@ T _GetAttrValue(const UsdAttribute& attr, UsdTimeCode time, T fallback)
 } // namespace
 
 bool
-HdRobotLidarUsdLidarSensor::GetEnabled(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetEnabled(UsdTimeCode time) const
 {
     return _GetAttrValue(GetEnabledAttr(), time, true);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetAzimuthStartDeg(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetAzimuthStartDeg(UsdTimeCode time) const
 {
     return _GetAttrValue(GetAzimuthStartDegAttr(), time, -90.0f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetAzimuthEndDeg(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetAzimuthEndDeg(UsdTimeCode time) const
 {
     return _GetAttrValue(GetAzimuthEndDegAttr(), time, 90.0f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetAzimuthStepDeg(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetAzimuthStepDeg(UsdTimeCode time) const
 {
     return _GetAttrValue(GetAzimuthStepDegAttr(), time, 0.5f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetVerticalStartDeg(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetVerticalStartDeg(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVerticalStartDegAttr(), time, -2.0f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetVerticalEndDeg(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetVerticalEndDeg(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVerticalEndDegAttr(), time, -20.0f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetVerticalStepDeg(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetVerticalStepDeg(UsdTimeCode time) const
 {
     return _GetAttrValue(GetVerticalStepDegAttr(), time, 1.0f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetMaxRange(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetMaxRange(UsdTimeCode time) const
 {
     return _GetAttrValue(GetMaxRangeAttr(), time, 200.0f);
 }
 
 float
-HdRobotLidarUsdLidarSensor::GetIntensity(UsdTimeCode time) const
+UsdRaySensorLidarSensor::GetIntensity(UsdTimeCode time) const
 {
     return _GetAttrValue(GetIntensityAttr(), time, 1.0f);
 }
 
-HdRobotLidarUsdLidarSensor::Params
-HdRobotLidarUsdLidarSensor::GetParams(UsdTimeCode time) const
+UsdRaySensorLidarSensor::Params
+UsdRaySensorLidarSensor::GetParams(UsdTimeCode time) const
 {
     Params params;
     params.enabled = GetEnabled(time);

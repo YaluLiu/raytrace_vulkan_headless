@@ -10,7 +10,7 @@ function format(){
 function hydra(){
     set -e
     usd_path="/home/${USER}/software/USD"
-    plugin_names=("hdRobotLidarUsd" "hdRobot")
+    plugin_names=("UsdRaySensor" "hdRobot")
     project_root="$(pwd)"
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
 

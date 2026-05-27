@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef HDROBOTLIDARUSD_GENERATED_LIDARSENSOR_H
-#define HDROBOTLIDARUSD_GENERATED_LIDARSENSOR_H
+#ifndef USDRAYSENSOR_GENERATED_LIDARSENSOR_H
+#define USDRAYSENSOR_GENERATED_LIDARSENSOR_H
 
-/// \file hdRobotLidarUsd/lidarSensor.h
+/// \file UsdRaySensor/lidarSensor.h
 
 #include "pxr/pxr.h"
 #include "./api.h"
@@ -34,11 +34,11 @@ class SdfAssetPath;
 // LIDARSENSOR                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \class HdRobotLidarUsdLidarSensor
+/// \class UsdRaySensorLidarSensor
 ///
-/// Concrete transformable LiDAR sensor schema consumed by hdRobot.
+/// Concrete transformable LiDAR sensor schema for ray-sensor consumers.
 ///
-class HdRobotLidarUsdLidarSensor : public UsdGeomXformable
+class UsdRaySensorLidarSensor : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -46,45 +46,45 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a HdRobotLidarUsdLidarSensor on UsdPrim \p prim .
-    /// Equivalent to HdRobotLidarUsdLidarSensor::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdRaySensorLidarSensor on UsdPrim \p prim .
+    /// Equivalent to UsdRaySensorLidarSensor::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit HdRobotLidarUsdLidarSensor(const UsdPrim& prim=UsdPrim())
+    explicit UsdRaySensorLidarSensor(const UsdPrim& prim=UsdPrim())
         : UsdGeomXformable(prim)
     {
     }
 
-    /// Construct a HdRobotLidarUsdLidarSensor on the prim held by \p schemaObj .
-    /// Should be preferred over HdRobotLidarUsdLidarSensor(schemaObj.GetPrim()),
+    /// Construct a UsdRaySensorLidarSensor on the prim held by \p schemaObj .
+    /// Should be preferred over UsdRaySensorLidarSensor(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit HdRobotLidarUsdLidarSensor(const UsdSchemaBase& schemaObj)
+    explicit UsdRaySensorLidarSensor(const UsdSchemaBase& schemaObj)
         : UsdGeomXformable(schemaObj)
     {
     }
 
     /// Destructor.
-    HDROBOTLIDARUSD_API
-    virtual ~HdRobotLidarUsdLidarSensor();
+    USDRAYSENSOR_API
+    virtual ~UsdRaySensorLidarSensor();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a HdRobotLidarUsdLidarSensor holding the prim adhering to this
+    /// Return a UsdRaySensorLidarSensor holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// HdRobotLidarUsdLidarSensor(stage->GetPrimAtPath(path));
+    /// UsdRaySensorLidarSensor(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    HDROBOTLIDARUSD_API
-    static HdRobotLidarUsdLidarSensor
+    USDRAYSENSOR_API
+    static UsdRaySensorLidarSensor
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -109,27 +109,27 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
-    HDROBOTLIDARUSD_API
-    static HdRobotLidarUsdLidarSensor
+    USDRAYSENSOR_API
+    static UsdRaySensorLidarSensor
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdSchemaKind _GetSchemaKind() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     const TfType &_GetTfType() const override;
 
 public:
@@ -143,7 +143,7 @@ public:
     /// | Declaration | `bool enabled = 1` |
     /// | C++ Type | bool |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetEnabledAttr() const;
 
     /// See GetEnabledAttr(), and also 
@@ -151,7 +151,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateEnabledAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -165,7 +165,7 @@ public:
     /// | Declaration | `float azimuthStartDeg = -90` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetAzimuthStartDegAttr() const;
 
     /// See GetAzimuthStartDegAttr(), and also 
@@ -173,7 +173,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateAzimuthStartDegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -187,7 +187,7 @@ public:
     /// | Declaration | `float azimuthEndDeg = 90` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetAzimuthEndDegAttr() const;
 
     /// See GetAzimuthEndDegAttr(), and also 
@@ -195,7 +195,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateAzimuthEndDegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -209,7 +209,7 @@ public:
     /// | Declaration | `float azimuthStepDeg = 0.5` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetAzimuthStepDegAttr() const;
 
     /// See GetAzimuthStepDegAttr(), and also 
@@ -217,7 +217,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateAzimuthStepDegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -231,7 +231,7 @@ public:
     /// | Declaration | `float verticalStartDeg = -2` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetVerticalStartDegAttr() const;
 
     /// See GetVerticalStartDegAttr(), and also 
@@ -239,7 +239,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateVerticalStartDegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -253,7 +253,7 @@ public:
     /// | Declaration | `float verticalEndDeg = -20` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetVerticalEndDegAttr() const;
 
     /// See GetVerticalEndDegAttr(), and also 
@@ -261,7 +261,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateVerticalEndDegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -275,7 +275,7 @@ public:
     /// | Declaration | `float verticalStepDeg = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetVerticalStepDegAttr() const;
 
     /// See GetVerticalStepDegAttr(), and also 
@@ -283,7 +283,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateVerticalStepDegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -297,7 +297,7 @@ public:
     /// | Declaration | `float maxRange = 200` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetMaxRangeAttr() const;
 
     /// See GetMaxRangeAttr(), and also 
@@ -305,7 +305,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateMaxRangeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -319,7 +319,7 @@ public:
     /// | Declaration | `float intensity = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetIntensityAttr() const;
 
     /// See GetIntensityAttr(), and also 
@@ -327,7 +327,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateIntensityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -382,34 +382,34 @@ public:
         }
     };
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     bool GetEnabled(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetAzimuthStartDeg(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetAzimuthEndDeg(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetAzimuthStepDeg(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetVerticalStartDeg(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetVerticalEndDeg(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetVerticalStepDeg(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetMaxRange(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetIntensity(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     Params GetParams(UsdTimeCode time = UsdTimeCode::Default()) const;
 };
 

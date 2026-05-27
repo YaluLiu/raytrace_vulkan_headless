@@ -1,7 +1,7 @@
 #include "heightScanSensor.h"
 
-#include "../hdRobotLidarUsd/heightScanSensor.h"
-#include "../hdRobotLidarUsd/tokens.h"
+#include "../UsdRaySensor/heightScanSensor.h"
+#include "../UsdRaySensor/tokens.h"
 #include "renderParam.h"
 
 #include <pxr/base/gf/matrix4d.h>
@@ -49,23 +49,23 @@ glm::vec3 ToGlm(const GfVec3f& value)
   return glm::vec3(value[0], value[1], value[2]);
 }
 
-HdRobotLidarUsdHeightScanSensor::Params ReadRawHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+UsdRaySensorHeightScanSensor::Params ReadRawHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
 {
-  HdRobotLidarUsdHeightScanSensor::Params params;
+  UsdRaySensorHeightScanSensor::Params params;
   if(sceneDelegate == nullptr)
   {
     return params;
   }
 
-  const VtValue paramsValue = sceneDelegate->Get(id, HdRobotLidarUsdTokens->heightScanSensorParams);
-  if(paramsValue.IsHolding<HdRobotLidarUsdHeightScanSensor::Params>())
+  const VtValue paramsValue = sceneDelegate->Get(id, UsdRaySensorTokens->heightScanSensorParams);
+  if(paramsValue.IsHolding<UsdRaySensorHeightScanSensor::Params>())
   {
-    return paramsValue.UncheckedGet<HdRobotLidarUsdHeightScanSensor::Params>();
+    return paramsValue.UncheckedGet<UsdRaySensorHeightScanSensor::Params>();
   }
   return params;
 }
 
-HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotLidarUsdHeightScanSensor::Params& source)
+HdRobotHeightScanParams SanitizeHeightScanParams(const UsdRaySensorHeightScanSensor::Params& source)
 {
   HdRobotHeightScanParams params;
   params.uStart = source.GetUStart();
@@ -136,7 +136,7 @@ void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam
     return;
   }
 
-  const HdRobotLidarUsdHeightScanSensor::Params rawParams = ReadRawHeightScanParams(sceneDelegate, GetId());
+  const UsdRaySensorHeightScanSensor::Params rawParams = ReadRawHeightScanParams(sceneDelegate, GetId());
   if(!rawParams.GetEnabled())
   {
     _scene.RemoveHeightScanSensor(GetId());

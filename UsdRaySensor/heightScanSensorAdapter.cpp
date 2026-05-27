@@ -31,7 +31,7 @@ const TfToken& GetHydraHeightScanSensorType()
 
 bool IsHeightScanProperty(const TfToken& propertyName)
 {
-  const TfTokenVector& names = HdRobotLidarUsdHeightScanSensor::GetSchemaAttributeNames(false);
+  const TfTokenVector& names = UsdRaySensorHeightScanSensor::GetSchemaAttributeNames(false);
   return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
@@ -44,29 +44,29 @@ bool IsXformProperty(const TfToken& propertyName)
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-  using Adapter = HdRobotHeightScanSensorAdapter;
+  using Adapter = UsdRaySensorHeightScanSensorAdapter;
   TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter>>();
   t.SetFactory<UsdImagingPrimAdapterFactory<Adapter>>();
 }
 
-HdRobotHeightScanSensorAdapter::~HdRobotHeightScanSensorAdapter() = default;
+UsdRaySensorHeightScanSensorAdapter::~UsdRaySensorHeightScanSensorAdapter() = default;
 
-TfTokenVector HdRobotHeightScanSensorAdapter::GetImagingSubprims(UsdPrim const&)
+TfTokenVector UsdRaySensorHeightScanSensorAdapter::GetImagingSubprims(UsdPrim const&)
 {
   return {TfToken()};
 }
 
-TfToken HdRobotHeightScanSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
+TfToken UsdRaySensorHeightScanSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
   return subprim.IsEmpty() ? GetHydraHeightScanSensorType() : TfToken();
 }
 
-bool HdRobotHeightScanSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
+bool UsdRaySensorHeightScanSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
   return index != nullptr && index->IsSprimTypeSupported(GetHydraHeightScanSensorType());
 }
 
-SdfPath HdRobotHeightScanSensorAdapter::Populate(UsdPrim const& prim,
+SdfPath UsdRaySensorHeightScanSensorAdapter::Populate(UsdPrim const& prim,
                                                  UsdImagingIndexProxy* index,
                                                  UsdImagingInstancerContext const* instancerContext)
 {
@@ -90,7 +90,7 @@ SdfPath HdRobotHeightScanSensorAdapter::Populate(UsdPrim const& prim,
   return cachePath;
 }
 
-void HdRobotHeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
+void UsdRaySensorHeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
                                                       SdfPath const&,
                                                       HdDirtyBits* timeVaryingBits,
                                                       UsdImagingInstancerContext const*) const
@@ -116,7 +116,7 @@ void HdRobotHeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
   }
 }
 
-void HdRobotHeightScanSensorAdapter::UpdateForTime(UsdPrim const&,
+void UsdRaySensorHeightScanSensorAdapter::UpdateForTime(UsdPrim const&,
                                                    SdfPath const&,
                                                    UsdTimeCode,
                                                    HdDirtyBits,
@@ -124,7 +124,7 @@ void HdRobotHeightScanSensorAdapter::UpdateForTime(UsdPrim const&,
 {
 }
 
-HdDirtyBits HdRobotHeightScanSensorAdapter::ProcessPropertyChange(UsdPrim const&,
+HdDirtyBits UsdRaySensorHeightScanSensorAdapter::ProcessPropertyChange(UsdPrim const&,
                                                                   SdfPath const&,
                                                                   TfToken const& propertyName)
 {
@@ -139,7 +139,7 @@ HdDirtyBits HdRobotHeightScanSensorAdapter::ProcessPropertyChange(UsdPrim const&
   return kDirtyParams;
 }
 
-void HdRobotHeightScanSensorAdapter::MarkDirty(UsdPrim const&,
+void UsdRaySensorHeightScanSensorAdapter::MarkDirty(UsdPrim const&,
                                                SdfPath const& cachePath,
                                                HdDirtyBits dirty,
                                                UsdImagingIndexProxy* index)
@@ -150,50 +150,50 @@ void HdRobotHeightScanSensorAdapter::MarkDirty(UsdPrim const&,
   }
 }
 
-VtValue HdRobotHeightScanSensorAdapter::Get(UsdPrim const& prim,
+VtValue UsdRaySensorHeightScanSensorAdapter::Get(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             TfToken const& key,
                                             UsdTimeCode time,
                                             VtIntArray* outIndices) const
 {
-  const HdRobotLidarUsdHeightScanSensor sensor(prim);
-  if(key == HdRobotLidarUsdTokens->heightScanSensorParams)
+  const UsdRaySensorHeightScanSensor sensor(prim);
+  if(key == UsdRaySensorTokens->heightScanSensorParams)
   {
     return VtValue(sensor.GetParams(time));
   }
-  if(key == HdRobotLidarUsdTokens->enabled)
+  if(key == UsdRaySensorTokens->enabled)
   {
     return VtValue(sensor.GetEnabled(time));
   }
-  if(key == HdRobotLidarUsdTokens->uStart)
+  if(key == UsdRaySensorTokens->uStart)
   {
     return VtValue(sensor.GetUStart(time));
   }
-  if(key == HdRobotLidarUsdTokens->uEnd)
+  if(key == UsdRaySensorTokens->uEnd)
   {
     return VtValue(sensor.GetUEnd(time));
   }
-  if(key == HdRobotLidarUsdTokens->uStep)
+  if(key == UsdRaySensorTokens->uStep)
   {
     return VtValue(sensor.GetUStep(time));
   }
-  if(key == HdRobotLidarUsdTokens->vStart)
+  if(key == UsdRaySensorTokens->vStart)
   {
     return VtValue(sensor.GetVStart(time));
   }
-  if(key == HdRobotLidarUsdTokens->vEnd)
+  if(key == UsdRaySensorTokens->vEnd)
   {
     return VtValue(sensor.GetVEnd(time));
   }
-  if(key == HdRobotLidarUsdTokens->vStep)
+  if(key == UsdRaySensorTokens->vStep)
   {
     return VtValue(sensor.GetVStep(time));
   }
-  if(key == HdRobotLidarUsdTokens->rayDirection)
+  if(key == UsdRaySensorTokens->rayDirection)
   {
     return VtValue(sensor.GetRayDirection(time));
   }
-  if(key == HdRobotLidarUsdTokens->maxRange)
+  if(key == UsdRaySensorTokens->maxRange)
   {
     return VtValue(sensor.GetMaxRange(time));
   }
@@ -217,21 +217,21 @@ VtValue HdRobotHeightScanSensorAdapter::Get(UsdPrim const& prim,
   return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
-bool HdRobotHeightScanSensorAdapter::GetVisible(UsdPrim const&,
+bool UsdRaySensorHeightScanSensorAdapter::GetVisible(UsdPrim const&,
                                                 SdfPath const&,
                                                 UsdTimeCode) const
 {
   return true;
 }
 
-TfToken HdRobotHeightScanSensorAdapter::GetPurpose(UsdPrim const&,
+TfToken UsdRaySensorHeightScanSensorAdapter::GetPurpose(UsdPrim const&,
                                                    SdfPath const&,
                                                    TfToken const&) const
 {
   return UsdGeomTokens->default_;
 }
 
-GfMatrix4d HdRobotHeightScanSensorAdapter::GetTransform(UsdPrim const& prim,
+GfMatrix4d UsdRaySensorHeightScanSensorAdapter::GetTransform(UsdPrim const& prim,
                                                         SdfPath const& cachePath,
                                                         UsdTimeCode time,
                                                         bool ignoreRootTransform) const
@@ -239,7 +239,7 @@ GfMatrix4d HdRobotHeightScanSensorAdapter::GetTransform(UsdPrim const& prim,
   return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
-void HdRobotHeightScanSensorAdapter::_RemovePrim(SdfPath const& cachePath,
+void UsdRaySensorHeightScanSensorAdapter::_RemovePrim(SdfPath const& cachePath,
                                                  UsdImagingIndexProxy* index)
 {
   if(index != nullptr)

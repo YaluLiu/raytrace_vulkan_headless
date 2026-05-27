@@ -6,8 +6,8 @@ rem   build_windows.bat hydra
 rem   build_windows.bat help
 rem
 rem Branches:
-rem   hydra  Configure, build hdRobot, then install the hdRobot component into
-rem          the USD plugin directory.
+rem   hydra  Configure, build Hydra plugin targets, then install the USD plugin
+rem          components into the USD plugin directory.
 rem
 rem Environment overrides:
 rem   BUILD_ROOT      Build directory prefix. Defaults to build.
@@ -62,7 +62,7 @@ set "BUILD_DIR=%BUILD_ROOT%_hydra"
 call :print_hydra_settings
 call :configure_hydra
 if errorlevel 1 exit /b %errorlevel%
-call :build_targets hdRobot
+call :build_targets UsdRaySensor hdRobot
 if errorlevel 1 exit /b %errorlevel%
 call :install_hydra
 exit /b %errorlevel%
@@ -84,6 +84,8 @@ call cmake --build "%BUILD_DIR%" --config "%CONFIG%" --target %* --parallel
 exit /b %errorlevel%
 
 :install_hydra
+call cmake --install "%BUILD_DIR%" --config "%CONFIG%" --component UsdRaySensor --prefix "%INSTALL_PREFIX%"
+if errorlevel 1 exit /b %errorlevel%
 call cmake --install "%BUILD_DIR%" --config "%CONFIG%" --component hdRobot --prefix "%INSTALL_PREFIX%"
 exit /b %errorlevel%
 
@@ -91,7 +93,7 @@ exit /b %errorlevel%
 echo Usage: %~nx0 ^<hydra^>
 echo.
 echo Branches:
-echo   hydra  Build Hydra plugin targets and install hdRobot to INSTALL_PREFIX.
+echo   hydra  Build Hydra plugin targets and install USD plugins to INSTALL_PREFIX.
 echo.
 echo Defaults:
 echo   BUILD_ROOT=build

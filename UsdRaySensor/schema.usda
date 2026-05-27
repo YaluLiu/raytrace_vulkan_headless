@@ -7,9 +7,9 @@
 
 over "GLOBAL" (
     customData = {
-        string libraryName = "hdRobotLidarUsd"
+        string libraryName = "UsdRaySensor"
         string libraryPath = "."
-        string libraryPrefix = "HdRobotLidarUsd"
+        string libraryPrefix = "UsdRaySensor"
         bool useLiteralIdentifier = true
         dictionary libraryTokens = {
             dictionary heightScanSensorParams = {
@@ -26,7 +26,7 @@ over "GLOBAL" (
 
 class LidarSensor "LidarSensor" (
     inherits = </Xformable>
-    doc = "Concrete transformable LiDAR sensor schema consumed by hdRobot."
+    doc = "Concrete transformable LiDAR sensor schema for ray-sensor consumers."
 )
 {
     bool enabled = true
@@ -42,7 +42,7 @@ class LidarSensor "LidarSensor" (
 
 class HeightScanSensor "HeightScanSensor" (
     inherits = </Xformable>
-    doc = "Concrete transformable height scan sensor schema consumed by hdRobot."
+    doc = "Concrete transformable height scan sensor schema for ray-sensor consumers."
 )
 {
     bool enabled = true

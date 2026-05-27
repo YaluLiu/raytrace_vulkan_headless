@@ -3,7 +3,7 @@
         {
             "Info": {
                 "Types": {
-                    "HdRobotLidarUsdLidarSensor": {
+                    "UsdRaySensorLidarSensor": {
                         "alias": {
                             "UsdSchemaBase": "LidarSensor"
                         },
@@ -12,12 +12,12 @@
                         "schemaIdentifier": "LidarSensor",
                         "schemaKind": "concreteTyped"
                     },
-                    "HdRobotLidarSensorAdapter": {
+                    "UsdRaySensorLidarSensorAdapter": {
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "LidarSensor"
                     },
-                    "HdRobotLidarUsdHeightScanSensor": {
+                    "UsdRaySensorHeightScanSensor": {
                         "alias": {
                             "UsdSchemaBase": "HeightScanSensor"
                         },
@@ -26,7 +26,7 @@
                         "schemaIdentifier": "HeightScanSensor",
                         "schemaKind": "concreteTyped"
                     },
-                    "HdRobotHeightScanSensorAdapter": {
+                    "UsdRaySensorHeightScanSensorAdapter": {
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "HeightScanSensor"
@@ -34,7 +34,7 @@
                 }
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
-            "Name": "hdRobotLidarUsd",
+            "Name": "UsdRaySensor",
             "ResourcePath": "resources",
             "Root": "..",
             "Type": "library"

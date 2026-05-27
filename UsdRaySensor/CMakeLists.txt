@@ -1,4 +1,4 @@
-set(PROJNAME hdRobotLidarUsd)
+set(PROJNAME UsdRaySensor)
 
 add_library(
   ${PROJNAME} SHARED
@@ -37,7 +37,7 @@ else()
   set(USD_LIBS_PRIVATE usdImaging)
 endif()
 
-target_compile_definitions(${PROJNAME} PRIVATE HDROBOTLIDARUSD_EXPORTS)
+target_compile_definitions(${PROJNAME} PRIVATE USDRAYSENSOR_EXPORTS)
 
 target_link_libraries(
   ${PROJNAME}

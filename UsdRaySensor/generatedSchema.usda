@@ -4,7 +4,7 @@
 )
 
 class LidarSensor "LidarSensor" (
-    doc = "Concrete transformable LiDAR sensor schema consumed by hdRobot."
+    doc = "Concrete transformable LiDAR sensor schema for ray-sensor consumers."
 )
 {
     float azimuthEndDeg = 90
@@ -70,7 +70,7 @@ class LidarSensor "LidarSensor" (
 }
 
 class HeightScanSensor "HeightScanSensor" (
-    doc = "Concrete transformable height scan sensor schema consumed by hdRobot."
+    doc = "Concrete transformable height scan sensor schema for ray-sensor consumers."
 )
 {
     bool enabled = 1

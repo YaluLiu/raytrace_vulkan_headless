@@ -8,7 +8,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdRobotLidarUsdTokensType::HdRobotLidarUsdTokensType() :
+UsdRaySensorTokensType::UsdRaySensorTokensType() :
     azimuthEndDeg("azimuthEndDeg", TfToken::Immortal),
     azimuthStartDeg("azimuthStartDeg", TfToken::Immortal),
     azimuthStepDeg("azimuthStepDeg", TfToken::Immortal),
@@ -54,6 +54,6 @@ HdRobotLidarUsdTokensType::HdRobotLidarUsdTokensType() :
 {
 }
 
-TfStaticData<HdRobotLidarUsdTokensType> HdRobotLidarUsdTokens;
+TfStaticData<UsdRaySensorTokensType> UsdRaySensorTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

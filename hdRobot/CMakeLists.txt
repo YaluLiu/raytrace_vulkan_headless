@@ -97,7 +97,7 @@ target_link_libraries(
     ${USD_LIBS_PUBLIC} libraster
   PRIVATE
     ${USD_LIBS_PRIVATE}
-    hdRobotLidarUsd
+    UsdRaySensor
 )
 
 # Allow custom prefix for houdini directory structure

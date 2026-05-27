@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef HDROBOTLIDARUSD_GENERATED_HEIGHTSCANSENSOR_H
-#define HDROBOTLIDARUSD_GENERATED_HEIGHTSCANSENSOR_H
+#ifndef USDRAYSENSOR_GENERATED_HEIGHTSCANSENSOR_H
+#define USDRAYSENSOR_GENERATED_HEIGHTSCANSENSOR_H
 
-/// \file hdRobotLidarUsd/heightScanSensor.h
+/// \file UsdRaySensor/heightScanSensor.h
 
 #include "pxr/pxr.h"
 #include "./api.h"
@@ -30,11 +30,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 // HEIGHTSCANSENSOR                                                          //
 // -------------------------------------------------------------------------- //
 
-/// \class HdRobotLidarUsdHeightScanSensor
+/// \class UsdRaySensorHeightScanSensor
 ///
-/// Concrete transformable height scan sensor schema consumed by hdRobot.
+/// Concrete transformable height scan sensor schema for ray-sensor consumers.
 ///
-class HdRobotLidarUsdHeightScanSensor : public UsdGeomXformable
+class UsdRaySensorHeightScanSensor : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -42,146 +42,146 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a HdRobotLidarUsdHeightScanSensor on UsdPrim \p prim .
-    explicit HdRobotLidarUsdHeightScanSensor(const UsdPrim& prim=UsdPrim())
+    /// Construct a UsdRaySensorHeightScanSensor on UsdPrim \p prim .
+    explicit UsdRaySensorHeightScanSensor(const UsdPrim& prim=UsdPrim())
         : UsdGeomXformable(prim)
     {
     }
 
-    /// Construct a HdRobotLidarUsdHeightScanSensor on the prim held by
+    /// Construct a UsdRaySensorHeightScanSensor on the prim held by
     /// \p schemaObj .
-    explicit HdRobotLidarUsdHeightScanSensor(const UsdSchemaBase& schemaObj)
+    explicit UsdRaySensorHeightScanSensor(const UsdSchemaBase& schemaObj)
         : UsdGeomXformable(schemaObj)
     {
     }
 
     /// Destructor.
-    HDROBOTLIDARUSD_API
-    virtual ~HdRobotLidarUsdHeightScanSensor();
+    USDRAYSENSOR_API
+    virtual ~UsdRaySensorHeightScanSensor();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a HdRobotLidarUsdHeightScanSensor holding the prim adhering to
+    /// Return a UsdRaySensorHeightScanSensor holding the prim adhering to
     /// this schema at \p path on \p stage.
-    HDROBOTLIDARUSD_API
-    static HdRobotLidarUsdHeightScanSensor
+    USDRAYSENSOR_API
+    static UsdRaySensorHeightScanSensor
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a UsdPrim adhering to this schema at \p path is
     /// defined on this stage.
-    HDROBOTLIDARUSD_API
-    static HdRobotLidarUsdHeightScanSensor
+    USDRAYSENSOR_API
+    static UsdRaySensorHeightScanSensor
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdSchemaKind _GetSchemaKind() const override;
 
 private:
     friend class UsdSchemaRegistry;
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
     // ENABLED
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetEnabledAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateEnabledAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // USTART
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetUStartAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateUStartAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // UEND
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetUEndAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateUEndAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // USTEP
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetUStepAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateUStepAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // VSTART
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetVStartAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateVStartAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // VEND
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetVEndAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateVEndAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // VSTEP
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetVStepAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateVStepAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // RAYDIRECTION
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetRayDirectionAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateRayDirectionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // MAXRANGE
     // --------------------------------------------------------------------- //
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute GetMaxRangeAttr() const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     UsdAttribute CreateMaxRangeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -236,34 +236,34 @@ public:
         }
     };
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     bool GetEnabled(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetUStart(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetUEnd(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetUStep(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetVStart(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetVEnd(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetVStep(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     GfVec3f GetRayDirection(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     float GetMaxRange(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    HDROBOTLIDARUSD_API
+    USDRAYSENSOR_API
     Params GetParams(UsdTimeCode time = UsdTimeCode::Default()) const;
 };
 

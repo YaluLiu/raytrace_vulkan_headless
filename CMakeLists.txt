@@ -44,7 +44,7 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${OUTPUT_PATH})
 
 # Sub examples
 add_subdirectory(raster)
-add_subdirectory(hdRobotLidarUsd)
+add_subdirectory(UsdRaySensor)
 add_subdirectory(hdRobot)
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory
