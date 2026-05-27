@@ -51,6 +51,7 @@ set_target_properties(
   ${PROJNAME}
   PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH ON
+    INSTALL_RPATH "$ORIGIN"
     # The other libs in the plugin dir have no "lib" prefix, so let's match this
     PREFIX ""
     # Remove _d postfix because of plugInfo.json mismatch on macOS

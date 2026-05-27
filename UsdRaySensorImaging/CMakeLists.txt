@@ -14,6 +14,7 @@ add_library(
 set_target_properties(
   ${PROJNAME}
   PROPERTIES
+    INSTALL_RPATH "$ORIGIN"
     INSTALL_RPATH_USE_LINK_PATH ON
     PREFIX ""
     DEBUG_POSTFIX ""
