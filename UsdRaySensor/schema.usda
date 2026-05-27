@@ -12,14 +12,6 @@ over "GLOBAL" (
         string libraryPrefix = "UsdGeom"
         string tokensPrefix = "UsdRaySensor"
         bool useLiteralIdentifier = false
-        dictionary libraryTokens = {
-            dictionary heightScanSensorParams = {
-                string doc = "Hydra data key for the complete HeightScanSensor parameter block."
-            }
-            dictionary lidarSensorParams = {
-                string doc = "Hydra data key for the complete LidarSensor parameter block."
-            }
-        }
     }
 )
 {
@@ -30,15 +22,33 @@ class LidarSensor "LidarSensor" (
     doc = "Concrete transformable LiDAR sensor schema for ray-sensor consumers."
 )
 {
-    bool enabled = true
-    float azimuthStartDeg = -90
-    float azimuthEndDeg = 90
-    float azimuthStepDeg = 0.5
-    float verticalStartDeg = -2
-    float verticalEndDeg = -20
-    float verticalStepDeg = 1
-    float maxRange = 200
-    float intensity = 1
+    bool enabled = true (
+        doc = "Enables this LiDAR sensor. Unitless boolean with no coordinate-space meaning. Default is true; legal values are true and false. If the authored value is absent or unreadable, schema access falls back to true. Runtime consumers do not clamp this value; disabled sensors are skipped."
+    )
+    float azimuthStartDeg = -90 (
+        doc = "Horizontal sweep start angle in degrees, using the sensor local frame convention. Default is -90 degrees. Legal values are finite scalar angles; no fixed angular range is clamped. If absent or unreadable, schema access falls back to -90. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float azimuthEndDeg = 90 (
+        doc = "Horizontal sweep end angle in degrees, using the sensor local frame convention. Default is 90 degrees. Legal values are finite scalar angles; no fixed angular range is clamped. If absent or unreadable, schema access falls back to 90. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float azimuthStepDeg = 0.5 (
+        doc = "Horizontal sweep step in degrees, using the sensor local frame convention. Default is 0.5 degrees. Legal values are finite positive scalars. If absent or unreadable, schema access falls back to 0.5. Runtime uses the absolute magnitude, clamps zero or too-small magnitudes to a small positive fallback, and falls back to the default for non-finite values."
+    )
+    float verticalStartDeg = -2 (
+        doc = "Vertical sweep start angle in degrees, using the sensor local frame convention. Default is -2 degrees; with the default verticalEndDeg of -20 degrees, the scan starts slightly above forward and proceeds downward. Legal values are finite scalar angles; no fixed angular range is clamped. If absent or unreadable, schema access falls back to -2. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float verticalEndDeg = -20 (
+        doc = "Vertical sweep end angle in degrees, using the sensor local frame convention. Default is -20 degrees; paired with the default verticalStartDeg of -2 degrees, this represents scanning from slightly above forward downward. Legal values are finite scalar angles; no fixed angular range is clamped. If absent or unreadable, schema access falls back to -20. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float verticalStepDeg = 1 (
+        doc = "Vertical sweep step in degrees, using the sensor local frame convention. Default is 1 degree. Legal values are finite positive scalars. If absent or unreadable, schema access falls back to 1. Runtime uses the absolute magnitude, clamps zero or too-small magnitudes to a small positive fallback, and falls back to the default for non-finite values."
+    )
+    float maxRange = 200 (
+        doc = "Maximum LiDAR trace distance from the sensor origin, in scene length units. Default is 200. Legal values are finite positive scalars. If absent or unreadable, schema access falls back to 200. Runtime clamps zero, negative, or too-small values to a small positive fallback and falls back to the default for non-finite values."
+    )
+    float intensity = 1 (
+        doc = "Unitless scalar intensity assigned to generated LiDAR points. Default is 1. Legal values are finite non-negative scalars. If absent or unreadable, schema access falls back to 1. Runtime clamps negative values to 0, falls back to the default for non-finite values, and applies no coordinate-space transform."
+    )
 }
 
 class HeightScanSensor "HeightScanSensor" (
@@ -46,13 +56,31 @@ class HeightScanSensor "HeightScanSensor" (
     doc = "Concrete transformable height scan sensor schema for ray-sensor consumers."
 )
 {
-    bool enabled = true
-    float uStart = -10
-    float uEnd = 10
-    float uStep = 0.1
-    float vStart = -10
-    float vEnd = 10
-    float vStep = 0.1
-    float3 rayDirection = (0, 0, -1)
-    float maxRange = 200
+    bool enabled = true (
+        doc = "Enables this height scan sensor. Unitless boolean with no coordinate-space meaning. Default is true; legal values are true and false. If the authored value is absent or unreadable, schema access falls back to true. Runtime consumers do not clamp this value; disabled sensors are skipped."
+    )
+    float uStart = -10 (
+        doc = "Start offset along the derived U axis of the height scan sampling plane, in scene length units. The plane is centered at the sensor transform origin and its axes are derived from rayDirection in render/world space; the sensor prim rotation is not applied to u/v. Default is -10. Legal values are finite scalar offsets; no fixed range is clamped. If absent or unreadable, schema access falls back to -10. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float uEnd = 10 (
+        doc = "End offset along the derived U axis of the height scan sampling plane, in scene length units. The plane is centered at the sensor transform origin and its axes are derived from rayDirection in render/world space; the sensor prim rotation is not applied to u/v. Default is 10. Legal values are finite scalar offsets; no fixed range is clamped. If absent or unreadable, schema access falls back to 10. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float uStep = 0.1 (
+        doc = "Sample spacing along the derived U axis of the height scan sampling plane, in scene length units. The plane is centered at the sensor transform origin and its axes are derived from rayDirection in render/world space; the sensor prim rotation is not applied to u/v. Default is 0.1. Legal values are finite positive scalars. If absent or unreadable, schema access falls back to 0.1. Runtime uses the absolute magnitude, clamps zero or too-small magnitudes to a small positive fallback, and falls back to the default for non-finite values."
+    )
+    float vStart = -10 (
+        doc = "Start offset along the derived V axis of the height scan sampling plane, in scene length units. The plane is centered at the sensor transform origin and its axes are derived from rayDirection in render/world space; the sensor prim rotation is not applied to u/v. Default is -10. Legal values are finite scalar offsets; no fixed range is clamped. If absent or unreadable, schema access falls back to -10. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float vEnd = 10 (
+        doc = "End offset along the derived V axis of the height scan sampling plane, in scene length units. The plane is centered at the sensor transform origin and its axes are derived from rayDirection in render/world space; the sensor prim rotation is not applied to u/v. Default is 10. Legal values are finite scalar offsets; no fixed range is clamped. If absent or unreadable, schema access falls back to 10. Runtime layout infers sweep direction from start/end and treats non-finite endpoints as a degenerate one-sample range."
+    )
+    float vStep = 0.1 (
+        doc = "Sample spacing along the derived V axis of the height scan sampling plane, in scene length units. The plane is centered at the sensor transform origin and its axes are derived from rayDirection in render/world space; the sensor prim rotation is not applied to u/v. Default is 0.1. Legal values are finite positive scalars. If absent or unreadable, schema access falls back to 0.1. Runtime uses the absolute magnitude, clamps zero or too-small magnitudes to a small positive fallback, and falls back to the default for non-finite values."
+    )
+    float3 rayDirection = (0, 0, -1) (
+        doc = "Height scan ray direction in render/world space. Unitless direction vector; default is (0, 0, -1). Legal values are finite non-zero vectors. If absent or unreadable, schema access falls back to (0, 0, -1). Runtime normalizes this vector and falls back to (0, 0, -1) when the value is zero length or non-finite; the sensor prim rotation is not applied."
+    )
+    float maxRange = 200 (
+        doc = "Maximum height scan trace distance along rayDirection, in scene length units. Default is 200. Legal values are finite positive scalars. If absent or unreadable, schema access falls back to 200. Runtime clamps zero, negative, or too-small values to a small positive fallback and falls back to the default for non-finite values."
+    )
 }

@@ -251,9 +251,9 @@ call sites with `rg`.
   texture registry, and renderer bridge ownership.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings, LiDAR/height scan visualization settings,
-  LiDAR/height scan params, mesh `hdRobot:traceRole`, `ground`, and tile AOV
-  tokens. Shared ray-sensor sprim type tokens and dirty bits live in
-  `UsdRaySensor/hydraSensor.h`.
+  mesh `hdRobot:traceRole`, `ground`, and tile AOV tokens. Sensor parameter
+  attribute tokens plus shared ray-sensor sprim type tokens and dirty bits live
+  in `UsdRaySensor/`.
 - `hdRobot/plugInfo.json`: Hydra render delegate plugin metadata. The custom
   sensor USD schema and adapter metadata now live in `UsdRaySensor/`.
 
@@ -264,9 +264,12 @@ call sites with `rg`.
   `UsdGeomHeightScanSensor`, and `HeightScanSensorAdapter`, while preserving
   authored prim type/schema identifiers `LidarSensor` and `HeightScanSensor`.
 - `UsdRaySensor/schema.usda`: Code-generation source for the concrete
-  typed `UsdGeomLidarSensor` and `UsdGeomHeightScanSensor` C++ APIs.
+  typed `UsdGeomLidarSensor` and `UsdGeomHeightScanSensor` C++ APIs,
+  including per-attribute docs for units, coordinate-space semantics,
+  defaults, and runtime sanitization behavior.
 - `UsdRaySensor/generatedSchema.usda`: Runtime schema resource containing
-  generated `LidarSensor` and `HeightScanSensor` fallback attributes.
+  generated `LidarSensor` and `HeightScanSensor` fallback attributes and
+  mirrored sensor attribute docs.
 - `UsdRaySensor/hydraSensor.h` / `UsdRaySensor/hydraSensor.cpp`: Shared
   Hydra-facing contract for the custom `lidarSensor` and `heightScanSensor`
   sprim type tokens plus sensor dirty bits; this is owned by `UsdRaySensor`
@@ -276,21 +279,22 @@ call sites with `rg`.
   `UsdRaySensor/lidarSensor.cpp`, `UsdRaySensor/heightScanSensor.h` /
   `UsdRaySensor/heightScanSensor.cpp`, and `UsdRaySensor/tokens.h` /
   `UsdRaySensor/tokens.cpp`: Generated sensor typed schema APIs, schema
-  tokens, and preserved custom value getters/`Params` aggregates used for
-  legacy aggregate Hydra values.
+  tokens, generated attribute getters, and custom semantic aggregate helpers
+  `GetLidarSensor()` / `GetHeightScanSensor()` with legacy `GetParams()`
+  forwarding retained for source compatibility. Hydra transport uses
+  individual schema attribute tokens rather than aggregate params tokens.
 - `UsdRaySensor/lidarSensorAdapter.h` /
   `UsdRaySensor/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
   `LidarSensor` prims through the `UsdGeomLidarSensor` C++ schema; inserts
   the custom `lidarSensor` sprim via the shared Hydra sensor contract,
-  forwards sensor attributes through generated schema getters and the aggregate
-  `lidarSensorParams` Hydra value, and handles transform/dependency dirtying.
+  forwards individual sensor attributes through generated schema getters, and
+  handles transform/dependency dirtying.
 - `UsdRaySensor/heightScanSensorAdapter.h` /
   `UsdRaySensor/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
   `HeightScanSensor` prims through the `UsdGeomHeightScanSensor` C++ schema;
   inserts the custom `heightScanSensor` sprim via the shared Hydra sensor
-  contract, forwards sensor attributes through generated schema getters and
-  the aggregate `heightScanSensorParams` Hydra value, and handles
-  transform/dependency dirtying.
+  contract, forwards individual sensor attributes through generated schema
+  getters, and handles transform/dependency dirtying.
 
 ## Hydra Scene Primitives
 

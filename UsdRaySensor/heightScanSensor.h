@@ -195,7 +195,7 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-    struct Params
+    struct HeightScanSensorSpec
     {
         bool enabled = true;
         float uStart = -10.0f;
@@ -217,7 +217,7 @@ public:
         GfVec3f GetRayDirection() const { return rayDirection; }
         float GetMaxRange() const { return maxRange; }
 
-        bool operator==(const Params& other) const
+        bool operator==(const HeightScanSensorSpec& other) const
         {
             return enabled == other.enabled &&
                    uStart == other.uStart &&
@@ -230,11 +230,13 @@ public:
                    maxRange == other.maxRange;
         }
 
-        bool operator!=(const Params& other) const
+        bool operator!=(const HeightScanSensorSpec& other) const
         {
             return !(*this == other);
         }
     };
+
+    using Params = HeightScanSensorSpec;
 
     USDRAYSENSOR_API
     bool GetEnabled(UsdTimeCode time = UsdTimeCode::Default()) const;
@@ -262,6 +264,9 @@ public:
 
     USDRAYSENSOR_API
     float GetMaxRange(UsdTimeCode time = UsdTimeCode::Default()) const;
+
+    USDRAYSENSOR_API
+    HeightScanSensorSpec GetHeightScanSensor(UsdTimeCode time = UsdTimeCode::Default()) const;
 
     USDRAYSENSOR_API
     Params GetParams(UsdTimeCode time = UsdTimeCode::Default()) const;

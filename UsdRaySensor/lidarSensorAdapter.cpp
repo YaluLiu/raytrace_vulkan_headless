@@ -149,10 +149,6 @@ VtValue LidarSensorAdapter::Get(UsdPrim const& prim,
                                        VtIntArray* outIndices) const
 {
   const UsdGeomLidarSensor sensor(prim);
-  if(key == UsdRaySensorTokens->lidarSensorParams)
-  {
-    return VtValue(sensor.GetParams(time));
-  }
   if(key == UsdRaySensorTokens->enabled)
   {
     return VtValue(sensor.GetEnabled(time));

@@ -346,19 +346,25 @@ UsdGeomHeightScanSensor::GetMaxRange(UsdTimeCode time) const
     return _GetAttrValue(GetMaxRangeAttr(), time, 200.0f);
 }
 
+UsdGeomHeightScanSensor::HeightScanSensorSpec
+UsdGeomHeightScanSensor::GetHeightScanSensor(UsdTimeCode time) const
+{
+    HeightScanSensorSpec spec;
+    spec.enabled = GetEnabled(time);
+    spec.uStart = GetUStart(time);
+    spec.uEnd = GetUEnd(time);
+    spec.uStep = GetUStep(time);
+    spec.vStart = GetVStart(time);
+    spec.vEnd = GetVEnd(time);
+    spec.vStep = GetVStep(time);
+    spec.rayDirection = GetRayDirection(time);
+    spec.maxRange = GetMaxRange(time);
+    return spec;
+}
+
 UsdGeomHeightScanSensor::Params
 UsdGeomHeightScanSensor::GetParams(UsdTimeCode time) const
 {
-    Params params;
-    params.enabled = GetEnabled(time);
-    params.uStart = GetUStart(time);
-    params.uEnd = GetUEnd(time);
-    params.uStep = GetUStep(time);
-    params.vStart = GetVStart(time);
-    params.vEnd = GetVEnd(time);
-    params.vStep = GetVStep(time);
-    params.rayDirection = GetRayDirection(time);
-    params.maxRange = GetMaxRange(time);
-    return params;
+    return GetHeightScanSensor(time);
 }
 PXR_NAMESPACE_CLOSE_SCOPE

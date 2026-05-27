@@ -341,7 +341,7 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-    struct Params
+    struct LidarSensorSpec
     {
         bool enabled = true;
         float azimuthStartDeg = -90.0f;
@@ -363,7 +363,7 @@ public:
         float GetMaxRange() const { return maxRange; }
         float GetIntensity() const { return intensity; }
 
-        bool operator==(const Params& other) const
+        bool operator==(const LidarSensorSpec& other) const
         {
             return enabled == other.enabled &&
                    azimuthStartDeg == other.azimuthStartDeg &&
@@ -376,11 +376,13 @@ public:
                    intensity == other.intensity;
         }
 
-        bool operator!=(const Params& other) const
+        bool operator!=(const LidarSensorSpec& other) const
         {
             return !(*this == other);
         }
     };
+
+    using Params = LidarSensorSpec;
 
     USDRAYSENSOR_API
     bool GetEnabled(UsdTimeCode time = UsdTimeCode::Default()) const;
@@ -408,6 +410,9 @@ public:
 
     USDRAYSENSOR_API
     float GetIntensity(UsdTimeCode time = UsdTimeCode::Default()) const;
+
+    USDRAYSENSOR_API
+    LidarSensorSpec GetLidarSensor(UsdTimeCode time = UsdTimeCode::Default()) const;
 
     USDRAYSENSOR_API
     Params GetParams(UsdTimeCode time = UsdTimeCode::Default()) const;

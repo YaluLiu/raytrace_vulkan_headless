@@ -61,18 +61,10 @@ struct UsdRaySensorTokensType {
     ///
     /// HeightScanSensor, LidarSensor
     const TfToken enabled;
-    /// \brief "heightScanSensorParams"
-    ///
-    /// Hydra data key for the complete HeightScanSensor parameter block.
-    const TfToken heightScanSensorParams;
     /// \brief "intensity"
     ///
     /// LidarSensor
     const TfToken intensity;
-    /// \brief "lidarSensorParams"
-    ///
-    /// Hydra data key for the complete LidarSensor parameter block.
-    const TfToken lidarSensorParams;
     /// \brief "maxRange"
     ///
     /// HeightScanSensor, LidarSensor

@@ -149,10 +149,6 @@ VtValue HeightScanSensorAdapter::Get(UsdPrim const& prim,
                                             VtIntArray* outIndices) const
 {
   const UsdGeomHeightScanSensor sensor(prim);
-  if(key == UsdRaySensorTokens->heightScanSensorParams)
-  {
-    return VtValue(sensor.GetParams(time));
-  }
   if(key == UsdRaySensorTokens->enabled)
   {
     return VtValue(sensor.GetEnabled(time));
