@@ -31,7 +31,7 @@ const TfToken& GetHydraHeightScanSensorType()
 
 bool IsHeightScanProperty(const TfToken& propertyName)
 {
-  const TfTokenVector& names = UsdRaySensorHeightScanSensor::GetSchemaAttributeNames(false);
+  const TfTokenVector& names = HeightScanSensor::GetSchemaAttributeNames(false);
   return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
@@ -44,29 +44,29 @@ bool IsXformProperty(const TfToken& propertyName)
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-  using Adapter = UsdRaySensorHeightScanSensorAdapter;
+  using Adapter = HeightScanSensorAdapter;
   TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter>>();
   t.SetFactory<UsdImagingPrimAdapterFactory<Adapter>>();
 }
 
-UsdRaySensorHeightScanSensorAdapter::~UsdRaySensorHeightScanSensorAdapter() = default;
+HeightScanSensorAdapter::~HeightScanSensorAdapter() = default;
 
-TfTokenVector UsdRaySensorHeightScanSensorAdapter::GetImagingSubprims(UsdPrim const&)
+TfTokenVector HeightScanSensorAdapter::GetImagingSubprims(UsdPrim const&)
 {
   return {TfToken()};
 }
 
-TfToken UsdRaySensorHeightScanSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
+TfToken HeightScanSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
   return subprim.IsEmpty() ? GetHydraHeightScanSensorType() : TfToken();
 }
 
-bool UsdRaySensorHeightScanSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
+bool HeightScanSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
   return index != nullptr && index->IsSprimTypeSupported(GetHydraHeightScanSensorType());
 }
 
-SdfPath UsdRaySensorHeightScanSensorAdapter::Populate(UsdPrim const& prim,
+SdfPath HeightScanSensorAdapter::Populate(UsdPrim const& prim,
                                                  UsdImagingIndexProxy* index,
                                                  UsdImagingInstancerContext const* instancerContext)
 {
@@ -90,7 +90,7 @@ SdfPath UsdRaySensorHeightScanSensorAdapter::Populate(UsdPrim const& prim,
   return cachePath;
 }
 
-void UsdRaySensorHeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
+void HeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
                                                       SdfPath const&,
                                                       HdDirtyBits* timeVaryingBits,
                                                       UsdImagingInstancerContext const*) const
@@ -116,7 +116,7 @@ void UsdRaySensorHeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
   }
 }
 
-void UsdRaySensorHeightScanSensorAdapter::UpdateForTime(UsdPrim const&,
+void HeightScanSensorAdapter::UpdateForTime(UsdPrim const&,
                                                    SdfPath const&,
                                                    UsdTimeCode,
                                                    HdDirtyBits,
@@ -124,7 +124,7 @@ void UsdRaySensorHeightScanSensorAdapter::UpdateForTime(UsdPrim const&,
 {
 }
 
-HdDirtyBits UsdRaySensorHeightScanSensorAdapter::ProcessPropertyChange(UsdPrim const&,
+HdDirtyBits HeightScanSensorAdapter::ProcessPropertyChange(UsdPrim const&,
                                                                   SdfPath const&,
                                                                   TfToken const& propertyName)
 {
@@ -139,7 +139,7 @@ HdDirtyBits UsdRaySensorHeightScanSensorAdapter::ProcessPropertyChange(UsdPrim c
   return kDirtyParams;
 }
 
-void UsdRaySensorHeightScanSensorAdapter::MarkDirty(UsdPrim const&,
+void HeightScanSensorAdapter::MarkDirty(UsdPrim const&,
                                                SdfPath const& cachePath,
                                                HdDirtyBits dirty,
                                                UsdImagingIndexProxy* index)
@@ -150,13 +150,13 @@ void UsdRaySensorHeightScanSensorAdapter::MarkDirty(UsdPrim const&,
   }
 }
 
-VtValue UsdRaySensorHeightScanSensorAdapter::Get(UsdPrim const& prim,
+VtValue HeightScanSensorAdapter::Get(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             TfToken const& key,
                                             UsdTimeCode time,
                                             VtIntArray* outIndices) const
 {
-  const UsdRaySensorHeightScanSensor sensor(prim);
+  const HeightScanSensor sensor(prim);
   if(key == UsdRaySensorTokens->heightScanSensorParams)
   {
     return VtValue(sensor.GetParams(time));
@@ -217,21 +217,21 @@ VtValue UsdRaySensorHeightScanSensorAdapter::Get(UsdPrim const& prim,
   return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
-bool UsdRaySensorHeightScanSensorAdapter::GetVisible(UsdPrim const&,
+bool HeightScanSensorAdapter::GetVisible(UsdPrim const&,
                                                 SdfPath const&,
                                                 UsdTimeCode) const
 {
   return true;
 }
 
-TfToken UsdRaySensorHeightScanSensorAdapter::GetPurpose(UsdPrim const&,
+TfToken HeightScanSensorAdapter::GetPurpose(UsdPrim const&,
                                                    SdfPath const&,
                                                    TfToken const&) const
 {
   return UsdGeomTokens->default_;
 }
 
-GfMatrix4d UsdRaySensorHeightScanSensorAdapter::GetTransform(UsdPrim const& prim,
+GfMatrix4d HeightScanSensorAdapter::GetTransform(UsdPrim const& prim,
                                                         SdfPath const& cachePath,
                                                         UsdTimeCode time,
                                                         bool ignoreRootTransform) const
@@ -239,7 +239,7 @@ GfMatrix4d UsdRaySensorHeightScanSensorAdapter::GetTransform(UsdPrim const& prim
   return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
-void UsdRaySensorHeightScanSensorAdapter::_RemovePrim(SdfPath const& cachePath,
+void HeightScanSensorAdapter::_RemovePrim(SdfPath const& cachePath,
                                                  UsdImagingIndexProxy* index)
 {
   if(index != nullptr)

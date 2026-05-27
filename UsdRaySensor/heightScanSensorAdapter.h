@@ -4,13 +4,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdRaySensorHeightScanSensorAdapter final : public UsdImagingPrimAdapter
+class HeightScanSensorAdapter final : public UsdImagingPrimAdapter
 {
 public:
   using BaseAdapter = UsdImagingPrimAdapter;
 
-  UsdRaySensorHeightScanSensorAdapter() = default;
-  ~UsdRaySensorHeightScanSensorAdapter() override;
+  HeightScanSensorAdapter() = default;
+  ~HeightScanSensorAdapter() override;
 
   TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
   TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim) override;

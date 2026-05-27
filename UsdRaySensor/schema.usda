@@ -9,7 +9,7 @@ over "GLOBAL" (
     customData = {
         string libraryName = "UsdRaySensor"
         string libraryPath = "."
-        string libraryPrefix = "UsdRaySensor"
+        string libraryPrefix = ""
         bool useLiteralIdentifier = true
         dictionary libraryTokens = {
             dictionary heightScanSensorParams = {

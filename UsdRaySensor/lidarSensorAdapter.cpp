@@ -31,7 +31,7 @@ const TfToken& GetHydraLidarSensorType()
 
 bool IsLidarProperty(const TfToken& propertyName)
 {
-  const TfTokenVector& names = UsdRaySensorLidarSensor::GetSchemaAttributeNames(false);
+  const TfTokenVector& names = LidarSensor::GetSchemaAttributeNames(false);
   return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
@@ -44,29 +44,29 @@ bool IsXformProperty(const TfToken& propertyName)
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-  using Adapter = UsdRaySensorLidarSensorAdapter;
+  using Adapter = LidarSensorAdapter;
   TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter>>();
   t.SetFactory<UsdImagingPrimAdapterFactory<Adapter>>();
 }
 
-UsdRaySensorLidarSensorAdapter::~UsdRaySensorLidarSensorAdapter() = default;
+LidarSensorAdapter::~LidarSensorAdapter() = default;
 
-TfTokenVector UsdRaySensorLidarSensorAdapter::GetImagingSubprims(UsdPrim const&)
+TfTokenVector LidarSensorAdapter::GetImagingSubprims(UsdPrim const&)
 {
   return {TfToken()};
 }
 
-TfToken UsdRaySensorLidarSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
+TfToken LidarSensorAdapter::GetImagingSubprimType(UsdPrim const&, TfToken const& subprim)
 {
   return subprim.IsEmpty() ? GetHydraLidarSensorType() : TfToken();
 }
 
-bool UsdRaySensorLidarSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
+bool LidarSensorAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
   return index != nullptr && index->IsSprimTypeSupported(GetHydraLidarSensorType());
 }
 
-SdfPath UsdRaySensorLidarSensorAdapter::Populate(UsdPrim const& prim,
+SdfPath LidarSensorAdapter::Populate(UsdPrim const& prim,
                                             UsdImagingIndexProxy* index,
                                             UsdImagingInstancerContext const* instancerContext)
 {
@@ -90,7 +90,7 @@ SdfPath UsdRaySensorLidarSensorAdapter::Populate(UsdPrim const& prim,
   return cachePath;
 }
 
-void UsdRaySensorLidarSensorAdapter::TrackVariability(UsdPrim const& prim,
+void LidarSensorAdapter::TrackVariability(UsdPrim const& prim,
                                                  SdfPath const&,
                                                  HdDirtyBits* timeVaryingBits,
                                                  UsdImagingInstancerContext const*) const
@@ -116,7 +116,7 @@ void UsdRaySensorLidarSensorAdapter::TrackVariability(UsdPrim const& prim,
   }
 }
 
-void UsdRaySensorLidarSensorAdapter::UpdateForTime(UsdPrim const&,
+void LidarSensorAdapter::UpdateForTime(UsdPrim const&,
                                               SdfPath const&,
                                               UsdTimeCode,
                                               HdDirtyBits,
@@ -124,7 +124,7 @@ void UsdRaySensorLidarSensorAdapter::UpdateForTime(UsdPrim const&,
 {
 }
 
-HdDirtyBits UsdRaySensorLidarSensorAdapter::ProcessPropertyChange(UsdPrim const&,
+HdDirtyBits LidarSensorAdapter::ProcessPropertyChange(UsdPrim const&,
                                                              SdfPath const&,
                                                              TfToken const& propertyName)
 {
@@ -139,7 +139,7 @@ HdDirtyBits UsdRaySensorLidarSensorAdapter::ProcessPropertyChange(UsdPrim const&
   return kDirtyParams;
 }
 
-void UsdRaySensorLidarSensorAdapter::MarkDirty(UsdPrim const&,
+void LidarSensorAdapter::MarkDirty(UsdPrim const&,
                                           SdfPath const& cachePath,
                                           HdDirtyBits dirty,
                                           UsdImagingIndexProxy* index)
@@ -150,13 +150,13 @@ void UsdRaySensorLidarSensorAdapter::MarkDirty(UsdPrim const&,
   }
 }
 
-VtValue UsdRaySensorLidarSensorAdapter::Get(UsdPrim const& prim,
+VtValue LidarSensorAdapter::Get(UsdPrim const& prim,
                                        SdfPath const& cachePath,
                                        TfToken const& key,
                                        UsdTimeCode time,
                                        VtIntArray* outIndices) const
 {
-  const UsdRaySensorLidarSensor sensor(prim);
+  const LidarSensor sensor(prim);
   if(key == UsdRaySensorTokens->lidarSensorParams)
   {
     return VtValue(sensor.GetParams(time));
@@ -217,21 +217,21 @@ VtValue UsdRaySensorLidarSensorAdapter::Get(UsdPrim const& prim,
   return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
-bool UsdRaySensorLidarSensorAdapter::GetVisible(UsdPrim const&,
+bool LidarSensorAdapter::GetVisible(UsdPrim const&,
                                            SdfPath const&,
                                            UsdTimeCode) const
 {
   return true;
 }
 
-TfToken UsdRaySensorLidarSensorAdapter::GetPurpose(UsdPrim const&,
+TfToken LidarSensorAdapter::GetPurpose(UsdPrim const&,
                                               SdfPath const&,
                                               TfToken const&) const
 {
   return UsdGeomTokens->default_;
 }
 
-GfMatrix4d UsdRaySensorLidarSensorAdapter::GetTransform(UsdPrim const& prim,
+GfMatrix4d LidarSensorAdapter::GetTransform(UsdPrim const& prim,
                                                    SdfPath const& cachePath,
                                                    UsdTimeCode time,
                                                    bool ignoreRootTransform) const
@@ -239,7 +239,7 @@ GfMatrix4d UsdRaySensorLidarSensorAdapter::GetTransform(UsdPrim const& prim,
   return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
-void UsdRaySensorLidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
+void LidarSensorAdapter::_RemovePrim(SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
   if(index != nullptr)

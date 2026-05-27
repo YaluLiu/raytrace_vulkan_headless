@@ -47,19 +47,19 @@ struct UsdRaySensorTokensType {
     USDRAYSENSOR_API UsdRaySensorTokensType();
     /// \brief "azimuthEndDeg"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken azimuthEndDeg;
     /// \brief "azimuthStartDeg"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken azimuthStartDeg;
     /// \brief "azimuthStepDeg"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken azimuthStepDeg;
     /// \brief "enabled"
     ///
-    /// UsdRaySensorHeightScanSensor, UsdRaySensorLidarSensor
+    /// HeightScanSensor, LidarSensor
     const TfToken enabled;
     /// \brief "heightScanSensorParams"
     ///
@@ -67,7 +67,7 @@ struct UsdRaySensorTokensType {
     const TfToken heightScanSensorParams;
     /// \brief "intensity"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken intensity;
     /// \brief "lidarSensorParams"
     ///
@@ -75,55 +75,55 @@ struct UsdRaySensorTokensType {
     const TfToken lidarSensorParams;
     /// \brief "maxRange"
     ///
-    /// UsdRaySensorHeightScanSensor, UsdRaySensorLidarSensor
+    /// HeightScanSensor, LidarSensor
     const TfToken maxRange;
     /// \brief "rayDirection"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken rayDirection;
     /// \brief "uEnd"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken uEnd;
     /// \brief "uStart"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken uStart;
     /// \brief "uStep"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken uStep;
     /// \brief "vEnd"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken vEnd;
     /// \brief "vStart"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken vStart;
     /// \brief "vStep"
     ///
-    /// UsdRaySensorHeightScanSensor
+    /// HeightScanSensor
     const TfToken vStep;
     /// \brief "verticalEndDeg"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken verticalEndDeg;
     /// \brief "verticalStartDeg"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken verticalStartDeg;
     /// \brief "verticalStepDeg"
     ///
-    /// UsdRaySensorLidarSensor
+    /// LidarSensor
     const TfToken verticalStepDeg;
     /// \brief "LidarSensor"
     ///
-    /// Schema identifer and family for UsdRaySensorLidarSensor
+    /// Schema identifer and family for LidarSensor
     const TfToken LidarSensor;
     /// \brief "HeightScanSensor"
     ///
-    /// Schema identifer and family for UsdRaySensorHeightScanSensor
+    /// Schema identifer and family for HeightScanSensor
     const TfToken HeightScanSensor;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

@@ -34,23 +34,23 @@ float ClampStep(float value, float fallback)
   return std::max(std::fabs(std::isfinite(value) ? value : fallback), kLidarParamEpsilon);
 }
 
-UsdRaySensorLidarSensor::Params ReadRawLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+LidarSensor::Params ReadRawLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
 {
-  UsdRaySensorLidarSensor::Params params;
+  LidarSensor::Params params;
   if(sceneDelegate == nullptr)
   {
     return params;
   }
 
   const VtValue paramsValue = sceneDelegate->Get(id, UsdRaySensorTokens->lidarSensorParams);
-  if(paramsValue.IsHolding<UsdRaySensorLidarSensor::Params>())
+  if(paramsValue.IsHolding<LidarSensor::Params>())
   {
-    return paramsValue.UncheckedGet<UsdRaySensorLidarSensor::Params>();
+    return paramsValue.UncheckedGet<LidarSensor::Params>();
   }
   return params;
 }
 
-HdRobotLidarParams SanitizeLidarParams(const UsdRaySensorLidarSensor::Params& source)
+HdRobotLidarParams SanitizeLidarParams(const LidarSensor::Params& source)
 {
   HdRobotLidarParams params;
   params.azimuthStartDeg = source.GetAzimuthStartDeg();
@@ -121,7 +121,7 @@ void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, Hd
     return;
   }
 
-  const UsdRaySensorLidarSensor::Params rawParams = ReadRawLidarParams(sceneDelegate, GetId());
+  const LidarSensor::Params rawParams = ReadRawLidarParams(sceneDelegate, GetId());
   if(!rawParams.GetEnabled())
   {
     _scene.RemoveLidarSensor(GetId());

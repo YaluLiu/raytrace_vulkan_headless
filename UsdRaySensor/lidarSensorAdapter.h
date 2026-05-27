@@ -4,13 +4,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdRaySensorLidarSensorAdapter final : public UsdImagingPrimAdapter
+class LidarSensorAdapter final : public UsdImagingPrimAdapter
 {
 public:
   using BaseAdapter = UsdImagingPrimAdapter;
 
-  UsdRaySensorLidarSensorAdapter() = default;
-  ~UsdRaySensorLidarSensorAdapter() override;
+  LidarSensorAdapter() = default;
+  ~LidarSensorAdapter() override;
 
   TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
   TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim) override;

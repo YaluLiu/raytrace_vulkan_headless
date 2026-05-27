@@ -258,8 +258,8 @@ call sites with `rg`.
 ## USD Sensor Recognition
 
 - `UsdRaySensor/plugInfo.json`: Standalone plugin metadata for
-  generated `UsdRaySensorLidarSensor`, `UsdRaySensorLidarSensorAdapter`,
-  `UsdRaySensorHeightScanSensor`, and `UsdRaySensorHeightScanSensorAdapter`.
+  generated `LidarSensor`, `LidarSensorAdapter`,
+  `HeightScanSensor`, and `HeightScanSensorAdapter`.
 - `UsdRaySensor/schema.usda`: Code-generation source for the concrete
   typed `LidarSensor` and `HeightScanSensor` C++ APIs.
 - `UsdRaySensor/generatedSchema.usda`: Runtime schema resource containing
@@ -301,11 +301,11 @@ call sites with `rg`.
   conversion. Sensor parameters are no longer read from camera prims.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
   USD `LidarSensor` prims; consumes the generated
-  `UsdRaySensorLidarSensor::Params` aggregate, resolves sensor transform,
+  `LidarSensor::Params` aggregate, resolves sensor transform,
   validates/clamps params, and upserts `HdRobotLidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
   for custom USD `HeightScanSensor` prims; consumes the generated
-  `UsdRaySensorHeightScanSensor::Params` aggregate, resolves sensor
+  `HeightScanSensor::Params` aggregate, resolves sensor
   transform, validates/clamps params, and upserts
   `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.

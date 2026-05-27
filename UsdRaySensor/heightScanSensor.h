@@ -30,11 +30,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 // HEIGHTSCANSENSOR                                                          //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdRaySensorHeightScanSensor
+/// \class HeightScanSensor
 ///
 /// Concrete transformable height scan sensor schema for ray-sensor consumers.
 ///
-class UsdRaySensorHeightScanSensor : public UsdGeomXformable
+class HeightScanSensor : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -42,22 +42,22 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdRaySensorHeightScanSensor on UsdPrim \p prim .
-    explicit UsdRaySensorHeightScanSensor(const UsdPrim& prim=UsdPrim())
+    /// Construct a HeightScanSensor on UsdPrim \p prim .
+    explicit HeightScanSensor(const UsdPrim& prim=UsdPrim())
         : UsdGeomXformable(prim)
     {
     }
 
-    /// Construct a UsdRaySensorHeightScanSensor on the prim held by
+    /// Construct a HeightScanSensor on the prim held by
     /// \p schemaObj .
-    explicit UsdRaySensorHeightScanSensor(const UsdSchemaBase& schemaObj)
+    explicit HeightScanSensor(const UsdSchemaBase& schemaObj)
         : UsdGeomXformable(schemaObj)
     {
     }
 
     /// Destructor.
     USDRAYSENSOR_API
-    virtual ~UsdRaySensorHeightScanSensor();
+    virtual ~HeightScanSensor();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.
@@ -65,16 +65,16 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdRaySensorHeightScanSensor holding the prim adhering to
+    /// Return a HeightScanSensor holding the prim adhering to
     /// this schema at \p path on \p stage.
     USDRAYSENSOR_API
-    static UsdRaySensorHeightScanSensor
+    static HeightScanSensor
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a UsdPrim adhering to this schema at \p path is
     /// defined on this stage.
     USDRAYSENSOR_API
-    static UsdRaySensorHeightScanSensor
+    static HeightScanSensor
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:

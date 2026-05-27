@@ -49,23 +49,23 @@ glm::vec3 ToGlm(const GfVec3f& value)
   return glm::vec3(value[0], value[1], value[2]);
 }
 
-UsdRaySensorHeightScanSensor::Params ReadRawHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+HeightScanSensor::Params ReadRawHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
 {
-  UsdRaySensorHeightScanSensor::Params params;
+  HeightScanSensor::Params params;
   if(sceneDelegate == nullptr)
   {
     return params;
   }
 
   const VtValue paramsValue = sceneDelegate->Get(id, UsdRaySensorTokens->heightScanSensorParams);
-  if(paramsValue.IsHolding<UsdRaySensorHeightScanSensor::Params>())
+  if(paramsValue.IsHolding<HeightScanSensor::Params>())
   {
-    return paramsValue.UncheckedGet<UsdRaySensorHeightScanSensor::Params>();
+    return paramsValue.UncheckedGet<HeightScanSensor::Params>();
   }
   return params;
 }
 
-HdRobotHeightScanParams SanitizeHeightScanParams(const UsdRaySensorHeightScanSensor::Params& source)
+HdRobotHeightScanParams SanitizeHeightScanParams(const HeightScanSensor::Params& source)
 {
   HdRobotHeightScanParams params;
   params.uStart = source.GetUStart();
@@ -136,7 +136,7 @@ void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam
     return;
   }
 
-  const UsdRaySensorHeightScanSensor::Params rawParams = ReadRawHeightScanParams(sceneDelegate, GetId());
+  const HeightScanSensor::Params rawParams = ReadRawHeightScanParams(sceneDelegate, GetId());
   if(!rawParams.GetEnabled())
   {
     _scene.RemoveHeightScanSensor(GetId());
