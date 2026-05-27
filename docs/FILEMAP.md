@@ -255,18 +255,17 @@ call sites with `rg`.
 
 - `hdRobotLidarUsd/plugInfo.json`: Standalone plugin metadata for
   generated `HdRobotLidarUsdLidarSensor`, `HdRobotLidarSensorAdapter`,
-  `HdRobotHeightScanSensorSchema`, and `HdRobotHeightScanSensorAdapter`.
+  `HdRobotLidarUsdHeightScanSensor`, and `HdRobotHeightScanSensorAdapter`.
 - `hdRobotLidarUsd/schema.usda`: Code-generation source for the concrete
-  typed `LidarSensor` C++ API. `HeightScanSensor` is intentionally not
-  generated yet.
+  typed `LidarSensor` and `HeightScanSensor` C++ APIs.
 - `hdRobotLidarUsd/generatedSchema.usda`: Runtime schema resource containing
-  generated `LidarSensor` fallback attributes plus the existing codeless
-  `HeightScanSensor` definition.
+  generated `LidarSensor` and `HeightScanSensor` fallback attributes.
 - `hdRobotLidarUsd/api.h`, `hdRobotLidarUsd/lidarSensor.h` /
-  `hdRobotLidarUsd/lidarSensor.cpp`, and `hdRobotLidarUsd/tokens.h` /
-  `hdRobotLidarUsd/tokens.cpp`: Generated `LidarSensor` typed schema API,
-  schema tokens, and preserved custom value getters/`Params` aggregate used by
-  the Hydra sprim.
+  `hdRobotLidarUsd/lidarSensor.cpp`, `hdRobotLidarUsd/heightScanSensor.h` /
+  `hdRobotLidarUsd/heightScanSensor.cpp`, and `hdRobotLidarUsd/tokens.h` /
+  `hdRobotLidarUsd/tokens.cpp`: Generated sensor typed schema APIs, schema
+  tokens, and preserved custom value getters/`Params` aggregates used by the
+  Hydra sprims.
 - `hdRobotLidarUsd/lidarSensorAdapter.h` /
   `hdRobotLidarUsd/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
   `LidarSensor`; inserts the custom `lidarSensor` sprim, forwards sensor
@@ -277,8 +276,9 @@ call sites with `rg`.
 - `hdRobotLidarUsd/heightScanSensorAdapter.h` /
   `hdRobotLidarUsd/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
   `HeightScanSensor`; inserts the custom `heightScanSensor` sprim, forwards
-  sensor attributes, and handles transform/dependency dirtying without
-  linking against the `hdRobot` render delegate target.
+  sensor attributes through generated schema getters and the aggregate
+  `heightScanSensorParams` Hydra value, and handles transform/dependency
+  dirtying without linking against the `hdRobot` render delegate target.
 
 ## Hydra Scene Primitives
 
@@ -300,8 +300,10 @@ call sites with `rg`.
   `HdRobotLidarUsdLidarSensor::Params` aggregate, resolves sensor transform,
   validates/clamps params, and upserts `HdRobotLidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
-  for custom USD `HeightScanSensor` prims; reads unprefixed typed sensor
-  attributes, resolves sensor transform, and upserts `HdRobotHeightScanSensorData`.
+  for custom USD `HeightScanSensor` prims; consumes the generated
+  `HdRobotLidarUsdHeightScanSensor::Params` aggregate, resolves sensor
+  transform, validates/clamps params, and upserts
+  `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
 - `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
   minimal raster path currently does not draw points.

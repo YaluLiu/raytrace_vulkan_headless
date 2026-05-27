@@ -1,7 +1,8 @@
 #include "heightScanSensor.h"
 
+#include "../hdRobotLidarUsd/heightScanSensor.h"
+#include "../hdRobotLidarUsd/tokens.h"
 #include "renderParam.h"
-#include "tokens.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
@@ -11,7 +12,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -19,117 +19,6 @@ namespace
 {
 constexpr float kSensorEpsilon = 1.0e-6f;
 constexpr float kHeightScanParamEpsilon = 1.0e-4f;
-
-bool ReadBoolParam(HdSceneDelegate* sceneDelegate, const SdfPath& id, const TfToken& token, bool fallback)
-{
-  if(sceneDelegate == nullptr)
-  {
-    return fallback;
-  }
-
-  const VtValue value = sceneDelegate->Get(id, token);
-  if(value.IsEmpty())
-  {
-    return fallback;
-  }
-  if(value.IsHolding<bool>())
-  {
-    return value.UncheckedGet<bool>();
-  }
-  if(value.IsHolding<int>())
-  {
-    return value.UncheckedGet<int>() != 0;
-  }
-  if(value.IsHolding<unsigned int>())
-  {
-    return value.UncheckedGet<unsigned int>() != 0;
-  }
-  if(value.IsHolding<int64_t>())
-  {
-    return value.UncheckedGet<int64_t>() != 0;
-  }
-  if(value.IsHolding<uint64_t>())
-  {
-    return value.UncheckedGet<uint64_t>() != 0;
-  }
-  if(value.IsHolding<float>())
-  {
-    return value.UncheckedGet<float>() != 0.0f;
-  }
-  if(value.IsHolding<double>())
-  {
-    return value.UncheckedGet<double>() != 0.0;
-  }
-  return fallback;
-}
-
-float ReadFloatParam(HdSceneDelegate* sceneDelegate, const SdfPath& id, const TfToken& token, float fallback)
-{
-  if(sceneDelegate == nullptr)
-  {
-    return fallback;
-  }
-
-  const VtValue value = sceneDelegate->Get(id, token);
-  float result = fallback;
-  if(value.IsEmpty())
-  {
-    return fallback;
-  }
-  if(value.IsHolding<float>())
-  {
-    result = value.UncheckedGet<float>();
-  }
-  else if(value.IsHolding<double>())
-  {
-    result = static_cast<float>(value.UncheckedGet<double>());
-  }
-  else if(value.IsHolding<int>())
-  {
-    result = static_cast<float>(value.UncheckedGet<int>());
-  }
-  else if(value.IsHolding<unsigned int>())
-  {
-    result = static_cast<float>(value.UncheckedGet<unsigned int>());
-  }
-  else if(value.IsHolding<int64_t>())
-  {
-    result = static_cast<float>(value.UncheckedGet<int64_t>());
-  }
-  else if(value.IsHolding<uint64_t>())
-  {
-    result = static_cast<float>(value.UncheckedGet<uint64_t>());
-  }
-  return std::isfinite(result) ? result : fallback;
-}
-
-glm::vec3 ReadVec3Param(HdSceneDelegate* sceneDelegate, const SdfPath& id, const TfToken& token, glm::vec3 fallback)
-{
-  if(sceneDelegate == nullptr)
-  {
-    return fallback;
-  }
-
-  const VtValue value = sceneDelegate->Get(id, token);
-  if(value.IsEmpty())
-  {
-    return fallback;
-  }
-
-  glm::vec3 result = fallback;
-  if(value.IsHolding<GfVec3f>())
-  {
-    const GfVec3f vec = value.UncheckedGet<GfVec3f>();
-    result = glm::vec3(vec[0], vec[1], vec[2]);
-  }
-  else if(value.IsHolding<GfVec3d>())
-  {
-    const GfVec3d vec = value.UncheckedGet<GfVec3d>();
-    result = glm::vec3(static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2]));
-  }
-
-  return std::isfinite(result.x) && std::isfinite(result.y) && std::isfinite(result.z) ? result : fallback;
-}
 
 float ClampPositive(float value, float fallback)
 {
@@ -155,25 +44,38 @@ glm::vec3 NormalizeDirection(glm::vec3 value, glm::vec3 fallback)
   return glm::normalize(value);
 }
 
-HdRobotHeightScanParams ReadHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+glm::vec3 ToGlm(const GfVec3f& value)
+{
+  return glm::vec3(value[0], value[1], value[2]);
+}
+
+HdRobotLidarUsdHeightScanSensor::Params ReadRawHeightScanParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+{
+  HdRobotLidarUsdHeightScanSensor::Params params;
+  if(sceneDelegate == nullptr)
+  {
+    return params;
+  }
+
+  const VtValue paramsValue = sceneDelegate->Get(id, HdRobotLidarUsdTokens->heightScanSensorParams);
+  if(paramsValue.IsHolding<HdRobotLidarUsdHeightScanSensor::Params>())
+  {
+    return paramsValue.UncheckedGet<HdRobotLidarUsdHeightScanSensor::Params>();
+  }
+  return params;
+}
+
+HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotLidarUsdHeightScanSensor::Params& source)
 {
   HdRobotHeightScanParams params;
-  params.uStart = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanUStart, params.uStart);
-  params.uEnd = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanUEnd, params.uEnd);
-  params.uStep = ClampStep(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanUStep, params.uStep),
-      params.uStep);
-  params.vStart = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanVStart, params.vStart);
-  params.vEnd = ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanVEnd, params.vEnd);
-  params.vStep = ClampStep(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanVStep, params.vStep),
-      params.vStep);
-  params.rayDirection = NormalizeDirection(
-      ReadVec3Param(sceneDelegate, id, HdRobotCameraParamTokens->heightScanRayDirection, params.rayDirection),
-      params.rayDirection);
-  params.maxRange = ClampPositive(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->heightScanMaxRange, params.maxRange),
-      params.maxRange);
+  params.uStart = source.GetUStart();
+  params.uEnd = source.GetUEnd();
+  params.uStep = ClampStep(source.GetUStep(), params.uStep);
+  params.vStart = source.GetVStart();
+  params.vEnd = source.GetVEnd();
+  params.vStep = ClampStep(source.GetVStep(), params.vStep);
+  params.rayDirection = NormalizeDirection(ToGlm(source.GetRayDirection()), params.rayDirection);
+  params.maxRange = ClampPositive(source.GetMaxRange(), params.maxRange);
   return params;
 }
 
@@ -228,15 +130,16 @@ void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam
     return;
   }
 
-  if(!ReadBoolParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->heightScanEnabled, true))
+  if(sceneDelegate == nullptr)
   {
-    _scene.RemoveHeightScanSensor(GetId());
     *dirtyBits = Clean;
     return;
   }
 
-  if(sceneDelegate == nullptr)
+  const HdRobotLidarUsdHeightScanSensor::Params rawParams = ReadRawHeightScanParams(sceneDelegate, GetId());
+  if(!rawParams.GetEnabled())
   {
+    _scene.RemoveHeightScanSensor(GetId());
     *dirtyBits = Clean;
     return;
   }
@@ -244,7 +147,7 @@ void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam
   HdRobotHeightScanSensorData sensorData;
   sensorData.name = GetId().GetString();
   sensorData.camera = ComputeSensorCameraData(GetId(), sceneDelegate->GetTransform(GetId()));
-  sensorData.params = ReadHeightScanParams(sceneDelegate, GetId());
+  sensorData.params = SanitizeHeightScanParams(rawParams);
   _scene.UpsertHeightScanSensor(sensorData);
 
   *dirtyBits = Clean;

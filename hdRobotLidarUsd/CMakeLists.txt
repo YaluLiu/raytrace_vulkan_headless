@@ -3,6 +3,8 @@ set(PROJNAME hdRobotLidarUsd)
 add_library(
   ${PROJNAME} SHARED
   api.h
+  heightScanSensor.cpp
+  heightScanSensor.h
   heightScanSensorAdapter.cpp
   heightScanSensorAdapter.h
   lidarSensor.cpp

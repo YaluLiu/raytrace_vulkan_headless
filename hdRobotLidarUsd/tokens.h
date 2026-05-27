@@ -46,49 +46,85 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdRobotLidarUsdTokensType {
     HDROBOTLIDARUSD_API HdRobotLidarUsdTokensType();
     /// \brief "azimuthEndDeg"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken azimuthEndDeg;
     /// \brief "azimuthStartDeg"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken azimuthStartDeg;
     /// \brief "azimuthStepDeg"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken azimuthStepDeg;
     /// \brief "enabled"
-    /// 
-    /// HdRobotLidarUsdLidarSensor
+    ///
+    /// HdRobotLidarUsdHeightScanSensor, HdRobotLidarUsdLidarSensor
     const TfToken enabled;
+    /// \brief "heightScanSensorParams"
+    ///
+    /// Hydra data key for the complete HeightScanSensor parameter block.
+    const TfToken heightScanSensorParams;
     /// \brief "intensity"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken intensity;
     /// \brief "lidarSensorParams"
-    /// 
+    ///
     /// Hydra data key for the complete LidarSensor parameter block.
     const TfToken lidarSensorParams;
     /// \brief "maxRange"
-    /// 
-    /// HdRobotLidarUsdLidarSensor
+    ///
+    /// HdRobotLidarUsdHeightScanSensor, HdRobotLidarUsdLidarSensor
     const TfToken maxRange;
+    /// \brief "rayDirection"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken rayDirection;
+    /// \brief "uEnd"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken uEnd;
+    /// \brief "uStart"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken uStart;
+    /// \brief "uStep"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken uStep;
+    /// \brief "vEnd"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken vEnd;
+    /// \brief "vStart"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken vStart;
+    /// \brief "vStep"
+    ///
+    /// HdRobotLidarUsdHeightScanSensor
+    const TfToken vStep;
     /// \brief "verticalEndDeg"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken verticalEndDeg;
     /// \brief "verticalStartDeg"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken verticalStartDeg;
     /// \brief "verticalStepDeg"
-    /// 
+    ///
     /// HdRobotLidarUsdLidarSensor
     const TfToken verticalStepDeg;
     /// \brief "LidarSensor"
-    /// 
+    ///
     /// Schema identifer and family for HdRobotLidarUsdLidarSensor
     const TfToken LidarSensor;
+    /// \brief "HeightScanSensor"
+    ///
+    /// Schema identifer and family for HdRobotLidarUsdHeightScanSensor
+    const TfToken HeightScanSensor;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

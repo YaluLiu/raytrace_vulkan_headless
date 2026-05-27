@@ -1,5 +1,8 @@
 #include "heightScanSensorAdapter.h"
 
+#include "heightScanSensor.h"
+#include "tokens.h"
+
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/perfLog.h>
@@ -10,6 +13,8 @@
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usdImaging/usdImaging/indexProxy.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -26,11 +31,8 @@ const TfToken& GetHydraHeightScanSensorType()
 
 bool IsHeightScanProperty(const TfToken& propertyName)
 {
-  return propertyName == TfToken("enabled") || propertyName == TfToken("uStart") ||
-         propertyName == TfToken("uEnd") || propertyName == TfToken("uStep") ||
-         propertyName == TfToken("vStart") || propertyName == TfToken("vEnd") ||
-         propertyName == TfToken("vStep") || propertyName == TfToken("rayDirection") ||
-         propertyName == TfToken("maxRange");
+  const TfTokenVector& names = HdRobotLidarUsdHeightScanSensor::GetSchemaAttributeNames(false);
+  return std::find(names.begin(), names.end(), propertyName) != names.end();
 }
 
 bool IsXformProperty(const TfToken& propertyName)
@@ -154,6 +156,48 @@ VtValue HdRobotHeightScanSensorAdapter::Get(UsdPrim const& prim,
                                             UsdTimeCode time,
                                             VtIntArray* outIndices) const
 {
+  const HdRobotLidarUsdHeightScanSensor sensor(prim);
+  if(key == HdRobotLidarUsdTokens->heightScanSensorParams)
+  {
+    return VtValue(sensor.GetParams(time));
+  }
+  if(key == HdRobotLidarUsdTokens->enabled)
+  {
+    return VtValue(sensor.GetEnabled(time));
+  }
+  if(key == HdRobotLidarUsdTokens->uStart)
+  {
+    return VtValue(sensor.GetUStart(time));
+  }
+  if(key == HdRobotLidarUsdTokens->uEnd)
+  {
+    return VtValue(sensor.GetUEnd(time));
+  }
+  if(key == HdRobotLidarUsdTokens->uStep)
+  {
+    return VtValue(sensor.GetUStep(time));
+  }
+  if(key == HdRobotLidarUsdTokens->vStart)
+  {
+    return VtValue(sensor.GetVStart(time));
+  }
+  if(key == HdRobotLidarUsdTokens->vEnd)
+  {
+    return VtValue(sensor.GetVEnd(time));
+  }
+  if(key == HdRobotLidarUsdTokens->vStep)
+  {
+    return VtValue(sensor.GetVStep(time));
+  }
+  if(key == HdRobotLidarUsdTokens->rayDirection)
+  {
+    return VtValue(sensor.GetRayDirection(time));
+  }
+  if(key == HdRobotLidarUsdTokens->maxRange)
+  {
+    return VtValue(sensor.GetMaxRange(time));
+  }
+
   if(UsdAttribute attr = prim.GetAttribute(key))
   {
     VtValue value;
