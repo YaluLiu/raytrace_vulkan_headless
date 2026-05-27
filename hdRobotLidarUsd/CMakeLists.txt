@@ -2,10 +2,16 @@ set(PROJNAME hdRobotLidarUsd)
 
 add_library(
   ${PROJNAME} SHARED
+  api.h
   heightScanSensorAdapter.cpp
   heightScanSensorAdapter.h
+  lidarSensor.cpp
+  lidarSensor.h
   lidarSensorAdapter.cpp
   lidarSensorAdapter.h
+  schema.usda
+  tokens.cpp
+  tokens.h
 )
 
 set_target_properties(
@@ -25,9 +31,11 @@ find_package(pxr REQUIRED)
 if(TARGET usd_ms)
   set(USD_LIBS_PUBLIC usd_ms)
 else()
-  set(USD_LIBS_PUBLIC hd)
-  set(USD_LIBS_PRIVATE usd usdGeom usdImaging)
+  set(USD_LIBS_PUBLIC hd usd usdGeom)
+  set(USD_LIBS_PRIVATE usdImaging)
 endif()
+
+target_compile_definitions(${PROJNAME} PRIVATE HDROBOTLIDARUSD_EXPORTS)
 
 target_link_libraries(
   ${PROJNAME}
@@ -49,6 +57,7 @@ install(
   FILES
     "${PLUGINFO_PATH}"
     "${CMAKE_CURRENT_SOURCE_DIR}/generatedSchema.usda"
+    "${CMAKE_CURRENT_SOURCE_DIR}/schema.usda"
   DESTINATION
     "./${PROJNAME}/resources"
   COMPONENT

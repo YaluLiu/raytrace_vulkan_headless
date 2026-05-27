@@ -35,15 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((heightScanVisualizePointSize, "hdRobot:heightScan:visualizePointSize"))
 
 #define HD_ROBOT_CAMERA_PARAM_TOKENS \
-  ((lidarEnabled, "enabled")) \
-  ((lidarAzimuthStartDeg, "azimuthStartDeg")) \
-  ((lidarAzimuthEndDeg, "azimuthEndDeg")) \
-  ((lidarAzimuthStepDeg, "azimuthStepDeg")) \
-  ((lidarVerticalStartDeg, "verticalStartDeg")) \
-  ((lidarVerticalEndDeg, "verticalEndDeg")) \
-  ((lidarVerticalStepDeg, "verticalStepDeg")) \
-  ((lidarMaxRange, "maxRange")) \
-  ((lidarIntensity, "intensity")) \
   ((heightScanEnabled, "enabled")) \
   ((heightScanUStart, "uStart")) \
   ((heightScanUEnd, "uEnd")) \

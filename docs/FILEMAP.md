@@ -254,16 +254,26 @@ call sites with `rg`.
 ## USD Sensor Recognition
 
 - `hdRobotLidarUsd/plugInfo.json`: Standalone plugin metadata for
-  `HdRobotLidarSensorSchema`, `HdRobotLidarSensorAdapter`,
+  generated `HdRobotLidarUsdLidarSensor`, `HdRobotLidarSensorAdapter`,
   `HdRobotHeightScanSensorSchema`, and `HdRobotHeightScanSensorAdapter`.
-- `hdRobotLidarUsd/generatedSchema.usda`: Codeless concrete `LidarSensor` and
-  `HeightScanSensor` schema definitions and fallback typed sensor attributes.
+- `hdRobotLidarUsd/schema.usda`: Code-generation source for the concrete
+  typed `LidarSensor` C++ API. `HeightScanSensor` is intentionally not
+  generated yet.
+- `hdRobotLidarUsd/generatedSchema.usda`: Runtime schema resource containing
+  generated `LidarSensor` fallback attributes plus the existing codeless
+  `HeightScanSensor` definition.
+- `hdRobotLidarUsd/api.h`, `hdRobotLidarUsd/lidarSensor.h` /
+  `hdRobotLidarUsd/lidarSensor.cpp`, and `hdRobotLidarUsd/tokens.h` /
+  `hdRobotLidarUsd/tokens.cpp`: Generated `LidarSensor` typed schema API,
+  schema tokens, and preserved custom value getters/`Params` aggregate used by
+  the Hydra sprim.
 - `hdRobotLidarUsd/lidarSensorAdapter.h` /
   `hdRobotLidarUsd/lidarSensorAdapter.cpp`: UsdImaging adapter for USD
   `LidarSensor`; inserts the custom `lidarSensor` sprim, forwards sensor
-  attributes, and handles transform/dependency dirtying. It uses the literal
-  Hydra sprim type token so this USD recognition plugin does not link against
-  the `hdRobot` render delegate target.
+  attributes through generated schema getters and the aggregate
+  `lidarSensorParams` Hydra value, and handles transform/dependency dirtying.
+  It uses the literal Hydra sprim type token so this USD recognition plugin
+  does not link against the `hdRobot` render delegate target.
 - `hdRobotLidarUsd/heightScanSensorAdapter.h` /
   `hdRobotLidarUsd/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
   `HeightScanSensor`; inserts the custom `heightScanSensor` sprim, forwards
@@ -286,8 +296,9 @@ call sites with `rg`.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync and camera data
   conversion. Sensor parameters are no longer read from camera prims.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
-  USD `LidarSensor` prims; reads unprefixed typed sensor attributes from
-  `/lidars/*`, resolves sensor transform, and upserts `HdRobotLidarSensorData`.
+  USD `LidarSensor` prims; consumes the generated
+  `HdRobotLidarUsdLidarSensor::Params` aggregate, resolves sensor transform,
+  validates/clamps params, and upserts `HdRobotLidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
   for custom USD `HeightScanSensor` prims; reads unprefixed typed sensor
   attributes, resolves sensor transform, and upserts `HdRobotHeightScanSensorData`.

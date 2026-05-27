@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    subLayers = [
+        @usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "hdRobotLidarUsd"
+        string libraryPath = "."
+        string libraryPrefix = "HdRobotLidarUsd"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary lidarSensorParams = {
+                string doc = "Hydra data key for the complete LidarSensor parameter block."
+            }
+        }
+    }
+)
+{
+}
+
+class LidarSensor "LidarSensor" (
+    inherits = </Xformable>
+    doc = "Concrete transformable LiDAR sensor schema consumed by hdRobot."
+)
+{
+    bool enabled = true
+    float azimuthStartDeg = -90
+    float azimuthEndDeg = 90
+    float azimuthStepDeg = 0.5
+    float verticalStartDeg = -2
+    float verticalEndDeg = -20
+    float verticalStepDeg = 1
+    float maxRange = 200
+    float intensity = 1
+}

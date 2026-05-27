@@ -1,7 +1,8 @@
 #include "lidarSensor.h"
 
+#include "../hdRobotLidarUsd/lidarSensor.h"
+#include "../hdRobotLidarUsd/tokens.h"
 #include "renderParam.h"
-#include "tokens.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
@@ -10,7 +11,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -18,89 +18,6 @@ namespace
 {
 constexpr float kSensorEpsilon = 1.0e-6f;
 constexpr float kLidarParamEpsilon = 1.0e-4f;
-
-bool ReadBoolParam(HdSceneDelegate* sceneDelegate, const SdfPath& id, const TfToken& token, bool fallback)
-{
-  if(sceneDelegate == nullptr)
-  {
-    return fallback;
-  }
-
-  const VtValue value = sceneDelegate->Get(id, token);
-  if(value.IsEmpty())
-  {
-    return fallback;
-  }
-  if(value.IsHolding<bool>())
-  {
-    return value.UncheckedGet<bool>();
-  }
-  if(value.IsHolding<int>())
-  {
-    return value.UncheckedGet<int>() != 0;
-  }
-  if(value.IsHolding<unsigned int>())
-  {
-    return value.UncheckedGet<unsigned int>() != 0;
-  }
-  if(value.IsHolding<int64_t>())
-  {
-    return value.UncheckedGet<int64_t>() != 0;
-  }
-  if(value.IsHolding<uint64_t>())
-  {
-    return value.UncheckedGet<uint64_t>() != 0;
-  }
-  if(value.IsHolding<float>())
-  {
-    return value.UncheckedGet<float>() != 0.0f;
-  }
-  if(value.IsHolding<double>())
-  {
-    return value.UncheckedGet<double>() != 0.0;
-  }
-  return fallback;
-}
-
-float ReadFloatParam(HdSceneDelegate* sceneDelegate, const SdfPath& id, const TfToken& token, float fallback)
-{
-  if(sceneDelegate == nullptr)
-  {
-    return fallback;
-  }
-
-  const VtValue value = sceneDelegate->Get(id, token);
-  float result = fallback;
-  if(value.IsEmpty())
-  {
-    return fallback;
-  }
-  if(value.IsHolding<float>())
-  {
-    result = value.UncheckedGet<float>();
-  }
-  else if(value.IsHolding<double>())
-  {
-    result = static_cast<float>(value.UncheckedGet<double>());
-  }
-  else if(value.IsHolding<int>())
-  {
-    result = static_cast<float>(value.UncheckedGet<int>());
-  }
-  else if(value.IsHolding<unsigned int>())
-  {
-    result = static_cast<float>(value.UncheckedGet<unsigned int>());
-  }
-  else if(value.IsHolding<int64_t>())
-  {
-    result = static_cast<float>(value.UncheckedGet<int64_t>());
-  }
-  else if(value.IsHolding<uint64_t>())
-  {
-    result = static_cast<float>(value.UncheckedGet<uint64_t>());
-  }
-  return std::isfinite(result) ? result : fallback;
-}
 
 float ClampPositive(float value, float fallback)
 {
@@ -117,28 +34,33 @@ float ClampStep(float value, float fallback)
   return std::max(std::fabs(std::isfinite(value) ? value : fallback), kLidarParamEpsilon);
 }
 
-HdRobotLidarParams ReadLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+HdRobotLidarUsdLidarSensor::Params ReadRawLidarParams(HdSceneDelegate* sceneDelegate, const SdfPath& id)
+{
+  HdRobotLidarUsdLidarSensor::Params params;
+  if(sceneDelegate == nullptr)
+  {
+    return params;
+  }
+
+  const VtValue paramsValue = sceneDelegate->Get(id, HdRobotLidarUsdTokens->lidarSensorParams);
+  if(paramsValue.IsHolding<HdRobotLidarUsdLidarSensor::Params>())
+  {
+    return paramsValue.UncheckedGet<HdRobotLidarUsdLidarSensor::Params>();
+  }
+  return params;
+}
+
+HdRobotLidarParams SanitizeLidarParams(const HdRobotLidarUsdLidarSensor::Params& source)
 {
   HdRobotLidarParams params;
-  params.azimuthStartDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthStartDeg, params.azimuthStartDeg);
-  params.azimuthEndDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthEndDeg, params.azimuthEndDeg);
-  params.azimuthStepDeg = ClampStep(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarAzimuthStepDeg, params.azimuthStepDeg),
-      params.azimuthStepDeg);
-  params.verticalStartDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalStartDeg, params.verticalStartDeg);
-  params.verticalEndDeg =
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalEndDeg, params.verticalEndDeg);
-  params.verticalStepDeg = ClampStep(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarVerticalStepDeg, params.verticalStepDeg),
-      params.verticalStepDeg);
-  params.maxRange = ClampPositive(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarMaxRange, params.maxRange),
-      params.maxRange);
-  params.intensity = ClampNonNegative(
-      ReadFloatParam(sceneDelegate, id, HdRobotCameraParamTokens->lidarIntensity, params.intensity), params.intensity);
+  params.azimuthStartDeg = source.GetAzimuthStartDeg();
+  params.azimuthEndDeg = source.GetAzimuthEndDeg();
+  params.azimuthStepDeg = ClampStep(source.GetAzimuthStepDeg(), params.azimuthStepDeg);
+  params.verticalStartDeg = source.GetVerticalStartDeg();
+  params.verticalEndDeg = source.GetVerticalEndDeg();
+  params.verticalStepDeg = ClampStep(source.GetVerticalStepDeg(), params.verticalStepDeg);
+  params.maxRange = ClampPositive(source.GetMaxRange(), params.maxRange);
+  params.intensity = ClampNonNegative(source.GetIntensity(), params.intensity);
   return params;
 }
 
@@ -193,15 +115,16 @@ void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, Hd
     return;
   }
 
-  if(!ReadBoolParam(sceneDelegate, GetId(), HdRobotCameraParamTokens->lidarEnabled, true))
+  if(sceneDelegate == nullptr)
   {
-    _scene.RemoveLidarSensor(GetId());
     *dirtyBits = Clean;
     return;
   }
 
-  if(sceneDelegate == nullptr)
+  const HdRobotLidarUsdLidarSensor::Params rawParams = ReadRawLidarParams(sceneDelegate, GetId());
+  if(!rawParams.GetEnabled())
   {
+    _scene.RemoveLidarSensor(GetId());
     *dirtyBits = Clean;
     return;
   }
@@ -209,7 +132,7 @@ void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, Hd
   HdRobotLidarSensorData sensorData;
   sensorData.name = GetId().GetString();
   sensorData.camera = ComputeSensorCameraData(GetId(), sceneDelegate->GetTransform(GetId()));
-  sensorData.params = ReadLidarParams(sceneDelegate, GetId());
+  sensorData.params = SanitizeLidarParams(rawParams);
   _scene.UpsertLidarSensor(sensorData);
 
   *dirtyBits = Clean;
