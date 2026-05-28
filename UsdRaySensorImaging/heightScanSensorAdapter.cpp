@@ -92,11 +92,10 @@ void HeightScanSensorAdapter::TrackVariability(UsdPrim const& prim,
     return;
   }
 
-  const UsdGeomXformable xformable(prim);
-  if(xformable && xformable.TransformMightBeTimeVarying())
-  {
-    *timeVaryingBits |= HdRaySensorDirtyBits::DirtyTransform;
-  }
+  _IsTransformVarying(prim,
+                      HdRaySensorDirtyBits::DirtyTransform,
+                      UsdImagingTokens->usdVaryingXform,
+                      timeVaryingBits);
 
   for(const UsdAttribute& attr : prim.GetAttributes())
   {
@@ -139,6 +138,16 @@ void HeightScanSensorAdapter::MarkDirty(UsdPrim const&,
   if(index != nullptr)
   {
     index->MarkSprimDirty(cachePath, dirty);
+  }
+}
+
+void HeightScanSensorAdapter::MarkTransformDirty(UsdPrim const&,
+                                                 SdfPath const& cachePath,
+                                                 UsdImagingIndexProxy* index)
+{
+  if(index != nullptr)
+  {
+    index->MarkSprimDirty(cachePath, HdRaySensorDirtyBits::DirtyTransform);
   }
 }
 

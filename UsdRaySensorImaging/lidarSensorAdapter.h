@@ -40,6 +40,10 @@ public:
                  HdDirtyBits dirty,
                  UsdImagingIndexProxy* index) override;
 
+  void MarkTransformDirty(UsdPrim const& prim,
+                          SdfPath const& cachePath,
+                          UsdImagingIndexProxy* index) override;
+
   VtValue Get(UsdPrim const& prim,
               SdfPath const& cachePath,
               TfToken const& key,

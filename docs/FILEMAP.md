@@ -302,13 +302,13 @@ call sites with `rg`.
   `LidarSensor` prims through the `UsdGeomLidarSensor` C++ schema; inserts
   the custom `lidarSensor` sprim via the shared Hydra sensor contract,
   forwards individual sensor attributes through generated schema getters, and
-  handles transform/dependency dirtying.
+  handles local/root/ancestor transform variability and dirtying.
 - `UsdRaySensorImaging/heightScanSensorAdapter.h` /
   `UsdRaySensorImaging/heightScanSensorAdapter.cpp`: UsdImaging adapter for USD
   `HeightScanSensor` prims through the `UsdGeomHeightScanSensor` C++ schema;
   inserts the custom `heightScanSensor` sprim via the shared Hydra sensor
   contract, forwards individual sensor attributes through generated schema
-  getters, and handles transform/dependency dirtying.
+  getters, and handles local/root/ancestor transform variability and dirtying.
 
 ## Hydra Scene Primitives
 
@@ -446,7 +446,7 @@ call sites with `rg`.
   `hdRobot/renderDelegate.cpp`, and `hdRobot/rasterBridge.cpp`, then search
   for `RasterLidarSensorSpec`, `LidarPointCloudPass`,
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
-  `hdRobot:lidar:visualize`, `readLidarPointCloudFrame`, and
+  `hdRobot:lidar:visualizeEnabled`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
   For Hydra-side LiDAR discovery, start with
   `UsdRaySensorImaging/lidarSensorAdapter.cpp`,
@@ -479,7 +479,7 @@ call sites with `rg`.
   `raster/src/scene/raster_rt_scene.cpp`, then search for
   `RasterHeightScanSensorSpec`, `RasterHeightScanVisualizationConfig`,
   `HeightScanPass`, `GenerateHeightScans`, `OverlayHeightScans`,
-  `BuildHeightScanBasis`, `camera.forward`, `hdRobot:heightScan:visualize`, `hdRobot:traceRole`,
+  `BuildHeightScanBasis`, `camera.forward`, `hdRobot:heightScan:visualizeEnabled`, `hdRobot:traceRole`,
   `kRasterTraceMaskGround`, `RASTER_TRACE_MASK_GROUND`,
   `UsdGeomHeightScanSensor`, `heightScanSensor`, `UpsertHeightScanSensor`,
   `setHeightScanSensors`, `setHeightScanVisualizationConfig`, and
