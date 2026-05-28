@@ -7,6 +7,8 @@ add_library(
   instancer.h
   rasterBridge.cpp
   rasterBridge.h
+  rasterBridgeConversions.cpp
+  rasterBridgeConversions.h
   glInteropCache.cpp
   glInteropCache.h
   hydraRasterAovCopy.cpp

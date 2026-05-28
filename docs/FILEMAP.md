@@ -66,6 +66,9 @@ call sites with `rg`.
   to `HdRobotRasterBridge::RenderRasterFrame`.
 - `hdRobot/rasterBridge.cpp`: Bridge between Hydra scene data and
   `RasterRenderer` frame execution.
+- `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
+  Hydra-to-raster data conversion helpers used by the bridge for cameras,
+  materials, LiDAR, height scan, visualization, and tile config objects.
 
 ## Raster Vulkan Renderer
 
@@ -256,6 +259,10 @@ call sites with `rg`.
   `hdRobot:traceRole = "ground"` routing into raster instance trace masks, and
   ordered AOV copy groups that copy fixed tile AOVs before display tile AOVs
   and other AOVs.
+- `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
+  Converts Hydra-side bridge structs into raster-facing camera specs,
+  `WaveFrontMaterial`, LiDAR and height scan sensor specs, visualization
+  configs, and `TileAtlasConfig`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, LiDAR and height scan sensor arrays, tile
   config, LiDAR and height scan visualization config, scene dirty flags,

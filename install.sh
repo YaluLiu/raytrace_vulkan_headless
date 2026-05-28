@@ -2,7 +2,7 @@
 
 BUILD_TYPE="Release"
 DEFAULT_HYDRA_SCENE_PATH="/home/yalu/docker/assets/tile/pao/tile_pao.usd"
-
+DEFAULT_HYDRA_SCENE_PATH=/home/yalu/docker/assets/demo5/World0.usd
 function format(){
     find raster \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
 }
