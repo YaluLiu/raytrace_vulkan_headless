@@ -32,6 +32,7 @@ struct RasterHeightScanVisualizationConfig
   bool enabled{false};
   uint32_t sensorIndex{0};
   float pointSizePixels{2.0f};
+  bool visualizeAllSensors{false};
 };
 
 enum RasterHeightScanSampleFlags : uint32_t

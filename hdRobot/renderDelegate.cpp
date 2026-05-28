@@ -86,6 +86,8 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
                                 HdRobotRenderSettingTokens->lidarVisualizePointSize, VtValue(2.0f)},
       HdRenderSettingDescriptor{"Enable height scan point cloud visualization",
                                 HdRobotRenderSettingTokens->heightScanVisualizeEnabled, VtValue(false)},
+      HdRenderSettingDescriptor{"Visualize all height scan point clouds",
+                                HdRobotRenderSettingTokens->heightScanVisualizeAllSensors, VtValue(false)},
       HdRenderSettingDescriptor{"Height scan visualization sensor index",
                                 HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex, VtValue(0)},
       HdRenderSettingDescriptor{"Height scan visualization point size",
@@ -112,6 +114,7 @@ bool IsLidarRenderSetting(const TfToken &key)
 bool IsHeightScanRenderSetting(const TfToken &key)
 {
   return key == HdRobotRenderSettingTokens->heightScanVisualizeEnabled ||
+         key == HdRobotRenderSettingTokens->heightScanVisualizeAllSensors ||
          key == HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex ||
          key == HdRobotRenderSettingTokens->heightScanVisualizePointSize;
 }
@@ -177,6 +180,8 @@ HdRobotHeightScanVisualizationConfig ReadHeightScanVisualizationConfig(const HdR
   HdRobotHeightScanVisualizationConfig config;
   config.enabled =
       delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->heightScanVisualizeEnabled, config.enabled);
+  config.visualizeAllSensors = delegate.GetRenderSetting<bool>(
+      HdRobotRenderSettingTokens->heightScanVisualizeAllSensors, config.visualizeAllSensors);
   config.sensorIndex = static_cast<uint32_t>(
       std::max(0, delegate.GetRenderSetting<int>(HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex,
                                                  static_cast<int>(config.sensorIndex))));

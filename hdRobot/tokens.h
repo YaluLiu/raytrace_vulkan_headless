@@ -32,6 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((lidarVisualizeSensorIndex, "hdRobot:lidar:visualizeSensorIndex")) \
   ((lidarVisualizePointSize, "hdRobot:lidar:visualizePointSize")) \
   ((heightScanVisualizeEnabled, "hdRobot:heightScan:visualizeEnabled")) \
+  ((heightScanVisualizeAllSensors, "hdRobot:heightScan:visualizeAllSensors")) \
   ((heightScanVisualizeSensorIndex, "hdRobot:heightScan:visualizeSensorIndex")) \
   ((heightScanVisualizePointSize, "hdRobot:heightScan:visualizePointSize"))
 

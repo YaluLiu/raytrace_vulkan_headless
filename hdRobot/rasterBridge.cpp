@@ -139,6 +139,7 @@ RasterHeightScanVisualizationConfig ToRasterHeightScanVisualizationConfig(
   result.enabled = config.enabled;
   result.sensorIndex = config.sensorIndex;
   result.pointSizePixels = config.pointSizePixels;
+  result.visualizeAllSensors = config.visualizeAllSensors;
   return result;
 }
 

@@ -224,7 +224,6 @@ void HeightScanPass::recordOverlay(const VkCommandBuffer& cmdBuf,
 {
   if(!currentLayoutGenerated() || !m_visualizationConfig.enabled ||
      m_visualizationConfig.pointSizePixels <= 0.0f ||
-     m_visualizationConfig.sensorIndex >= m_layout.sensors.size() ||
      m_sampleBuffer.buffer == VK_NULL_HANDLE || m_sensorBuffer.buffer == VK_NULL_HANDLE)
   {
     return;
@@ -239,6 +238,27 @@ void HeightScanPass::recordOverlay(const VkCommandBuffer& cmdBuf,
     }
   }
   catch(const std::exception&)
+  {
+    return;
+  }
+
+  if(m_visualizationConfig.visualizeAllSensors)
+  {
+    for(const RasterHeightScanSensorMetadata& metadata : m_layout.sensors)
+    {
+      if(metadata.sensorIndex >= m_layout.sensors.size())
+      {
+        continue;
+      }
+      m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, metadata.sensorIndex,
+                             m_visualizationConfig.pointSizePixels,
+                             static_cast<uint32_t>(std::min<uint64_t>(metadata.sampleCount,
+                                                                      std::numeric_limits<uint32_t>::max())));
+    }
+    return;
+  }
+
+  if(m_visualizationConfig.sensorIndex >= m_layout.sensors.size())
   {
     return;
   }
