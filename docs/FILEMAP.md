@@ -210,11 +210,12 @@ call sites with `rg`.
 
 - `raster/shaders/preview/raster.vert`: Active mesh vertex shader.
 - `raster/shaders/preview/raster.frag`: Active mesh fragment shader for color,
-  primitive ID, instance ID, depth AOV writes, and sphere/simple light shading
-  from the renderer light buffer. DomeLight is parsed but not evaluated here.
+  primitive ID, instance ID, depth AOV writes, sphere/simple light shading, and
+  neutral-luminance DomeLight surface lighting from the renderer light buffer.
 - `raster/shaders/tile/tile_multiview.vert` /
   `raster/shaders/tile/tile_multiview.frag`: Mesh shader variants for multiview
-  tile rendering using `gl_ViewIndex` and `TileFrameUniforms`.
+  tile rendering using `gl_ViewIndex` and `TileFrameUniforms`, including
+  neutral-luminance DomeLight surface lighting.
 - `raster/shaders/tile/dome_background_tile_multiview.vert` /
   `raster/shaders/tile/dome_background_tile_multiview.frag`: Dome background
   variants for multiview tile rendering.
@@ -386,7 +387,9 @@ call sites with `rg`.
   transform/object metadata.
 - `raster/shaders/preview/raster.frag`: Minimal raster fragment shader writing color,
   primId, instanceId, normalized depth AOV attachments, and sphere/simple light
-  diffuse shading from the shared light buffer.
+  diffuse shading from the shared light buffer. DomeLight surface lighting is
+  converted to neutral luminance so its intensity illuminates materials without
+  tinting their base color.
 - `raster/shaders/tile/tile_multiview.vert` /
   `raster/shaders/tile/tile_multiview.frag`: Multiview tile mesh shader variants
   that read camera arrays from `TileFrameUniforms`.

@@ -64,4 +64,10 @@ vec3 sampleDomeLightDiffuse(Light domeLight, vec3 worldDirection)
   return sampleDomeLightLod(domeLight, worldDirection, 6.0);
 }
 
+vec3 sampleDomeLightDiffuseNeutral(Light domeLight, vec3 worldDirection)
+{
+  float intensity = dot(sampleDomeLightDiffuse(domeLight, worldDirection), vec3(0.2126, 0.7152, 0.0722));
+  return vec3(max(intensity, 0.0));
+}
+
 #endif

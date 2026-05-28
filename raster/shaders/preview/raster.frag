@@ -128,7 +128,7 @@ void main()
     }
     else if(light.type == LIGHT_TYPE_DOME)
     {
-      lighting += sampleDomeLightDiffuse(light, normal) * max(light.diffuse, 0.0);
+      lighting += sampleDomeLightDiffuseNeutral(light, normal) * max(light.diffuse, 0.0);
       supportedLightCount++;
     }
   }
