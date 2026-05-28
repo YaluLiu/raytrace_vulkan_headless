@@ -78,6 +78,8 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
                                 VtValue(static_cast<int>(defaults.gridRows))},
       HdRenderSettingDescriptor{"Enable LiDAR point cloud visualization",
                                 HdRobotRenderSettingTokens->lidarVisualizeEnabled, VtValue(false)},
+      HdRenderSettingDescriptor{"Visualize all LiDAR point clouds",
+                                HdRobotRenderSettingTokens->lidarVisualizeAllSensors, VtValue(false)},
       HdRenderSettingDescriptor{"LiDAR visualization sensor index",
                                 HdRobotRenderSettingTokens->lidarVisualizeSensorIndex, VtValue(0)},
       HdRenderSettingDescriptor{"LiDAR visualization point size",
@@ -102,6 +104,7 @@ bool IsTileRenderSetting(const TfToken &key)
 bool IsLidarRenderSetting(const TfToken &key)
 {
   return key == HdRobotRenderSettingTokens->lidarVisualizeEnabled ||
+         key == HdRobotRenderSettingTokens->lidarVisualizeAllSensors ||
          key == HdRobotRenderSettingTokens->lidarVisualizeSensorIndex ||
          key == HdRobotRenderSettingTokens->lidarVisualizePointSize;
 }
@@ -159,6 +162,8 @@ HdRobotLidarVisualizationConfig ReadLidarVisualizationConfig(const HdRenderDeleg
   HdRobotLidarVisualizationConfig config;
   config.enabled =
       delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->lidarVisualizeEnabled, config.enabled);
+  config.visualizeAllSensors = delegate.GetRenderSetting<bool>(
+      HdRobotRenderSettingTokens->lidarVisualizeAllSensors, config.visualizeAllSensors);
   config.sensorIndex = static_cast<uint32_t>(
       std::max(0, delegate.GetRenderSetting<int>(HdRobotRenderSettingTokens->lidarVisualizeSensorIndex,
                                                  static_cast<int>(config.sensorIndex))));

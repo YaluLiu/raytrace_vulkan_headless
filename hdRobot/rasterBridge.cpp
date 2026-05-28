@@ -126,6 +126,7 @@ RasterLidarVisualizationConfig ToRasterLidarVisualizationConfig(const HdRobotLid
 {
   RasterLidarVisualizationConfig result;
   result.enabled = config.enabled;
+  result.visualizeAllSensors = config.visualizeAllSensors;
   result.sensorIndex = config.sensorIndex;
   result.pointSizePixels = config.pointSizePixels;
   return result;

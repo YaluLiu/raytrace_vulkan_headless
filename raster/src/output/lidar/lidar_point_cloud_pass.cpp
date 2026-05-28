@@ -203,14 +203,34 @@ void LidarPointCloudPass::recordOverlay(const VkCommandBuffer& cmdBuf,
                                         VkDescriptorSetLayout sceneDescriptorSetLayout,
                                         const PreviewRasterPipeline& previewPipeline)
 {
-  if(!currentLayoutGenerated() || !m_visualization.enabled || m_visualization.pointSizePixels <= 0.0f ||
-     m_visualization.sensorIndex >= m_layout.sensors.size())
+  if(!currentLayoutGenerated() || !m_visualization.enabled || m_visualization.pointSizePixels <= 0.0f)
   {
     return;
   }
 
   if(!m_overlayPipeline.ensureResources(sceneDescriptorSetLayout, previewPipeline, m_sensorBuffer.buffer,
                                         m_pointBuffer.buffer))
+  {
+    return;
+  }
+
+  if(m_visualization.visualizeAllSensors)
+  {
+    for(const RasterLidarSensorMetadata& metadata : m_layout.sensors)
+    {
+      if(metadata.sensorIndex >= m_layout.sensors.size())
+      {
+        continue;
+      }
+      m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, metadata.sensorIndex,
+                             m_visualization.pointSizePixels,
+                             static_cast<uint32_t>(std::min<uint64_t>(metadata.pointCount,
+                                                                      std::numeric_limits<uint32_t>::max())));
+    }
+    return;
+  }
+
+  if(m_visualization.sensorIndex >= m_layout.sensors.size())
   {
     return;
   }

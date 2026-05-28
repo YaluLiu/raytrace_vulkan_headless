@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
   ((tileGridColumns, "hdRobot:tile:gridColumns")) \
   ((tileGridRows, "hdRobot:tile:gridRows")) \
   ((lidarVisualizeEnabled, "hdRobot:lidar:visualizeEnabled")) \
+  ((lidarVisualizeAllSensors, "hdRobot:lidar:visualizeAllSensors")) \
   ((lidarVisualizeSensorIndex, "hdRobot:lidar:visualizeSensorIndex")) \
   ((lidarVisualizePointSize, "hdRobot:lidar:visualizePointSize")) \
   ((heightScanVisualizeEnabled, "hdRobot:heightScan:visualizeEnabled")) \
