@@ -22,7 +22,9 @@ struct HdRaySensorDirtyBits
   {
     Clean = 0,
     DirtyTransform = 1 << 0,
-    DirtyParams = 1 << 1,
+    // Hydra's HdChangeTracker::AllDirty masks out bit 1 for Rprim varying state.
+    // Keep sensor params off bit 1 so full-dirty sprim syncs still reload them.
+    DirtyParams = 1 << 2,
     AllDirty = DirtyTransform | DirtyParams,
   };
 };
