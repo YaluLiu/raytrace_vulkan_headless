@@ -405,38 +405,43 @@ TfToken _TraceRoleFromValue(const VtValue& value)
 }
 }  // namespace
 
-HdRobotMesh::HdRobotMesh(const SdfPath& id, HdRobotRenderParam& scene)
+HdRobotMesh::HdRobotMesh(const SdfPath& id,
+                         HdRobotRenderParam& scene,
+                         HdRobotMeshHandle meshHandle,
+                         HdRobotMaterialHandle displayColorMaterialHandle)
     : HdMesh(id)
     , _scene(scene)
+    , _meshHandle(meshHandle)
+    , _displayColorMaterialHandle(displayColorMaterialHandle)
 {
-  std::lock_guard guard(_scene.mutex);
-  _mesh_id = _scene.v_mesh.size();
-  _scene.v_mesh.emplace_back(HydraMesh());
-  _scene.v_mesh[_mesh_id].scene_mat_ids = {0};
+  _meshData.scene_mat_ids = {_scene.GetBackendScene().ResolveMaterialIndexForUpload(
+      _scene.GetBackendScene().GetDefaultMaterialHandle())};
 }
 
 void HdRobotMesh::setValid(bool value)
 {
-  if(_scene.v_mesh[_mesh_id].valid != value)
+  if(_meshData.valid != value)
   {
-    _scene.v_mesh[_mesh_id].valid        = value;
-    _scene.MarkMeshInstanceDirty(_mesh_id);
+    _meshData.valid = value;
+    _scene.GetBackendScene().EnqueueMeshUpdate(
+        HdRobotMeshUpdate{_meshHandle, _meshData, value, false, true});
   }
 }
 
 void HdRobotMesh::Finalize(HdRenderParam* renderParam)
 {
-  setValid(false);
+  TF_UNUSED(renderParam);
+  _scene.GetBackendScene().DestroyMesh(_meshHandle);
 }
 
 
-void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate)
+void HdRobotMesh::GetDisplayColor(HdSceneDelegate* sceneDelegate, HydraMesh& meshData)
 {
-  ApplyDisplayColorMaterial(sceneDelegate, HdTokens->displayColor, -1);
+  ApplyDisplayColorMaterial(sceneDelegate, HdTokens->displayColor, nullptr, meshData);
 }
 
 bool HdRobotMesh::ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, const TfToken& primvarName,
-                                            int sourceSceneMatId)
+                                            const HydraMaterial* sourceMaterial, HydraMesh& meshData)
 {
   if(primvarName.IsEmpty())
   {
@@ -451,47 +456,36 @@ bool HdRobotMesh::ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, cons
   }
 
   int curMatId = -1;
+  HydraMaterial materialTemplate;
+  if(sourceMaterial != nullptr)
   {
-    std::lock_guard guard(_scene.mutex);
-    HydraMaterial materialTemplate;
-    if(sourceSceneMatId >= 0 && sourceSceneMatId < static_cast<int>(_scene.v_mat.size()))
-    {
-      materialTemplate = _scene.v_mat[sourceSceneMatId];
-    }
-    else
-    {
-      materialTemplate.set_default();
-    }
-
-    if(_display_color_mat_id < 0 || _display_color_mat_id >= static_cast<int>(_scene.v_mat.size()))
-    {
-      _display_color_mat_id = static_cast<int>(_scene.v_mat.size());
-      _scene.v_mat.emplace_back(HydraMaterial());
-    }
-
-    curMatId = _display_color_mat_id;
-    HydraMaterial& mat = _scene.v_mat[curMatId];
-    mat = materialTemplate;
-
-    const glm::vec3 color((*displayColor)[0], (*displayColor)[1], (*displayColor)[2]);
-    mat.diffuse         = color;
-    mat.baseColorFactor = color;
-    mat.ambient         = color * 0.1f;
-    mat.opaque          = (*displayColor)[3];
-    mat.opacityFactor   = (*displayColor)[3];
-
-    auto& mesh = _scene.v_mesh[_mesh_id];
-    if(mesh.scene_mat_ids.empty())
-    {
-      mesh.scene_mat_ids.emplace_back(curMatId);
-    }
-    else
-    {
-      mesh.scene_mat_ids[0] = curMatId;
-    }
+    materialTemplate = *sourceMaterial;
+  }
+  else
+  {
+    materialTemplate.set_default();
   }
 
-  _scene.MarkMaterialDirty(static_cast<size_t>(curMatId));
+  curMatId = _scene.GetBackendScene().ResolveMaterialIndexForUpload(_displayColorMaterialHandle);
+  HydraMaterial mat = materialTemplate;
+
+  const glm::vec3 color((*displayColor)[0], (*displayColor)[1], (*displayColor)[2]);
+  mat.diffuse         = color;
+  mat.baseColorFactor = color;
+  mat.ambient         = color * 0.1f;
+  mat.opaque          = (*displayColor)[3];
+  mat.opacityFactor   = (*displayColor)[3];
+
+  if(meshData.scene_mat_ids.empty())
+  {
+    meshData.scene_mat_ids.emplace_back(curMatId);
+  }
+  else
+  {
+    meshData.scene_mat_ids[0] = curMatId;
+  }
+
+  _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_displayColorMaterialHandle, mat});
   return true;
 }
 
@@ -501,6 +495,9 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
   TF_UNUSED(reprToken);
 
   HdDirtyBits dirtyBitsCopy = *dirtyBits;
+  HydraMesh meshData = _meshData;
+  bool geometryDirty = false;
+  bool instanceDirty = false;
 
   HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
 
@@ -510,34 +507,37 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
                         | (*dirtyBits & HdChangeTracker::DirtyPrimvar) | (*dirtyBits & HdChangeTracker::DirtyTopology);
   if(updateGeometry)
   {
-    _CreateGiMeshes(sceneDelegate);
+    geometryDirty = _CreateGiMeshes(sceneDelegate, meshData);
   }
-  setValid(true);
+  if(!meshData.valid)
+  {
+    meshData.valid = true;
+    instanceDirty = true;
+  }
 
-  auto& _mesh = _scene.v_mesh[_mesh_id];
   const TfToken traceRole =
       _TraceRoleFromValue(sceneDelegate->Get(id, HdRobotMeshParamTokens->traceRole));
-  if(_mesh.traceRole != traceRole)
+  if(meshData.traceRole != traceRole)
   {
-    _mesh.traceRole = traceRole;
-    _scene.MarkMeshInstanceDirty(_mesh_id);
+    meshData.traceRole = traceRole;
+    instanceDirty = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyRenderTag)
   {
     const TfToken newRenderTag = sceneDelegate->GetRenderTag(id);
-    if(_mesh.renderTag != newRenderTag)
+    if(meshData.renderTag != newRenderTag)
     {
-      _mesh.renderTag    = newRenderTag;
-      _scene.MarkMeshInstanceDirty(_mesh_id);
+      meshData.renderTag = newRenderTag;
+      instanceDirty = true;
     }
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyVisibility)
   {
     _UpdateVisibility(sceneDelegate, &dirtyBitsCopy);
-    _mesh.visible      = sceneDelegate->GetVisible(id);
-    _scene.MarkMeshInstanceDirty(_mesh_id);
+    meshData.visible = sceneDelegate->GetVisible(id);
+    instanceDirty = true;
   }
 
   if((*dirtyBits & HdChangeTracker::DirtyInstancer) || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex))
@@ -564,7 +564,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
     }
 
     int num_instances = uint32_t(transforms.size());
-    _mesh.instanceTransforms.resize(num_instances);
+    meshData.instanceTransforms.resize(num_instances);
 
     for(uint32_t k = 0; k < num_instances; ++k)
     {
@@ -573,12 +573,12 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
       {
         for(int j = 0; j < 4; ++j)
         {
-          _mesh.instanceTransforms[k][i][j] = transform[j][i];  // 鎸夎澶嶅埗
+          meshData.instanceTransforms[k][i][j] = transform[j][i];  // 鎸夎澶嶅埗
         }
       }
     }
-    _mesh.hasInstances = num_instances > 0;
-    _scene.MarkMeshInstanceDirty(_mesh_id);
+    meshData.hasInstances = num_instances > 0;
+    instanceDirty = true;
   }
 
   if(*dirtyBits & HdChangeTracker::DirtyTransform)
@@ -588,10 +588,10 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
     {
       for(int j = 0; j < 4; ++j)
       {
-        _mesh.transform[i][j] = transform[j][i];  // 鎸夎澶嶅埗
+        meshData.transform[i][j] = transform[j][i];  // 鎸夎澶嶅埗
       }
     }
-    _scene.MarkMeshInstanceDirty(_mesh_id);
+    instanceDirty = true;
   }
 
   //閫氳繃primvar鏀瑰彉棰滆壊
@@ -606,18 +606,33 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
 
     if(materialPrim)
     {
-      if(materialPrim->_baseColorPrimvarName.IsEmpty()
-         || !ApplyDisplayColorMaterial(sceneDelegate, materialPrim->_baseColorPrimvarName, materialPrim->_mat_id))
+      if(materialPrim->GetBaseColorPrimvarName().IsEmpty()
+         || !ApplyDisplayColorMaterial(sceneDelegate,
+                                       materialPrim->GetBaseColorPrimvarName(),
+                                       &materialPrim->GetMaterialData(),
+                                       meshData))
       {
-        _mesh.scene_mat_ids[0] = materialPrim->_mat_id;
+        const int materialIndex = _scene.GetBackendScene().ResolveMaterialIndexForUpload(materialPrim->GetHandle());
+        if(meshData.scene_mat_ids.empty())
+        {
+          meshData.scene_mat_ids.emplace_back(materialIndex);
+        }
+        else
+        {
+          meshData.scene_mat_ids[0] = materialIndex;
+        }
       }
     }
     else
     {
-      GetDisplayColor(sceneDelegate);
+      GetDisplayColor(sceneDelegate, meshData);
     }
+    geometryDirty = true;
   }
 
+  _meshData = meshData;
+  _scene.GetBackendScene().EnqueueMeshUpdate(
+      HdRobotMeshUpdate{_meshHandle, _meshData, true, geometryDirty, instanceDirty});
 
   *dirtyBits = HdChangeTracker::Clean;
 }
@@ -883,7 +898,7 @@ std::pair<int, int> GetTriangulatedFaceRange(const VtIntArray& faceVertexCounts,
   return {startIdx, startIdx + numTriangles};
 }
 
-void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
+bool HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& meshData)
 {
   const SdfPath& id = GetId();
 
@@ -903,7 +918,7 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   if(boxedPoints.IsEmpty() || !boxedPoints.IsHolding<VtVec3fArray>())
   {
     TF_RUNTIME_ERROR("Points primvar not found (%s)", id.GetText());
-    return;
+    return false;
   }
 
   // Analyze primvars
@@ -1043,10 +1058,12 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   HdRenderIndex&       renderIndex = sceneDelegate->GetRenderIndex();
   const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
 
-  auto& sceneMesh = _scene.v_mesh[_mesh_id];
-  const int defaultSceneMatId = sceneMesh.scene_mat_ids.empty() ? 0 : sceneMesh.scene_mat_ids[0];
-  sceneMesh.scene_mat_ids.clear();
-  sceneMesh.scene_mat_ids.emplace_back(defaultSceneMatId);
+  const int defaultSceneMatId = meshData.scene_mat_ids.empty()
+                                    ? _scene.GetBackendScene().ResolveMaterialIndexForUpload(
+                                          _scene.GetBackendScene().GetDefaultMaterialHandle())
+                                    : meshData.scene_mat_ids[0];
+  meshData.scene_mat_ids.clear();
+  meshData.scene_mat_ids.emplace_back(defaultSceneMatId);
 
   for(size_t i = 0; i < geomSubsets.size(); i++)
   {
@@ -1056,8 +1073,9 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
 
     if(materialPrim)
     {
-      sceneMesh.scene_mat_ids.emplace_back(materialPrim->_mat_id);
-      int localMatIdx = static_cast<int>(sceneMesh.scene_mat_ids.size() - 1);
+      meshData.scene_mat_ids.emplace_back(
+          _scene.GetBackendScene().ResolveMaterialIndexForUpload(materialPrim->GetHandle()));
+      int localMatIdx = static_cast<int>(meshData.scene_mat_ids.size() - 1);
 
       for(int faceIdx : subset.indices)
       {
@@ -1078,14 +1096,14 @@ void HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate)
   }
 
   // Collect vertices and indices
-  sceneMesh.faces        = faces;
-  sceneMesh.points       = points;
-  sceneMesh.normals      = normals;
-  sceneMesh.texCoords    = texCoords;
-  sceneMesh.tangents     = tangents;
-  sceneMesh.bitangentSigns = bitangentSigns;
-  sceneMesh.materialIds  = materialIds;
-  _scene.MarkMeshGeometryDirty(_mesh_id);
+  meshData.faces        = faces;
+  meshData.points       = points;
+  meshData.normals      = normals;
+  meshData.texCoords    = texCoords;
+  meshData.tangents     = tangents;
+  meshData.bitangentSigns = bitangentSigns;
+  meshData.materialIds  = materialIds;
+  return true;
 }
 
 HdDirtyBits HdRobotMesh::GetInitialDirtyBitsMask() const

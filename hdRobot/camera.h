@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <string>
 
+#include "backendHandles.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderParam;
@@ -27,7 +29,7 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera);
 class HdRobotCamera final : public HdCamera
 {
 public:
-  HdRobotCamera(const SdfPath& id, HdRobotRenderParam& scene);
+  HdRobotCamera(const SdfPath& id, HdRobotRenderParam& scene, HdRobotCameraHandle handle);
 
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
@@ -37,6 +39,7 @@ public:
 
 private:
   HdRobotRenderParam&       _scene;
+  HdRobotCameraHandle       _handle;
   mutable HdRobotCameraData _cameraData;
 };
 

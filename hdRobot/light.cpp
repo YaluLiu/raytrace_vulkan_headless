@@ -35,24 +35,11 @@ float _MaxRgb(const GfVec4f& color)
 // Base Light
 //
 
-HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotRenderParam& scene) : HdLight(id), _scene(scene) {}
-
-bool HdRobotLight::_EnsureLightSlot()
+HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle)
+    : HdLight(id)
+    , _scene(scene)
+    , _handle(handle)
 {
-  if(_light_id >= 0)
-  {
-    return true;
-  }
-
-  if(GetId().IsEmpty())
-  {
-    return false;
-  }
-
-  std::lock_guard guard(_scene.mutex);
-  _light_id = static_cast<int>(_scene.v_light.size());
-  _scene.v_light.emplace_back(HydraLight());
-  return true;
 }
 
 // We strive to conform to following UsdLux-enhancing specification:
@@ -97,21 +84,29 @@ HdDirtyBits HdRobotLight::GetInitialDirtyBitsMask() const
 
 void HdRobotLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
 {
-  if(_light_id >= 0)
-  {
-    _scene.v_light[_light_id].valid = 0;
-  }
+  _scene.GetBackendScene().DestroyLight(_handle);
+}
+
+bool HdRobotLight::_CanSyncLight() const
+{
+  return IsValid(_handle);
+}
+
+void HdRobotLight::_EnqueueLightUpdate(bool active)
+{
+  _scene.GetBackendScene().EnqueueLightUpdate(HdRobotLightUpdate{_handle, _lightData, active});
 }
 
 // --------Sphere Light-------------------------
-HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotRenderParam& scene) : HdRobotLight(id, scene)
+HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle)
+    : HdRobotLight(id, scene, handle)
 {
 }
 
 void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam,
                               HdDirtyBits* dirtyBits)
 {
-  if(!_EnsureLightSlot())
+  if(!_CanSyncLight())
   {
     *dirtyBits = HdChangeTracker::Clean;
     return;
@@ -119,13 +114,14 @@ void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
 
   const SdfPath& id = GetId();
   const GfMatrix4f transform(sceneDelegate->GetTransform(id));
-  _scene.v_light[_light_id].type = 0;
-  _scene.v_light[_light_id].valid = 1;
+  HydraLight light = _lightData;
+  light.type = 0;
+  light.valid = 1;
 
   if (*dirtyBits & DirtyBits::DirtyTransform)
   {
     GfVec3f pos = transform.Transform(GfVec3f(0.0f, 0.0f, 0.0f));
-    _scene.v_light[_light_id].position = glm::vec3(pos[0], pos[1], pos[2]);
+    light.position = glm::vec3(pos[0], pos[1], pos[2]);
   }
 
   if (*dirtyBits & DirtyBits::DirtyParams)
@@ -147,24 +143,27 @@ void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float specular = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    _scene.v_light[_light_id].baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
-    _scene.v_light[_light_id].diffuse = diffuse;
-    _scene.v_light[_light_id].specular = specular;
-    _scene.v_light[_light_id].radius = radius;
+    light.baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    light.diffuse = diffuse;
+    light.specular = specular;
+    light.radius = radius;
   }
 
+  _lightData = light;
+  _EnqueueLightUpdate();
   *dirtyBits = HdChangeTracker::Clean;
 }
 
 // --------Simple Light-------------------------
-HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, HdRobotRenderParam& scene) : HdRobotLight(id, scene)
+HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle)
+    : HdRobotLight(id, scene, handle)
 {
 }
 
 void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam,
                               HdDirtyBits* dirtyBits)
 {
-  if(!_EnsureLightSlot())
+  if(!_CanSyncLight())
   {
     *dirtyBits = HdChangeTracker::Clean;
     return;
@@ -176,13 +175,14 @@ void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
   {
     TF_WARN("%s:%s does not hold GlfSimpleLight - ignoring simpleLight", id.GetText(),
             HdLightTokens->params.GetText());
-    _scene.v_light[_light_id].valid = 0;
+    _lightData.valid = 0;
+    _EnqueueLightUpdate();
     *dirtyBits = HdChangeTracker::Clean;
     return;
   }
 
   const GlfSimpleLight simpleLight = boxedSimpleLight.Get<GlfSimpleLight>();
-  HydraLight&          light       = _scene.v_light[_light_id];
+  HydraLight           light       = _lightData;
   light.valid                      = simpleLight.HasIntensity() ? 1 : 0;
   light.type                       = 0;
 
@@ -207,26 +207,30 @@ void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
   light.specular     = _MaxRgb(specular);
   light.radius       = 0.5f;
 
+  _lightData = light;
+  _EnqueueLightUpdate();
   *dirtyBits = HdChangeTracker::Clean;
 }
 
 // --------Distant Light-------------------------
-HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotRenderParam& scene) : HdRobotLight(id, scene)
+HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle)
+    : HdRobotLight(id, scene, handle)
 {
 }
 
 void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam,
                                HdDirtyBits* dirtyBits)
 {
-  if(!_EnsureLightSlot())
+  if(!_CanSyncLight())
   {
     *dirtyBits = HdChangeTracker::Clean;
     return;
   }
 
   const SdfPath& id = GetId();
-  _scene.v_light[_light_id].type = 1;
-  _scene.v_light[_light_id].valid = 1;
+  HydraLight light = _lightData;
+  light.type = 1;
+  light.valid = 1;
   if (*dirtyBits & DirtyBits::DirtyTransform)
   {
     const GfMatrix4f transform(sceneDelegate->GetTransform(id));
@@ -234,7 +238,7 @@ void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] 
 
     GfVec3f dir = normalMatrix.TransformDir(GfVec3f(0.0f, 0.0f, -1.0f));
     // dir.Normalize();
-    _scene.v_light[_light_id].direction = glm::vec3(dir[0], dir[1], dir[2]);
+    light.direction = glm::vec3(dir[0], dir[1], dir[2]);
   }
 
   if (*dirtyBits & DirtyBits::DirtyParams)
@@ -253,17 +257,20 @@ void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] 
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float specular = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    _scene.v_light[_light_id].baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
-    _scene.v_light[_light_id].diffuse = diffuse;
-    _scene.v_light[_light_id].specular = specular;
-    _scene.v_light[_light_id].angle = angle;
+    light.baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    light.diffuse = diffuse;
+    light.specular = specular;
+    light.angle = angle;
   }
 
+  _lightData = light;
+  _EnqueueLightUpdate();
   *dirtyBits = HdChangeTracker::Clean;
 }
 
 // --------Dome Light-------------------------
-HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotRenderParam& scene) : HdRobotLight(id, scene)
+HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle)
+    : HdRobotLight(id, scene, handle)
 {
 }
 
@@ -298,21 +305,22 @@ std::string HdRobotDomeLight::GetTexturePath(HdSceneDelegate* sceneDelegate)
 void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdRenderParam* renderParam,
                             HdDirtyBits* dirtyBits)
 {
-  if(!_EnsureLightSlot())
+  if(!_CanSyncLight())
   {
     *dirtyBits = HdChangeTracker::Clean;
     return;
   }
 
   const SdfPath& id = GetId();
-  _scene.v_light[_light_id].type = 2;
-  _scene.v_light[_light_id].valid = 1;
+  HydraLight light = _lightData;
+  light.type = 2;
+  light.valid = 1;
   if (*dirtyBits & DirtyBits::DirtyTransform)
   {
     const GfMatrix4d& transform = sceneDelegate->GetTransform(id);
     auto rotateQuat = GfMatrix4f(transform.GetOrthonormalized()).ExtractRotationQuat();
-    _scene.v_light[_light_id].rotateQuat = glm::vec4(rotateQuat.GetImaginary()[0], rotateQuat.GetImaginary()[1],
-                                                     rotateQuat.GetImaginary()[2], rotateQuat.GetReal());
+    light.rotateQuat = glm::vec4(rotateQuat.GetImaginary()[0], rotateQuat.GetImaginary()[1],
+                                 rotateQuat.GetImaginary()[2], rotateQuat.GetReal());
   }
 
   if (*dirtyBits & DirtyBits::DirtyParams)
@@ -323,22 +331,24 @@ void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdR
     VtValue boxedSpecular = sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
     float specular = boxedSpecular.GetWithDefault<float>(1.0f);
 
-    _scene.v_light[_light_id].baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
-    _scene.v_light[_light_id].diffuse = diffuse;
-    _scene.v_light[_light_id].specular = specular;
+    light.baseEmission = glm::vec3(baseEmission[0], baseEmission[1], baseEmission[2]);
+    light.diffuse = diffuse;
+    light.specular = specular;
     std::string texturePath = GetTexturePath(sceneDelegate);
     if(texturePath.empty())
     {
-      _scene.v_light[_light_id].texturePath.clear();
-      _scene.v_light[_light_id].textureID = -1;
+      light.texturePath.clear();
+      light.textureID = -1;
     }
-    else if (_scene.v_light[_light_id].texturePath != texturePath)
+    else if (light.texturePath != texturePath)
     {
-      _scene.v_light[_light_id].texturePath = texturePath;
-      _scene.v_light[_light_id].textureID = _scene.RegisterTexturePath(texturePath, TextureUsage::Light);
+      light.texturePath = texturePath;
+      light.textureID = _scene.RegisterTexturePath(texturePath, TextureUsage::Light);
     }
   }
 
+  _lightData = light;
+  _EnqueueLightUpdate();
   *dirtyBits = HdChangeTracker::Clean;
 }
 

@@ -93,9 +93,12 @@ HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotHeightScanParams& 
 }
 } // namespace
 
-HdRobotHeightScanSensor::HdRobotHeightScanSensor(const SdfPath& id, HdRobotRenderParam& scene)
+HdRobotHeightScanSensor::HdRobotHeightScanSensor(const SdfPath& id,
+                                                 HdRobotRenderParam& scene,
+                                                 HdRobotHeightScanSensorHandle handle)
     : HdSprim(id)
     , _scene(scene)
+    , _handle(handle)
 {
 }
 
@@ -106,7 +109,7 @@ HdDirtyBits HdRobotHeightScanSensor::GetInitialDirtyBitsMask() const
 
 void HdRobotHeightScanSensor::Finalize(HdRenderParam*)
 {
-  _scene.RemoveHeightScanSensor(GetId());
+  _scene.GetBackendScene().DestroyHeightScanSensor(_handle);
 }
 
 void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
@@ -130,17 +133,12 @@ void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
 
 void HdRobotHeightScanSensor::_UpdateRenderParam()
 {
-  if(!_enabled)
-  {
-    _scene.RemoveHeightScanSensor(GetId());
-    return;
-  }
-
   HdRobotHeightScanSensorData sensorData;
   sensorData.name = GetId().GetString();
   sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeHeightScanParams(_params);
-  _scene.UpsertHeightScanSensor(sensorData);
+  _scene.GetBackendScene().EnqueueHeightScanSensorUpdate(
+      HdRobotHeightScanSensorUpdate{_handle, sensorData, _enabled});
 }
 
 void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, HdDirtyBits* dirtyBits)

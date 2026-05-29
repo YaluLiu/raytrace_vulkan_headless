@@ -64,9 +64,10 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
   return data;
 }
 
-HdRobotCamera::HdRobotCamera(const SdfPath& id, HdRobotRenderParam& scene)
+HdRobotCamera::HdRobotCamera(const SdfPath& id, HdRobotRenderParam& scene, HdRobotCameraHandle handle)
     : HdCamera(id)
     , _scene(scene)
+    , _handle(handle)
 {
 }
 
@@ -82,7 +83,7 @@ const HdRobotCameraData& HdRobotCamera::GetCameraData() const
 
 void HdRobotCamera::Finalize(HdRenderParam*)
 {
-  _scene.RemoveCamera(GetId());
+  _scene.GetBackendScene().DestroyCamera(_handle);
 }
 
 void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
@@ -102,7 +103,7 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
   HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
   _cameraData = cameraData;
-  _scene.UpsertCamera(cameraData);
+  _scene.GetBackendScene().EnqueueCameraUpdate(HdRobotCameraUpdate{_handle, cameraData});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

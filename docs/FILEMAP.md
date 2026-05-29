@@ -262,20 +262,28 @@ call sites with `rg`.
   and frame execution entry into the bridge.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
   Converts Hydra frame state into `RasterRenderer` updates and render calls,
-  including the all-camera snapshot passed to raster renderer, the current
-  frame's requested tile AOV channel mask, sorted LiDAR and height scan sensor
-  forwarding, LiDAR and height scan visualization config forwarding,
+  including backend scene snapshots for cameras, meshes, materials, lights,
+  LiDAR and height scan sensors, the current frame's requested tile AOV channel
+  mask, sorted sensor forwarding, visualization config forwarding,
   `hdRobot:traceRole = "ground"` routing into raster instance trace masks, and
   ordered AOV copy groups that copy fixed tile AOVs before display tile AOVs
-  and other AOVs.
+  and other AOVs. GPU upload still happens here rather than in
+  `CommitResources()`.
 - `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into raster-facing camera specs,
   `RasterMaterial`, light records, LiDAR and height scan sensor specs,
   visualization configs, and `TileAtlasConfig`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object, camera array, LiDAR and height scan sensor arrays, tile
-  config, LiDAR and height scan visualization config, scene dirty flags,
-  texture registry, and renderer bridge ownership.
+  parameter object owning render settings, the texture registry, and the
+  backend scene table. It no longer exposes global prim arrays; prim wrappers
+  enqueue backend updates and `CommitResources()` drains them.
+- `hdRobot/backendHandles.h`: Stable generation handles for backend mesh,
+  material, light, camera, LiDAR sensor, and height scan sensor records.
+- `hdRobot/slotVector.h`: Small handle-indexed slot vector used by the backend
+  scene table; validates index, generation, and occupied state before access.
+- `hdRobot/backendScene.h` / `hdRobot/backendScene.cpp`: CPU-side Hydra backend
+  scene table, pending update queues, dirty mesh/material consumption, active
+  camera/sensor/light snapshots, and renderer mesh/instance ID bookkeeping.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings, LiDAR/height scan visualization settings,
   mesh `hdRobot:traceRole`, `ground`, and tile AOV tokens. Sensor parameter
@@ -333,12 +341,14 @@ call sites with `rg`.
 
 ## Hydra Scene Primitives
 
-- `hdRobot/mesh.h` / `hdRobot/mesh.cpp`: Mesh sync, topology/primvar analysis,
-  tangent generation, material binding, visibility, transforms,
-  `hdRobot:traceRole = "ground"` ingestion, and conversion into renderer mesh
-  data.
+- `hdRobot/mesh.h` / `hdRobot/mesh.cpp`: Mesh wrapper with backend handle,
+  topology/primvar analysis, tangent generation, material-handle binding,
+  displayColor material updates, visibility, transforms,
+  `hdRobot:traceRole = "ground"` ingestion, and local `HydraMesh` update
+  command generation.
 - `hdRobot/material.h` / `hdRobot/material.cpp`: Material sync lifecycle,
-  MaterialX parser invocation, texture registration, and dirty marking.
+  MaterialX parser invocation, texture registration, backend material handle
+  ownership, and material update command generation.
 - `hdRobot/materialXParser.h` / `hdRobot/materialXParser.cpp`: USD Preview
   Surface plus MaterialX surface selection, `ND_surface` closure traversal,
   standard surface/OpenPBR and selected BSDF/EDF input rules, upstream texture
@@ -346,22 +356,23 @@ call sites with `rg`.
   field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, shared
   `HdRobotCameraData` pose/projection data, and transform-to-camera-data
-  conversion used by cameras and sensor sprims. Sensor-specific params live in
-  their sensor headers.
+  conversion used by cameras and sensor sprims. Camera data is enqueued into
+  the backend scene table. Sensor-specific params live in their sensor headers.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
   USD `LidarSensor` prims; caches transform and individual sensor parameters
   from `HdSceneDelegate::Get(id, token)` with type diagnostics, leaves cached
-  defaults intact for empty values, validates/clamps params, and upserts
-  `HdRobotLidarSensorData`. The header owns `HdRobotLidarParams` and
-  `HdRobotLidarSensorData`.
+  defaults intact for empty values, validates/clamps params, and enqueues
+  active/inactive `HdRobotLidarSensorData` updates. The header owns
+  `HdRobotLidarParams` and `HdRobotLidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
   for custom USD `HeightScanSensor` prims; caches transform and individual
   sensor parameters from `HdSceneDelegate::Get(id, token)` with type
   diagnostics, leaves cached defaults intact for empty values,
-  validates/clamps params, derives camera forward/up from the transform, and upserts
-  `HdRobotHeightScanSensorData`. The header owns `HdRobotHeightScanParams` and
-  `HdRobotHeightScanSensorData`.
-- `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
+  validates/clamps params, derives camera forward/up from the transform, and
+  enqueues active/inactive `HdRobotHeightScanSensorData` updates. The header
+  owns `HdRobotHeightScanParams` and `HdRobotHeightScanSensorData`.
+- `hdRobot/light.h` / `hdRobot/light.cpp`: Light wrappers with backend handles;
+  sync computes local renderer light data and enqueues backend light updates.
 - `hdRobot/instancer.h` / `hdRobot/instancer.cpp`: Hydra instancer support.
 - `hdRobot/sceneData.h` / `hdRobot/sceneData.cpp`: Shared scene data helpers.
 

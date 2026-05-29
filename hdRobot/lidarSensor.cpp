@@ -77,9 +77,10 @@ HdRobotLidarParams SanitizeLidarParams(const HdRobotLidarParams& source)
 }
 } // namespace
 
-HdRobotLidarSensor::HdRobotLidarSensor(const SdfPath& id, HdRobotRenderParam& scene)
+HdRobotLidarSensor::HdRobotLidarSensor(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLidarSensorHandle handle)
     : HdSprim(id)
     , _scene(scene)
+    , _handle(handle)
 {
 }
 
@@ -90,7 +91,7 @@ HdDirtyBits HdRobotLidarSensor::GetInitialDirtyBitsMask() const
 
 void HdRobotLidarSensor::Finalize(HdRenderParam*)
 {
-  _scene.RemoveLidarSensor(GetId());
+  _scene.GetBackendScene().DestroyLidarSensor(_handle);
 }
 
 void HdRobotLidarSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
@@ -108,17 +109,11 @@ void HdRobotLidarSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
 
 void HdRobotLidarSensor::_UpdateRenderParam()
 {
-  if(!_enabled)
-  {
-    _scene.RemoveLidarSensor(GetId());
-    return;
-  }
-
   HdRobotLidarSensorData sensorData;
   sensorData.name = GetId().GetString();
   sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeLidarParams(_params);
-  _scene.UpsertLidarSensor(sensorData);
+  _scene.GetBackendScene().EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate{_handle, sensorData, _enabled});
 }
 
 void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, HdDirtyBits* dirtyBits)

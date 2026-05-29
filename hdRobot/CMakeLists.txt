@@ -5,6 +5,10 @@ add_library(
   ${PROJNAME} SHARED
   instancer.cpp
   instancer.h
+  backendScene.cpp
+  backendScene.h
+  backendHandles.h
+  slotVector.h
   aovBridgeSpec.cpp
   aovBridgeSpec.h
   rasterBridge.cpp

@@ -3,6 +3,7 @@
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/base/gf/vec2f.h>
 #include <optional>
+#include "backendHandles.h"
 #include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -10,7 +11,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRobotMesh final : public HdMesh
 {
 public:
-  HdRobotMesh(const SdfPath& id, HdRobotRenderParam& _scene);
+  HdRobotMesh(const SdfPath& id,
+              HdRobotRenderParam& scene,
+              HdRobotMeshHandle meshHandle,
+              HdRobotMaterialHandle displayColorMaterialHandle);
 
   void Finalize(HdRenderParam* renderParam) override;
   void setValid(bool value);
@@ -27,8 +31,11 @@ protected:
 
 private:
   void _AnalyzePrimvars(HdSceneDelegate* sceneDelegate, bool& foundNormals, bool& indexingAllowed);
-  void GetDisplayColor(HdSceneDelegate* sceneDelegate);
-  bool ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, const TfToken& primvarName, int sourceSceneMatId);
+  void GetDisplayColor(HdSceneDelegate* sceneDelegate, HydraMesh& meshData);
+  bool ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate,
+                                 const TfToken& primvarName,
+                                 const HydraMaterial* sourceMaterial,
+                                 HydraMesh& meshData);
 
   struct ProcessedPrimvar
   {
@@ -54,12 +61,13 @@ private:
                               uint32_t            vertexCount,
                               bool                indexingAllowed);
 
-  void _CreateGiMeshes(HdSceneDelegate* sceneDelegate);
+  bool _CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& meshData);
 
 private:
   HdRobotRenderParam& _scene;
-  int             _mesh_id = -1;
-  int             _display_color_mat_id = -1;
+  HdRobotMeshHandle _meshHandle;
+  HdRobotMaterialHandle _displayColorMaterialHandle;
+  HydraMesh _meshData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

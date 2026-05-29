@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <optional>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -52,15 +53,83 @@ bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
 }
 
 std::vector<RasterMaterial> CollectRasterMaterialsForMesh(const HydraMesh &mesh,
-                                                          const std::vector<HydraMaterial> &materials)
+                                                          const std::vector<HdRobotMaterialRecord> &materials)
 {
   std::vector<RasterMaterial> rasterMaterials;
   rasterMaterials.reserve(mesh.scene_mat_ids.size());
   for(const int matId : mesh.scene_mat_ids)
   {
-    rasterMaterials.emplace_back(ToRasterMaterial(materials[matId]));
+    const size_t materialIndex = matId >= 0 ? static_cast<size_t>(matId) : 0;
+    const size_t fallbackIndex = materials.empty() ? materialIndex : 0;
+    const size_t resolvedIndex = materialIndex < materials.size() ? materialIndex : fallbackIndex;
+    if(resolvedIndex < materials.size())
+    {
+      rasterMaterials.emplace_back(ToRasterMaterial(materials[resolvedIndex].data));
+    }
+  }
+  if(rasterMaterials.empty())
+  {
+    HydraMaterial fallback;
+    fallback.set_default();
+    rasterMaterials.emplace_back(ToRasterMaterial(fallback));
   }
   return rasterMaterials;
+}
+
+struct UploadedMeshState
+{
+  int rendererMeshId = -1;
+  std::vector<int> rendererInstanceIds;
+};
+
+UploadedMeshState UploadMeshToRenderer(RasterRenderer &vulkan,
+                                       const HydraMesh &mesh,
+                                       const std::vector<HdRobotMaterialRecord> &materials)
+{
+  UploadedMeshState state;
+  state.rendererMeshId = static_cast<int>(vulkan.getMeshSourceCount());
+
+  RasterMeshGeometry geometry;
+  ConvertHydraMeshToRasterGeometry(mesh, geometry);
+  std::vector<RasterMaterial> rasterMaterials = CollectRasterMaterialsForMesh(mesh, materials);
+  vulkan.uploadMesh(geometry, rasterMaterials);
+
+  const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
+  const auto instance = vulkan.getInstance(firstInstanceId);
+  const size_t authoredInstanceCount = mesh.instanceTransforms.size();
+  const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
+  for(size_t i = 1; i < rendererInstanceSlotCount; ++i)
+  {
+    vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
+  }
+  state.rendererInstanceIds.reserve(rendererInstanceSlotCount);
+  for(size_t i = 0; i < rendererInstanceSlotCount; ++i)
+  {
+    state.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
+  }
+  return state;
+}
+
+bool EnsureMeshRendererInstanceSlots(RasterRenderer &vulkan, HdRobotMeshRecord &record)
+{
+  if(record.rendererInstanceIds.empty())
+  {
+    return false;
+  }
+
+  const size_t requiredSlotCount = std::max<size_t>(record.data.instanceTransforms.size(), 1);
+  if(record.rendererInstanceIds.size() >= requiredSlotCount)
+  {
+    return false;
+  }
+
+  const RasterInstanceInfo baseInstance = vulkan.getInstance(static_cast<size_t>(record.rendererInstanceIds.front()));
+  for(size_t i = record.rendererInstanceIds.size(); i < requiredSlotCount; ++i)
+  {
+    const uint32_t rendererInstanceId = vulkan.addInstance(baseInstance.transform, baseInstance.objIndex, static_cast<int>(i));
+    record.rendererInstanceIds.push_back(static_cast<int>(rendererInstanceId));
+  }
+  return true;
 }
 
 bool HasRenderBuffer(const HdRenderPassAovBindingVector &bindings)
@@ -159,13 +228,14 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
 
   _rasterSession.getRenderer().setTileConfig(ToTileAtlasConfig(_renderParam.GetTileConfig()));
   _rasterSession.getRenderer().setRequestedTileAovChannels(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
-  std::vector<HdRobotLidarSensorData> lidarSensors = _renderParam.GetLidarSensorsSnapshot();
+  const HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
+  std::vector<HdRobotLidarSensorData> lidarSensors = backendScene.GetActiveLidarSensorSnapshot();
   std::sort(lidarSensors.begin(), lidarSensors.end(), [](const HdRobotLidarSensorData &lhs,
                                                          const HdRobotLidarSensorData &rhs) {
     return lhs.name < rhs.name;
   });
   _rasterSession.getRenderer().setLidarSensors(ToRasterLidarSensorSpec(lidarSensors));
-  std::vector<HdRobotHeightScanSensorData> heightScanSensors = _renderParam.GetHeightScanSensorsSnapshot();
+  std::vector<HdRobotHeightScanSensorData> heightScanSensors = backendScene.GetActiveHeightScanSensorSnapshot();
   std::sort(heightScanSensors.begin(), heightScanSensors.end(), [](const HdRobotHeightScanSensorData &lhs,
                                                                    const HdRobotHeightScanSensorData &rhs) {
     return lhs.name < rhs.name;
@@ -267,28 +337,17 @@ void HdRobotRasterBridge::resizeRasterSession(const GfVec2i &renderSize)
 void HdRobotRasterBridge::uploadInitialScene()
 {
   RasterRenderer &vulkan = _rasterSession.getRenderer();
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
+  std::vector<HdRobotMeshRecord> meshRecords = backendScene.GetMeshRecordsSnapshot();
+  const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
+  for(const HdRobotMeshRecord& record : meshRecords)
   {
-    auto &curMesh = _renderParam.v_mesh[meshId];
-    RasterMeshGeometry geometry;
-    ConvertHydraMeshToRasterGeometry(curMesh, geometry);
-    std::vector<RasterMaterial> materials = CollectRasterMaterialsForMesh(curMesh, _renderParam.v_mat);
-    vulkan.uploadMesh(geometry, materials);
-    const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
-    const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
-    const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
-    const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
-    curMesh.hasInstances = authoredInstanceCount > 0;
-    for(size_t i = 1; i < rendererInstanceSlotCount; ++i)
+    if(!record.active || !record.data.valid)
     {
-      vulkan.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
+      continue;
     }
-    curMesh.rendererInstanceIds.clear();
-    for(size_t i = 0; i < rendererInstanceSlotCount; ++i)
-    {
-      curMesh.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
-    }
-    _renderParam.MarkMeshInstanceDirty(meshId);
+    UploadedMeshState state = UploadMeshToRenderer(vulkan, record.data, materialRecords);
+    backendScene.SetMeshRendererState(record.backendIndex, state.rendererMeshId, std::move(state.rendererInstanceIds));
   }
 }
 
@@ -326,12 +385,24 @@ bool HdRobotRasterBridge::updateCameras(const HdRenderPassStateSharedPtr &render
   }
 
   const HdRobotCameraData &mainCameraData = robotCamera->GetCameraData();
-  _renderParam.UpsertCamera(mainCameraData);
-
-  std::vector<HdRobotCameraData> cameras = _renderParam.GetCamerasSnapshot();
+  std::vector<HdRobotCameraData> cameras = _renderParam.GetBackendScene().GetActiveCameraSnapshot();
   if(cameras.empty())
   {
     cameras.push_back(mainCameraData);
+  }
+  else
+  {
+    const auto cameraIt = std::find_if(cameras.begin(), cameras.end(), [&mainCameraData](const HdRobotCameraData& camera) {
+      return camera.name == mainCameraData.name;
+    });
+    if(cameraIt == cameras.end())
+    {
+      cameras.push_back(mainCameraData);
+    }
+    else
+    {
+      *cameraIt = mainCameraData;
+    }
   }
 
   cameras.erase(std::remove_if(cameras.begin(), cameras.end(), IsUsdImagingPluginCamera), cameras.end());
@@ -350,12 +421,9 @@ void HdRobotRasterBridge::updateLights()
   RasterRenderer &vulkan = _rasterSession.getRenderer();
   vulkan.clearLights();
 
-  for(auto &curLight : _renderParam.v_light)
+  for(const HydraLight &curLight : _renderParam.GetBackendScene().GetActiveLightSnapshot())
   {
-    if(curLight.valid)
-    {
-      vulkan.addLight(ToRasterLight(curLight));
-    }
+    vulkan.addLight(ToRasterLight(curLight));
   }
 }
 
@@ -369,43 +437,63 @@ void HdRobotRasterBridge::updateScene()
 void HdRobotRasterBridge::updateGeometry()
 {
   RasterRenderer &vulkan = _rasterSession.getRenderer();
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
+  const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
+  for(const HdRobotMeshRecord& record : backendScene.ConsumeDirtyMeshGeometry())
   {
-    if(_renderParam.ConsumeMeshGeometryDirty(meshId))
+    if(!record.active || !record.data.valid)
     {
-      RasterMeshGeometry geometry;
-      ConvertHydraMeshToRasterGeometry(_renderParam.v_mesh[meshId], geometry);
-      vulkan.updateMeshGeometry(meshId, geometry);
+      continue;
     }
+    if(record.rendererMeshId < 0)
+    {
+      UploadedMeshState state = UploadMeshToRenderer(vulkan, record.data, materialRecords);
+      backendScene.SetMeshRendererState(record.backendIndex, state.rendererMeshId, std::move(state.rendererInstanceIds));
+      continue;
+    }
+    RasterMeshGeometry geometry;
+    ConvertHydraMeshToRasterGeometry(record.data, geometry);
+    vulkan.updateMeshGeometry(static_cast<uint32_t>(record.rendererMeshId), geometry);
   }
 }
 
 void HdRobotRasterBridge::updateInstances()
 {
   RasterRenderer &vulkan = _rasterSession.getRenderer();
+  HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
+  const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
 
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  for(HdRobotMeshRecord record : backendScene.ConsumeDirtyMeshInstances())
   {
-    auto &curMesh = _renderParam.v_mesh[meshId];
-    if(_renderParam.ConsumeMeshInstanceDirty(meshId))
+    if(record.rendererMeshId < 0 && record.active && record.data.valid)
     {
-      const bool tagMatched = isMeshRenderTagMatched(curMesh);
-      const bool meshVisible = curMesh.visible && curMesh.valid && tagMatched;
-      const uint32_t traceMask = curMesh.traceRole == HdRobotTraceRoleTokens->ground
-                                   ? kRasterTraceMaskGround
-                                   : kRasterTraceMaskDefaultGeometry;
-      for(size_t instanceId = 0; instanceId < curMesh.rendererInstanceIds.size(); ++instanceId)
+      UploadedMeshState state = UploadMeshToRenderer(vulkan, record.data, materialRecords);
+      record.rendererMeshId = state.rendererMeshId;
+      record.rendererInstanceIds = std::move(state.rendererInstanceIds);
+      backendScene.SetMeshRendererState(record.backendIndex, record.rendererMeshId, record.rendererInstanceIds);
+    }
+    if(EnsureMeshRendererInstanceSlots(vulkan, record))
+    {
+      backendScene.SetMeshRendererState(record.backendIndex, record.rendererMeshId, record.rendererInstanceIds);
+    }
+
+    const HydraMesh& curMesh = record.data;
+    const bool tagMatched = isMeshRenderTagMatched(curMesh);
+    const bool meshVisible = record.active && curMesh.visible && curMesh.valid && tagMatched;
+    const uint32_t traceMask = curMesh.traceRole == HdRobotTraceRoleTokens->ground
+                                 ? kRasterTraceMaskGround
+                                 : kRasterTraceMaskDefaultGeometry;
+    for(size_t instanceId = 0; instanceId < record.rendererInstanceIds.size(); ++instanceId)
+    {
+      auto rendererInstanceId = record.rendererInstanceIds[instanceId];
+      const bool instanceValid = curMesh.hasInstances && (instanceId < curMesh.instanceTransforms.size());
+      const bool visible = meshVisible && instanceValid;
+      glm::mat4 transform = glm::transpose(curMesh.transform);
+      if(instanceValid)
       {
-        auto rendererInstanceId = curMesh.rendererInstanceIds[instanceId];
-        const bool instanceValid = curMesh.hasInstances && (instanceId < curMesh.instanceTransforms.size());
-        const bool visible = meshVisible && instanceValid;
-        glm::mat4 transform = glm::transpose(curMesh.transform);
-        if(instanceValid)
-        {
-          transform = glm::transpose(curMesh.transform * curMesh.instanceTransforms[instanceId]);
-        }
-        vulkan.updateInstance(rendererInstanceId, transform, visible, traceMask);
+        transform = glm::transpose(curMesh.transform * curMesh.instanceTransforms[instanceId]);
       }
+      vulkan.updateInstance(rendererInstanceId, transform, visible, traceMask);
     }
   }
 }
@@ -413,18 +501,30 @@ void HdRobotRasterBridge::updateInstances()
 void HdRobotRasterBridge::updateMaterials()
 {
   RasterRenderer &vulkan = _rasterSession.getRenderer();
+  HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
+  const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
+  const std::vector<HdRobotMeshRecord> meshRecords = backendScene.GetMeshRecordsSnapshot();
+  const std::vector<uint32_t> dirtyMaterialIndices = backendScene.ConsumeDirtyMaterialIndices();
+  const std::set<uint32_t> dirtyMaterialSet(dirtyMaterialIndices.begin(), dirtyMaterialIndices.end());
   std::vector<RasterMaterialUpdate> newMaterials;
-  for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
+  for(const HdRobotMeshRecord& record : meshRecords)
   {
-    auto &curMesh = _renderParam.v_mesh[meshId];
+    if(record.rendererMeshId < 0)
+    {
+      continue;
+    }
+    const HydraMesh& curMesh = record.data;
     for(size_t localMatIdx = 0; localMatIdx < curMesh.scene_mat_ids.size(); ++localMatIdx)
     {
       int globalMatId = curMesh.scene_mat_ids[localMatIdx];
-      auto &material = _renderParam.v_mat[globalMatId];
-      if(_renderParam.IsMaterialDirty(static_cast<size_t>(globalMatId)))
+      if(globalMatId < 0 || static_cast<size_t>(globalMatId) >= materialRecords.size())
       {
-        RasterMaterial newMaterial = ToRasterMaterial(material);
-        newMaterials.push_back({static_cast<int>(meshId), static_cast<int>(localMatIdx), newMaterial});
+        globalMatId = 0;
+      }
+      if(dirtyMaterialSet.find(static_cast<uint32_t>(globalMatId)) != dirtyMaterialSet.end())
+      {
+        RasterMaterial newMaterial = ToRasterMaterial(materialRecords[static_cast<size_t>(globalMatId)].data);
+        newMaterials.push_back({record.rendererMeshId, static_cast<int>(localMatIdx), newMaterial});
       }
     }
   }
@@ -432,7 +532,6 @@ void HdRobotRasterBridge::updateMaterials()
   {
     vulkan.updateMaterialsAtRuntime(newMaterials);
   }
-  _renderParam.ClearAllMaterialDirty();
 }
 
 bool HdRobotRasterBridge::updateActiveRenderTags(const TfTokenVector &renderTags)

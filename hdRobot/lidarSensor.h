@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../UsdRaySensorImaging/hydraSensor.h"
+#include "backendHandles.h"
 #include "camera.h"
 
 #include <pxr/base/gf/matrix4d.h>
@@ -42,7 +43,7 @@ public:
     AllDirty = HdRaySensorDirtyBits::AllDirty,
   };
 
-  HdRobotLidarSensor(const SdfPath& id, HdRobotRenderParam& scene);
+  HdRobotLidarSensor(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLidarSensorHandle handle);
 
   void Sync(HdSceneDelegate* sceneDelegate,
             HdRenderParam* renderParam,
@@ -55,6 +56,7 @@ private:
   void _UpdateRenderParam();
 
   HdRobotRenderParam& _scene;
+  HdRobotLidarSensorHandle _handle;
   GfMatrix4d _transform = GfMatrix4d(1.0);
   bool _enabled = true;
   HdRobotLidarParams _params;

@@ -19,17 +19,18 @@ int RegisterTexture(HdRobotRenderParam& scene, const std::string& texturePath, T
 }
 }  // namespace
 
-HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene) : HdMaterial(id), _scene(scene)
+HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene, HdRobotMaterialHandle handle)
+    : HdMaterial(id)
+    , _scene(scene)
+    , _handle(handle)
 {
-  std::lock_guard guard(_scene.mutex);
-  _mat_id = _scene.v_mat.size();
-  _scene.v_mat.emplace_back(HydraMaterial());
+  _materialData.set_default();
 }
 
 void HdRobotMaterial::Finalize(HdRenderParam* renderParam)
 {
-  _scene.v_mat[_mat_id].set_default();
-  _scene.MarkMaterialDirty(_mat_id);
+  TF_UNUSED(renderParam);
+  _scene.GetBackendScene().DestroyMaterial(_handle);
 }
 
 HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
@@ -37,8 +38,24 @@ HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
   return DirtyBits::DirtyParams;
 }
 
+HdRobotMaterialHandle HdRobotMaterial::GetHandle() const
+{
+  return _handle;
+}
+
+const HydraMaterial& HdRobotMaterial::GetMaterialData() const
+{
+  return _materialData;
+}
+
+const TfToken& HdRobotMaterial::GetBaseColorPrimvarName() const
+{
+  return _baseColorPrimvarName;
+}
+
 void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
 {
+  TF_UNUSED(renderParam);
   if (!TF_VERIFY(sceneDelegate)) return;
   bool pullMaterial = (*dirtyBits & DirtyBits::DirtyParams);
 
@@ -50,12 +67,15 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   }
 
   _baseColorPrimvarName = TfToken();
-  _scene.v_mat[_mat_id].set_default();
+  HydraMaterial material;
+  material.set_default();
   const SdfPath& id = GetId();
   const VtValue& resource = sceneDelegate->GetMaterialResource(id);
 
   if (!resource.IsHolding<HdMaterialNetworkMap>())
   {
+    _materialData = material;
+    _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
     return;
   }
 
@@ -66,11 +86,12 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   if (isVolume)
   {
     TF_WARN("Volume %s unsupported", id.GetText());
+    _materialData = material;
+    _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
     return;
   }
 
-  MaterialXParseResult result = ParseMaterialXNetwork(network, _scene.v_mat[_mat_id]);
-  HydraMaterial& material = _scene.v_mat[_mat_id];
+  MaterialXParseResult result = ParseMaterialXNetwork(network, material);
   material = result.material;
   _baseColorPrimvarName = result.baseColorPrimvarName;
 
@@ -80,14 +101,11 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
     if (textureId >= 0)
     {
       ApplyMaterialXTextureId(material, binding.usage, textureId);
-      _scene.MarkMaterialDirty(_mat_id);
     }
   }
 
-  if (result.hasMaterialOpinion)
-  {
-    _scene.MarkMaterialDirty(_mat_id);
-  }
+  _materialData = material;
+  _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
