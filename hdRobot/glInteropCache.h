@@ -13,6 +13,7 @@ public:
   ~HdRobotGlInteropCache();
 
   GLuint GetOrImportSourceGlTexture(const ExportedRasterAovTexture &texture);
+  void Evict(const ExportedRasterAovTexture &texture);
   void Clear();
 
 private:

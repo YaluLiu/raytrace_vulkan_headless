@@ -4,6 +4,7 @@
 #include "renderPass.h"
 
 // robot or hdstorm
+#include "aovBridgeSpec.h"
 #include "camera.h"
 #include "heightScanSensor.h"
 #include "lidarSensor.h"
@@ -114,18 +115,6 @@ bool IsHeightScanRenderSetting(const TfToken &key)
          key == HdRobotRenderSettingTokens->heightScanVisualizeAllSensors ||
          key == HdRobotRenderSettingTokens->heightScanVisualizeSensorIndex ||
          key == HdRobotRenderSettingTokens->heightScanVisualizePointSize;
-}
-
-bool IsColorAov(const TfToken &name)
-{
-  return name == HdAovTokens->color || name == HdRobotAovTokens->tileColor ||
-         name == HdRobotAovTokens->tileDisplayColor;
-}
-
-bool IsDepthAov(const TfToken &name)
-{
-  return name == HdAovTokens->depth || name == HdAovTokens->depthStencil || name == HdRobotAovTokens->tileDepth ||
-         name == HdRobotAovTokens->tileDisplayDepth;
 }
 
 uint32_t GetPositiveRenderSetting(const HdRenderDelegate &delegate, const TfToken &key, uint32_t fallback)
@@ -292,20 +281,7 @@ void HdRobotRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 
 HdAovDescriptor HdRobotRenderDelegate::GetDefaultAovDescriptor(const TfToken &name) const
 {
-  if(IsColorAov(name))
-  {
-    return HdAovDescriptor(HdFormatFloat32Vec4, true, VtValue(GfVec4f(1.0f)));
-  }
-  else if(IsDepthAov(name))
-  {
-    return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-  }
-  else if(name == HdAovTokens->primId || name == HdAovTokens->instanceId)
-  {
-    return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
-  }
-
-  return HdAovDescriptor();
+  return GetHdRobotDefaultAovDescriptor(name);
 }
 
 HdRenderParam *HdRobotRenderDelegate::GetRenderParam() const

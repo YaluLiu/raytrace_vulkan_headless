@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <iostream>
 #include <optional>
 #include <utility>
 #include <vector>
 
+#include "aovBridgeSpec.h"
 #include "camera.h"
 #include "hydraRasterAovCopy.h"
 #include "hydraTextureAssetExport.h"
@@ -61,38 +63,6 @@ std::vector<RasterMaterial> CollectRasterMaterialsForMesh(const HydraMesh &mesh,
   return rasterMaterials;
 }
 
-bool IsFixedSizeTileAov(const TfToken &name)
-{
-  return name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDepth;
-}
-
-bool IsDisplayTileAov(const TfToken &name)
-{
-  return name == HdRobotAovTokens->tileDisplayColor || name == HdRobotAovTokens->tileDisplayDepth;
-}
-
-TileAovChannelMask ComputeRequestedTileAovChannels(const HdRenderPassAovBindingVector &bindings)
-{
-  TileAovChannelMask channels = TileAovChannelMask::None();
-  for(const HdRenderPassAovBinding &binding : bindings)
-  {
-    if(binding.renderBuffer == nullptr)
-    {
-      continue;
-    }
-
-    if(binding.aovName == HdRobotAovTokens->tileColor || binding.aovName == HdRobotAovTokens->tileDisplayColor)
-    {
-      channels |= TileAovChannelMask::FromChannel(TileAovChannel::Color);
-    }
-    else if(binding.aovName == HdRobotAovTokens->tileDepth || binding.aovName == HdRobotAovTokens->tileDisplayDepth)
-    {
-      channels |= TileAovChannelMask::FromChannel(TileAovChannel::Depth);
-    }
-  }
-  return channels;
-}
-
 bool HasRenderBuffer(const HdRenderPassAovBindingVector &bindings)
 {
   return std::any_of(bindings.begin(), bindings.end(),
@@ -103,7 +73,7 @@ std::optional<GfVec2i> GetRenderBufferSize(const HdRenderPassAovBindingVector &b
 {
   for(const HdRenderPassAovBinding &binding : bindings)
   {
-    if(binding.renderBuffer == nullptr || IsFixedSizeTileAov(binding.aovName))
+    if(binding.renderBuffer == nullptr || IsHdRobotFixedSizeTileAov(binding.aovName))
     {
       continue;
     }
@@ -188,7 +158,7 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
   }
 
   _rasterSession.getRenderer().setTileConfig(ToTileAtlasConfig(_renderParam.GetTileConfig()));
-  _rasterSession.getRenderer().setRequestedTileAovChannels(ComputeRequestedTileAovChannels(hdAovBindings));
+  _rasterSession.getRenderer().setRequestedTileAovChannels(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
   std::vector<HdRobotLidarSensorData> lidarSensors = _renderParam.GetLidarSensorsSnapshot();
   std::sort(lidarSensors.begin(), lidarSensors.end(), [](const HdRobotLidarSensorData &lhs,
                                                          const HdRobotLidarSensorData &rhs) {
@@ -215,7 +185,21 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
   auto copyBinding = [&](const HdRenderPassAovBinding &binding)
   {
     auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
-    const bool copied = CopyAovToRenderBuffer(app, binding.aovName, aovBuffer, _glInteropCache);
+    bool copied = false;
+    const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(binding.aovName);
+    if(spec)
+    {
+      const HdRobotAovCopyRequest request{binding.aovName, spec->rasterAov, spec->copyScaling, aovBuffer};
+      copied = CopyAovToRenderBuffer(app, request, _glInteropCache);
+    }
+    else if(IsHdRobotIgnoredAov(binding.aovName))
+    {
+      copied = true;
+    }
+    else
+    {
+      std::cerr << "[HdRobotRasterBridge] Unsupported AOV token " << binding.aovName.GetString() << std::endl;
+    }
     allAovsCopied = allAovsCopied && copied;
     if(aovBuffer != nullptr)
     {
@@ -223,20 +207,20 @@ bool HdRobotRasterBridge::RenderRasterFrame(const HdRenderPassStateSharedPtr &re
     }
   };
 
-  auto copyMatchingBindings = [&](const auto &predicate)
+  std::vector<const HdRenderPassAovBinding *> copyOrder;
+  copyOrder.reserve(hdAovBindings.size());
+  for(const HdRenderPassAovBinding &binding : hdAovBindings)
   {
-    for(const HdRenderPassAovBinding &binding : hdAovBindings)
-    {
-      if(predicate(binding.aovName))
-      {
-        copyBinding(binding);
-      }
-    }
-  };
-
-  copyMatchingBindings(IsFixedSizeTileAov);
-  copyMatchingBindings(IsDisplayTileAov);
-  copyMatchingBindings([](const TfToken &name) { return !IsFixedSizeTileAov(name) && !IsDisplayTileAov(name); });
+    copyOrder.push_back(&binding);
+  }
+  std::stable_sort(copyOrder.begin(), copyOrder.end(), [](const HdRenderPassAovBinding *lhs,
+                                                          const HdRenderPassAovBinding *rhs) {
+    return GetHdRobotAovCopyPriority(lhs->aovName) < GetHdRobotAovCopyPriority(rhs->aovName);
+  });
+  for(const HdRenderPassAovBinding *binding : copyOrder)
+  {
+    copyBinding(*binding);
+  }
 
   return allAovsCopied;
 }

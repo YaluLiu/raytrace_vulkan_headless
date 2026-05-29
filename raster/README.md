@@ -96,11 +96,10 @@ in `hdRobot/`; raster components should remain free of OpenUSD Hydra types.
 - `RasterAov::InstanceId`
 - `RasterAov::TileColor`
 - `RasterAov::TileDepth`
-- `RasterAov::TileDisplayColor`
-- `RasterAov::TileDisplayDepth`
 
 Hydra consumes these handles through `hdRobot/hydraRasterAovCopy.cpp` and
 `hdRobot/glInteropCache.cpp`. Fixed tile AOVs use exact atlas-sized render
-buffers, while display tile AOVs can be scaled to the viewport-sized render
-buffer. Material texture asset byte export lives separately in
+buffers, while display tile Hydra tokens are bridge-side copy policies mapped
+to the same raster tile atlas handles and can be scaled to the viewport-sized
+render buffer. Material texture asset byte export lives separately in
 `hdRobot/hydraTextureAssetExport.cpp`.

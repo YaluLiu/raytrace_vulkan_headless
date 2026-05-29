@@ -366,8 +366,6 @@ std::optional<ExportedRasterAovTexture> PreviewRasterPipeline::getAovTexture(Ras
       break;
     case RasterAov::TileColor:
     case RasterAov::TileDepth:
-    case RasterAov::TileDisplayColor:
-    case RasterAov::TileDisplayDepth:
       return std::nullopt;
   }
 

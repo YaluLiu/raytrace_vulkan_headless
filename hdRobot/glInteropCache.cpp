@@ -388,6 +388,18 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
   return entry.texture;
 }
 
+void HdRobotGlInteropCache::Evict(const ExportedRasterAovTexture &texture) {
+  std::lock_guard<std::mutex> lock(_impl->mutex);
+  const CacheKey key = MakeCacheKey(texture);
+  const auto it = _impl->cache.find(key);
+  if (it == _impl->cache.end()) {
+    return;
+  }
+
+  DestroyEntry(it->second);
+  _impl->cache.erase(it);
+}
+
 void HdRobotGlInteropCache::Clear() {
   std::lock_guard<std::mutex> lock(_impl->mutex);
   for (auto &cacheItem : _impl->cache) {

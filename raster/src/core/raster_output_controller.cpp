@@ -154,6 +154,5 @@ uint32_t RasterOutputController::getTileMultiviewEffectiveViewCount(uint32_t cam
 
 bool RasterOutputController::isTileAov(RasterAov aov) const
 {
-  return aov == RasterAov::TileColor || aov == RasterAov::TileDepth || aov == RasterAov::TileDisplayColor ||
-         aov == RasterAov::TileDisplayDepth;
+  return aov == RasterAov::TileColor || aov == RasterAov::TileDepth;
 }

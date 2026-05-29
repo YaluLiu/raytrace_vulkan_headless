@@ -11,8 +11,6 @@ enum class RasterAov
   Depth,
   TileColor,
   TileDepth,
-  TileDisplayColor,
-  TileDisplayDepth,
 };
 
 struct ExportedRasterAovTexture

@@ -5,6 +5,8 @@ add_library(
   ${PROJNAME} SHARED
   instancer.cpp
   instancer.h
+  aovBridgeSpec.cpp
+  aovBridgeSpec.h
   rasterBridge.cpp
   rasterBridge.h
   rasterBridgeConversions.cpp

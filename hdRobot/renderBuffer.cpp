@@ -8,13 +8,16 @@
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgiGL/texture.h>
 #include <pxr/imaging/hgi/types.h>
+#include <pxr/imaging/hd/tokens.h>
 #include <nvgl/extensions_gl.hpp>
 
+#include "aovBridgeSpec.h"
 #include "renderDelegate.h"
 #include "renderBuffer.h"
 
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #ifdef _WIN32
 #include <malloc.h>
 #endif
@@ -52,7 +55,9 @@ HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
 {
   HgiTextureUsage usage = 0;
 
-  const bool isIdAov = (nameToken == HdAovTokens->primId) || (nameToken == HdAovTokens->instanceId);
+  const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(nameToken);
+  const bool useDepthTarget = spec && spec->useDepthTargetRenderBuffer;
+  const bool isIdAov = spec && spec->storageRole == HdRobotAovStorageRole::Id;
 
   switch(format)
   {
@@ -65,7 +70,7 @@ HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
       break;
 
     case HdFormatFloat32:
-      if(nameToken == HdAovTokens->depth || nameToken == HdAovTokens->depthStencil)
+      if(useDepthTarget)
       {
         usage |= HgiTextureUsageBitsDepthTarget;
       }
@@ -84,7 +89,7 @@ HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
       break;
   }
 
-  if(nameToken == HdAovTokens->color || nameToken == HdAovTokens->normal || isIdAov)
+  if((spec && spec->storageRole == HdRobotAovStorageRole::Color) || nameToken == HdAovTokens->normal || isIdAov)
   {
     usage |= HgiTextureUsageBitsShaderRead;
   }

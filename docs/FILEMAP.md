@@ -92,7 +92,9 @@ call sites with `rg`.
   downloads and offscreen color PNG output.
 - `raster/include/raster/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
   descriptor returned by `RasterRenderer::GetAovTexture`, including tile AOV
-  values exposed to Hydra without Hydra or OpenGL types.
+  atlas values exposed to Hydra without Hydra or OpenGL types. Display tile
+  Hydra AOV tokens are bridge-side copy policies mapped onto the fixed tile
+  atlas AOVs rather than separate raster outputs.
 - `raster/private/scene/raster_scene_types.hpp`: Shared draw input types used by
   `RasterRenderer` and `PreviewRasterPipeline`.
 - `raster/private/scene/raster_gpu_scene.hpp` / `raster/src/scene/raster_gpu_scene.cpp`: Owner of mesh,
@@ -199,8 +201,7 @@ call sites with `rg`.
 ## Offscreen Rendering
 
 - `raster/include/raster/aov_texture.hpp`: Public raster AOV contract, currently
-  `color`, `depth`, `primId`, `instanceId`, `tileColor`, `tileDepth`,
-  `tileDisplayColor`, and `tileDisplayDepth`.
+  `color`, `depth`, `primId`, `instanceId`, `tileColor`, and `tileDepth`.
 - `raster/private/output/preview_raster_pipeline.hpp` / `raster/src/output/preview/preview_raster_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
   color/depth/id target selection, and framebuffer rebuilds.
@@ -255,8 +256,8 @@ call sites with `rg`.
 - `hdRobot/renderDelegate.h` / `hdRobot/renderDelegate.cpp`: Hydra delegate
   ownership, supported primitives, render param setup, tile render setting
   descriptors including per-channel tile color/depth enable flags, LiDAR and
-  height scan visualization render settings, standard and tile AOV descriptors,
-  and resource access.
+  height scan visualization render settings, AOV descriptor lookup through the
+  shared bridge-side AOV spec, and resource access.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/rasterBridge.h` / `hdRobot/rasterBridge.cpp`:
@@ -280,6 +281,10 @@ call sites with `rg`.
   mesh `hdRobot:traceRole`, `ground`, and tile AOV tokens. Sensor parameter
   attribute tokens live in `UsdRaySensor/`; shared ray-sensor sprim type tokens
   and dirty bits live in `UsdRaySensorImaging/`.
+- `hdRobot/aovBridgeSpec.h` / `hdRobot/aovBridgeSpec.cpp`: Single source of
+  truth for Hydra AOV token mapping to raster AOVs, Hydra default AOV
+  descriptors, tile AOV channel request masks, copy ordering, and fixed-size
+  versus display tile copy policy.
 - `hdRobot/plugInfo.json`: Hydra render delegate plugin metadata. The custom
   sensor USD schema metadata lives in `UsdRaySensor/`, and adapter metadata
   lives in `UsdRaySensorImaging/`.
@@ -364,18 +369,20 @@ call sites with `rg`.
 
 - `hdRobot/renderBuffer.h` / `hdRobot/renderBuffer.cpp`: Hydra render buffer
   allocation, Hgi texture descriptor creation, GL interop, and texture format
-  conversion.
+  conversion; AOV-specific usage decisions are derived from
+  `hdRobot/aovBridgeSpec.*`.
 - `hdRobot/hydraTextureAssetExport.h` / `hdRobot/hydraTextureAssetExport.cpp`:
   Resolves registered Hydra material texture assets and exports encoded bytes
   for raster upload.
 - `hdRobot/hydraRasterAovCopy.h` / `hdRobot/hydraRasterAovCopy.cpp`: Maps Hydra
-  AOV tokens to `RasterAov` values and copies exported raster AOV textures into
-  Hydra render buffers through OpenGL interop; fixed `tileColor` and
-  `tileDepth` copies require exact atlas-size render buffers, while display tile
-  AOVs can use GL blit scaling.
+  AOV copy requests to exported raster AOV textures and copies them into Hydra
+  render buffers through OpenGL interop; fixed `tileColor` and `tileDepth`
+  copies require exact atlas-size render buffers, while display tile AOV copy
+  requests can use GL blit scaling.
 - `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
   Vulkan external-memory import cache for raster AOV textures exposed as
-  source OpenGL textures.
+  source OpenGL textures, including per-export eviction used for one retry after
+  stale import or copy failures.
 - `hdRobot/utils.h` / `hdRobot/utils.cpp`: Utility functions shared by the
   Hydra plugin.
 
@@ -428,8 +435,8 @@ call sites with `rg`.
   `raster/include/raster/aov_texture.hpp`, `raster/src/output/preview/preview_raster_pipeline.cpp`,
   `raster/src/core/raster_output_controller.cpp`, `raster/src/output/tile/tile_atlas_pass.cpp`,
   `raster/src/output/tile/tile_aov_channel.cpp`,
-  `hdRobot/hydraRasterAovCopy.cpp`, then search for `GetAovTexture`,
-  `getAovTexture`, `setRequestedTileAovChannels`, `RasterAov`, and
+  `hdRobot/aovBridgeSpec.cpp`, `hdRobot/hydraRasterAovCopy.cpp`, then search for
+  `GetAovTexture`, `getAovTexture`, `setRequestedTileAovChannels`, `RasterAov`, and
   `CopyAovToRenderBuffer`.
 - Raster pipeline:
   `raster/private/output/preview_raster_pipeline.hpp`, `raster/src/output/preview/preview_raster_pipeline.cpp`,

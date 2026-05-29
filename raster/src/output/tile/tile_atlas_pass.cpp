@@ -212,14 +212,12 @@ std::optional<ExportedRasterAovTexture> TileAtlasPass::getAovTexture(RasterAov a
   switch(aov)
   {
   case RasterAov::TileColor:
-  case RasterAov::TileDisplayColor:
     if(!m_colorExportValid || !m_colorAtlas.hasImage())
     {
       return std::nullopt;
     }
     return m_colorAtlas.getAovTexture();
   case RasterAov::TileDepth:
-  case RasterAov::TileDisplayDepth:
     if(!m_depthExportValid || !m_depthAtlas.hasImage())
     {
       return std::nullopt;
