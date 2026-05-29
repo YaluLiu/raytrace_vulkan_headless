@@ -22,10 +22,3 @@ void RasterRenderer::rebuildTextureResourcesAndSceneBindings(const std::vector<T
   updateSceneDescriptorBindings();
   createPreviewOutputPipeline();
 }
-
-void RasterRenderer::uploadTextureResources(const VkCommandBuffer& cmdBuf,
-                                         const std::vector<std::string>& textures,
-                                         const std::vector<TextureAsset>& textureAssets)
-{
-  m_gpuScene.uploadTextureResources(cmdBuf, textures, textureAssets);
-}

@@ -11,7 +11,6 @@
 #include <filesystem>
 #include <utility>
 
-#include "obj_loader.h"
 #include "core/raster_frame_executor.hpp"
 
 std::vector<std::string> defaultSearchPaths;

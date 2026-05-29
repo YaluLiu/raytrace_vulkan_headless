@@ -276,7 +276,6 @@ void HdRobotRasterBridge::uploadInitialScene()
     auto &curMesh = _renderParam.v_mesh[meshId];
     ModelLoader loader;
     ConvertVmeshToLoader(curMesh, loader);
-    loader.m_textures.clear();
     for(auto &matId : curMesh.scene_mat_ids)
     {
       auto materialObj = _renderParam.v_mat[matId].toMaterialObj();

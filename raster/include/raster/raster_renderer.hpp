@@ -41,8 +41,6 @@ public:
   void uploadMeshFromLoader(ModelLoader &loader, glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset> &textureAssets);
   void rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset> &textureAssets);
-  void uploadTextureResources(const VkCommandBuffer &cmdBuf, const std::vector<std::string> &textures,
-                           const std::vector<TextureAsset> &textureAssets);
   uint32_t addInstance(const glm::mat4 &transform, uint32_t objIndex, int instanceId = 0);
   void updateInstance(uint32_t instanceId,
                       glm::mat4 transform,

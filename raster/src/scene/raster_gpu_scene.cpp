@@ -6,18 +6,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <sstream>
+#include <string>
 #include <type_traits>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include "nvh/fileoperations.hpp"
 #include "nvvk/buffers_vk.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
-
-extern std::vector<std::string> defaultSearchPaths;
 
 static_assert(std::is_standard_layout_v<MaterialObj>);
 static_assert(std::is_standard_layout_v<WaveFrontMaterial>);
@@ -125,8 +122,7 @@ void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transfo
   model.matColorBuffer = m_alloc->createBuffer(cmdBuf, loader.m_materials, deviceAddressFlags);
   model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, loader.m_matIndx, deviceAddressFlags);
 
-  auto txtOffset = 0;
-  uploadTextureResources(cmdBuf, loader.m_textures, loader.m_textureAssets);
+  uploadTextureResources(cmdBuf, {});
   cmdBufGet.submitAndWait(cmdBuf);
 
   m_alloc->finalizeAndReleaseStaging();
@@ -140,7 +136,7 @@ void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transfo
   addInstance(transform, static_cast<uint32_t>(m_objModel.size()), 0);
 
   ObjDesc desc;
-  desc.txtOffset = txtOffset;
+  desc.txtOffset = 0;
   desc.vertexAddress = nvvk::getBufferDeviceAddress(m_device, model.vertexBuffer.buffer);
   desc.indexAddress = nvvk::getBufferDeviceAddress(m_device, model.indexBuffer.buffer);
   desc.materialAddress = nvvk::getBufferDeviceAddress(m_device, model.matColorBuffer.buffer);
@@ -155,8 +151,7 @@ void RasterGpuScene::loadTextureAssets(const std::vector<TextureAsset>& textureA
 {
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
-  const std::vector<std::string> noLegacyTextures;
-  uploadTextureResources(cmdBuf, noLegacyTextures, textureAssets);
+  uploadTextureResources(cmdBuf, textureAssets);
   cmdBufGet.submitAndWait(cmdBuf);
   m_alloc->finalizeAndReleaseStaging();
 }
@@ -168,8 +163,7 @@ void RasterGpuScene::rebuildTextureResources(const std::vector<TextureAsset>& te
 }
 
 void RasterGpuScene::uploadTextureResources(const VkCommandBuffer& cmdBuf,
-                                         const std::vector<std::string>& textures,
-                                         const std::vector<TextureAsset>& textureAssets)
+                                            const std::vector<TextureAsset>& textureAssets)
 {
   VkSamplerCreateInfo samplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
   samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
@@ -195,7 +189,7 @@ void RasterGpuScene::uploadTextureResources(const VkCommandBuffer& cmdBuf,
     m_textures.push_back(texture);
   };
 
-  if(textures.empty() && textureAssets.empty() && m_textures.empty())
+  if(textureAssets.empty() && m_textures.empty())
   {
     nvvk::Texture texture;
 
@@ -215,30 +209,6 @@ void RasterGpuScene::uploadTextureResources(const VkCommandBuffer& cmdBuf,
   }
   else
   {
-    for(const auto& texture : textures)
-    {
-      std::stringstream o;
-      int texWidth, texHeight, texChannels;
-      o << "media/textures/" << texture;
-      std::string txtFile = nvh::findFile(o.str(), defaultSearchPaths, true);
-
-      stbi_uc* stbi_pixels = stbi_load(txtFile.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-      std::array<stbi_uc, 4> color{255u, 0u, 255u, 255u};
-
-      stbi_uc* pixels = stbi_pixels;
-      if(!stbi_pixels)
-      {
-        texWidth = texHeight = 1;
-        texChannels = 4;
-        pixels = reinterpret_cast<stbi_uc*>(color.data());
-      }
-
-      uploadTexture(pixels, texWidth, texHeight, TextureColorSpace::SRGB);
-
-      stbi_image_free(stbi_pixels);
-    }
-
     for(const TextureAsset& textureAsset : textureAssets)
     {
       int texWidth = 0;

@@ -1,6 +1,5 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <string>
 
 struct MaterialObj
 {
@@ -40,11 +39,4 @@ struct VertexObj
   glm::vec3 color;
   glm::vec2 texCoord;
   glm::vec4 tangent = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-};
-
-struct shapeObj
-{
-  uint32_t offset;
-  uint32_t nbIndex;
-  uint32_t matIndex;
 };

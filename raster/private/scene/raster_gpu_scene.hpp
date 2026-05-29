@@ -32,9 +32,7 @@ public:
   void uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
   void rebuildTextureResources(const std::vector<TextureAsset>& textureAssets);
-  void uploadTextureResources(const VkCommandBuffer& cmdBuf,
-                           const std::vector<std::string>& textures,
-                           const std::vector<TextureAsset>& textureAssets);
+  void uploadTextureResources(const VkCommandBuffer& cmdBuf, const std::vector<TextureAsset>& textureAssets);
 
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask);
   void updateMeshGeometry(uint32_t meshId);

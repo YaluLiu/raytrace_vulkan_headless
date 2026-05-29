@@ -27,7 +27,8 @@ call sites with `rg`.
 - `UsdRaySensorImaging/`: UsdImaging adapter plugin and shared Hydra sensor
   contract for exposing `LidarSensor` and `HeightScanSensor` prims as custom
   `lidarSensor` and `heightScanSensor` sprims.
-- `common/`: Shared model loader interfaces and OBJ loading implementation.
+- `common/`: Shared mesh, material, and texture-asset data contracts used by
+  Hydra scene conversion and raster upload.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 - `docs/ray_trace_lidar.md`: Chinese implementation plan for the Vulkan
@@ -375,12 +376,11 @@ call sites with `rg`.
 
 ## Model And Scene Loading
 
-- `common/ModelLoader.h`: Abstract model loading interface consumed by
-  `RasterRenderer::uploadMeshFromLoader`, including legacy texture filenames and
-  in-memory encoded texture assets.
-- `common/obj_loader.h` / `common/obj_loader.cpp`: OBJ loader implementation,
-  vertices, indices, normals, texcoords, material assignment, and fallback
-  normals.
+- `common/ModelLoader.h`: Mesh upload staging container consumed by
+  `RasterRenderer::uploadMeshFromLoader`; texture bytes flow through the
+  separate `TextureAsset` registry and `RasterRenderer::loadTextureAssets`.
+- `common/data_loader.h`: Shared CPU-side vertex and material structs whose
+  layout is checked against `raster/shaders/common/host_device.h`.
 
 ## Shader Files
 
@@ -501,10 +501,9 @@ call sites with `rg`.
   `traceRole`, `ground`, `traceMask`, and tangent calculation helpers.
 - Material or texture path issues:
   `hdRobot/material.cpp`, `raster/src/scene/raster_gpu_scene.cpp`,
-  `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`,
-  `common/obj_loader.cpp`, then search for `GetTexturePath`,
-  `ExportRegisteredTextures`, `stbi_load_from_memory`, `loadMaterial`, and
-  material buffer updates.
+  `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`, then search
+  for `GetTexturePath`, `ExportRegisteredTextures`, `stbi_load_from_memory`,
+  `loadMaterial`, and material buffer updates.
 - PBR material struct or shader material layout:
   `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
   `hdRobot/rasterBridge.cpp`, `raster/shaders/common/host_device.h`,
@@ -553,10 +552,11 @@ call sites with `rg`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
-- Model loading:
-  `common/obj_loader.cpp`, `common/obj_loader.h`, `common/ModelLoader.h`,
-  `raster/src/scene/raster_gpu_scene.cpp`, `raster/src/scene/raster_scene_upload.cpp`, then
-  search for `loadModel`,
+- Mesh upload staging:
+  `common/ModelLoader.h`, `common/data_loader.h`,
+  `raster/src/scene/raster_gpu_scene.cpp`,
+  `raster/src/scene/raster_scene_upload.cpp`, and `hdRobot/sceneData.cpp`,
+  then search for `ConvertVmeshToLoader`, `uploadMeshFromLoader`,
   `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:
   Root `CMakeLists.txt`, relevant subdirectory `CMakeLists.txt`,
