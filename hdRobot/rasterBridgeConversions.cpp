@@ -1,10 +1,16 @@
 #include "rasterBridgeConversions.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
+namespace
 {
-  WaveFrontMaterial result;
+
+template <typename MaterialT>
+MaterialT ConvertHydraMaterialFields(const HydraMaterial &material)
+{
+  MaterialT result;
   result.ambient = material.ambient;
   result.diffuse = material.diffuse;
   result.specular = material.specular;
@@ -33,6 +39,94 @@ WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
   result.opacityTextureId = material.opacityTextureId;
   result.subsurfaceTextureId = material.subsurfaceTextureId;
   return result;
+}
+
+glm::vec2 GetRasterTexCoord(const HydraMesh &mesh, size_t vertexIndex, bool useAuthoredTexCoords)
+{
+  if(useAuthoredTexCoords)
+  {
+    return glm::vec2(mesh.texCoords[vertexIndex][0], 1 - mesh.texCoords[vertexIndex][1]);
+  }
+
+  return glm::vec2((mesh.points[vertexIndex][0] + 1.0f) * 0.5f,
+                   1 - ((mesh.points[vertexIndex][2] + 1.0f) * 0.5f));
+}
+
+}  // namespace
+
+RasterMaterial ToRasterMaterial(const HydraMaterial &material)
+{
+  return ConvertHydraMaterialFields<RasterMaterial>(material);
+}
+
+WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
+{
+  return ConvertHydraMaterialFields<WaveFrontMaterial>(material);
+}
+
+void ConvertHydraMeshToRasterGeometry(const HydraMesh &mesh, RasterMeshGeometry &geometry)
+{
+  geometry.vertices.clear();
+  geometry.indices.clear();
+  geometry.materialIndices.clear();
+
+  const auto &points = mesh.points;
+  const auto &normals = mesh.normals;
+  const auto &tangents = mesh.tangents;
+  const auto &bitangentSigns = mesh.bitangentSigns;
+  const auto &faces = mesh.faces;
+  const auto &matIdx = mesh.materialIds;
+  const bool useAuthoredTexCoords = !mesh.texCoords.empty() && mesh.texCoords.size() == points.size();
+
+  if(points.size() != normals.size())
+  {
+    std::cerr << "points:" << points.size() << '\n';
+    std::cerr << "normals:" << normals.size() << '\n';
+    std::cerr << "texCoords:" << points.size() << '\n';
+    std::cerr << "Error: points, normals, texCoords size mismatch" << '\n';
+    return;
+  }
+
+  geometry.vertices.reserve(points.size());
+  for(size_t i = 0; i < points.size(); ++i)
+  {
+    RasterVertex vertex;
+    vertex.pos = glm::vec3(points[i][0], points[i][1], points[i][2]);
+    vertex.nrm = glm::vec3(normals[i][0], normals[i][1], normals[i][2]);
+    vertex.texCoord = GetRasterTexCoord(mesh, i, useAuthoredTexCoords);
+    if(tangents.size() == points.size() && bitangentSigns.size() == points.size())
+    {
+      vertex.tangent = glm::vec4(tangents[i][0], tangents[i][1], tangents[i][2], bitangentSigns[i]);
+    }
+    vertex.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    geometry.vertices.push_back(vertex);
+  }
+
+  geometry.indices.reserve(faces.size() * 3);
+  for(const auto &face : faces)
+  {
+    geometry.indices.push_back(static_cast<uint32_t>(face[0]));
+    geometry.indices.push_back(static_cast<uint32_t>(face[1]));
+    geometry.indices.push_back(static_cast<uint32_t>(face[2]));
+  }
+
+  geometry.materialIndices.reserve(matIdx.size());
+  for(const auto &matId : matIdx)
+  {
+    geometry.materialIndices.push_back(static_cast<uint32_t>(matId));
+  }
+}
+
+RasterMeshUpload ToRasterMeshUpload(const HydraMesh &mesh, const std::vector<HydraMaterial> &materials)
+{
+  RasterMeshUpload upload;
+  ConvertHydraMeshToRasterGeometry(mesh, upload);
+  upload.materials.reserve(mesh.scene_mat_ids.size());
+  for(auto &matId : mesh.scene_mat_ids)
+  {
+    upload.materials.emplace_back(ToRasterMaterial(materials[matId]));
+  }
+  return upload;
 }
 
 RasterCameraSpec ToRasterCameraSpec(const HdRobotCameraData &camera)

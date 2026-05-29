@@ -68,8 +68,9 @@ call sites with `rg`.
 - `hdRobot/rasterBridge.cpp`: Bridge between Hydra scene data and
   `RasterRenderer` frame execution.
 - `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
-  Hydra-to-raster data conversion helpers used by the bridge for cameras,
-  materials, LiDAR, height scan, visualization, and tile config objects.
+  Hydra-to-raster data conversion helpers used by the bridge for mesh geometry
+  upload DTOs, materials, cameras, LiDAR, height scan, visualization, and tile
+  config objects.
 
 ## Raster Vulkan Renderer
 
@@ -376,11 +377,13 @@ call sites with `rg`.
 
 ## Model And Scene Loading
 
-- `common/ModelLoader.h`: Mesh upload staging container consumed by
-  `RasterRenderer::uploadMeshFromLoader`; texture bytes flow through the
-  separate `TextureAsset` registry and `RasterRenderer::loadTextureAssets`.
-- `common/data_loader.h`: Shared CPU-side vertex and material structs whose
-  layout is checked against `raster/shaders/common/host_device.h`.
+- `common/ModelLoader.h`: Mesh upload/update DTOs (`RasterMeshGeometry` and
+  `RasterMeshUpload`) consumed by `RasterRenderer::uploadMesh` and
+  `RasterRenderer::updateMeshGeometry`; texture bytes flow through the separate
+  `TextureAsset` registry and `RasterRenderer::loadTextureAssets`.
+- `common/data_loader.h`: Shared CPU-side raster vertex/material structs
+  (`RasterVertex` and `RasterMaterial`, with legacy aliases) whose layout is
+  checked against `raster/shaders/common/host_device.h`.
 
 ## Shader Files
 
@@ -555,9 +558,11 @@ call sites with `rg`.
 - Mesh upload staging:
   `common/ModelLoader.h`, `common/data_loader.h`,
   `raster/src/scene/raster_gpu_scene.cpp`,
-  `raster/src/scene/raster_scene_upload.cpp`, and `hdRobot/sceneData.cpp`,
-  then search for `ConvertVmeshToLoader`, `uploadMeshFromLoader`,
-  `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
+  `raster/src/scene/raster_scene_upload.cpp`, and
+  `hdRobot/rasterBridgeConversions.cpp`,
+  then search for `ConvertHydraMeshToRasterGeometry`, `ToRasterMeshUpload`,
+  `uploadMesh`, `loadVertices`, `loadIndices`, and
+  `assignMaterialIndices`.
 - Build or install failures:
   Root `CMakeLists.txt`, relevant subdirectory `CMakeLists.txt`,
   `install.sh`, and the failing command output.

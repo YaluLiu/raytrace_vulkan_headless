@@ -16,20 +16,20 @@
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
 
-static_assert(std::is_standard_layout_v<MaterialObj>);
+static_assert(std::is_standard_layout_v<RasterMaterial>);
 static_assert(std::is_standard_layout_v<WaveFrontMaterial>);
-static_assert(sizeof(MaterialObj) == sizeof(WaveFrontMaterial));
-static_assert(sizeof(VertexObj) == sizeof(Vertex));
-static_assert(offsetof(VertexObj, pos) == offsetof(Vertex, pos));
-static_assert(offsetof(VertexObj, tangent) == offsetof(Vertex, tangent));
-static_assert(offsetof(MaterialObj, baseColorFactor) == offsetof(WaveFrontMaterial, baseColorFactor));
-static_assert(offsetof(MaterialObj, transmissionColorFactor) == offsetof(WaveFrontMaterial, transmissionColorFactor));
-static_assert(offsetof(MaterialObj, roughnessFactor) == offsetof(WaveFrontMaterial, roughnessFactor));
-static_assert(offsetof(MaterialObj, transmissionFactor) == offsetof(WaveFrontMaterial, transmissionFactor));
-static_assert(offsetof(MaterialObj, subsurfaceFactor) == offsetof(WaveFrontMaterial, subsurfaceFactor));
-static_assert(offsetof(MaterialObj, diffuseTextureId) == offsetof(WaveFrontMaterial, diffuseTextureId));
-static_assert(offsetof(MaterialObj, normalTextureId) == offsetof(WaveFrontMaterial, normalTextureId));
-static_assert(offsetof(MaterialObj, subsurfaceTextureId) == offsetof(WaveFrontMaterial, subsurfaceTextureId));
+static_assert(sizeof(RasterMaterial) == sizeof(WaveFrontMaterial));
+static_assert(sizeof(RasterVertex) == sizeof(Vertex));
+static_assert(offsetof(RasterVertex, pos) == offsetof(Vertex, pos));
+static_assert(offsetof(RasterVertex, tangent) == offsetof(Vertex, tangent));
+static_assert(offsetof(RasterMaterial, baseColorFactor) == offsetof(WaveFrontMaterial, baseColorFactor));
+static_assert(offsetof(RasterMaterial, transmissionColorFactor) == offsetof(WaveFrontMaterial, transmissionColorFactor));
+static_assert(offsetof(RasterMaterial, roughnessFactor) == offsetof(WaveFrontMaterial, roughnessFactor));
+static_assert(offsetof(RasterMaterial, transmissionFactor) == offsetof(WaveFrontMaterial, transmissionFactor));
+static_assert(offsetof(RasterMaterial, subsurfaceFactor) == offsetof(WaveFrontMaterial, subsurfaceFactor));
+static_assert(offsetof(RasterMaterial, diffuseTextureId) == offsetof(WaveFrontMaterial, diffuseTextureId));
+static_assert(offsetof(RasterMaterial, normalTextureId) == offsetof(WaveFrontMaterial, normalTextureId));
+static_assert(offsetof(RasterMaterial, subsurfaceTextureId) == offsetof(WaveFrontMaterial, subsurfaceTextureId));
 
 namespace
 {
@@ -75,7 +75,7 @@ void RasterGpuScene::destroy()
   destroyRayTracingResources();
   destroyMeshBuffers();
   destroyTextures();
-  m_loaders.clear();
+  m_meshUploads.clear();
   m_objDesc.clear();
   m_instances.clear();
   m_instanceIds.clear();
@@ -92,9 +92,9 @@ uint32_t RasterGpuScene::addInstance(const glm::mat4& transform, uint32_t objInd
   return static_cast<uint32_t>(m_instances.size() - 1);
 }
 
-void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transform)
+void RasterGpuScene::uploadMesh(RasterMeshUpload& upload, glm::mat4 transform)
 {
-  for(auto& m : loader.m_materials)
+  for(auto& m : upload.materials)
   {
     m.ambient = glm::pow(m.ambient, glm::vec3(2.2f));
     m.diffuse = glm::pow(m.diffuse, glm::vec3(2.2f));
@@ -105,10 +105,10 @@ void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transfo
   }
 
   ObjModel model;
-  model.nbIndices = static_cast<uint32_t>(loader.m_indices.size());
-  model.nbVertices = static_cast<uint32_t>(loader.m_vertices.size());
-  model.vertexBufferSize = sizeof(VertexObj) * loader.m_vertices.size();
-  model.indexBufferSize = sizeof(uint32_t) * loader.m_indices.size();
+  model.nbIndices = static_cast<uint32_t>(upload.indices.size());
+  model.nbVertices = static_cast<uint32_t>(upload.vertices.size());
+  model.vertexBufferSize = sizeof(RasterVertex) * upload.vertices.size();
+  model.indexBufferSize = sizeof(uint32_t) * upload.indices.size();
 
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
@@ -116,11 +116,11 @@ void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transfo
                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                           VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
   model.vertexBuffer =
-      m_alloc->createBuffer(cmdBuf, loader.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
+      m_alloc->createBuffer(cmdBuf, upload.vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
   model.indexBuffer =
-      m_alloc->createBuffer(cmdBuf, loader.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | deviceAddressFlags);
-  model.matColorBuffer = m_alloc->createBuffer(cmdBuf, loader.m_materials, deviceAddressFlags);
-  model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, loader.m_matIndx, deviceAddressFlags);
+      m_alloc->createBuffer(cmdBuf, upload.indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | deviceAddressFlags);
+  model.matColorBuffer = m_alloc->createBuffer(cmdBuf, upload.materials, deviceAddressFlags);
+  model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, upload.materialIndices, deviceAddressFlags);
 
   uploadTextureResources(cmdBuf, {});
   cmdBufGet.submitAndWait(cmdBuf);
@@ -144,7 +144,7 @@ void RasterGpuScene::uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transfo
 
   m_objModel.emplace_back(model);
   m_objDesc.emplace_back(desc);
-  m_loaders.emplace_back(loader);
+  m_meshUploads.emplace_back(upload);
 }
 
 void RasterGpuScene::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
@@ -252,15 +252,19 @@ void RasterGpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bo
   m_rtScene.markTlasDirty();
 }
 
-void RasterGpuScene::updateMeshGeometry(uint32_t meshId)
+void RasterGpuScene::updateMeshGeometry(uint32_t meshId, const RasterMeshGeometry& geometry)
 {
-  if(meshId >= m_loaders.size() || meshId >= m_objModel.size())
+  if(meshId >= m_meshUploads.size() || meshId >= m_objModel.size())
   {
     return;
   }
 
-  std::vector<VertexObj>& now_vertices = m_loaders[meshId].m_vertices;
-  std::vector<uint32_t>& now_indices = m_loaders[meshId].m_indices;
+  m_meshUploads[meshId].vertices = geometry.vertices;
+  m_meshUploads[meshId].indices = geometry.indices;
+  m_meshUploads[meshId].materialIndices = geometry.materialIndices;
+
+  std::vector<RasterVertex>& now_vertices = m_meshUploads[meshId].vertices;
+  std::vector<uint32_t>& now_indices = m_meshUploads[meshId].indices;
   ObjModel& model = m_objModel[meshId];
 
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
@@ -272,7 +276,7 @@ void RasterGpuScene::updateMeshGeometry(uint32_t meshId)
 
   const uint32_t newNbVertices = static_cast<uint32_t>(now_vertices.size());
   const uint32_t newNbIndices = static_cast<uint32_t>(now_indices.size());
-  const VkDeviceSize vertexBytes = sizeof(VertexObj) * now_vertices.size();
+  const VkDeviceSize vertexBytes = sizeof(RasterVertex) * now_vertices.size();
   const VkDeviceSize indexBytes = sizeof(uint32_t) * now_indices.size();
 
   if(vertexBytes > 0)

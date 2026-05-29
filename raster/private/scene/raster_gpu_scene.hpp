@@ -29,13 +29,13 @@ public:
   void destroy();
 
   uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
-  void uploadMeshFromLoader(ModelLoader& loader, glm::mat4 transform = glm::mat4(1));
+  void uploadMesh(RasterMeshUpload& upload, glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
   void rebuildTextureResources(const std::vector<TextureAsset>& textureAssets);
   void uploadTextureResources(const VkCommandBuffer& cmdBuf, const std::vector<TextureAsset>& textureAssets);
 
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask);
-  void updateMeshGeometry(uint32_t meshId);
+  void updateMeshGeometry(uint32_t meshId, const RasterMeshGeometry& geometry);
   void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate>& updates);
   void createRayTracingResources();
   void destroyRayTracingResources();
@@ -52,8 +52,7 @@ public:
 
   size_t getInstanceCount() const { return m_instances.size(); }
   const ObjInstance& getInstance(size_t index) const { return m_instances[index]; }
-  ModelLoader& getMutableMeshSourceLoader(size_t meshId) { return m_loaders[meshId]; }
-  size_t getMeshSourceCount() const { return m_loaders.size(); }
+  size_t getMeshSourceCount() const { return m_meshUploads.size(); }
   size_t getLightCount() const { return m_lights.size(); }
   uint32_t getTextureDescriptorCount() const { return static_cast<uint32_t>(m_textures.size()); }
 
@@ -73,7 +72,7 @@ private:
   nvvk::ResourceAllocatorDma* m_alloc{nullptr};
   nvvk::DebugUtil* m_debug{nullptr};
 
-  std::vector<ModelLoader> m_loaders;
+  std::vector<RasterMeshUpload> m_meshUploads;
   std::vector<ObjModel> m_objModel;
   std::vector<ObjDesc> m_objDesc;
   std::vector<ObjInstance> m_instances;

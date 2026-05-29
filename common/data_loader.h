@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 
-struct MaterialObj
+struct RasterMaterial
 {
   glm::vec3 ambient = glm::vec3(0.1f, 0.1f, 0.1f);
   glm::vec3 diffuse = glm::vec3(0.18f, 0.18f, 0.18f);
@@ -32,7 +32,9 @@ struct MaterialObj
   int subsurfaceTextureId = -1;
 };
 
-struct VertexObj
+using MaterialObj = RasterMaterial;
+
+struct RasterVertex
 {
   glm::vec3 pos;
   glm::vec3 nrm;
@@ -40,3 +42,5 @@ struct VertexObj
   glm::vec2 texCoord;
   glm::vec4 tangent = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 };
+
+using VertexObj = RasterVertex;

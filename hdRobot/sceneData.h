@@ -75,7 +75,6 @@ struct HydraMaterial
   bool material_changed = false;
 
   void set_default();
-  MaterialObj toMaterialObj() const;
 };
 
 struct HydraLight
@@ -114,7 +113,5 @@ struct TextureRegistry
 };
 
 TextureColorSpace TextureColorSpaceForUsage(TextureUsage usage);
-
-void ConvertVmeshToLoader(const HydraMesh &mesh, ModelLoader &loader);
 
 PXR_NAMESPACE_CLOSE_SCOPE

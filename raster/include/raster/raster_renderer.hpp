@@ -38,7 +38,7 @@ public:
   void destroyResources();
 
   // Scene upload/update facade.
-  void uploadMeshFromLoader(ModelLoader &loader, glm::mat4 transform = glm::mat4(1));
+  void uploadMesh(RasterMeshUpload &upload, glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset> &textureAssets);
   void rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset> &textureAssets);
   uint32_t addInstance(const glm::mat4 &transform, uint32_t objIndex, int instanceId = 0);
@@ -46,7 +46,7 @@ public:
                       glm::mat4 transform,
                       bool visible,
                       uint32_t traceMask = kRasterTraceMaskDefaultGeometry);
-  void updateMeshGeometry(uint32_t meshId);
+  void updateMeshGeometry(uint32_t meshId, const RasterMeshGeometry &geometry);
   void updateMaterialsAtRuntime(const std::vector<RasterMaterialUpdate> &updates);
   void createRayTracingResources();
   void destroyRayTracingResources();
@@ -85,7 +85,6 @@ public:
 
   size_t getInstanceCount() const;
   RasterInstanceInfo getInstance(size_t index) const;
-  ModelLoader &getMutableMeshSourceLoader(size_t meshId);
   size_t getMeshSourceCount() const;
 
   // Temporary internal API used by the session/frame executor while renderer

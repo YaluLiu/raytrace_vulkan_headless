@@ -33,11 +33,16 @@ struct TextureAsset
   TextureColorSpace colorSpace = TextureColorSpace::SRGB;
 };
 
-class ModelLoader
+struct RasterMeshGeometry
 {
- public:
-  std::vector<VertexObj> m_vertices;
-  std::vector<uint32_t> m_indices;
-  std::vector<MaterialObj> m_materials;
-  std::vector<int32_t> m_matIndx;
+  std::vector<RasterVertex> vertices;
+  std::vector<uint32_t> indices;
+  std::vector<int32_t> materialIndices;
 };
+
+struct RasterMeshUpload : RasterMeshGeometry
+{
+  std::vector<RasterMaterial> materials;
+};
+
+using ModelLoader = RasterMeshUpload;

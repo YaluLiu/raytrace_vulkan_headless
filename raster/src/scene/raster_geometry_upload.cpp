@@ -10,7 +10,7 @@ void RasterRenderer::updateInstance(uint32_t instanceId, glm::mat4 transform, bo
   m_gpuScene.updateInstance(instanceId, transform, visible, traceMask);
 }
 
-void RasterRenderer::updateMeshGeometry(uint32_t meshId)
+void RasterRenderer::updateMeshGeometry(uint32_t meshId, const RasterMeshGeometry& geometry)
 {
-  m_gpuScene.updateMeshGeometry(meshId);
+  m_gpuScene.updateMeshGeometry(meshId, geometry);
 }

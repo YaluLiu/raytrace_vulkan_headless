@@ -274,14 +274,8 @@ void HdRobotRasterBridge::uploadInitialScene()
   for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     auto &curMesh = _renderParam.v_mesh[meshId];
-    ModelLoader loader;
-    ConvertVmeshToLoader(curMesh, loader);
-    for(auto &matId : curMesh.scene_mat_ids)
-    {
-      auto materialObj = _renderParam.v_mat[matId].toMaterialObj();
-      loader.m_materials.emplace_back(materialObj);
-    }
-    vulkan.uploadMeshFromLoader(loader);
+    RasterMeshUpload upload = ToRasterMeshUpload(curMesh, _renderParam.v_mat);
+    vulkan.uploadMesh(upload);
     const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
     const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
     const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
@@ -381,8 +375,9 @@ void HdRobotRasterBridge::updateGeometry()
   {
     if(_renderParam.ConsumeMeshGeometryDirty(meshId))
     {
-      ConvertVmeshToLoader(_renderParam.v_mesh[meshId], vulkan.getMutableMeshSourceLoader(meshId));
-      vulkan.updateMeshGeometry(meshId);
+      RasterMeshGeometry geometry;
+      ConvertHydraMeshToRasterGeometry(_renderParam.v_mesh[meshId], geometry);
+      vulkan.updateMeshGeometry(meshId, geometry);
     }
   }
 }

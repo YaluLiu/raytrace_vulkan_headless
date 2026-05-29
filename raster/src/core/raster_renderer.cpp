@@ -171,11 +171,6 @@ RasterInstanceInfo RasterRenderer::getInstance(size_t index) const
   };
 }
 
-ModelLoader& RasterRenderer::getMutableMeshSourceLoader(size_t meshId)
-{
-  return m_gpuScene.getMutableMeshSourceLoader(meshId);
-}
-
 size_t RasterRenderer::getMeshSourceCount() const
 {
   return m_gpuScene.getMeshSourceCount();
