@@ -67,8 +67,8 @@ call sites with `rg`.
   `RasterRenderer` frame execution.
 - `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
   Hydra-to-raster data conversion helpers used by the bridge for mesh geometry
-  upload DTOs, materials, cameras, LiDAR, height scan, visualization, and tile
-  config objects.
+  upload DTOs, materials, cameras, lights, LiDAR, height scan, visualization,
+  and tile config objects.
 
 ## Raster Vulkan Renderer
 
@@ -267,8 +267,8 @@ call sites with `rg`.
   and other AOVs.
 - `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into raster-facing camera specs,
-  `WaveFrontMaterial`, LiDAR and height scan sensor specs, visualization
-  configs, and `TileAtlasConfig`.
+  `WaveFrontMaterial`, light records, LiDAR and height scan sensor specs,
+  visualization configs, and `TileAtlasConfig`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, LiDAR and height scan sensor arrays, tile
   config, LiDAR and height scan visualization config, scene dirty flags,
@@ -538,7 +538,7 @@ call sites with `rg`.
   `hdRobot/rasterBridge.cpp`, `raster/src/scene/raster_runtime_updates.cpp`,
   `raster/src/scene/raster_gpu_scene.cpp`, `raster/src/scene/raster_scene_descriptors.cpp`,
   `raster/shaders/common/host_device.h`, `raster/shaders/preview/raster.frag`, then search
-  for `HydraLight::toLight`, `updateLights`, `updateLightBuffer`, `eLights`,
+  for `ToRasterLight`, `updateLights`, `updateLightBuffer`, `eLights`,
   and `evaluateSphereLight`.
 - Normal map data flow:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,

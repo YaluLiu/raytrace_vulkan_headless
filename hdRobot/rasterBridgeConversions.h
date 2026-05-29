@@ -20,6 +20,8 @@ RasterMeshUpload ToRasterMeshUpload(const HydraMesh &mesh, const std::vector<Hyd
 RasterCameraSpec ToRasterCameraSpec(const HdRobotCameraData &camera);
 std::vector<RasterCameraSpec> ToRasterCameraSpec(const std::vector<HdRobotCameraData> &cameras);
 
+Light ToRasterLight(const HydraLight &light);
+
 RasterLidarSensorSpec ToRasterLidarSensorSpec(const HdRobotLidarSensorData &sensor);
 std::vector<RasterLidarSensorSpec> ToRasterLidarSensorSpec(const std::vector<HdRobotLidarSensorData> &sensors);
 

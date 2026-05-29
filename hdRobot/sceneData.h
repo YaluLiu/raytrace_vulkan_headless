@@ -94,8 +94,6 @@ struct HydraLight
   vec4 rotateQuat;
   int textureID = -1;
   std::string texturePath;
-
-  Light toLight() const;
 };
 
 struct TextureRegistry

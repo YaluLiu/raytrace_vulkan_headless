@@ -153,6 +153,22 @@ std::vector<RasterCameraSpec> ToRasterCameraSpec(const std::vector<HdRobotCamera
   return result;
 }
 
+Light ToRasterLight(const HydraLight &light)
+{
+  Light result;
+  result.type = light.type;
+  result.textureID = light.textureID;
+  result.baseEmission = light.baseEmission;
+  result.diffuse = light.diffuse;
+  result.specular = light.specular;
+  result.direction = light.direction;
+  result.angle = light.angle;
+  result.position = light.position;
+  result.radius = light.radius;
+  result.rotateQuat = light.rotateQuat;
+  return result;
+}
+
 RasterLidarSensorSpec ToRasterLidarSensorSpec(const HdRobotLidarSensorData &sensor)
 {
   RasterLidarSensorSpec result;

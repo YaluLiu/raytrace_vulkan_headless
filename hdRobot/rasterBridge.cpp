@@ -356,7 +356,7 @@ void HdRobotRasterBridge::updateLights()
   {
     if(curLight.valid)
     {
-      vulkan.addLight(curLight.toLight());
+      vulkan.addLight(ToRasterLight(curLight));
     }
   }
 }

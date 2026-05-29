@@ -28,22 +28,6 @@ void HydraMaterial::set_default()
   material_changed = true;
 }
 
-Light HydraLight::toLight() const
-{
-  Light light;
-  light.type = type;
-  light.textureID = textureID;
-  light.baseEmission = baseEmission;
-  light.diffuse = diffuse;
-  light.specular = specular;
-  light.direction = direction;
-  light.angle = angle;
-  light.position = position;
-  light.radius = radius;
-  light.rotateQuat = rotateQuat;
-  return light;
-}
-
 namespace
 {
 std::string TextureRegistryKey(const std::string &texturePath, TextureUsage usage)
