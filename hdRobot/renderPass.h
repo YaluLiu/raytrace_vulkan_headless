@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/renderPass.h>
 
 #include <memory>
@@ -9,30 +7,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotMesh;
-class MaterialNetworkCompiler;
-class HdRobotCamera;
 class HdRobotRasterBridge;
 class HdRobotRenderParam;
-struct HdRobotCameraData;
-
-struct GiCameraDesc
-{
-  float     position[3];
-  float     forward[3];
-  float     up[3];
-  float     vfov;
-  float     fStop;
-  float     focusDistance;
-  float     focalLength;
-  float     clipStart;
-  float     clipEnd;
-  float     exposure;
-  glm::mat4 projMatrix;
-  glm::mat4 viewMatrix;
-};
-
-glm::mat4 computeProjectionMatrix(const GiCameraDesc& cameraDesc, float aspectRatio);
 
 class HdRobotRenderPass final : public HdRenderPass
 {
