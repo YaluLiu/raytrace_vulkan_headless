@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ModelLoader.h>
 #include <pxr/pxr.h>
+#include <raster/texture_asset.hpp>
 
 #include <vector>
 

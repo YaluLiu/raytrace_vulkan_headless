@@ -6,13 +6,14 @@
 #include <string>
 #include <vector>
 
-#include "data_loader.h"
 #include "nvh/fileoperations.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
 #include "nvvk/pipeline_vk.hpp"
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
+
+#include <raster/mesh_types.hpp>
 
 extern std::vector<std::string> defaultSearchPaths;
 
@@ -181,17 +182,17 @@ void PreviewRasterPipeline::createGraphicsPipeline(VkDescriptorSetLayout sceneDe
                                           nvvk::GraphicsPipelineState::makePipelineColorBlendAttachmentState());
   }
   pipelineState.addBindingDescription(
-      nvvk::GraphicsPipelineState::makeVertexInputBinding(0, sizeof(VertexObj), VK_VERTEX_INPUT_RATE_VERTEX));
+      nvvk::GraphicsPipelineState::makeVertexInputBinding(0, sizeof(RasterVertex), VK_VERTEX_INPUT_RATE_VERTEX));
   pipelineState.addAttributeDescription(
-      nvvk::GraphicsPipelineState::makeVertexInputAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexObj, pos)));
+      nvvk::GraphicsPipelineState::makeVertexInputAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(RasterVertex, pos)));
   pipelineState.addAttributeDescription(
-      nvvk::GraphicsPipelineState::makeVertexInputAttribute(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexObj, nrm)));
+      nvvk::GraphicsPipelineState::makeVertexInputAttribute(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(RasterVertex, nrm)));
   pipelineState.addAttributeDescription(nvvk::GraphicsPipelineState::makeVertexInputAttribute(
-      2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexObj, color)));
+      2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(RasterVertex, color)));
   pipelineState.addAttributeDescription(nvvk::GraphicsPipelineState::makeVertexInputAttribute(
-      3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexObj, texCoord)));
+      3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(RasterVertex, texCoord)));
   pipelineState.addAttributeDescription(nvvk::GraphicsPipelineState::makeVertexInputAttribute(
-      4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexObj, tangent)));
+      4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(RasterVertex, tangent)));
 
   nvvk::GraphicsPipelineGenerator pipelineGenerator(_device, _pipelineLayout, _renderPass, pipelineState);
   pipelineGenerator.addShader(nvh::loadFile("spv/raster.vert.spv", true, defaultSearchPaths, true),

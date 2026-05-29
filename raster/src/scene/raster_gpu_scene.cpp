@@ -84,7 +84,7 @@ void RasterGpuScene::destroy()
 
 uint32_t RasterGpuScene::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
 {
-  ObjInstance instance;
+  RasterInstance instance;
   instance.transform = transform;
   instance.objIndex = objIndex;
   m_instances.push_back(instance);
@@ -104,7 +104,7 @@ void RasterGpuScene::uploadMesh(RasterMeshUpload& upload, glm::mat4 transform)
     m.emissionFactor = glm::pow(m.emissionFactor, glm::vec3(2.2f));
   }
 
-  ObjModel model;
+  RasterMeshBuffers model;
   model.nbIndices = static_cast<uint32_t>(upload.indices.size());
   model.nbVertices = static_cast<uint32_t>(upload.vertices.size());
   model.vertexBufferSize = sizeof(RasterVertex) * upload.vertices.size();
@@ -265,7 +265,7 @@ void RasterGpuScene::updateMeshGeometry(uint32_t meshId, const RasterMeshGeometr
 
   std::vector<RasterVertex>& now_vertices = m_meshUploads[meshId].vertices;
   std::vector<uint32_t>& now_indices = m_meshUploads[meshId].indices;
-  ObjModel& model = m_objModel[meshId];
+  RasterMeshBuffers& model = m_objModel[meshId];
 
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = genCmdBuf.createCommandBuffer();

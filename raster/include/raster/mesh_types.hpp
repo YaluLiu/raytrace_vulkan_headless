@@ -1,4 +1,8 @@
 #pragma once
+
+#include <cstdint>
+#include <vector>
+
 #include <glm/glm.hpp>
 
 struct RasterMaterial
@@ -13,8 +17,8 @@ struct RasterMaterial
   glm::vec3 transmissionColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
   glm::vec3 subsurfaceColorFactor = glm::vec3(1.0f, 1.0f, 1.0f);
   float shininess = 0.f;
-  float ior = 1.0f;      // index of refraction
-  float opaque = 1.f;  // 1 == opaque; 0 == fully transparent
+  float ior = 1.0f;
+  float opaque = 1.f;
   float metallicFactor = 0.0f;
   float roughnessFactor = 0.5f;
   float opacityFactor = 1.0f;
@@ -32,8 +36,6 @@ struct RasterMaterial
   int subsurfaceTextureId = -1;
 };
 
-using MaterialObj = RasterMaterial;
-
 struct RasterVertex
 {
   glm::vec3 pos;
@@ -43,4 +45,14 @@ struct RasterVertex
   glm::vec4 tangent = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 };
 
-using VertexObj = RasterVertex;
+struct RasterMeshGeometry
+{
+  std::vector<RasterVertex> vertices;
+  std::vector<uint32_t> indices;
+  std::vector<int32_t> materialIndices;
+};
+
+struct RasterMeshUpload : RasterMeshGeometry
+{
+  std::vector<RasterMaterial> materials;
+};

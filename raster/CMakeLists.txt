@@ -23,10 +23,12 @@ set(RASTER_PUBLIC_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/aov_texture.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/height_scan_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/lidar_types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/mesh_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/raster_renderer.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/raster_renderer_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/raster_session.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/shaders/host_device.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/texture_asset.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/raster/tile_config.hpp
 )
 
@@ -143,7 +145,6 @@ target_sources(${PROJNAME}
 target_include_directories(${PROJNAME}
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/common
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/private
     ${CMAKE_CURRENT_SOURCE_DIR}/src

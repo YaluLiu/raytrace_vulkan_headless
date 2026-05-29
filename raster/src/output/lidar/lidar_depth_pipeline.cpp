@@ -1,6 +1,5 @@
 #include "output/lidar/lidar_depth_pipeline.hpp"
 
-#include "data_loader.h"
 #include "nvh/fileoperations.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
@@ -8,6 +7,8 @@
 #include "nvvk/renderpasses_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
 #include "shaders/common/host_device.h"
+
+#include <raster/mesh_types.hpp>
 
 #include <algorithm>
 #include <array>
@@ -333,17 +334,17 @@ void LidarDepthPipeline::createGraphicsPipeline()
   pipelineState.setBlendAttachmentCount(1);
   pipelineState.setBlendAttachmentState(0, nvvk::GraphicsPipelineState::makePipelineColorBlendAttachmentState());
   pipelineState.addBindingDescription(
-      nvvk::GraphicsPipelineState::makeVertexInputBinding(0, sizeof(VertexObj), VK_VERTEX_INPUT_RATE_VERTEX));
+      nvvk::GraphicsPipelineState::makeVertexInputBinding(0, sizeof(RasterVertex), VK_VERTEX_INPUT_RATE_VERTEX));
   pipelineState.addAttributeDescription(
-      nvvk::GraphicsPipelineState::makeVertexInputAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexObj, pos)));
+      nvvk::GraphicsPipelineState::makeVertexInputAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(RasterVertex, pos)));
   pipelineState.addAttributeDescription(
-      nvvk::GraphicsPipelineState::makeVertexInputAttribute(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexObj, nrm)));
+      nvvk::GraphicsPipelineState::makeVertexInputAttribute(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(RasterVertex, nrm)));
   pipelineState.addAttributeDescription(nvvk::GraphicsPipelineState::makeVertexInputAttribute(
-      2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexObj, color)));
+      2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(RasterVertex, color)));
   pipelineState.addAttributeDescription(nvvk::GraphicsPipelineState::makeVertexInputAttribute(
-      3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexObj, texCoord)));
+      3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(RasterVertex, texCoord)));
   pipelineState.addAttributeDescription(nvvk::GraphicsPipelineState::makeVertexInputAttribute(
-      4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexObj, tangent)));
+      4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(RasterVertex, tangent)));
 
   nvvk::GraphicsPipelineGenerator pipelineGenerator(m_device, m_pipelineLayout, m_renderPass, pipelineState);
   pipelineGenerator.addShader(nvh::loadFile("spv/lidar_depth.vert.spv", true, defaultSearchPaths, true),

@@ -1,8 +1,8 @@
 #include "scene/raster_rt_scene.hpp"
 
-#include "ModelLoader.h"
 #include "nvvk/acceleration_structures.hpp"
 #include "nvvk/buffers_vk.hpp"
+#include <raster/mesh_types.hpp>
 
 #include <limits>
 
@@ -134,7 +134,7 @@ RasterRtScene::BlasInput RasterRtScene::makeBlasInput(const RasterMeshBuffers& m
       VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
   triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = nvvk::getBufferDeviceAddress(m_device, mesh.vertexBuffer.buffer);
-  triangles.vertexStride = sizeof(VertexObj);
+  triangles.vertexStride = sizeof(RasterVertex);
   triangles.indexType = VK_INDEX_TYPE_UINT32;
   triangles.indexData.deviceAddress = nvvk::getBufferDeviceAddress(m_device, mesh.indexBuffer.buffer);
   triangles.maxVertex = mesh.nbVertices - 1;

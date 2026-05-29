@@ -27,8 +27,6 @@ call sites with `rg`.
 - `UsdRaySensorImaging/`: UsdImaging adapter plugin and shared Hydra sensor
   contract for exposing `LidarSensor` and `HeightScanSensor` prims as custom
   `lidarSensor` and `heightScanSensor` sprims.
-- `common/`: Shared mesh, material, and texture-asset data contracts used by
-  Hydra scene conversion and raster upload.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 - `docs/ray_trace_lidar.md`: Chinese implementation plan for the Vulkan
@@ -83,6 +81,12 @@ call sites with `rg`.
   and output controller components.
 - `raster/include/raster/raster_renderer_types.hpp`: Facade-facing data types such as
   `RasterCameraSpec`, `RasterMaterialUpdate`, and `RasterTlasDescriptorInfo`.
+- `raster/include/raster/mesh_types.hpp`: Public raster mesh upload contract:
+  CPU-side `RasterVertex`, `RasterMaterial`, `RasterMeshGeometry`, and
+  `RasterMeshUpload` used by Hydra conversion before raster upload.
+- `raster/include/raster/texture_asset.hpp`: Public raster texture asset
+  contract: `TextureUsage`, `TextureColorSpace`, and encoded `TextureAsset`
+  payloads passed from `hdRobot` to `RasterRenderer`.
 - `raster/src/debug/raster_debug_readback.cpp`: Readback/debug helpers for object ID image
   downloads and offscreen color PNG output.
 - `raster/include/raster/aov_texture.hpp`: Pure Vulkan raster AOV enum and texture
@@ -377,13 +381,12 @@ call sites with `rg`.
 
 ## Model And Scene Loading
 
-- `common/ModelLoader.h`: Mesh upload/update DTOs (`RasterMeshGeometry` and
-  `RasterMeshUpload`) consumed by `RasterRenderer::uploadMesh` and
-  `RasterRenderer::updateMeshGeometry`; texture bytes flow through the separate
-  `TextureAsset` registry and `RasterRenderer::loadTextureAssets`.
-- `common/data_loader.h`: Shared CPU-side raster vertex/material structs
-  (`RasterVertex` and `RasterMaterial`, with legacy aliases) whose layout is
-  checked against `raster/shaders/common/host_device.h`.
+- `raster/include/raster/mesh_types.hpp`: Mesh upload/update DTOs consumed by
+  `RasterRenderer::uploadMesh` and `RasterRenderer::updateMeshGeometry`; the
+  CPU-side vertex/material layout is checked against
+  `raster/shaders/common/host_device.h`.
+- `raster/include/raster/texture_asset.hpp`: Texture usage, color-space, and
+  encoded-byte payload DTOs consumed by `RasterRenderer::loadTextureAssets`.
 
 ## Shader Files
 
@@ -504,12 +507,13 @@ call sites with `rg`.
   `traceRole`, `ground`, `traceMask`, and tangent calculation helpers.
 - Material or texture path issues:
   `hdRobot/material.cpp`, `raster/src/scene/raster_gpu_scene.cpp`,
-  `hdRobot/hydraTextureAssetExport.cpp`, `common/ModelLoader.h`, then search
+  `hdRobot/hydraTextureAssetExport.cpp`, `raster/include/raster/texture_asset.hpp`, then search
   for `GetTexturePath`, `ExportRegisteredTextures`, `stbi_load_from_memory`,
   `loadMaterial`, and material buffer updates.
 - PBR material struct or shader material layout:
-  `common/data_loader.h`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `hdRobot/rasterBridge.cpp`, `raster/shaders/common/host_device.h`,
+  `raster/include/raster/mesh_types.hpp`, `hdRobot/sceneData.h`,
+  `hdRobot/sceneData.cpp`, `hdRobot/rasterBridge.cpp`,
+  `raster/shaders/common/host_device.h`,
   then search for `baseColorFactor`, `emissionFactor`,
   `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
 - USD Preview/MaterialX surface parsing:
@@ -520,7 +524,7 @@ call sites with `rg`.
   `ResolveUpstreamPrimvar`, `MaterialInputRule`, `UsdPreviewSurface`,
   `base_color`, `metalness`, `specular_roughness`, and `normalTextureId`.
 - Texture usage or color space:
-  `common/ModelLoader.h`, `hdRobot/sceneData.h`,
+  `raster/include/raster/texture_asset.hpp`, `hdRobot/sceneData.h`,
   `hdRobot/renderParam.cpp`, `hdRobot/hydraTextureAssetExport.cpp`,
   `raster/src/scene/raster_gpu_scene.cpp`, then search for `TextureUsage`,
   `TextureColorSpaceForUsage`, `GetTextureAssets`, and
@@ -538,12 +542,12 @@ call sites with `rg`.
   and `evaluateSphereLight`.
 - Normal map data flow:
   `hdRobot/mesh.cpp`, `hdRobot/sceneData.h`, `hdRobot/sceneData.cpp`,
-  `common/data_loader.h`, `raster/shaders/common/host_device.h`,
+  `raster/include/raster/mesh_types.hpp`, `raster/shaders/common/host_device.h`,
   `raster/shaders/preview/raster.vert`, then search for `tangent`,
   `bitangentSigns`, and `normalTextureId`.
 - Advanced MaterialX inputs:
   `hdRobot/materialXParser.cpp`, `hdRobot/sceneData.h`,
-  `hdRobot/sceneData.cpp`, `common/data_loader.h`,
+  `hdRobot/sceneData.cpp`, `raster/include/raster/mesh_types.hpp`,
   `raster/shaders/common/host_device.h`, then search for `transmissionFactor`,
   `transmissionColorFactor`, `subsurfaceFactor`, `subsurfaceTextureId`, and
   the matching material parser fields.
@@ -556,7 +560,7 @@ call sites with `rg`.
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.
 - Mesh upload staging:
-  `common/ModelLoader.h`, `common/data_loader.h`,
+  `raster/include/raster/mesh_types.hpp`,
   `raster/src/scene/raster_gpu_scene.cpp`,
   `raster/src/scene/raster_scene_upload.cpp`, and
   `hdRobot/rasterBridgeConversions.cpp`,

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ModelLoader.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec3i.h>
@@ -10,6 +9,7 @@
 #include <pxr/imaging/hd/tokens.h>
 
 #include <glm/glm.hpp>
+#include <raster/texture_asset.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>

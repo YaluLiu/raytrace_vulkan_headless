@@ -1,10 +1,8 @@
 #pragma once
+
 #include <cstdint>
-#include <glm/glm.hpp>
 #include <string>
 #include <vector>
-
-#include "data_loader.h"
 
 enum class TextureUsage
 {
@@ -32,17 +30,3 @@ struct TextureAsset
   TextureUsage usage = TextureUsage::Unknown;
   TextureColorSpace colorSpace = TextureColorSpace::SRGB;
 };
-
-struct RasterMeshGeometry
-{
-  std::vector<RasterVertex> vertices;
-  std::vector<uint32_t> indices;
-  std::vector<int32_t> materialIndices;
-};
-
-struct RasterMeshUpload : RasterMeshGeometry
-{
-  std::vector<RasterMaterial> materials;
-};
-
-using ModelLoader = RasterMeshUpload;

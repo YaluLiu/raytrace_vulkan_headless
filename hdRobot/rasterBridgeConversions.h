@@ -4,6 +4,7 @@
 
 #include <raster/height_scan_types.hpp>
 #include <raster/lidar_types.hpp>
+#include <raster/mesh_types.hpp>
 #include <raster/raster_renderer_types.hpp>
 #include <raster/tile_config.hpp>
 
