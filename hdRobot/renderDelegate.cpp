@@ -10,7 +10,6 @@
 #include "light.h"
 #include "material.h"
 #include "mesh.h"
-#include "points.h"
 #include "renderBuffer.h"
 // #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "tokens.h"
@@ -40,13 +39,11 @@ namespace
 {
 using RprimFactory = HdRprim *(*)(const SdfPath &, HdRobotRenderParam &);
 
-const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh, HdPrimTypeTokens->points};
+const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
 
 const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rprimFactories = {
     {HdPrimTypeTokens->mesh, [](const SdfPath &rprimId, HdRobotRenderParam &renderParam) -> HdRprim *
-     { return new HdRobotMesh(rprimId, renderParam); }},
-    {HdPrimTypeTokens->points, [](const SdfPath &rprimId, HdRobotRenderParam &renderParam) -> HdRprim *
-     { return new HdRobotPoints(rprimId, renderParam); }}};
+     { return new HdRobotMesh(rprimId, renderParam); }}};
 
 const static TfTokenVector _supportedSprimTypes = {
     HdPrimTypeTokens->camera, HdPrimTypeTokens->material, HdPrimTypeTokens->sphereLight, HdPrimTypeTokens->distantLight,

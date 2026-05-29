@@ -41,8 +41,6 @@ add_library(
   lidarSensor.h
   mesh.cpp
   mesh.h
-  points.h 
-  points.cpp
   tokens.cpp
   tokens.h
   utils.cpp

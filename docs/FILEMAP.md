@@ -357,8 +357,6 @@ call sites with `rg`.
   `HdRobotHeightScanSensorData`. The header owns `HdRobotHeightScanParams` and
   `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light sync and renderer light data.
-- `hdRobot/points.h` / `hdRobot/points.cpp`: HdPoints sync surface; the
-  minimal raster path currently does not draw points.
 - `hdRobot/instancer.h` / `hdRobot/instancer.cpp`: Hydra instancer support.
 - `hdRobot/sceneData.h` / `hdRobot/sceneData.cpp`: Shared scene data helpers.
 
