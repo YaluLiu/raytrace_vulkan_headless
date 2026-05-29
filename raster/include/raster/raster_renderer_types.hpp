@@ -1,5 +1,6 @@
 #pragma once
 
+#include <raster/mesh_types.hpp>
 #include <raster/shaders/host_device.h>
 
 #include <cstdint>
@@ -27,7 +28,7 @@ struct RasterMaterialUpdate
 {
   int modelIndex;
   int materialIndex;
-  WaveFrontMaterial newMaterial;
+  RasterMaterial newMaterial;
 };
 
 struct RasterInstanceInfo

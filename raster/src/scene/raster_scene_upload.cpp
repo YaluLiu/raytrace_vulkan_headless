@@ -1,8 +1,10 @@
 #include "core/raster_renderer_internal.hpp"
 
-void RasterRenderer::uploadMesh(RasterMeshUpload& upload, glm::mat4 transform)
+void RasterRenderer::uploadMesh(const RasterMeshGeometry& geometry,
+                                std::span<const RasterMaterial> materials,
+                                glm::mat4 transform)
 {
-  m_gpuScene.uploadMesh(upload, transform);
+  m_gpuScene.uploadMesh(geometry, materials, transform);
 }
 
 void RasterRenderer::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)

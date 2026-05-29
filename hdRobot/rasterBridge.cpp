@@ -49,6 +49,18 @@ bool RenderTagsEqual(const TfTokenVector &lhs, const TfTokenVector &rhs)
   return true;
 }
 
+std::vector<RasterMaterial> CollectRasterMaterialsForMesh(const HydraMesh &mesh,
+                                                          const std::vector<HydraMaterial> &materials)
+{
+  std::vector<RasterMaterial> rasterMaterials;
+  rasterMaterials.reserve(mesh.scene_mat_ids.size());
+  for(const int matId : mesh.scene_mat_ids)
+  {
+    rasterMaterials.emplace_back(ToRasterMaterial(materials[matId]));
+  }
+  return rasterMaterials;
+}
+
 bool IsFixedSizeTileAov(const TfToken &name)
 {
   return name == HdRobotAovTokens->tileColor || name == HdRobotAovTokens->tileDepth;
@@ -274,8 +286,10 @@ void HdRobotRasterBridge::uploadInitialScene()
   for(size_t meshId = 0; meshId < _renderParam.v_mesh.size(); ++meshId)
   {
     auto &curMesh = _renderParam.v_mesh[meshId];
-    RasterMeshUpload upload = ToRasterMeshUpload(curMesh, _renderParam.v_mat);
-    vulkan.uploadMesh(upload);
+    RasterMeshGeometry geometry;
+    ConvertHydraMeshToRasterGeometry(curMesh, geometry);
+    std::vector<RasterMaterial> materials = CollectRasterMaterialsForMesh(curMesh, _renderParam.v_mat);
+    vulkan.uploadMesh(geometry, materials);
     const auto instance = vulkan.getInstance(vulkan.getInstanceCount() - 1);
     const size_t firstInstanceId = vulkan.getInstanceCount() - 1;
     const size_t authoredInstanceCount = curMesh.instanceTransforms.size();
@@ -425,7 +439,7 @@ void HdRobotRasterBridge::updateMaterials()
       auto &material = _renderParam.v_mat[globalMatId];
       if(_renderParam.IsMaterialDirty(static_cast<size_t>(globalMatId)))
       {
-        WaveFrontMaterial newMaterial = ToWaveFrontMaterial(material);
+        RasterMaterial newMaterial = ToRasterMaterial(material);
         newMaterials.push_back({static_cast<int>(meshId), static_cast<int>(localMatIdx), newMaterial});
       }
     }

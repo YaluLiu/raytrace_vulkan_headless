@@ -66,9 +66,9 @@ call sites with `rg`.
 - `hdRobot/rasterBridge.cpp`: Bridge between Hydra scene data and
   `RasterRenderer` frame execution.
 - `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
-  Hydra-to-raster data conversion helpers used by the bridge for mesh geometry
-  upload DTOs, materials, cameras, lights, LiDAR, height scan, visualization,
-  and tile config objects.
+  Hydra-to-raster data conversion helpers used by the bridge for mesh geometry,
+  materials, cameras, lights, LiDAR, height scan, visualization, and tile
+  config objects.
 
 ## Raster Vulkan Renderer
 
@@ -82,8 +82,9 @@ call sites with `rg`.
 - `raster/include/raster/raster_renderer_types.hpp`: Facade-facing data types such as
   `RasterCameraSpec`, `RasterMaterialUpdate`, and `RasterTlasDescriptorInfo`.
 - `raster/include/raster/mesh_types.hpp`: Public raster mesh upload contract:
-  CPU-side `RasterVertex`, `RasterMaterial`, `RasterMeshGeometry`, and
-  `RasterMeshUpload` used by Hydra conversion before raster upload.
+  CPU-side `RasterVertex`, `RasterMaterial`, and `RasterMeshGeometry`; mesh
+  upload now passes geometry and material spans directly instead of using a
+  combined upload DTO.
 - `raster/include/raster/texture_asset.hpp`: Public raster texture asset
   contract: `TextureUsage`, `TextureColorSpace`, and encoded `TextureAsset`
   payloads passed from `hdRobot` to `RasterRenderer`.
@@ -96,9 +97,10 @@ call sites with `rg`.
   `RasterRenderer` and `PreviewRasterPipeline`.
 - `raster/private/scene/raster_gpu_scene.hpp` / `raster/src/scene/raster_gpu_scene.cpp`: Owner of mesh,
   material, instance, light, texture, object-description, and light GPU
-  resources; provides read-only spans for output passes and facade methods for
-  scene upload/update; forwards RT acceleration-structure lifecycle and dirty
-  updates into `RasterRtScene`.
+  resources; uploads mesh geometry and material arrays through separate raster
+  API parameters, provides read-only spans for output passes and facade methods
+  for scene upload/update, and forwards RT acceleration-structure lifecycle and
+  dirty updates into `RasterRtScene`.
 - `raster/private/scene/raster_rt_scene.hpp` / `raster/src/scene/raster_rt_scene.cpp`: RT
   acceleration-structure mirror for the raster scene; builds BLAS from uploaded
   mesh buffers, builds/updates TLAS from renderer instances, applies per-instance
@@ -267,7 +269,7 @@ call sites with `rg`.
   and other AOVs.
 - `hdRobot/rasterBridgeConversions.h` / `hdRobot/rasterBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into raster-facing camera specs,
-  `WaveFrontMaterial`, light records, LiDAR and height scan sensor specs,
+  `RasterMaterial`, light records, LiDAR and height scan sensor specs,
   visualization configs, and `TileAtlasConfig`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object, camera array, LiDAR and height scan sensor arrays, tile
@@ -564,9 +566,8 @@ call sites with `rg`.
   `raster/src/scene/raster_gpu_scene.cpp`,
   `raster/src/scene/raster_scene_upload.cpp`, and
   `hdRobot/rasterBridgeConversions.cpp`,
-  then search for `ConvertHydraMeshToRasterGeometry`, `ToRasterMeshUpload`,
-  `uploadMesh`, `loadVertices`, `loadIndices`, and
-  `assignMaterialIndices`.
+  then search for `ConvertHydraMeshToRasterGeometry`, `ToRasterMaterial`,
+  `uploadMesh`, `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:
   Root `CMakeLists.txt`, relevant subdirectory `CMakeLists.txt`,
   `install.sh`, and the failing command output.

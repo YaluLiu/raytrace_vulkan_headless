@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,9 @@ public:
   void destroyResources();
 
   // Scene upload/update facade.
-  void uploadMesh(RasterMeshUpload &upload, glm::mat4 transform = glm::mat4(1));
+  void uploadMesh(const RasterMeshGeometry &geometry,
+                  std::span<const RasterMaterial> materials,
+                  glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset> &textureAssets);
   void rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset> &textureAssets);
   uint32_t addInstance(const glm::mat4 &transform, uint32_t objIndex, int instanceId = 0);

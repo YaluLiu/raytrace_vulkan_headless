@@ -59,11 +59,6 @@ RasterMaterial ToRasterMaterial(const HydraMaterial &material)
   return ConvertHydraMaterialFields<RasterMaterial>(material);
 }
 
-WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material)
-{
-  return ConvertHydraMaterialFields<WaveFrontMaterial>(material);
-}
-
 void ConvertHydraMeshToRasterGeometry(const HydraMesh &mesh, RasterMeshGeometry &geometry)
 {
   geometry.vertices.clear();
@@ -115,18 +110,6 @@ void ConvertHydraMeshToRasterGeometry(const HydraMesh &mesh, RasterMeshGeometry 
   {
     geometry.materialIndices.push_back(static_cast<uint32_t>(matId));
   }
-}
-
-RasterMeshUpload ToRasterMeshUpload(const HydraMesh &mesh, const std::vector<HydraMaterial> &materials)
-{
-  RasterMeshUpload upload;
-  ConvertHydraMeshToRasterGeometry(mesh, upload);
-  upload.materials.reserve(mesh.scene_mat_ids.size());
-  for(auto &matId : mesh.scene_mat_ids)
-  {
-    upload.materials.emplace_back(ToRasterMaterial(materials[matId]));
-  }
-  return upload;
 }
 
 RasterCameraSpec ToRasterCameraSpec(const HdRobotCameraData &camera)

@@ -27,7 +27,9 @@ public:
   void destroy();
 
   uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
-  void uploadMesh(RasterMeshUpload& upload, glm::mat4 transform = glm::mat4(1));
+  void uploadMesh(const RasterMeshGeometry& geometry,
+                  std::span<const RasterMaterial> materials,
+                  glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
   void rebuildTextureResources(const std::vector<TextureAsset>& textureAssets);
   void uploadTextureResources(const VkCommandBuffer& cmdBuf, const std::vector<TextureAsset>& textureAssets);
@@ -50,7 +52,7 @@ public:
 
   size_t getInstanceCount() const { return m_instances.size(); }
   const RasterInstance& getInstance(size_t index) const { return m_instances[index]; }
-  size_t getMeshSourceCount() const { return m_meshUploads.size(); }
+  size_t getMeshSourceCount() const { return m_meshGeometries.size(); }
   size_t getLightCount() const { return m_lights.size(); }
   uint32_t getTextureDescriptorCount() const { return static_cast<uint32_t>(m_textures.size()); }
 
@@ -70,7 +72,7 @@ private:
   nvvk::ResourceAllocatorDma* m_alloc{nullptr};
   nvvk::DebugUtil* m_debug{nullptr};
 
-  std::vector<RasterMeshUpload> m_meshUploads;
+  std::vector<RasterMeshGeometry> m_meshGeometries;
   std::vector<RasterMeshBuffers> m_objModel;
   std::vector<ObjDesc> m_objDesc;
   std::vector<RasterInstance> m_instances;

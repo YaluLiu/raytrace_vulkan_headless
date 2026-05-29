@@ -13,9 +13,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 RasterMaterial ToRasterMaterial(const HydraMaterial &material);
-WaveFrontMaterial ToWaveFrontMaterial(const HydraMaterial &material);
 void ConvertHydraMeshToRasterGeometry(const HydraMesh &mesh, RasterMeshGeometry &geometry);
-RasterMeshUpload ToRasterMeshUpload(const HydraMesh &mesh, const std::vector<HydraMaterial> &materials);
 
 RasterCameraSpec ToRasterCameraSpec(const HdRobotCameraData &camera);
 std::vector<RasterCameraSpec> ToRasterCameraSpec(const std::vector<HdRobotCameraData> &cameras);

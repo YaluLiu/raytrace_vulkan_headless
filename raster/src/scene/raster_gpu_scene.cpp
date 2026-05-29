@@ -49,6 +49,17 @@ void AddTransferBarrier(VkCommandBuffer cmdBuf, VkBuffer buffer, VkDeviceSize si
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0, nullptr, 1,
                        &barrier, 0, nullptr);
 }
+
+RasterMaterial PrepareUploadMaterialForGpu(RasterMaterial material)
+{
+  material.ambient = glm::pow(material.ambient, glm::vec3(2.2f));
+  material.diffuse = glm::pow(material.diffuse, glm::vec3(2.2f));
+  material.specular = glm::pow(material.specular, glm::vec3(2.2f));
+  material.emission = glm::pow(material.emission, glm::vec3(2.2f));
+  material.baseColorFactor = glm::pow(material.baseColorFactor, glm::vec3(2.2f));
+  material.emissionFactor = glm::pow(material.emissionFactor, glm::vec3(2.2f));
+  return material;
+}
 } // namespace
 
 void RasterGpuScene::setup(VkDevice device,
@@ -75,7 +86,7 @@ void RasterGpuScene::destroy()
   destroyRayTracingResources();
   destroyMeshBuffers();
   destroyTextures();
-  m_meshUploads.clear();
+  m_meshGeometries.clear();
   m_objDesc.clear();
   m_instances.clear();
   m_instanceIds.clear();
@@ -92,23 +103,22 @@ uint32_t RasterGpuScene::addInstance(const glm::mat4& transform, uint32_t objInd
   return static_cast<uint32_t>(m_instances.size() - 1);
 }
 
-void RasterGpuScene::uploadMesh(RasterMeshUpload& upload, glm::mat4 transform)
+void RasterGpuScene::uploadMesh(const RasterMeshGeometry& geometry,
+                                std::span<const RasterMaterial> materials,
+                                glm::mat4 transform)
 {
-  for(auto& m : upload.materials)
+  std::vector<RasterMaterial> gpuMaterials;
+  gpuMaterials.reserve(materials.size());
+  for(const RasterMaterial& material : materials)
   {
-    m.ambient = glm::pow(m.ambient, glm::vec3(2.2f));
-    m.diffuse = glm::pow(m.diffuse, glm::vec3(2.2f));
-    m.specular = glm::pow(m.specular, glm::vec3(2.2f));
-    m.emission = glm::pow(m.emission, glm::vec3(2.2f));
-    m.baseColorFactor = glm::pow(m.baseColorFactor, glm::vec3(2.2f));
-    m.emissionFactor = glm::pow(m.emissionFactor, glm::vec3(2.2f));
+    gpuMaterials.emplace_back(PrepareUploadMaterialForGpu(material));
   }
 
   RasterMeshBuffers model;
-  model.nbIndices = static_cast<uint32_t>(upload.indices.size());
-  model.nbVertices = static_cast<uint32_t>(upload.vertices.size());
-  model.vertexBufferSize = sizeof(RasterVertex) * upload.vertices.size();
-  model.indexBufferSize = sizeof(uint32_t) * upload.indices.size();
+  model.nbIndices = static_cast<uint32_t>(geometry.indices.size());
+  model.nbVertices = static_cast<uint32_t>(geometry.vertices.size());
+  model.vertexBufferSize = sizeof(RasterVertex) * geometry.vertices.size();
+  model.indexBufferSize = sizeof(uint32_t) * geometry.indices.size();
 
   nvvk::CommandPool cmdBufGet(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = cmdBufGet.createCommandBuffer();
@@ -116,11 +126,11 @@ void RasterGpuScene::uploadMesh(RasterMeshUpload& upload, glm::mat4 transform)
                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                           VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
   model.vertexBuffer =
-      m_alloc->createBuffer(cmdBuf, upload.vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
+      m_alloc->createBuffer(cmdBuf, geometry.vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
   model.indexBuffer =
-      m_alloc->createBuffer(cmdBuf, upload.indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | deviceAddressFlags);
-  model.matColorBuffer = m_alloc->createBuffer(cmdBuf, upload.materials, deviceAddressFlags);
-  model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, upload.materialIndices, deviceAddressFlags);
+      m_alloc->createBuffer(cmdBuf, geometry.indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | deviceAddressFlags);
+  model.matColorBuffer = m_alloc->createBuffer(cmdBuf, gpuMaterials, deviceAddressFlags);
+  model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, geometry.materialIndices, deviceAddressFlags);
 
   uploadTextureResources(cmdBuf, {});
   cmdBufGet.submitAndWait(cmdBuf);
@@ -144,7 +154,7 @@ void RasterGpuScene::uploadMesh(RasterMeshUpload& upload, glm::mat4 transform)
 
   m_objModel.emplace_back(model);
   m_objDesc.emplace_back(desc);
-  m_meshUploads.emplace_back(upload);
+  m_meshGeometries.emplace_back(geometry);
 }
 
 void RasterGpuScene::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
@@ -254,17 +264,15 @@ void RasterGpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bo
 
 void RasterGpuScene::updateMeshGeometry(uint32_t meshId, const RasterMeshGeometry& geometry)
 {
-  if(meshId >= m_meshUploads.size() || meshId >= m_objModel.size())
+  if(meshId >= m_meshGeometries.size() || meshId >= m_objModel.size())
   {
     return;
   }
 
-  m_meshUploads[meshId].vertices = geometry.vertices;
-  m_meshUploads[meshId].indices = geometry.indices;
-  m_meshUploads[meshId].materialIndices = geometry.materialIndices;
+  m_meshGeometries[meshId] = geometry;
 
-  std::vector<RasterVertex>& now_vertices = m_meshUploads[meshId].vertices;
-  std::vector<uint32_t>& now_indices = m_meshUploads[meshId].indices;
+  std::vector<RasterVertex>& now_vertices = m_meshGeometries[meshId].vertices;
+  std::vector<uint32_t>& now_indices = m_meshGeometries[meshId].indices;
   RasterMeshBuffers& model = m_objModel[meshId];
 
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
@@ -350,14 +358,14 @@ void RasterGpuScene::updateMaterialsAtRuntime(const std::vector<RasterMaterialUp
 
   for(const auto& upd : updates)
   {
-    VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
+    VkDeviceSize offset = upd.materialIndex * sizeof(RasterMaterial);
 
     VkBufferMemoryBarrier preBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     preBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
     preBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     preBarrier.buffer = m_objModel[upd.modelIndex].matColorBuffer.buffer;
     preBarrier.offset = offset;
-    preBarrier.size = sizeof(WaveFrontMaterial);
+    preBarrier.size = sizeof(RasterMaterial);
 
     preBarriers.push_back(preBarrier);
   }
@@ -366,21 +374,21 @@ void RasterGpuScene::updateMaterialsAtRuntime(const std::vector<RasterMaterialUp
 
   for(const auto& upd : updates)
   {
-    VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
-    vkCmdUpdateBuffer(cmdBuf, m_objModel[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(WaveFrontMaterial),
+    VkDeviceSize offset = upd.materialIndex * sizeof(RasterMaterial);
+    vkCmdUpdateBuffer(cmdBuf, m_objModel[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(RasterMaterial),
                       &upd.newMaterial);
   }
 
   for(const auto& upd : updates)
   {
-    VkDeviceSize offset = upd.materialIndex * sizeof(WaveFrontMaterial);
+    VkDeviceSize offset = upd.materialIndex * sizeof(RasterMaterial);
 
     VkBufferMemoryBarrier postBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     postBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     postBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     postBarrier.buffer = m_objModel[upd.modelIndex].matColorBuffer.buffer;
     postBarrier.offset = offset;
-    postBarrier.size = sizeof(WaveFrontMaterial);
+    postBarrier.size = sizeof(RasterMaterial);
 
     postBarriers.push_back(postBarrier);
   }

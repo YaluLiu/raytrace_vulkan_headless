@@ -51,8 +51,3 @@ struct RasterMeshGeometry
   std::vector<uint32_t> indices;
   std::vector<int32_t> materialIndices;
 };
-
-struct RasterMeshUpload : RasterMeshGeometry
-{
-  std::vector<RasterMaterial> materials;
-};
