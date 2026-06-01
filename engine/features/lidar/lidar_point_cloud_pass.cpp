@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <utility>
 
 void LidarPointCloudPass::setup(VkDevice device,
                                 VkPhysicalDevice physicalDevice,
@@ -46,9 +47,10 @@ void LidarPointCloudPass::destroyGraphicsPipeline()
   m_overlayPipeline.destroyGraphicsPipeline();
 }
 
-void LidarPointCloudPass::setSensors(std::vector<LidarSensorSpec> sensors)
+void LidarPointCloudPass::configure(LidarOutputConfig config)
 {
-  m_sensors = std::move(sensors);
+  m_visualization = config.visualization;
+  m_sensors = std::move(config.sensors);
   m_layout = BuildLidarScanLayout(m_sensors);
   m_gpuSensors = buildGpuSensorMetadata();
   m_frameGenerated = false;
@@ -58,11 +60,6 @@ void LidarPointCloudPass::setSensors(std::vector<LidarSensorSpec> sensors)
     m_gpuSensors.clear();
     destroyBuffers();
   }
-}
-
-void LidarPointCloudPass::setVisualizationConfig(LidarVisualizationConfig config)
-{
-  m_visualization = config;
 }
 
 LidarFramePointCloud LidarPointCloudPass::readPointCloudFrame()

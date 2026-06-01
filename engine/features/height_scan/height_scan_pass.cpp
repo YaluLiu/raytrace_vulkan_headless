@@ -65,9 +65,10 @@ void HeightScanPass::destroyGraphicsPipeline()
   m_overlayPipeline.destroyGraphicsPipeline();
 }
 
-void HeightScanPass::setSensors(std::vector<HeightScanSensorSpec> sensors)
+void HeightScanPass::configure(HeightScanOutputConfig config)
 {
-  m_sensors = std::move(sensors);
+  m_visualizationConfig = config.visualization;
+  m_sensors = std::move(config.sensors);
   m_layout = BuildHeightScanLayout(m_sensors);
   m_gpuSensors = buildGpuSensorMetadata();
   m_frameGenerated = false;
@@ -77,11 +78,6 @@ void HeightScanPass::setSensors(std::vector<HeightScanSensorSpec> sensors)
     m_gpuSensors.clear();
     destroyBuffers();
   }
-}
-
-void HeightScanPass::setVisualizationConfig(HeightScanVisualizationConfig config)
-{
-  m_visualizationConfig = config;
 }
 
 void HeightScanPass::rebuildPipelinesForSceneLayout(VkDescriptorSetLayout sceneDescriptorSetLayout,

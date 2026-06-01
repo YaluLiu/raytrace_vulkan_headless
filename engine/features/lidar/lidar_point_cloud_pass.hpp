@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/lidar_types.hpp>
+#include <engine/output_config.hpp>
 #include <engine/renderer_types.hpp>
 
 #include "features/lidar/lidar_point_generation_pipeline.hpp"
@@ -30,8 +30,7 @@ public:
   void destroy();
   void destroyGraphicsPipeline();
 
-  void setSensors(std::vector<LidarSensorSpec> sensors);
-  void setVisualizationConfig(LidarVisualizationConfig config);
+  void configure(LidarOutputConfig config);
   const LidarScanLayout& getCurrentLayout() const { return m_layout; }
   LidarFramePointCloud readPointCloudFrame();
 

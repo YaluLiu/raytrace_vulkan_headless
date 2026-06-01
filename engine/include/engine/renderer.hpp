@@ -1,12 +1,10 @@
 #pragma once
 
 #include <engine/aov_texture.hpp>
-#include <engine/height_scan_types.hpp>
-#include <engine/lidar_types.hpp>
 #include <engine/mesh_types.hpp>
+#include <engine/output_config.hpp>
 #include <engine/renderer_types.hpp>
 #include <engine/texture_asset.hpp>
-#include <engine/tile_config.hpp>
 
 #include <memory>
 #include <optional>
@@ -72,17 +70,12 @@ public:
   float getMainCameraClipEnd() const;
 
   // Output configuration/query.
-  void setTileConfig(TileAtlasConfig config);
-  void setRequestedTileAovChannels(TileAovChannelMask channels);
+  void configureOutputs(RendererOutputConfig config);
   TileAtlasConfig getTileConfig() const;
   bool isTileMultiviewSupported() const;
   uint32_t getTileMultiviewMaxViewCount() const;
   std::optional<ExportedAovTexture> GetAovTexture(Aov aov) const;
-  void setLidarSensors(std::vector<LidarSensorSpec> sensors);
-  void setLidarVisualizationConfig(LidarVisualizationConfig config);
   LidarFramePointCloud readLidarPointCloudFrame();
-  void setHeightScanSensors(std::vector<HeightScanSensorSpec> sensors);
-  void setHeightScanVisualizationConfig(HeightScanVisualizationConfig config);
   HeightScanFrame readHeightScanFrame();
 
   // Debug helpers.

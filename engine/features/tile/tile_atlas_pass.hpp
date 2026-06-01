@@ -1,10 +1,10 @@
 #pragma once
 
 #include <engine/aov_texture.hpp>
+#include <engine/output_config.hpp>
 #include "features/tile/multiview_tile_pipeline.hpp"
 #include "features/tile/multiview_tile_targets.hpp"
 #include "features/tile/tile_aov_channel.hpp"
-#include <engine/tile_config.hpp>
 
 #include <optional>
 #include <string>
@@ -27,8 +27,7 @@ public:
   void destroy();
   void destroyGraphicsPipeline();
 
-  void setConfig(TileAtlasConfig config);
-  void setRequestedChannels(TileAovChannelMask channels);
+  void configure(TileOutputConfig config);
   TileAtlasConfig getConfig() const { return m_config; }
   void record(const VkCommandBuffer& cmdBuf,
               const GpuScene& scene,

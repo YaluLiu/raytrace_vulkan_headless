@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/height_scan_types.hpp>
+#include <engine/output_config.hpp>
 #include <engine/renderer_types.hpp>
 
 #include "features/height_scan/height_scan.hpp"
@@ -26,8 +26,7 @@ public:
   void destroy();
   void destroyGraphicsPipeline();
 
-  void setSensors(std::vector<HeightScanSensorSpec> sensors);
-  void setVisualizationConfig(HeightScanVisualizationConfig config);
+  void configure(HeightScanOutputConfig config);
   const HeightScanLayout& getCurrentLayout() const { return m_layout; }
   HeightScanFrame readHeightScanFrame();
 

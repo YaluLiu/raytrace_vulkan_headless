@@ -226,25 +226,21 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
     return false;
   }
 
-  _session.getRenderer().setTileConfig(ToTileAtlasConfig(_renderParam.GetTileConfig()));
-  _session.getRenderer().setRequestedTileAovChannels(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
   const HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   std::vector<HdRobotLidarSensorData> lidarSensors = backendScene.GetActiveLidarSensorSnapshot();
   std::sort(lidarSensors.begin(), lidarSensors.end(), [](const HdRobotLidarSensorData &lhs,
                                                          const HdRobotLidarSensorData &rhs) {
     return lhs.name < rhs.name;
   });
-  _session.getRenderer().setLidarSensors(ToLidarSensorSpec(lidarSensors));
   std::vector<HdRobotHeightScanSensorData> heightScanSensors = backendScene.GetActiveHeightScanSensorSnapshot();
   std::sort(heightScanSensors.begin(), heightScanSensors.end(), [](const HdRobotHeightScanSensorData &lhs,
                                                                    const HdRobotHeightScanSensorData &rhs) {
     return lhs.name < rhs.name;
   });
-  _session.getRenderer().setHeightScanSensors(ToHeightScanSensorSpec(heightScanSensors));
-  _session.getRenderer().setHeightScanVisualizationConfig(
-      ToHeightScanVisualizationConfig(_renderParam.GetHeightScanVisualizationConfig()));
-  _session.getRenderer().setLidarVisualizationConfig(
-      ToLidarVisualizationConfig(_renderParam.GetLidarVisualizationConfig()));
+  _session.getRenderer().configureOutputs(ToRendererOutputConfig(
+      _renderParam.GetTileConfig(), ComputeHdRobotRequestedTileAovChannels(hdAovBindings), lidarSensors,
+      _renderParam.GetLidarVisualizationConfig(), heightScanSensors,
+      _renderParam.GetHeightScanVisualizationConfig()));
   updateLights();
   updateScene();
   _session.render();

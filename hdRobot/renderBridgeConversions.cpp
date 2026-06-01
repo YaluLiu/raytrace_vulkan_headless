@@ -246,4 +246,22 @@ TileAtlasConfig ToTileAtlasConfig(const HdRobotTileConfig &config)
   return result;
 }
 
+RendererOutputConfig ToRendererOutputConfig(
+    const HdRobotTileConfig &tileConfig,
+    TileAovChannelMask requestedTileAovChannels,
+    const std::vector<HdRobotLidarSensorData> &lidarSensors,
+    const HdRobotLidarVisualizationConfig &lidarVisualizationConfig,
+    const std::vector<HdRobotHeightScanSensorData> &heightScanSensors,
+    const HdRobotHeightScanVisualizationConfig &heightScanVisualizationConfig)
+{
+  RendererOutputConfig result;
+  result.tile.atlas = ToTileAtlasConfig(tileConfig);
+  result.tile.requestedChannels = requestedTileAovChannels;
+  result.lidar.sensors = ToLidarSensorSpec(lidarSensors);
+  result.lidar.visualization = ToLidarVisualizationConfig(lidarVisualizationConfig);
+  result.heightScan.sensors = ToHeightScanSensorSpec(heightScanSensors);
+  result.heightScan.visualization = ToHeightScanVisualizationConfig(heightScanVisualizationConfig);
+  return result;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

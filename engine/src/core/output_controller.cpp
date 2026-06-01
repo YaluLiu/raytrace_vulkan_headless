@@ -102,19 +102,11 @@ std::optional<ExportedAovTexture> OutputController::getAovTexture(Aov aov) const
   return m_previewPipeline.getAovTexture(aov);
 }
 
-void OutputController::setTileConfig(TileAtlasConfig config)
+void OutputController::applyConfig(RendererOutputConfig config)
 {
-  m_tileAtlasPass.setConfig(config);
-}
-
-void OutputController::setLidarSensors(std::vector<LidarSensorSpec> sensors)
-{
-  m_lidarPointCloudPass.setSensors(std::move(sensors));
-}
-
-void OutputController::setLidarVisualizationConfig(LidarVisualizationConfig config)
-{
-  m_lidarPointCloudPass.setVisualizationConfig(config);
+  m_tileAtlasPass.configure(config.tile);
+  m_lidarPointCloudPass.configure(std::move(config.lidar));
+  m_heightScanPass.configure(std::move(config.heightScan));
 }
 
 LidarFramePointCloud OutputController::readLidarPointCloudFrame()
@@ -122,24 +114,9 @@ LidarFramePointCloud OutputController::readLidarPointCloudFrame()
   return m_lidarPointCloudPass.readPointCloudFrame();
 }
 
-void OutputController::setHeightScanSensors(std::vector<HeightScanSensorSpec> sensors)
-{
-  m_heightScanPass.setSensors(std::move(sensors));
-}
-
-void OutputController::setHeightScanVisualizationConfig(HeightScanVisualizationConfig config)
-{
-  m_heightScanPass.setVisualizationConfig(config);
-}
-
 HeightScanFrame OutputController::readHeightScanFrame()
 {
   return m_heightScanPass.readHeightScanFrame();
-}
-
-void OutputController::setRequestedTileAovChannels(TileAovChannelMask channels)
-{
-  m_tileAtlasPass.setRequestedChannels(channels);
 }
 
 void OutputController::markTileAovAtlasConsumed(const std::string& outputDirectory)

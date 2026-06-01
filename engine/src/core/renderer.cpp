@@ -74,29 +74,15 @@ std::optional<ExportedAovTexture> Renderer::GetAovTexture(Aov aov) const
   return m_outputController.getAovTexture(aov);
 }
 
-void Renderer::setLidarSensors(std::vector<LidarSensorSpec> sensors)
+void Renderer::configureOutputs(RendererOutputConfig config)
 {
-  m_outputController.setLidarSensors(std::move(sensors));
-}
-
-void Renderer::setLidarVisualizationConfig(LidarVisualizationConfig config)
-{
-  m_outputController.setLidarVisualizationConfig(config);
+  m_outputController.applyConfig(std::move(config));
+  engine::ensureFrameUniformCapacity(*this, engine::getRequiredFrameUniformSlots(*this));
 }
 
 LidarFramePointCloud Renderer::readLidarPointCloudFrame()
 {
   return m_outputController.readLidarPointCloudFrame();
-}
-
-void Renderer::setHeightScanSensors(std::vector<HeightScanSensorSpec> sensors)
-{
-  m_outputController.setHeightScanSensors(std::move(sensors));
-}
-
-void Renderer::setHeightScanVisualizationConfig(HeightScanVisualizationConfig config)
-{
-  m_outputController.setHeightScanVisualizationConfig(config);
 }
 
 HeightScanFrame Renderer::readHeightScanFrame()
@@ -128,17 +114,6 @@ void Renderer::setCameras(std::vector<CameraSpec> cameras)
 void Renderer::setMainCamera(const CameraSpec& camera)
 {
   m_viewUniforms.setMainCamera(camera);
-}
-
-void Renderer::setTileConfig(TileAtlasConfig config)
-{
-  m_outputController.setTileConfig(config);
-  engine::ensureFrameUniformCapacity(*this, engine::getRequiredFrameUniformSlots(*this));
-}
-
-void Renderer::setRequestedTileAovChannels(TileAovChannelMask channels)
-{
-  m_outputController.setRequestedTileAovChannels(channels);
 }
 
 TileAtlasConfig Renderer::getTileConfig() const

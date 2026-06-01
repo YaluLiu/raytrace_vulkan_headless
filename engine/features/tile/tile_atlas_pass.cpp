@@ -57,12 +57,12 @@ void TileAtlasPass::destroyGraphicsPipeline()
   m_multiviewTilePipeline.destroyGraphicsPipeline();
 }
 
-void TileAtlasPass::setConfig(TileAtlasConfig config)
+void TileAtlasPass::configure(TileOutputConfig config)
 {
-  config.sanitize();
-  if(config != m_config)
+  config.atlas.sanitize();
+  if(config.atlas != m_config)
   {
-    m_config = config;
+    m_config = config.atlas;
     const TileAovChannelMask enabledChannels = m_config.enabledChannels();
     if(!enabledChannels.contains(TileAovChannel::Color))
     {
@@ -75,11 +75,8 @@ void TileAtlasPass::setConfig(TileAtlasConfig config)
       m_depthExportValid = false;
     }
   }
-}
 
-void TileAtlasPass::setRequestedChannels(TileAovChannelMask channels)
-{
-  m_requestedChannels = channels;
+  m_requestedChannels = config.requestedChannels;
   if(!m_requestedChannels.contains(TileAovChannel::Color))
   {
     m_colorDirty = false;

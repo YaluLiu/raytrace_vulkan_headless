@@ -1,13 +1,11 @@
 #pragma once
 
 #include <engine/aov_texture.hpp>
-#include <engine/height_scan_types.hpp>
-#include <engine/lidar_types.hpp>
+#include <engine/output_config.hpp>
 #include "features/height_scan/height_scan_pass.hpp"
 #include "features/lidar/lidar_point_cloud_pass.hpp"
 #include "features/preview/preview_pipeline.hpp"
 #include "features/tile/tile_atlas_pass.hpp"
-#include <engine/tile_config.hpp>
 
 #include <optional>
 #include <string>
@@ -49,14 +47,9 @@ public:
   void recordHeightScanOverlay(const VkCommandBuffer& cmdBuf, SceneDescriptors& descriptors);
   std::optional<ExportedAovTexture> getAovTexture(Aov aov) const;
 
-  void setLidarSensors(std::vector<LidarSensorSpec> sensors);
-  void setLidarVisualizationConfig(LidarVisualizationConfig config);
+  void applyConfig(RendererOutputConfig config);
   LidarFramePointCloud readLidarPointCloudFrame();
-  void setHeightScanSensors(std::vector<HeightScanSensorSpec> sensors);
-  void setHeightScanVisualizationConfig(HeightScanVisualizationConfig config);
   HeightScanFrame readHeightScanFrame();
-  void setTileConfig(TileAtlasConfig config);
-  void setRequestedTileAovChannels(TileAovChannelMask channels);
   TileAtlasConfig getTileConfig() const { return m_tileAtlasPass.getConfig(); }
   void markTileAovAtlasConsumed(const std::string& outputDirectory = "output");
   bool isTileMultiviewSupported() const { return m_tileAtlasPass.isMultiviewSupported(); }

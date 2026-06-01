@@ -91,6 +91,10 @@ call sites with `rg`.
   output controller, allocator, and debug utilities.
 - `engine/include/engine/renderer_types.hpp`: Facade-facing data types such as
   `CameraSpec`, `MaterialUpdate`, and `TlasDescriptorInfo`.
+- `engine/include/engine/output_config.hpp`: Public renderer output
+  configuration snapshot that groups tile atlas, LiDAR, and height-scan inputs
+  so callers can apply output state through one `Renderer::configureOutputs`
+  call instead of mirroring per-pass setters across facade layers.
 - `engine/include/engine/mesh_types.hpp`: Public engine mesh upload contract:
   CPU-side `MeshVertex`, `Material`, and `MeshGeometry`; mesh
   upload now passes geometry and material spans directly instead of using a
@@ -128,7 +132,8 @@ call sites with `rg`.
 - `engine/src/core/output_controller.hpp` /
   `engine/src/core/output_controller.cpp`: Output orchestration layer that owns
   the preview AOV pipeline, tile atlas pass, LiDAR point cloud pass, height scan
-  pass, and AOV texture query routing.
+  pass, AOV texture query routing, and fan-out from the renderer output
+  configuration snapshot into the concrete output passes.
 - `engine/features/preview/preview_pipeline.hpp` / `engine/features/preview/preview_pipeline.cpp`:
   Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
   depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
