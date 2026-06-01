@@ -7,13 +7,11 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewPipeline`.
 ## Main Files
 
 - `include/engine/` contains the public engine API consumed by `hdRobot/`.
-- `private/core/` and `src/core/` contain `Renderer` facade support,
-  private renderer resource helpers, frame pass ordering, and output
-  orchestration.
-- `private/runtime/` and `src/runtime/` contain the Vulkan session shell and
-  headless app context.
-- `private/scene/` and `src/scene/` own mesh, material, instance, light,
-  texture, descriptor, and view uniform resources shared by all outputs.
+- `src/core/` contains `Renderer` facade support, private renderer resource
+  helpers, frame pass ordering, and output orchestration.
+- `src/runtime/` contains the Vulkan session shell and headless app context.
+- `src/scene/` owns mesh, material, instance, light, texture, descriptor, and
+  view uniform resources shared by all outputs.
 - `features/preview/` owns the main graphics offscreen AOV targets, graphics
   pipeline, framebuffer, AOV export backing, draw command recording, and
   preview shaders.

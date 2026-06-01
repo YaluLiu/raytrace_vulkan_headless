@@ -15,9 +15,10 @@ call sites with `rg`.
 - `build_windows.bat`: Windows Hydra build helper; builds and installs
   `UsdRaySensor`, `UsdRaySensorImaging`, and `hdRobot`.
 - `engine/`: Core Vulkan graphics library. Public API lives under
-  `include/engine/`; cross-output core, scene, and runtime code lives under
-  `private/` and `src/`; output-specific implementation and shaders live under
-  `features/`; shared GLSL/C++ ABI includes remain under `shaders/common/`.
+  `include/engine/`; cross-output core, scene, and runtime internal headers and
+  implementations live together under `src/`; output-specific implementation
+  and shaders live under `features/`; shared GLSL/C++ ABI includes remain under
+  `shaders/common/`.
 - `hdRobot/`: OpenUSD Hydra render delegate plugin that bridges Hydra into the
   engine renderer.
 - `UsdRaySensor/`: Schema-only USD plugin for the custom
@@ -54,7 +55,7 @@ call sites with `rg`.
   render resource lifecycle.
 - `engine/include/engine/session.hpp`: `Session` public surface and renderer
   ownership.
-- `engine/private/core/frame_executor.hpp` / `engine/src/core/frame_executor.cpp`:
+- `engine/src/core/frame_executor.hpp` / `engine/src/core/frame_executor.cpp`:
   Source of truth for per-frame engine pass sequencing; preview AOV rendering
   is followed by LiDAR point overlay and then height scan overlay.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
@@ -79,13 +80,13 @@ call sites with `rg`.
 - `engine/src/core/renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
   AOV texture routing, and delegation into GPU scene, descriptor, view uniform,
   and output controller components.
-- `engine/private/core/renderer_resources.hpp` /
+- `engine/src/core/renderer_resources.hpp` /
   `engine/src/core/renderer_resources.cpp`: Private renderer resource
   helper layer used by `Session`, frame preparation, and texture-resource
   rebuilds to create/destroy descriptor sets, view uniforms, preview targets,
   output pipelines, light/object buffers, and RT resources without exposing
   these steps on the public `Renderer` API.
-- `engine/private/core/renderer_internal.hpp`: Private bridge from
+- `engine/src/core/renderer_internal.hpp`: Private bridge from
   `Renderer` to its PIMPL-owned GPU scene, descriptors, view uniforms,
   output controller, allocator, and debug utilities.
 - `engine/include/engine/renderer_types.hpp`: Facade-facing data types such as
@@ -104,27 +105,27 @@ call sites with `rg`.
   atlas values exposed to Hydra without Hydra or OpenGL types. Display tile
   Hydra AOV tokens are bridge-side copy policies mapped onto the fixed tile
   atlas AOVs rather than separate engine outputs.
-- `engine/private/scene/scene_types.hpp`: Shared draw input types used by
+- `engine/src/scene/scene_types.hpp`: Shared draw input types used by
   `Renderer` and `PreviewPipeline`.
-- `engine/private/scene/gpu_scene.hpp` / `engine/src/scene/gpu_scene.cpp`: Owner of mesh,
+- `engine/src/scene/gpu_scene.hpp` / `engine/src/scene/gpu_scene.cpp`: Owner of mesh,
   material, instance, light, texture, object-description, and light GPU
   resources; uploads mesh geometry and material arrays through separate engine
   API parameters, provides read-only spans for output passes and facade methods
   for scene upload/update, and forwards RT acceleration-structure lifecycle
   and dirty updates into `RtScene`.
-- `engine/private/scene/rt_scene.hpp` / `engine/src/scene/rt_scene.cpp`: RT
+- `engine/src/scene/rt_scene.hpp` / `engine/src/scene/rt_scene.cpp`: RT
   acceleration-structure mirror for the engine scene; builds BLAS from uploaded
   mesh buffers, builds/updates TLAS from renderer instances, applies per-instance
   trace masks for normal geometry versus height-scan ground geometry, and
   exposes the TLAS descriptor primitive for RT LiDAR and height-scan passes.
-- `engine/private/scene/scene_descriptors.hpp` /
+- `engine/src/scene/scene_descriptors.hpp` /
   `engine/src/scene/scene_descriptors.cpp`: Owner of scene descriptor bindings,
   pool, layout, set, and descriptor updates for frame uniforms, object
   descriptions, lights, tile uniforms, and textures.
-- `engine/private/scene/view_uniforms.hpp` / `engine/src/scene/view_uniforms.cpp`: Owner of
+- `engine/src/scene/view_uniforms.hpp` / `engine/src/scene/view_uniforms.cpp`: Owner of
   main frame uniforms, tile frame uniforms, camera array, main camera clip
   range, and uniform buffer update logic.
-- `engine/private/core/output_controller.hpp` /
+- `engine/src/core/output_controller.hpp` /
   `engine/src/core/output_controller.cpp`: Output orchestration layer that owns
   the preview AOV pipeline, tile atlas pass, LiDAR point cloud pass, height scan
   pass, and AOV texture query routing.
@@ -203,7 +204,7 @@ call sites with `rg`.
   resource orchestration for descriptor creation/update, frame uniform buffer
   capacity, preview target resize, render-resource creation/destruction, and
   output pipeline rebuilds.
-- `engine/private/image_barriers.hpp`: Vulkan image layout/barrier helpers.
+- `engine/src/image_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `engine/src/runtime/headless_vk.cpp`: Headless Vulkan offline app context support.
 
 ## Offscreen Rendering
@@ -529,7 +530,7 @@ call sites with `rg`.
   `setHeightScanVisualizationConfig`, and `readHeightScanFrame`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, `hdRobot/tokens.h`,
-  `hdRobot/renderBridge.cpp`, and `engine/private/scene/scene_types.hpp`,
+  `hdRobot/renderBridge.cpp`, and `engine/src/scene/scene_types.hpp`,
   then search for `_CreateGiMeshes`, `updateGeometry`, `_AnalyzePrimvars`,
   `traceRole`, `ground`, `traceMask`, and tangent calculation helpers.
 - Material or texture path issues:

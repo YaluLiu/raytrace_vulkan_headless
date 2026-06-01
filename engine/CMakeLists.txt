@@ -33,10 +33,10 @@ set(ENGINE_PUBLIC_HEADERS
 )
 
 set(ENGINE_PRIVATE_HEADERS
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/frame_executor.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/output_controller.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/renderer_internal.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/renderer_resources.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/frame_executor.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/output_controller.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer_internal.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer_resources.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.hpp
@@ -51,13 +51,13 @@ set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_targets.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_aov_channel.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/image_barriers.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/runtime/headless_vk.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/gpu_scene.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/rt_scene.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/scene_descriptors.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/scene_types.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/view_uniforms.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/image_barriers.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/rt_scene.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_descriptors.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/view_uniforms.hpp
 )
 
 set(ENGINE_SOURCES
@@ -146,7 +146,6 @@ target_include_directories(${PROJNAME}
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -183,7 +182,7 @@ if(BUILD_TESTING)
   )
   target_include_directories(engine_height_scan_basis_test
     PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/private
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/include
       ${CMAKE_CURRENT_SOURCE_DIR}
   )
