@@ -83,12 +83,10 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/session.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/geometry_upload.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/rt_scene.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/runtime_updates.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/renderer_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_descriptors.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_upload.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/view_uniforms.cpp
 )
 

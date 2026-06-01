@@ -131,57 +131,6 @@ uint32_t Renderer::getTileMultiviewMaxViewCount() const
   return m_outputController.getTileMultiviewMaxViewCount();
 }
 
-size_t Renderer::getInstanceCount() const
-{
-  return m_gpuScene.getInstanceCount();
-}
-
-InstanceInfo Renderer::getInstance(size_t index) const
-{
-  const auto& instance = m_gpuScene.getInstance(index);
-  return InstanceInfo{
-      instance.transform,
-      instance.objIndex,
-      0,
-      instance.visible,
-  };
-}
-
-size_t Renderer::getMeshSourceCount() const
-{
-  return m_gpuScene.getMeshSourceCount();
-}
-
-void Renderer::createRayTracingResources()
-{
-  m_gpuScene.createRayTracingResources();
-}
-
-void Renderer::destroyRayTracingResources()
-{
-  m_gpuScene.destroyRayTracingResources();
-}
-
-void Renderer::flushRayTracingUpdates()
-{
-  m_gpuScene.flushRayTracingUpdates();
-}
-
-bool Renderer::hasRayTracingTlas() const
-{
-  return m_gpuScene.hasRayTracingTlas();
-}
-
-VkAccelerationStructureKHR Renderer::getRayTracingTlas() const
-{
-  return m_gpuScene.getRayTracingTlas();
-}
-
-std::optional<TlasDescriptorInfo> Renderer::getRayTracingTlasDescriptorInfo() const
-{
-  return m_gpuScene.getRayTracingTlasDescriptorInfo();
-}
-
 void Renderer::onResize(int w, int h)
 {
   engine::resizeRenderTargets(*this, w, h);

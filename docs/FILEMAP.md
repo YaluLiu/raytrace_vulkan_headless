@@ -78,8 +78,8 @@ call sites with `rg`.
   and AOV export. Frame execution and descriptor/uniform resource steps are
   kept behind private core helpers.
 - `engine/src/core/renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
-  AOV texture routing, and delegation into GPU scene, descriptor, view uniform,
-  and output controller components.
+  AOV texture routing, and delegation into descriptor, view uniform, and output
+  controller components.
 - `engine/src/core/renderer_resources.hpp` /
   `engine/src/core/renderer_resources.cpp`: Private renderer resource
   helper layer used by `Session`, frame preparation, and texture-resource
@@ -197,12 +197,10 @@ call sites with `rg`.
   coordinator owning sensors, visualization config, GPU metadata, sample
   buffers, Vulkan RT generation, preview overlay orchestration, and CPU
   readback frames.
-- `engine/src/scene/runtime_updates.cpp`: `Renderer` compatibility
-  forwarding for runtime material and light list updates into `GpuScene`.
-- `engine/src/scene/geometry_upload.cpp`: `Renderer` compatibility
-  forwarding for instance and geometry updates into `GpuScene`.
-- `engine/src/scene/scene_upload.cpp`: `Renderer` compatibility forwarding
-  for mesh-source and texture upload into `GpuScene`, including
+- `engine/src/scene/renderer_scene.cpp`: `Renderer` scene facade
+  implementation for mesh-source and texture upload, instance/geometry runtime
+  updates, material/light updates, scene queries, RT TLAS lifecycle/query
+  forwarding, and
   `rebuildTextureResourcesAndSceneBindings` coordination across descriptors and
   output pipelines.
 - `engine/src/core/renderer_resources.cpp`: Private `Renderer`
@@ -568,7 +566,7 @@ call sites with `rg`.
   `baseColorTextureId`.
 - Engine light evaluation:
   `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
-  `hdRobot/renderBridge.cpp`, `engine/src/scene/runtime_updates.cpp`,
+  `hdRobot/renderBridge.cpp`, `engine/src/scene/renderer_scene.cpp`,
   `engine/src/scene/gpu_scene.cpp`, `engine/src/scene/scene_descriptors.cpp`,
   `engine/shaders/common/host_device.h`, `engine/features/preview/shaders/mesh.frag`, then search
   for `ToLight`, `updateLights`, `updateLightBuffer`, `eLights`,
@@ -595,7 +593,7 @@ call sites with `rg`.
 - Mesh upload staging:
   `engine/include/engine/mesh_types.hpp`,
   `engine/src/scene/gpu_scene.cpp`,
-  `engine/src/scene/scene_upload.cpp`, and
+  `engine/src/scene/renderer_scene.cpp`, and
   `hdRobot/renderBridgeConversions.cpp`,
   then search for `ConvertHydraMeshToGeometry`, `ToMaterial`,
   `uploadMesh`, `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
