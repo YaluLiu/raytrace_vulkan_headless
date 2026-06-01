@@ -5,15 +5,14 @@
 #include <memory>
 #include <utility>
 
-Renderer::Renderer() : m_impl(std::make_unique<Impl>()) {}
+Engine::Engine() : m_impl(std::make_unique<Impl>()) {}
 
-Renderer::~Renderer() = default;
+Engine::~Engine()
+{
+  cleanup();
+}
 
-Renderer::Renderer(Renderer&&) noexcept = default;
-
-Renderer& Renderer::operator=(Renderer&&) noexcept = default;
-
-void Renderer::create(VkInstance instance,
+void Engine::create(VkInstance instance,
                             VkDevice device,
                             VkPhysicalDevice physicalDevice,
                             uint32_t queueFamily,
@@ -22,34 +21,36 @@ void Renderer::create(VkInstance instance,
   setup(instance, device, physicalDevice, queueFamily);
   m_impl->createCommandBuffers();
   m_impl->sizeRef() = size;
+  m_impl->engineCreated = true;
+  m_impl->cleaned = false;
 }
 
-void Renderer::destroy()
+void Engine::destroy()
 {
-  m_impl->destroy();
+  cleanup();
 }
 
-VkDevice Renderer::getDevice() const
+VkDevice Engine::getDevice() const
 {
   return m_impl->getDevice();
 }
 
-const std::vector<VkCommandBuffer>& Renderer::getCommandBuffers() const
+const std::vector<VkCommandBuffer>& Engine::getCommandBuffers() const
 {
   return m_impl->getCommandBuffers();
 }
 
-uint32_t Renderer::getCurFrame() const
+uint32_t Engine::getCurFrame() const
 {
   return m_impl->getCurFrame();
 }
 
-void Renderer::submitCurrentCommandBufferAndWait()
+void Engine::submitCurrentCommandBufferAndWait()
 {
   m_impl->submitCurrentCommandBufferAndWait();
 }
 
-void Renderer::setup(const VkInstance& instance,
+void Engine::setup(const VkInstance& instance,
                            const VkDevice& device,
                            const VkPhysicalDevice& physicalDevice,
                            uint32_t queueFamily)
@@ -64,74 +65,74 @@ void Renderer::setup(const VkInstance& instance,
   m_outputController.setup(m_impl->device(), physicalDevice, queueFamily, m_alloc, m_debug);
 }
 
-const std::vector<CameraSpec>& Renderer::getCameras() const
+const std::vector<CameraSpec>& Engine::getCameras() const
 {
   return m_viewUniforms.getCameras();
 }
 
-std::optional<ExportedAovTexture> Renderer::GetAovTexture(Aov aov) const
+std::optional<ExportedAovTexture> Engine::GetAovTexture(Aov aov) const
 {
   return m_outputController.getAovTexture(aov);
 }
 
-void Renderer::configureOutputs(RendererOutputConfig config)
+void Engine::configureOutputs(RendererOutputConfig config)
 {
   m_outputController.applyConfig(std::move(config));
   engine::ensureFrameUniformCapacity(*this, engine::getRequiredFrameUniformSlots(*this));
 }
 
-LidarFramePointCloud Renderer::readLidarPointCloudFrame()
+LidarFramePointCloud Engine::readLidarPointCloudFrame()
 {
   return m_outputController.readLidarPointCloudFrame();
 }
 
-HeightScanFrame Renderer::readHeightScanFrame()
+HeightScanFrame Engine::readHeightScanFrame()
 {
   return m_outputController.readHeightScanFrame();
 }
 
-void Renderer::setMainCameraClipRange(float clipStart, float clipEnd)
+void Engine::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   m_viewUniforms.setMainCameraClipRange(clipStart, clipEnd);
 }
 
-float Renderer::getMainCameraClipStart() const
+float Engine::getMainCameraClipStart() const
 {
   return m_viewUniforms.getMainCameraClipStart();
 }
 
-float Renderer::getMainCameraClipEnd() const
+float Engine::getMainCameraClipEnd() const
 {
   return m_viewUniforms.getMainCameraClipEnd();
 }
 
-void Renderer::setCameras(std::vector<CameraSpec> cameras)
+void Engine::setCameras(std::vector<CameraSpec> cameras)
 {
   m_viewUniforms.setCameras(std::move(cameras));
   engine::ensureFrameUniformCapacity(*this, engine::getRequiredFrameUniformSlots(*this));
 }
 
-void Renderer::setMainCamera(const CameraSpec& camera)
+void Engine::setMainCamera(const CameraSpec& camera)
 {
   m_viewUniforms.setMainCamera(camera);
 }
 
-TileAtlasConfig Renderer::getTileConfig() const
+TileAtlasConfig Engine::getTileConfig() const
 {
   return m_outputController.getTileConfig();
 }
 
-bool Renderer::isTileMultiviewSupported() const
+bool Engine::isTileMultiviewSupported() const
 {
   return m_outputController.isTileMultiviewSupported();
 }
 
-uint32_t Renderer::getTileMultiviewMaxViewCount() const
+uint32_t Engine::getTileMultiviewMaxViewCount() const
 {
   return m_outputController.getTileMultiviewMaxViewCount();
 }
 
-void Renderer::onResize(int w, int h)
+void Engine::onResize(int w, int h)
 {
   engine::resizeRenderTargets(*this, w, h);
 }

@@ -5,7 +5,7 @@
 #include <optional>
 
 #include "glInteropCache.h"
-#include <engine/renderer.hpp>
+#include <engine/engine.hpp>
 #include "renderBuffer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,7 +45,7 @@ void DeleteFramebuffers(GLuint readFbo, GLuint drawFbo)
 }
 } // namespace
 
-bool CopyAovToRenderBuffer(const ::Renderer &app,
+bool CopyAovToRenderBuffer(const ::Engine &app,
                            const HdRobotAovCopyRequest &request,
                            ::HdRobotGlInteropCache &glInteropCache)
 {

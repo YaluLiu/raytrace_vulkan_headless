@@ -30,7 +30,7 @@ void TileAtlasPass::setup(VkDevice device,
   m_multiviewMaxInstanceIndex = properties11.maxMultiviewInstanceIndex;
   m_multiviewSupported =
       features11.multiview == VK_TRUE && m_multiviewMaxViewCount > 0 && MAX_TILE_MULTIVIEW_VIEWS > 0;
-  std::cerr << "[Renderer] Tile multiview " << (m_multiviewSupported ? "supported" : "not supported")
+  std::cerr << "[Engine] Tile multiview " << (m_multiviewSupported ? "supported" : "not supported")
             << " (maxViewCount=" << m_multiviewMaxViewCount
             << ", maxInstanceIndex=" << m_multiviewMaxInstanceIndex << ")" << std::endl;
 
@@ -166,7 +166,7 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
   }
   catch(const std::exception& e)
   {
-    std::cerr << "[Renderer] Tile multiview setup failed: " << e.what() << std::endl;
+    std::cerr << "[Engine] Tile multiview setup failed: " << e.what() << std::endl;
     logUnavailableOnce("setup failed");
     return;
   }
@@ -265,7 +265,7 @@ void TileAtlasPass::logUnavailableOnce(const char* reason)
   }
 
   m_multiviewUnsupportedLogged = true;
-  std::cerr << "[Renderer] Tile multiview unavailable";
+  std::cerr << "[Engine] Tile multiview unavailable";
   if(reason != nullptr && reason[0] != '\0')
   {
     std::cerr << ": " << reason;

@@ -21,13 +21,12 @@ target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../e
 
 set(ENGINE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/aov_texture.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/engine.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/height_scan_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/lidar_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/mesh_types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/output_config.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/renderer.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/renderer_types.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/session.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/shaders/host_device.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/texture_asset.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/tile_config.hpp

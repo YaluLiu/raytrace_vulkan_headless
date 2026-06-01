@@ -82,7 +82,7 @@ struct UploadedMeshState
   std::vector<int> rendererInstanceIds;
 };
 
-UploadedMeshState UploadMeshToRenderer(Renderer &vulkan,
+UploadedMeshState UploadMeshToRenderer(Engine &vulkan,
                                        const HydraMesh &mesh,
                                        const std::vector<HdRobotMaterialRecord> &materials)
 {
@@ -110,7 +110,7 @@ UploadedMeshState UploadMeshToRenderer(Renderer &vulkan,
   return state;
 }
 
-bool EnsureMeshRendererInstanceSlots(Renderer &vulkan, HdRobotMeshRecord &record)
+bool EnsureMeshRendererInstanceSlots(Engine &vulkan, HdRobotMeshRecord &record)
 {
   if(record.rendererInstanceIds.empty())
   {
@@ -220,7 +220,7 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
     return false;
   }
 
-  ensureSessionReady(*mainRenderSize);
+  ensureEngineReady(*mainRenderSize);
   if(!updateCameras(renderPassState))
   {
     return false;
@@ -237,15 +237,15 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
                                                                    const HdRobotHeightScanSensorData &rhs) {
     return lhs.name < rhs.name;
   });
-  _session.getRenderer().configureOutputs(ToRendererOutputConfig(
+  _engine.configureOutputs(ToRendererOutputConfig(
       _renderParam.GetTileConfig(), ComputeHdRobotRequestedTileAovChannels(hdAovBindings), lidarSensors,
       _renderParam.GetLidarVisualizationConfig(), heightScanSensors,
       _renderParam.GetHeightScanVisualizationConfig()));
   updateLights();
   updateScene();
-  _session.render();
+  _engine.render();
 
-  const ::Renderer &app = _session.getRenderer();
+  const ::Engine &app = _engine;
   bool allAovsCopied = true;
 
   auto copyBinding = [&](const HdRenderPassAovBinding &binding)
@@ -291,48 +291,48 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
   return allAovsCopied;
 }
 
-void HdRobotRenderBridge::ensureSessionReady(const GfVec2i &renderSize)
+void HdRobotRenderBridge::ensureEngineReady(const GfVec2i &renderSize)
 {
   if(!_isAppInited)
   {
-    initializeSession(renderSize);
+    initializeEngine(renderSize);
   }
   else if(_renderSize != renderSize)
   {
-    resizeSession(renderSize);
+    resizeEngine(renderSize);
   }
 
   refreshTextureAssetsIfNeeded();
 }
 
-void HdRobotRenderBridge::initializeSession(const GfVec2i &renderSize)
+void HdRobotRenderBridge::initializeEngine(const GfVec2i &renderSize)
 {
   if(!_resourcePath.empty())
   {
-    _session.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
+    _engine.setPluginSearchRoot(std::filesystem::path(_resourcePath).parent_path().string());
   }
 
-  _session.setup(renderSize[0], renderSize[1]);
+  _engine.setup(renderSize[0], renderSize[1]);
   _renderSize = renderSize;
   _isAppInited = true;
 
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   vulkan.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = _renderParam.GetTextureRegistryVersion();
   uploadInitialScene();
-  _session.createRenderResources();
+  _engine.createRenderResources();
 }
 
-void HdRobotRenderBridge::resizeSession(const GfVec2i &renderSize)
+void HdRobotRenderBridge::resizeEngine(const GfVec2i &renderSize)
 {
   _glInteropCache.Clear();
-  _session.resize(renderSize[0], renderSize[1]);
+  _engine.resize(renderSize[0], renderSize[1]);
   _renderSize = renderSize;
 }
 
 void HdRobotRenderBridge::uploadInitialScene()
 {
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   std::vector<HdRobotMeshRecord> meshRecords = backendScene.GetMeshRecordsSnapshot();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
@@ -361,7 +361,7 @@ void HdRobotRenderBridge::refreshTextureAssetsIfNeeded()
   }
 
   _glInteropCache.Clear();
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   vulkan.rebuildTextureResourcesAndSceneBindings(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
@@ -406,7 +406,7 @@ bool HdRobotRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &render
     return lhs.name < rhs.name;
   });
 
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   vulkan.setCameras(ToCameraSpec(cameras));
   vulkan.setMainCamera(ToCameraSpec(mainCameraData));
   return true;
@@ -414,7 +414,7 @@ bool HdRobotRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &render
 
 void HdRobotRenderBridge::updateLights()
 {
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   vulkan.clearLights();
 
   for(const HydraLight &curLight : _renderParam.GetBackendScene().GetActiveLightSnapshot())
@@ -432,7 +432,7 @@ void HdRobotRenderBridge::updateScene()
 
 void HdRobotRenderBridge::updateGeometry()
 {
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
   for(const HdRobotMeshRecord& record : backendScene.ConsumeDirtyMeshGeometry())
@@ -455,7 +455,7 @@ void HdRobotRenderBridge::updateGeometry()
 
 void HdRobotRenderBridge::updateInstances()
 {
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
 
@@ -496,7 +496,7 @@ void HdRobotRenderBridge::updateInstances()
 
 void HdRobotRenderBridge::updateMaterials()
 {
-  Renderer &vulkan = _session.getRenderer();
+  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
   const std::vector<HdRobotMeshRecord> meshRecords = backendScene.GetMeshRecordsSnapshot();

@@ -1,4 +1,4 @@
-# Engine Renderer
+# Engine Runtime
 
 The engine target provides a compact Vulkan graphics baseline for Hydra and
 standalone rendering. It renders mesh color, normalized depth, primitive ID, and
@@ -7,9 +7,10 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewPipeline`.
 ## Main Files
 
 - `include/engine/` contains the public engine API consumed by `hdRobot/`.
-- `src/core/` contains `Renderer` facade support, private renderer resource
+- `src/core/` contains `Engine` facade support, private render-resource
   helpers, frame pass ordering, and output orchestration.
-- `src/runtime/` contains the Vulkan session shell and headless app context.
+- `src/runtime/` contains the engine-owned Vulkan context lifecycle and
+  headless app context.
 - `src/scene/` owns mesh, material, instance, light, texture, descriptor, and
   view uniform resources shared by all outputs.
 - `features/preview/` owns the main graphics offscreen AOV targets, graphics
@@ -31,7 +32,7 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewPipeline`.
 
 ## Frame Flow
 
-`Session::render()` owns command buffer begin/end/submit and delegates
+`Engine::render()` owns command buffer begin/end/submit and delegates
 pass ordering to `engine::recordFramePasses()`, which executes:
 
 1. `UpdateUniforms`
@@ -63,8 +64,8 @@ The atlas size is controlled only by tile configuration:
 
 LiDAR output is a sensor-specific point-cloud contract, not a `Aov`.
 Hydra forwards sorted LiDAR sensors and visualization settings to
-`Renderer`; engine generates a global GPU point buffer plus per-sensor
-metadata. CPU consumers use `Renderer::readLidarPointCloudFrame()`.
+`Engine`; engine generates a global GPU point buffer plus per-sensor
+metadata. CPU consumers use `Engine::readLidarPointCloudFrame()`.
 When visualization is enabled, the selected sorted sensor index is drawn as red
 points over the preview color attachment before Hydra copies the color AOV.
 
@@ -89,7 +90,7 @@ in `hdRobot/`; engine components should remain free of OpenUSD Hydra types.
 
 ## AOVs
 
-`Renderer::GetAovTexture()` exposes the current offscreen Vulkan images for:
+`Engine::GetAovTexture()` exposes the current offscreen Vulkan images for:
 
 - `Aov::Color`
 - `Aov::Depth`

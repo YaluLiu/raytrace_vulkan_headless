@@ -32,7 +32,7 @@ constexpr std::array<FramePass, 8> kFramePassSequence{
     FramePass::OverlayHeightScans,
 };
 
-void executeFramePass(RendererAccess::Impl& impl, const VkCommandBuffer& cmdBuf, FramePass pass)
+void executeFramePass(EngineAccess::Impl& impl, const VkCommandBuffer& cmdBuf, FramePass pass)
 {
   switch(pass)
   {
@@ -65,23 +65,23 @@ void executeFramePass(RendererAccess::Impl& impl, const VkCommandBuffer& cmdBuf,
 }
 } // namespace
 
-void prepareFrame(Renderer& renderer)
+void prepareFrame(Engine& renderer)
 {
   ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
-  RendererAccess::impl(renderer).gpuScene.flushRayTracingUpdates();
+  EngineAccess::impl(renderer).gpuScene.flushRayTracingUpdates();
 }
 
-void recordFramePasses(Renderer& renderer, const VkCommandBuffer& cmdBuf)
+void recordFramePasses(Engine& renderer, const VkCommandBuffer& cmdBuf)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   for(const FramePass pass : kFramePassSequence)
   {
     executeFramePass(impl, cmdBuf, pass);
   }
 }
 
-void finishFrame(Renderer& renderer)
+void finishFrame(Engine& renderer)
 {
-  RendererAccess::impl(renderer).outputController.markTileAovAtlasConsumed();
+  EngineAccess::impl(renderer).outputController.markTileAovAtlasConsumed();
 }
 } // namespace engine

@@ -4,7 +4,7 @@
 
 #include <pxr/base/tf/token.h>
 
-class Renderer;
+class Engine;
 class HdRobotGlInteropCache;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -19,7 +19,7 @@ struct HdRobotAovCopyRequest
   HdRobotRenderBuffer *renderBuffer{nullptr};
 };
 
-bool CopyAovToRenderBuffer(const ::Renderer &app,
+bool CopyAovToRenderBuffer(const ::Engine &app,
                            const HdRobotAovCopyRequest &request,
                            ::HdRobotGlInteropCache &glInteropCache);
 

@@ -1,17 +1,19 @@
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/fileoperations.hpp"
+#include "nvpsystem.hpp"
 #include "nvvk/commands_vk.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
-#include <engine/session.hpp>
+#include <engine/engine.hpp>
 
 #include <algorithm>
 #include <filesystem>
 #include <utility>
 
 #include "core/frame_executor.hpp"
+#include "core/renderer_internal.hpp"
 #include "core/renderer_resources.hpp"
 
 std::vector<std::string> defaultSearchPaths;
@@ -63,48 +65,43 @@ void addExternalSharingExtensions(nvvk::ContextCreateInfo& contextInfo)
 }
 }
 
-Session::Session() {}
-
-Session::~Session()
+void Engine::setup(int width, int height)
 {
-  cleanup();
-}
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.width = width;
+  impl.height = height;
+  impl.cleaned = false;
 
-void Session::setup(int width, int height)
-{
-  m_width  = width;
-  m_height = height;
-  setupCamera();
+  CameraManip.setWindowSize(impl.width, impl.height);
+  CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+
   setupContext();
-  setupRenderer();
+  create(impl.vkctx.m_instance, impl.vkctx.m_device, impl.vkctx.m_physicalDevice, impl.vkctx.m_queueGCT.familyIndex,
+         {uint32_t(impl.width), uint32_t(impl.height)});
 }
 
-void Session::resize(int w, int h)
+void Engine::setPluginSearchRoot(std::string pluginSearchRoot)
+{
+  engine::EngineAccess::impl(*this).pluginSearchRoot = std::move(pluginSearchRoot);
+}
+
+void Engine::resize(int w, int h)
 {
   if(w <= 0 || h <= 0)
   {
     return;
   }
 
-  m_width  = w;
-  m_height = h;
-  CameraManip.setWindowSize(m_width, m_height);
-  m_renderer.onResize(w, h);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.width = w;
+  impl.height = h;
+  CameraManip.setWindowSize(impl.width, impl.height);
+  onResize(w, h);
 }
 
-void Session::setupCamera()
+void Engine::setupContext()
 {
-  CameraManip.setWindowSize(m_width, m_height);
-  CameraManip.setLookat(glm::vec3(5, 4, -4), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-}
-
-void Session::setPluginSearchRoot(std::string pluginSearchRoot)
-{
-  m_pluginSearchRoot = std::move(pluginSearchRoot);
-}
-
-void Session::setupContext()
-{
+  auto& impl = engine::EngineAccess::impl(*this);
   NVPSystem system("session");
 
   defaultSearchPaths.clear();
@@ -112,9 +109,9 @@ void Session::setupContext()
   addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY);
   addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY / "..");
 
-  if(!m_pluginSearchRoot.empty())
+  if(!impl.pluginSearchRoot.empty())
   {
-    addSearchPathIfExists(defaultSearchPaths, m_pluginSearchRoot);
+    addSearchPathIfExists(defaultSearchPaths, impl.pluginSearchRoot);
   }
   else
   {
@@ -148,87 +145,92 @@ void Session::setupContext()
   addExternalSharingExtensions(contextInfo);
   contextInfo.addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
-  if(!m_vkctx.initInstance(contextInfo))
+  if(!impl.vkctx.initInstance(contextInfo))
   {
     throw std::runtime_error("Failed to initialize Vulkan instance");
   }
+  impl.ownsContext = true;
 
-  auto compatibleDevices = m_vkctx.getCompatibleDevices(contextInfo);
+  auto compatibleDevices = impl.vkctx.getCompatibleDevices(contextInfo);
   if(compatibleDevices.empty())
   {
     throw std::runtime_error(
         "No compatible Vulkan device found for graphics, ray tracing, and external memory extensions");
   }
 
-  if(!m_vkctx.initDevice(compatibleDevices[0], contextInfo))
+  if(!impl.vkctx.initDevice(compatibleDevices[0], contextInfo))
   {
     throw std::runtime_error("Failed to initialize Vulkan device");
   }
 }
 
-void Session::setupRenderer()
+void Engine::createRenderResources()
 {
-  m_renderer.create(m_vkctx.m_instance, m_vkctx.m_device, m_vkctx.m_physicalDevice, m_vkctx.m_queueGCT.familyIndex,
-                    {uint32_t(m_width), uint32_t(m_height)});
-  m_rendererCreated = true;
+  engine::createRenderResources(*this);
+  engine::EngineAccess::impl(*this).resourcesCreated = true;
 }
 
-void Session::createRenderResources()
+void Engine::render()
 {
-  engine::createRenderResources(m_renderer);
-  m_resourcesCreated = true;
-}
+  engine::prepareFrame(*this);
 
-void Session::render()
-{
-  engine::prepareFrame(m_renderer);
-
-  auto                   curFrame = m_renderer.getCurFrame();
-  const VkCommandBuffer& cmdBuf   = m_renderer.getCommandBuffers()[curFrame];
+  auto                   curFrame = getCurFrame();
+  const VkCommandBuffer& cmdBuf   = getCommandBuffers()[curFrame];
 
   VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(cmdBuf, &beginInfo);
 
-  engine::recordFramePasses(m_renderer, cmdBuf);
+  engine::recordFramePasses(*this, cmdBuf);
 
   vkEndCommandBuffer(cmdBuf);
-  m_renderer.submitCurrentCommandBufferAndWait();
+  submitCurrentCommandBufferAndWait();
   try
   {
-    engine::finishFrame(m_renderer);
+    engine::finishFrame(*this);
   }
   catch(const std::exception& e)
   {
-    std::cerr << "[Session] Failed to mark tile AOV atlas consumed: " << e.what() << std::endl;
+    std::cerr << "[Engine] Failed to mark tile AOV atlas consumed: " << e.what() << std::endl;
   }
 }
 
-void Session::saveFrame(std::string outputImagePath)
+void Engine::saveFrame(std::string outputImagePath)
 {
-  m_renderer.saveOffscreenColorToFile(outputImagePath.c_str());
+  saveOffscreenColorToFile(outputImagePath.c_str());
 }
 
-void Session::cleanup()
+void Engine::cleanup()
 {
-  if(_cleaned)
+  auto& impl = engine::EngineAccess::impl(*this);
+  if(impl.cleaned)
   {
     return;
   }
-  _cleaned = true;
+  impl.cleaned = true;
 
-  if(m_rendererCreated && m_renderer.getDevice() != VK_NULL_HANDLE)
+  if(impl.engineCreated && getDevice() != VK_NULL_HANDLE)
   {
-    vkDeviceWaitIdle(m_renderer.getDevice());
-    if(m_resourcesCreated)
+    vkDeviceWaitIdle(getDevice());
+    if(impl.resourcesCreated)
     {
-      engine::destroyRenderResources(m_renderer);
+      engine::destroyRenderResources(*this);
+      impl.resourcesCreated = false;
     }
-    m_renderer.destroy();
+    else
+    {
+      impl.alloc.deinit();
+    }
+    impl.nvvkhl::AppOffline::destroy();
+    impl.engineCreated = false;
   }
 
-  if(m_vkctx.m_device != VK_NULL_HANDLE || m_vkctx.m_instance != VK_NULL_HANDLE)
+  if(impl.ownsContext)
   {
-    m_vkctx.deinit();
+    if(impl.vkctx.m_device != VK_NULL_HANDLE || impl.vkctx.m_instance != VK_NULL_HANDLE)
+    {
+      impl.vkctx.deinit();
+    }
+    impl.ownsContext = false;
   }
 }

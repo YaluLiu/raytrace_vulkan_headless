@@ -50,11 +50,12 @@ call sites with `rg`.
 
 ## Runtime Entry Points
 
-- `engine/src/runtime/session.cpp`: Engine session/runtime shell, engine-oriented
-  Vulkan context setup, resize forwarding, command buffer begin/end/submit, and
-  render resource lifecycle.
-- `engine/include/engine/session.hpp`: `Session` public surface and renderer
-  ownership.
+- `engine/src/runtime/session.cpp`: `Engine` runtime lifecycle implementation
+  for engine-owned Vulkan context setup, resize, command buffer
+  begin/end/submit, and render resource cleanup.
+- `engine/include/engine/engine.hpp`: Single public `Engine` orchestration
+  entry point for runtime lifecycle, scene updates, view/output configuration,
+  sensor readback, and AOV export.
 - `engine/src/core/frame_executor.hpp` / `engine/src/core/frame_executor.cpp`:
   Source of truth for per-frame engine pass sequencing; preview AOV rendering
   is followed by LiDAR point overlay and then height scan overlay.
@@ -64,15 +65,15 @@ call sites with `rg`.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
   to `HdRobotRenderBridge::RenderFrame`.
 - `hdRobot/renderBridge.cpp`: Bridge between Hydra scene data and
-  `Renderer` frame execution.
+  `Engine` frame execution.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
   Hydra-to-engine data conversion helpers used by the bridge for mesh geometry,
   materials, cameras, lights, LiDAR, height scan, visualization, and tile
   config objects.
 
-## Engine Vulkan Renderer
+## Engine Runtime Facade
 
-- `engine/include/engine/renderer.hpp`: Main `Renderer` facade,
+- `engine/include/engine/engine.hpp`: Main `Engine` facade,
   public lifecycle controls, camera/tile/LiDAR/height-scan configuration,
   scene upload/update entry points, RT TLAS lifecycle and query entry points,
   and AOV export. Frame execution and descriptor/uniform resource steps are
@@ -81,19 +82,19 @@ call sites with `rg`.
   AOV texture routing, and delegation into descriptor, view uniform, and output
   controller components.
 - `engine/src/core/renderer_resources.hpp` /
-  `engine/src/core/renderer_resources.cpp`: Private renderer resource
-  helper layer used by `Session`, frame preparation, and texture-resource
+  `engine/src/core/renderer_resources.cpp`: Private render-resource
+  helper layer used by `Engine`, frame preparation, and texture-resource
   rebuilds to create/destroy descriptor sets, view uniforms, preview targets,
   output pipelines, light/object buffers, and RT resources without exposing
-  these steps on the public `Renderer` API.
+  these steps on the public `Engine` API.
 - `engine/src/core/renderer_internal.hpp`: Private bridge from
-  `Renderer` to its PIMPL-owned GPU scene, descriptors, view uniforms,
+  `Engine` to its PIMPL-owned GPU scene, descriptors, view uniforms,
   output controller, allocator, and debug utilities.
 - `engine/include/engine/renderer_types.hpp`: Facade-facing data types such as
   `CameraSpec`, `MaterialUpdate`, and `TlasDescriptorInfo`.
 - `engine/include/engine/output_config.hpp`: Public renderer output
   configuration snapshot that groups tile atlas, LiDAR, and height-scan inputs
-  so callers can apply output state through one `Renderer::configureOutputs`
+  so callers can apply output state through one `Engine::configureOutputs`
   call instead of mirroring per-pass setters across facade layers.
 - `engine/include/engine/mesh_types.hpp`: Public engine mesh upload contract:
   CPU-side `MeshVertex`, `Material`, and `MeshGeometry`; mesh
@@ -101,16 +102,16 @@ call sites with `rg`.
   combined upload DTO.
 - `engine/include/engine/texture_asset.hpp`: Public engine texture asset
   contract: `TextureUsage`, `TextureColorSpace`, and encoded `TextureAsset`
-  payloads passed from `hdRobot` to `Renderer`.
+  payloads passed from `hdRobot` to `Engine`.
 - `engine/src/debug/debug_readback.cpp`: Readback/debug helpers for object ID image
   downloads and offscreen color PNG output.
 - `engine/include/engine/aov_texture.hpp`: Pure Vulkan engine AOV enum and texture
-  descriptor returned by `Renderer::GetAovTexture`, including tile AOV
+  descriptor returned by `Engine::GetAovTexture`, including tile AOV
   atlas values exposed to Hydra without Hydra or OpenGL types. Display tile
   Hydra AOV tokens are bridge-side copy policies mapped onto the fixed tile
   atlas AOVs rather than separate engine outputs.
 - `engine/src/scene/scene_types.hpp`: Shared draw input types used by
-  `Renderer` and `PreviewPipeline`.
+  `Engine` and `PreviewPipeline`.
 - `engine/src/scene/gpu_scene.hpp` / `engine/src/scene/gpu_scene.cpp`: Owner of mesh,
   material, instance, light, texture, object-description, and light GPU
   resources; uploads mesh geometry and material arrays through separate engine
@@ -197,13 +198,13 @@ call sites with `rg`.
   coordinator owning sensors, visualization config, GPU metadata, sample
   buffers, Vulkan RT generation, preview overlay orchestration, and CPU
   readback frames.
-- `engine/src/scene/renderer_scene.cpp`: `Renderer` scene facade
+- `engine/src/scene/renderer_scene.cpp`: `Engine` scene facade
   implementation for mesh-source and texture upload, instance/geometry runtime
   updates, material/light updates, scene queries, RT TLAS lifecycle/query
   forwarding, and
   `rebuildTextureResourcesAndSceneBindings` coordination across descriptors and
   output pipelines.
-- `engine/src/core/renderer_resources.cpp`: Private `Renderer`
+- `engine/src/core/renderer_resources.cpp`: Private `Engine`
   resource orchestration for descriptor creation/update, frame uniform buffer
   capacity, preview target resize, render-resource creation/destruction, and
   output pipeline rebuilds.
@@ -273,7 +274,7 @@ call sites with `rg`.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge.
 - `hdRobot/renderBridge.h` / `hdRobot/renderBridge.cpp`:
-  Converts Hydra frame state into `Renderer` updates and render calls,
+  Converts Hydra frame state into `Engine` updates and render calls,
   including backend scene snapshots for cameras, meshes, materials, lights,
   LiDAR and height scan sensors, the current frame's requested tile AOV channel
   mask, sorted sensor forwarding, visualization config forwarding,
@@ -412,11 +413,11 @@ call sites with `rg`.
 ## Model And Scene Loading
 
 - `engine/include/engine/mesh_types.hpp`: Mesh upload/update DTOs consumed by
-  `Renderer::uploadMesh` and `Renderer::updateMeshGeometry`; the
+  `Engine::uploadMesh` and `Engine::updateMeshGeometry`; the
   CPU-side vertex/material layout is checked against
   `engine/shaders/common/host_device.h`.
 - `engine/include/engine/texture_asset.hpp`: Texture usage, color-space, and
-  encoded-byte payload DTOs consumed by `Renderer::loadTextureAssets`.
+  encoded-byte payload DTOs consumed by `Engine::loadTextureAssets`.
 
 ## Shader Files
 
@@ -450,10 +451,10 @@ call sites with `rg`.
   `recordPreviewAovs`, `recordTileAtlas`, `recordLidarPointClouds`,
   `recordLidarPointOverlay`, `recordFrameUniformUpdate`, and `updateScene`.
 - Resize or render target size:
-  `engine/src/core/renderer.cpp`, `engine/include/engine/renderer.hpp`,
+  `engine/src/core/renderer.cpp`, `engine/include/engine/engine.hpp`,
   `engine/features/preview/preview_pipeline.cpp`, `engine/src/runtime/session.cpp`, then search
   for `onResize`, `resizeRenderTargets`, `recreateAovTargets`, `getRenderSize`, and
-  `ensureSessionReady`.
+  `ensureEngineReady`.
 - Offscreen AOV export:
   `engine/include/engine/aov_texture.hpp`, `engine/features/preview/preview_pipeline.cpp`,
   `engine/src/core/output_controller.cpp`, `engine/features/tile/tile_atlas_pass.cpp`,
@@ -473,7 +474,7 @@ call sites with `rg`.
   `_Execute`, `ApplyPendingUpdates`, and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/renderBridge.cpp`, `engine/include/engine/renderer.hpp`,
+  `hdRobot/renderBridge.cpp`, `engine/include/engine/engine.hpp`,
   `engine/src/scene/view_uniforms.cpp`, and `engine/features/tile/tile_atlas_pass.cpp`, then
   search for `CreateCamera`,
   `EnqueueCameraUpdate`, `GetActiveCameraSnapshot`,
@@ -611,7 +612,7 @@ The graph report currently identifies these high-connectivity anchors:
 - `createDesc()`
 - `RenderFrame()`
 - `destroy()`
-- `ensureSessionReady()`
+- `ensureEngineReady()`
 - `updateScene()`
 - `Sync()`
 - `_ProcessPrimvar()`

@@ -8,7 +8,7 @@
 #include <pxr/imaging/hd/renderPassState.h>
 #include <pxr/base/gf/vec2i.h>
 
-#include <engine/session.hpp>
+#include <engine/engine.hpp>
 
 #include <string>
 
@@ -23,9 +23,9 @@ public:
   bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
 
 private:
-  void ensureSessionReady(const GfVec2i& renderSize);
-  void initializeSession(const GfVec2i& renderSize);
-  void resizeSession(const GfVec2i& renderSize);
+  void ensureEngineReady(const GfVec2i& renderSize);
+  void initializeEngine(const GfVec2i& renderSize);
+  void resizeEngine(const GfVec2i& renderSize);
   void uploadInitialScene();
   void refreshTextureAssetsIfNeeded();
   bool updateCameras(const HdRenderPassStateSharedPtr& renderPassState);
@@ -40,7 +40,7 @@ private:
   HdRobotRenderParam&        _renderParam;
   std::string                _resourcePath;
 
-  Session            _session;
+  Engine            _engine;
   HdRobotGlInteropCache  _glInteropCache;
   bool          _isAppInited = false;
   TfTokenVector _activeRenderTags;

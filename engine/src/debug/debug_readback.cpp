@@ -6,7 +6,7 @@
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
 
-std::vector<uint32_t> Renderer::readObjectIdImage()
+std::vector<uint32_t> Engine::readObjectIdImage()
 {
   const auto& previewPipeline = m_outputController.getPreviewPipeline();
   const VkExtent2D    aovSize         = previewPipeline.getAovSize();
@@ -68,7 +68,7 @@ std::vector<uint32_t> Renderer::readObjectIdImage()
   return result;
 }
 
-void Renderer::saveOffscreenColorToFile(const char* filename)
+void Engine::saveOffscreenColorToFile(const char* filename)
 {
   VkDevice device = m_impl->device();
   VkQueue  queue  = m_impl->queue();

@@ -6,19 +6,19 @@ namespace engine
 {
 namespace
 {
-void updateFrameUniformDescriptor(RendererAccess::Impl& impl)
+void updateFrameUniformDescriptor(EngineAccess::Impl& impl)
 {
   impl.sceneDescriptors.updateFrameUniform(impl.viewUniforms.getFrameUniformDescriptorInfo());
 }
 
-void updateTileFrameUniformDescriptor(RendererAccess::Impl& impl)
+void updateTileFrameUniformDescriptor(EngineAccess::Impl& impl)
 {
   impl.sceneDescriptors.updateTileFrameUniform(impl.viewUniforms.getTileFrameUniformDescriptorInfo());
 }
 
-void ensureViewUniformBuffers(Renderer& renderer)
+void ensureViewUniformBuffers(Engine& renderer)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
   if(impl.viewUniforms.ensureTileFrameUniformBuffer())
   {
@@ -27,44 +27,44 @@ void ensureViewUniformBuffers(Renderer& renderer)
 }
 } // namespace
 
-void createSceneDescriptors(Renderer& renderer)
+void createSceneDescriptors(Engine& renderer)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   impl.sceneDescriptors.create(impl.device(), impl.gpuScene.getTextureDescriptorCount(), true);
 }
 
-void updateSceneDescriptorBindings(Renderer& renderer)
+void updateSceneDescriptorBindings(Engine& renderer)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   VkDescriptorBufferInfo dbiSceneDesc{impl.gpuScene.getObjectDescriptionBuffer().buffer, 0, VK_WHOLE_SIZE};
   VkDescriptorBufferInfo dbiLights{impl.gpuScene.getLightBuffer().buffer, 0, VK_WHOLE_SIZE};
   impl.sceneDescriptors.update(impl.viewUniforms.getFrameUniformDescriptorInfo(), dbiSceneDesc, dbiLights,
                                impl.viewUniforms.getTileFrameUniformDescriptorInfo(), impl.gpuScene.getTextures());
 }
 
-void createOutputPipelines(Renderer& renderer)
+void createOutputPipelines(Engine& renderer)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   impl.outputController.rebuildPipelinesForSceneLayout(impl.sceneDescriptors.layout());
 }
 
-uint32_t getRequiredFrameUniformSlots(const Renderer& /*renderer*/)
+uint32_t getRequiredFrameUniformSlots(const Engine& /*renderer*/)
 {
   return 1;
 }
 
-void ensureFrameUniformCapacity(Renderer& renderer, uint32_t slotCount)
+void ensureFrameUniformCapacity(Engine& renderer, uint32_t slotCount)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   if(impl.viewUniforms.ensureFrameUniformCapacity(slotCount))
   {
     updateFrameUniformDescriptor(impl);
   }
 }
 
-void createRenderResources(Renderer& renderer)
+void createRenderResources(Engine& renderer)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   impl.outputController.createPreviewTargets(impl.sizeRef());
   impl.gpuScene.createLightBuffer();
 
@@ -77,9 +77,9 @@ void createRenderResources(Renderer& renderer)
   createOutputPipelines(renderer);
 }
 
-void destroyRenderResources(Renderer& renderer)
+void destroyRenderResources(Engine& renderer)
 {
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   impl.outputController.destroy();
   impl.sceneDescriptors.destroy();
   impl.viewUniforms.destroy();
@@ -88,14 +88,14 @@ void destroyRenderResources(Renderer& renderer)
   impl.alloc.deinit();
 }
 
-void resizeRenderTargets(Renderer& renderer, int width, int height)
+void resizeRenderTargets(Engine& renderer, int width, int height)
 {
   if(width <= 0 || height <= 0)
   {
     return;
   }
 
-  auto& impl = RendererAccess::impl(renderer);
+  auto& impl = EngineAccess::impl(renderer);
   if(width == static_cast<int>(impl.sizeRef().width) && height == static_cast<int>(impl.sizeRef().height))
   {
     return;

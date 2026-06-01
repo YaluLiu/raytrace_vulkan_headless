@@ -2,11 +2,11 @@
 
 #include <vulkan/vulkan_core.h>
 
-class Renderer;
+class Engine;
 
 namespace engine
 {
-void prepareFrame(Renderer& renderer);
-void recordFramePasses(Renderer& renderer, const VkCommandBuffer& cmdBuf);
-void finishFrame(Renderer& renderer);
+void prepareFrame(Engine& renderer);
+void recordFramePasses(Engine& renderer, const VkCommandBuffer& cmdBuf);
+void finishFrame(Engine& renderer);
 }
