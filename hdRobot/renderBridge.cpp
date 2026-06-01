@@ -316,8 +316,7 @@ void HdRobotRenderBridge::initializeEngine(const GfVec2i &renderSize)
   _renderSize = renderSize;
   _isAppInited = true;
 
-  Engine &vulkan = _engine;
-  vulkan.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
+  _engine.loadTextureAssets(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = _renderParam.GetTextureRegistryVersion();
   uploadInitialScene();
   _engine.createRenderResources();
@@ -332,7 +331,6 @@ void HdRobotRenderBridge::resizeEngine(const GfVec2i &renderSize)
 
 void HdRobotRenderBridge::uploadInitialScene()
 {
-  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   std::vector<HdRobotMeshRecord> meshRecords = backendScene.GetMeshRecordsSnapshot();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
@@ -342,7 +340,7 @@ void HdRobotRenderBridge::uploadInitialScene()
     {
       continue;
     }
-    UploadedMeshState state = UploadMeshToRenderer(vulkan, record.data, materialRecords);
+    UploadedMeshState state = UploadMeshToRenderer(_engine, record.data, materialRecords);
     backendScene.SetMeshRendererState(record.backendIndex, state.rendererMeshId, std::move(state.rendererInstanceIds));
   }
 }
@@ -361,8 +359,7 @@ void HdRobotRenderBridge::refreshTextureAssetsIfNeeded()
   }
 
   _glInteropCache.Clear();
-  Engine &vulkan = _engine;
-  vulkan.rebuildTextureResourcesAndSceneBindings(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
+  _engine.rebuildTextureResourcesAndSceneBindings(ExportRegisteredTextures(_renderParam.GetTextureAssets()));
   _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
 
@@ -406,20 +403,18 @@ bool HdRobotRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &render
     return lhs.name < rhs.name;
   });
 
-  Engine &vulkan = _engine;
-  vulkan.setCameras(ToCameraSpec(cameras));
-  vulkan.setMainCamera(ToCameraSpec(mainCameraData));
+  _engine.setCameras(ToCameraSpec(cameras));
+  _engine.setMainCamera(ToCameraSpec(mainCameraData));
   return true;
 }
 
 void HdRobotRenderBridge::updateLights()
 {
-  Engine &vulkan = _engine;
-  vulkan.clearLights();
+  _engine.clearLights();
 
   for(const HydraLight &curLight : _renderParam.GetBackendScene().GetActiveLightSnapshot())
   {
-    vulkan.addLight(ToLight(curLight));
+    _engine.addLight(ToLight(curLight));
   }
 }
 
@@ -432,7 +427,6 @@ void HdRobotRenderBridge::updateScene()
 
 void HdRobotRenderBridge::updateGeometry()
 {
-  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
   for(const HdRobotMeshRecord& record : backendScene.ConsumeDirtyMeshGeometry())
@@ -443,19 +437,18 @@ void HdRobotRenderBridge::updateGeometry()
     }
     if(record.rendererMeshId < 0)
     {
-      UploadedMeshState state = UploadMeshToRenderer(vulkan, record.data, materialRecords);
+      UploadedMeshState state = UploadMeshToRenderer(_engine, record.data, materialRecords);
       backendScene.SetMeshRendererState(record.backendIndex, state.rendererMeshId, std::move(state.rendererInstanceIds));
       continue;
     }
     MeshGeometry geometry;
     ConvertHydraMeshToGeometry(record.data, geometry);
-    vulkan.updateMeshGeometry(static_cast<uint32_t>(record.rendererMeshId), geometry);
+    _engine.updateMeshGeometry(static_cast<uint32_t>(record.rendererMeshId), geometry);
   }
 }
 
 void HdRobotRenderBridge::updateInstances()
 {
-  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
 
@@ -463,12 +456,12 @@ void HdRobotRenderBridge::updateInstances()
   {
     if(record.rendererMeshId < 0 && record.active && record.data.valid)
     {
-      UploadedMeshState state = UploadMeshToRenderer(vulkan, record.data, materialRecords);
+      UploadedMeshState state = UploadMeshToRenderer(_engine, record.data, materialRecords);
       record.rendererMeshId = state.rendererMeshId;
       record.rendererInstanceIds = std::move(state.rendererInstanceIds);
       backendScene.SetMeshRendererState(record.backendIndex, record.rendererMeshId, record.rendererInstanceIds);
     }
-    if(EnsureMeshRendererInstanceSlots(vulkan, record))
+    if(EnsureMeshRendererInstanceSlots(_engine, record))
     {
       backendScene.SetMeshRendererState(record.backendIndex, record.rendererMeshId, record.rendererInstanceIds);
     }
@@ -489,14 +482,13 @@ void HdRobotRenderBridge::updateInstances()
       {
         transform = glm::transpose(curMesh.transform * curMesh.instanceTransforms[instanceId]);
       }
-      vulkan.updateInstance(rendererInstanceId, transform, visible, traceMask);
+      _engine.updateInstance(rendererInstanceId, transform, visible, traceMask);
     }
   }
 }
 
 void HdRobotRenderBridge::updateMaterials()
 {
-  Engine &vulkan = _engine;
   HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
   const std::vector<HdRobotMaterialRecord> materialRecords = backendScene.GetMaterialRecordsSnapshot();
   const std::vector<HdRobotMeshRecord> meshRecords = backendScene.GetMeshRecordsSnapshot();
@@ -526,7 +518,7 @@ void HdRobotRenderBridge::updateMaterials()
   }
   if(!newMaterials.empty())
   {
-    vulkan.updateMaterialsAtRuntime(newMaterials);
+    _engine.updateMaterialsAtRuntime(newMaterials);
   }
 }
 
