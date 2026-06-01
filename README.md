@@ -1,11 +1,11 @@
 # raytrace_vulkan_headless
 
-Headless Vulkan rasterization renderer
+Headless Vulkan graphics renderer
 
 ## Overview
 
 This project is a headless Vulkan renderer with an OpenUSD Hydra entry point.
-The current renderer is a compact rasterization baseline that exports color,
+The current renderer is a compact graphics baseline that exports color,
 depth, primitive ID, and instance ID AOVs.
 
 Major modifications include:
@@ -13,7 +13,7 @@ Major modifications include:
 - **Removed window, surface, and swapchain code** to create a headless version
   suitable for environments without GUI, such as servers or automated
   rendering.
-- Added Hydra render delegate integration for the headless raster renderer.
+- Added Hydra render delegate integration for the headless engine renderer.
 
 ## Dependencies
 

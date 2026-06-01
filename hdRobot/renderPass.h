@@ -7,7 +7,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotRasterBridge;
+class HdRobotRenderBridge;
 class HdRobotRenderParam;
 
 class HdRobotRenderPass final : public HdRenderPass
@@ -28,7 +28,7 @@ protected:
 
 private:
   bool                                _isConverged;
-  std::unique_ptr<HdRobotRasterBridge> _bridge;
+  std::unique_ptr<HdRobotRenderBridge> _bridge;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

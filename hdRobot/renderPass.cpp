@@ -1,6 +1,6 @@
 #include "renderPass.h"
 
-#include "rasterBridge.h"
+#include "renderBridge.h"
 
 #include <memory>
 #include <utility>
@@ -13,7 +13,7 @@ HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex*             index,
                                      std::string                resourcePath)
     : HdRenderPass(index, collection)
     , _isConverged(false)
-    , _bridge(std::make_unique<HdRobotRasterBridge>(renderParam, std::move(resourcePath)))
+    , _bridge(std::make_unique<HdRobotRenderBridge>(renderParam, std::move(resourcePath)))
 {
 }
 
@@ -27,7 +27,7 @@ bool HdRobotRenderPass::IsConverged() const
 void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
   _isConverged = false;
-  if(!_bridge->RenderRasterFrame(renderPassState, renderTags))
+  if(!_bridge->RenderFrame(renderPassState, renderTags))
   {
     return;
   }

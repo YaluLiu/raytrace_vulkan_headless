@@ -5,8 +5,8 @@
 `HeightScanSensor`。两个 schema 都是 `UsdGeomXformable`，通过 prim transform
 提供传感器位姿，再通过 typed schema 属性声明采样参数。
 
-当前 `hdRobot` + `raster` 路径支持多个 `LidarSensor` 和 `HeightScanSensor`
-prim。每帧会按 sensor name 排序后传给 `RasterRenderer`，排序后的 index
+当前 `hdRobot` + `engine` 路径支持多个 `LidarSensor` 和 `HeightScanSensor`
+prim。每帧会按 sensor name 排序后传给 `Renderer`，排序后的 index
 用于点云/高度扫描输出和可视化选择。LiDAR 和 height scan 的可视化 index
 分别索引各自按 sensor name 排序后的 sensor 列表，互不共享。两个 overlay
 可以在同一帧同时开启。`Camera` prim 不再读取传感器参数。
@@ -26,7 +26,7 @@ prim。每帧会按 sensor name 排序后传给 `RasterRenderer`，排序后的 
 
 LiDAR 使用 `LidarSensor` prim 的 transform 作为发射原点和朝向。角度约定为
 sensor local space：`+X` 向右，`+Y` 向上，`-Z` 为前方；方位角 `0` 指向前方，
-正俯仰角向上，负俯仰角向下。输出是 raster 侧 LiDAR point cloud contract，
+正俯仰角向上，负俯仰角向下。输出是 engine 侧 LiDAR point cloud contract，
 不是 Hydra AOV；开启可视化时命中点会叠加到主相机 preview color。overlay 点
 大小由全局 `hdRobot:lidar:visualizePointSize` 控制，不提供每个 sensor 独立
 的点半径参数。

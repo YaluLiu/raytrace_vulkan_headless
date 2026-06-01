@@ -1,6 +1,6 @@
 # raytrace_vulkan_headless
 
-Headless Vulkan rasterization renderer
+Headless Vulkan graphics renderer
 
 ## 项目介绍
 

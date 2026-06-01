@@ -11,14 +11,14 @@ add_library(
   slotVector.h
   aovBridgeSpec.cpp
   aovBridgeSpec.h
-  rasterBridge.cpp
-  rasterBridge.h
-  rasterBridgeConversions.cpp
-  rasterBridgeConversions.h
+  renderBridge.cpp
+  renderBridge.h
+  renderBridgeConversions.cpp
+  renderBridgeConversions.h
   glInteropCache.cpp
   glInteropCache.h
-  hydraRasterAovCopy.cpp
-  hydraRasterAovCopy.h
+  hydraAovCopy.cpp
+  hydraAovCopy.h
   hydraTextureAssetExport.cpp
   hydraTextureAssetExport.h
   renderBuffer.cpp
@@ -100,7 +100,7 @@ endif()
 target_link_libraries(
   ${PROJNAME}
   PUBLIC
-    ${USD_LIBS_PUBLIC} libraster
+    ${USD_LIBS_PUBLIC} libengine
   PRIVATE
     ${USD_LIBS_PRIVATE}
     UsdRaySensor

@@ -1,0 +1,93 @@
+#version 460
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_ray_query : require
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "host_device.h"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT heightScanTlas;
+layout(set = 0, binding = 1, std430) readonly buffer HeightScanSensors_
+{
+  HeightScanSensorGpu sensors[];
+}
+heightScanSensors;
+layout(set = 0, binding = 2, std430) buffer HeightScanSamples_
+{
+  HeightScanSampleGpu samples[];
+}
+heightScanSamples;
+
+layout(push_constant) uniform _PushConstantHeightScanGenerate
+{
+  PushConstantHeightScanGenerate pc;
+};
+
+float sampleOffset(float startValue, float endValue, float stepValue, uint index)
+{
+  float direction = endValue >= startValue ? 1.0 : -1.0;
+  float value = startValue + direction * max(abs(stepValue), 1.0e-4) * float(index);
+  return direction > 0.0 ? min(value, endValue) : max(value, endValue);
+}
+
+vec3 safeNormalize(vec3 value, vec3 fallback)
+{
+  float lengthValue = length(value);
+  if(!(lengthValue > 1.0e-6))
+  {
+    return fallback;
+  }
+  return value / lengthValue;
+}
+
+void main()
+{
+  HeightScanSensorGpu sensor = heightScanSensors.sensors[pc.sensorIndex];
+  uint uIndex = gl_GlobalInvocationID.x;
+  uint vIndex = gl_GlobalInvocationID.y;
+  if(uIndex >= sensor.uSampleCount || vIndex >= sensor.vSampleCount)
+  {
+    return;
+  }
+
+  uint localIndex = vIndex * sensor.uSampleCount + uIndex;
+  uint sampleIndex = sensor.sampleOffset + localIndex;
+
+  float uOffset =
+      sampleOffset(sensor.gravityDirectionWsUStart.w, sensor.axisUAndUEnd.w, sensor.uStepVEndVStep.x, uIndex);
+  float vOffset = sampleOffset(sensor.axisVAndVStart.w, sensor.uStepVEndVStep.y, sensor.uStepVEndVStep.z, vIndex);
+  vec3 rayOrigin =
+      sensor.originMaxRange.xyz + sensor.axisUAndUEnd.xyz * uOffset + sensor.axisVAndVStart.xyz * vOffset;
+  vec3 gravityDirectionWs = safeNormalize(sensor.gravityDirectionWsUStart.xyz, vec3(0.0, 0.0, -1.0));
+  float maxRange = max(sensor.originMaxRange.w, 1.0e-4);
+
+  HeightScanSampleGpu outSample;
+  outSample.positionDistance = vec4(rayOrigin, 0.0);
+  outSample.sensorIndex = pc.sensorIndex;
+  outSample.uIndex = uIndex;
+  outSample.vIndex = vIndex;
+  outSample.flags = 0u;
+
+  rayQueryEXT query;
+  rayQueryInitializeEXT(query, heightScanTlas, gl_RayFlagsOpaqueEXT, TRACE_MASK_GROUND, rayOrigin,
+                        0.001, gravityDirectionWs, maxRange);
+  while(rayQueryProceedEXT(query))
+  {
+  }
+
+  bool hit = rayQueryGetIntersectionTypeEXT(query, true) != gl_RayQueryCommittedIntersectionNoneEXT;
+  float distanceMeters = hit ? rayQueryGetIntersectionTEXT(query, true) : 0.0;
+  if(hit && distanceMeters > 0.0 && distanceMeters <= maxRange)
+  {
+    outSample.positionDistance = vec4(rayOrigin + gravityDirectionWs * distanceMeters, distanceMeters);
+    outSample.flags = HEIGHT_SCAN_SAMPLE_FLAG_VALID | HEIGHT_SCAN_SAMPLE_FLAG_HIT;
+  }
+  else
+  {
+    outSample.flags = HEIGHT_SCAN_SAMPLE_FLAG_OUT_OF_RANGE;
+  }
+
+  heightScanSamples.samples[sampleIndex] = outSample;
+}

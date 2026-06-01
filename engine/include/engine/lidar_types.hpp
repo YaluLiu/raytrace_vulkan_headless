@@ -1,0 +1,71 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include <glm/glm.hpp>
+
+struct LidarParams
+{
+  float azimuthStartDeg = -90.0f;
+  float azimuthEndDeg = 90.0f;
+  float azimuthStepDeg = 0.5f;
+  float verticalStartDeg = -2.0f;
+  float verticalEndDeg = -20.0f;
+  float verticalStepDeg = 1.0f;
+  float maxRange = 200.0f;
+  float intensity = 1.0f;
+};
+
+struct LidarSensorSpec
+{
+  std::string name;
+  glm::vec3 position{0.0f, 0.0f, 0.0f};
+  glm::vec3 forward{0.0f, 0.0f, -1.0f};
+  glm::vec3 up{0.0f, 1.0f, 0.0f};
+  LidarParams params;
+};
+
+struct LidarVisualizationConfig
+{
+  bool enabled{false};
+  uint32_t sensorIndex{0};
+  float pointSizePixels{2.0f};
+  bool visualizeAllSensors{false};
+};
+
+enum LidarPointFlags : uint32_t
+{
+  LidarPointFlagValid = 1u << 0,
+  LidarPointFlagHit = 1u << 1,
+  LidarPointFlagOutOfRange = 1u << 2,
+};
+
+struct LidarPoint
+{
+  glm::vec3 positionWs{0.0f, 0.0f, 0.0f};
+  float rangeMeters{0.0f};
+  uint32_t sensorIndex{0};
+  uint32_t ringIndex{0};
+  uint32_t beamIndex{0};
+  uint32_t flags{0};
+  float intensity{0.0f};
+};
+
+struct LidarSensorPointCloud
+{
+  std::string name;
+  uint32_t sensorIndex{0};
+  uint32_t width{0};
+  uint32_t height{0};
+  std::vector<LidarPoint> points;
+};
+
+struct LidarFramePointCloud
+{
+  uint64_t frameId{0};
+  std::vector<LidarSensorPointCloud> sensors;
+
+  bool empty() const { return sensors.empty(); }
+};

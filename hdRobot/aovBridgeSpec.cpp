@@ -16,7 +16,7 @@ constexpr int kFixedTileCopyPriority = 0;
 constexpr int kDisplayTileCopyPriority = 1;
 constexpr int kStandardCopyPriority = 2;
 
-HdRobotAovSpec MakeSpec(RasterAov rasterAov,
+HdRobotAovSpec MakeSpec(Aov engineAov,
                         HdFormat hdFormat,
                         HdRobotAovStorageRole storageRole,
                         bool useDepthTargetRenderBuffer,
@@ -28,7 +28,7 @@ HdRobotAovSpec MakeSpec(RasterAov rasterAov,
                         VtValue clearValue)
 {
   return HdRobotAovSpec{
-      rasterAov,
+      engineAov,
       hdFormat,
       storageRole,
       useDepthTargetRenderBuffer,
@@ -46,52 +46,52 @@ std::optional<HdRobotAovSpec> GetHdRobotAovSpec(const TfToken &name)
 {
   if(name == HdAovTokens->color)
   {
-    return MakeSpec(RasterAov::Color, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
+    return MakeSpec(Aov::Color, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
                     false, HdRobotAovTileKind::None, TileAovChannelMask::None(),
                     HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, true,
                     VtValue(GfVec4f(1.0f)));
   }
   if(name == HdAovTokens->primId)
   {
-    return MakeSpec(RasterAov::PrimId, HdFormatInt32, HdRobotAovStorageRole::Id,
+    return MakeSpec(Aov::PrimId, HdFormatInt32, HdRobotAovStorageRole::Id,
                     false, HdRobotAovTileKind::None, TileAovChannelMask::None(),
                     HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(-1));
   }
   if(name == HdAovTokens->instanceId)
   {
-    return MakeSpec(RasterAov::InstanceId, HdFormatInt32, HdRobotAovStorageRole::Id,
+    return MakeSpec(Aov::InstanceId, HdFormatInt32, HdRobotAovStorageRole::Id,
                     false, HdRobotAovTileKind::None, TileAovChannelMask::None(),
                     HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(-1));
   }
   if(name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
   {
-    return MakeSpec(RasterAov::Depth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
+    return MakeSpec(Aov::Depth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
                     true, HdRobotAovTileKind::None, TileAovChannelMask::None(),
                     HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(1.0f));
   }
   if(name == HdRobotAovTokens->tileColor)
   {
-    return MakeSpec(RasterAov::TileColor, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
+    return MakeSpec(Aov::TileColor, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
                     false, HdRobotAovTileKind::FixedSize, TileAovChannelMask::FromChannel(TileAovChannel::Color),
                     HdRobotAovCopyScaling::RequireExactSourceSize, kFixedTileCopyPriority, true,
                     VtValue(GfVec4f(1.0f)));
   }
   if(name == HdRobotAovTokens->tileDepth)
   {
-    return MakeSpec(RasterAov::TileDepth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
+    return MakeSpec(Aov::TileDepth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
                     false, HdRobotAovTileKind::FixedSize, TileAovChannelMask::FromChannel(TileAovChannel::Depth),
                     HdRobotAovCopyScaling::RequireExactSourceSize, kFixedTileCopyPriority, false, VtValue(1.0f));
   }
   if(name == HdRobotAovTokens->tileDisplayColor)
   {
-    return MakeSpec(RasterAov::TileColor, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
+    return MakeSpec(Aov::TileColor, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
                     false, HdRobotAovTileKind::Display, TileAovChannelMask::FromChannel(TileAovChannel::Color),
                     HdRobotAovCopyScaling::AllowScaleToDestination, kDisplayTileCopyPriority, true,
                     VtValue(GfVec4f(1.0f)));
   }
   if(name == HdRobotAovTokens->tileDisplayDepth)
   {
-    return MakeSpec(RasterAov::TileDepth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
+    return MakeSpec(Aov::TileDepth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
                     false, HdRobotAovTileKind::Display, TileAovChannelMask::FromChannel(TileAovChannel::Depth),
                     HdRobotAovCopyScaling::AllowScaleToDestination, kDisplayTileCopyPriority, false, VtValue(1.0f));
   }

@@ -4,7 +4,7 @@ BUILD_TYPE="Release"
 DEFAULT_HYDRA_SCENE_PATH="/home/yalu/docker/assets/tile/pao/tile_pao.usd"
 DEFAULT_HYDRA_SCENE_PATH=/home/yalu/docker/assets/demo5/World0.usd
 function format(){
-    find raster \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
+    find engine \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
 }
 
 function hydra(){
@@ -38,7 +38,7 @@ function schema(){
     cd build_schema
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-        -DROBOT_RASTER_SCHEMA_ONLY=ON \
+        -DROBOT_ENGINE_SCHEMA_ONLY=ON \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
 
     cmake --build . --target UsdRaySensor --config Release -j20

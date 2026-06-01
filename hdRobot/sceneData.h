@@ -9,12 +9,12 @@
 #include <pxr/imaging/hd/tokens.h>
 
 #include <glm/glm.hpp>
-#include <raster/texture_asset.hpp>
+#include <engine/texture_asset.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <raster/shaders/host_device.h>
+#include <engine/shaders/host_device.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

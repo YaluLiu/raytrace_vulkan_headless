@@ -83,7 +83,7 @@ exit /b %errorlevel%
 
 :configure_schema
 call cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
-  -DROBOT_RASTER_SCHEMA_ONLY=ON ^
+  -DROBOT_ENGINE_SCHEMA_ONLY=ON ^
   -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%"
 exit /b %errorlevel%
 

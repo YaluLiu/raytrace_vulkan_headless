@@ -4,8 +4,8 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/renderPassState.h>
 
-#include <raster/aov_texture.hpp>
-#include <raster/tile_config.hpp>
+#include <engine/aov_texture.hpp>
+#include <engine/tile_config.hpp>
 
 #include <optional>
 
@@ -33,7 +33,7 @@ enum class HdRobotAovCopyScaling
 
 struct HdRobotAovSpec
 {
-  RasterAov rasterAov;
+  Aov engineAov;
   HdFormat hdFormat;
   HdRobotAovStorageRole storageRole;
   // Tile depth atlas copies use R32F color-compatible textures, not GL depth attachments.

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pxr/pxr.h>
-#include <raster/texture_asset.hpp>
+#include <engine/texture_asset.hpp>
 
 #include <vector>
 

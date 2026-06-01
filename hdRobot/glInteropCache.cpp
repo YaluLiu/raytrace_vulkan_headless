@@ -199,7 +199,7 @@ void DestroyEntry(CacheEntry &entry) {
 #endif
 }
 
-bool SetDedicatedMemoryFlag(const ExportedRasterAovTexture &texture,
+bool SetDedicatedMemoryFlag(const ExportedAovTexture &texture,
                             GLuint memoryObject) {
   if (!texture.dedicatedMemory) {
     return true;
@@ -213,7 +213,7 @@ bool SetDedicatedMemoryFlag(const ExportedRasterAovTexture &texture,
 }
 
 #ifdef _WIN32
-bool ImportVulkanMemoryToGl(const ExportedRasterAovTexture &texture,
+bool ImportVulkanMemoryToGl(const ExportedAovTexture &texture,
                             CacheEntry &entry) {
   const auto getMemoryWin32Handle =
       reinterpret_cast<PFN_vkGetMemoryWin32HandleKHR>(
@@ -251,7 +251,7 @@ bool ImportVulkanMemoryToGl(const ExportedRasterAovTexture &texture,
   return true;
 }
 #else
-bool ImportVulkanMemoryToGl(const ExportedRasterAovTexture &texture,
+bool ImportVulkanMemoryToGl(const ExportedAovTexture &texture,
                             GLuint memoryObject) {
   const auto getMemoryFd = reinterpret_cast<PFN_vkGetMemoryFdKHR>(
       vkGetDeviceProcAddr(texture.device, "vkGetMemoryFdKHR"));
@@ -285,7 +285,7 @@ bool ImportVulkanMemoryToGl(const ExportedRasterAovTexture &texture,
 }
 #endif
 
-CacheKey MakeCacheKey(const ExportedRasterAovTexture &texture) {
+CacheKey MakeCacheKey(const ExportedAovTexture &texture) {
   CacheKey key;
   key.device = texture.device;
   key.image = texture.image;
@@ -309,7 +309,7 @@ HdRobotGlInteropCache::HdRobotGlInteropCache()
 HdRobotGlInteropCache::~HdRobotGlInteropCache() { Clear(); }
 
 GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
-    const ExportedRasterAovTexture &texture) {
+    const ExportedAovTexture &texture) {
   if (texture.device == VK_NULL_HANDLE || texture.image == VK_NULL_HANDLE ||
       texture.memory == VK_NULL_HANDLE || texture.memorySize == 0 ||
       texture.extent.width == 0 || texture.extent.height == 0) {
@@ -388,7 +388,7 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
   return entry.texture;
 }
 
-void HdRobotGlInteropCache::Evict(const ExportedRasterAovTexture &texture) {
+void HdRobotGlInteropCache::Evict(const ExportedAovTexture &texture) {
   std::lock_guard<std::mutex> lock(_impl->mutex);
   const CacheKey key = MakeCacheKey(texture);
   const auto it = _impl->cache.find(key);
