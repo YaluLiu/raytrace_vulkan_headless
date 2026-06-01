@@ -36,6 +36,7 @@ set(RASTER_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_frame_executor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_output_controller.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_renderer_internal.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_renderer_resources.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.hpp
@@ -60,10 +61,10 @@ set(RASTER_PRIVATE_HEADERS
 )
 
 set(RASTER_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_descriptor_sets.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_frame_executor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_output_controller.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_renderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_renderer_resources.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/raster_debug_readback.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.cpp
@@ -79,7 +80,6 @@ set(RASTER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_targets.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_aov_channel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_renderer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/raster_session.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_geometry_upload.cpp

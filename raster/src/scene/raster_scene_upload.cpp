@@ -1,4 +1,5 @@
 #include "core/raster_renderer_internal.hpp"
+#include "core/raster_renderer_resources.hpp"
 
 void RasterRenderer::uploadMesh(const RasterMeshGeometry& geometry,
                                 std::span<const RasterMaterial> materials,
@@ -20,7 +21,7 @@ void RasterRenderer::rebuildTextureResourcesAndSceneBindings(const std::vector<T
   m_sceneDescriptors.destroy();
 
   m_gpuScene.rebuildTextureResources(textureAssets);
-  createSceneDescriptors();
-  updateSceneDescriptorBindings();
-  createPreviewOutputPipeline();
+  raster::createSceneDescriptors(*this);
+  raster::updateSceneDescriptorBindings(*this);
+  raster::createOutputPipelines(*this);
 }

@@ -32,6 +32,18 @@ struct RasterRenderer::Impl final : nvvkhl::AppOffline
   RasterOutputController outputController;
 };
 
+namespace raster
+{
+class RasterRendererAccess final
+{
+public:
+  using Impl = RasterRenderer::Impl;
+
+  static Impl& impl(RasterRenderer& renderer) { return *renderer.m_impl; }
+  static const Impl& impl(const RasterRenderer& renderer) { return *renderer.m_impl; }
+};
+}
+
 #define m_alloc (m_impl->alloc)
 #define m_debug (m_impl->debug)
 #define m_gpuScene (m_impl->gpuScene)

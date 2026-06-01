@@ -14,13 +14,3 @@ void RasterRenderer::clearLights()
 {
   m_gpuScene.clearLights();
 }
-
-void RasterRenderer::createLightBuffer()
-{
-  m_gpuScene.createLightBuffer();
-}
-
-void RasterRenderer::updateLightBuffer(const VkCommandBuffer& cmdBuf)
-{
-  m_gpuScene.updateLightBuffer(cmdBuf);
-}

@@ -11,10 +11,14 @@
 #include <memory>
 #include <optional>
 #include <span>
-#include <string>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
+
+namespace raster
+{
+class RasterRendererAccess;
+}
 
 class RasterRenderer
 {
@@ -36,7 +40,6 @@ public:
   uint32_t getCurFrame() const;
   void submitCurrentCommandBufferAndWait();
   void onResize(int /*w*/, int /*h*/);
-  void destroyResources();
 
   // Scene upload/update facade.
   void uploadMesh(const RasterMeshGeometry &geometry,
@@ -90,36 +93,9 @@ public:
   RasterInstanceInfo getInstance(size_t index) const;
   size_t getMeshSourceCount() const;
 
-  // Temporary internal API used by the session/frame executor while renderer
-  // internals are split into dedicated components.
-  void createSceneDescriptors();
-  void updateSceneDescriptorBindings();
-  void ensureViewUniformBuffers();
-  void createObjectDescriptionBuffer();
-  void createPreviewOutputPipeline();
-  void recordPreviewAovs(const VkCommandBuffer &cmdBuf);
-  void recordTileAovAtlas(const VkCommandBuffer &cmdBuf);
-  void recordLidarPointClouds(const VkCommandBuffer &cmdBuf);
-  void recordHeightScans(const VkCommandBuffer &cmdBuf);
-  void recordLidarPointOverlay(const VkCommandBuffer &cmdBuf);
-  void recordHeightScanOverlay(const VkCommandBuffer &cmdBuf);
-  void markTileAovAtlasConsumed(const std::string &outputDirectory = "output");
-  void createPreviewAovTargets();
-  void recordFrameUniformUpdate(const VkCommandBuffer &cmdBuf);
-  void recordFrameUniformUpdateForExtent(const VkCommandBuffer &cmdBuf, VkExtent2D renderSize);
-  void ensureFrameUniformCapacity(uint32_t slotCount);
-  uint32_t getRequiredFrameUniformSlots() const;
-  void updateFrameUniformDescriptor();
-  void ensureTileFrameUniformBuffer();
-  void updateTileFrameUniformDescriptor();
-  void updateTileFrameUniformBufferForBatch(const VkCommandBuffer &cmdBuf, uint32_t firstCameraIndex,
-                                            uint32_t cameraCount, uint32_t viewCount, VkExtent2D tileExtent);
-  uint32_t getTileMultiviewEffectiveViewCount(uint32_t cameraCount, uint32_t capacity) const;
-  void logTileMultiviewUnavailableOnce(const char *reason);
-  void createLightBuffer();
-  void updateLightBuffer(const VkCommandBuffer &cmdBuf);
-
 private:
+  friend class raster::RasterRendererAccess;
+
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };

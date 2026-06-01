@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "core/raster_frame_executor.hpp"
+#include "core/raster_renderer_resources.hpp"
 
 std::vector<std::string> defaultSearchPaths;
 
@@ -174,23 +175,13 @@ void RasterSession::setupRenderer()
 
 void RasterSession::createRenderResources()
 {
-  m_renderer.createPreviewAovTargets();
-  m_renderer.createLightBuffer();
-
-  m_renderer.createSceneDescriptors();
-  m_renderer.ensureViewUniformBuffers();
-  m_renderer.createObjectDescriptionBuffer();
-  m_renderer.updateSceneDescriptorBindings();
-  m_renderer.createRayTracingResources();
-
-  m_renderer.createPreviewOutputPipeline();
+  raster::createRenderResources(m_renderer);
   m_resourcesCreated = true;
 }
 
 void RasterSession::render()
 {
-  m_renderer.ensureFrameUniformCapacity(m_renderer.getRequiredFrameUniformSlots());
-  m_renderer.flushRayTracingUpdates();
+  raster::prepareFrame(m_renderer);
 
   auto                   curFrame = m_renderer.getCurFrame();
   const VkCommandBuffer& cmdBuf   = m_renderer.getCommandBuffers()[curFrame];
@@ -205,7 +196,7 @@ void RasterSession::render()
   m_renderer.submitCurrentCommandBufferAndWait();
   try
   {
-    m_renderer.markTileAovAtlasConsumed();
+    raster::finishFrame(m_renderer);
   }
   catch(const std::exception& e)
   {
@@ -231,7 +222,7 @@ void RasterSession::cleanup()
     vkDeviceWaitIdle(m_renderer.getDevice());
     if(m_resourcesCreated)
     {
-      m_renderer.destroyResources();
+      raster::destroyRenderResources(m_renderer);
     }
     m_renderer.destroy();
   }

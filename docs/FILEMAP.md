@@ -73,13 +73,23 @@ call sites with `rg`.
 
 ## Raster Vulkan Renderer
 
-- `raster/include/raster/raster_renderer.hpp`: Main `RasterRenderer` facade, public controls,
-  camera/tile/LiDAR/height-scan configuration, scene upload/update entry
-  points, RT TLAS lifecycle and query entry points, AOV export, and temporary
-  internal methods used by the frame executor while internals are componentized.
+- `raster/include/raster/raster_renderer.hpp`: Main `RasterRenderer` facade,
+  public lifecycle controls, camera/tile/LiDAR/height-scan configuration,
+  scene upload/update entry points, RT TLAS lifecycle and query entry points,
+  and AOV export. Frame execution and descriptor/uniform resource steps are
+  kept behind private core helpers.
 - `raster/src/core/raster_renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
   AOV texture routing, and delegation into GPU scene, descriptor, view uniform,
   and output controller components.
+- `raster/private/core/raster_renderer_resources.hpp` /
+  `raster/src/core/raster_renderer_resources.cpp`: Private renderer resource
+  helper layer used by `RasterSession`, frame preparation, and texture-resource
+  rebuilds to create/destroy descriptor sets, view uniforms, preview targets,
+  output pipelines, light/object buffers, and RT resources without exposing
+  these steps on the public `RasterRenderer` API.
+- `raster/private/core/raster_renderer_internal.hpp`: Private bridge from
+  `RasterRenderer` to its PIMPL-owned GPU scene, descriptors, view uniforms,
+  output controller, allocator, and debug utilities.
 - `raster/include/raster/raster_renderer_types.hpp`: Facade-facing data types such as
   `RasterCameraSpec`, `RasterMaterialUpdate`, and `RasterTlasDescriptorInfo`.
 - `raster/include/raster/mesh_types.hpp`: Public raster mesh upload contract:
@@ -183,19 +193,18 @@ call sites with `rg`.
   coordinator owning sensors, visualization config, GPU metadata, sample
   buffers, Vulkan RT generation, preview overlay orchestration, and CPU
   readback frames.
-- `raster/features/tile/tile_atlas_renderer.cpp`: `RasterRenderer` compatibility forwarding
-  for tile atlas recording and consume marking.
 - `raster/src/scene/raster_runtime_updates.cpp`: `RasterRenderer` compatibility
-  forwarding for runtime material and light updates into `RasterGpuScene`.
+  forwarding for runtime material and light list updates into `RasterGpuScene`.
 - `raster/src/scene/raster_geometry_upload.cpp`: `RasterRenderer` compatibility
   forwarding for instance and geometry updates into `RasterGpuScene`.
 - `raster/src/scene/raster_scene_upload.cpp`: `RasterRenderer` compatibility forwarding
   for mesh-source and texture upload into `RasterGpuScene`, including
   `rebuildTextureResourcesAndSceneBindings` coordination across descriptors and
   output pipelines.
-- `raster/src/core/raster_descriptor_sets.cpp`: `RasterRenderer` compatibility
-  forwarding for descriptor creation/update and preview AOV recording through
-  `RasterSceneDescriptors` and `RasterOutputController`.
+- `raster/src/core/raster_renderer_resources.cpp`: Private `RasterRenderer`
+  resource orchestration for descriptor creation/update, frame uniform buffer
+  capacity, preview target resize, render-resource creation/destruction, and
+  output pipeline rebuilds.
 - `raster/private/raster_image_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `raster/src/runtime/headless_vk.cpp`: Headless Vulkan offline app context support.
 
@@ -441,7 +450,7 @@ call sites with `rg`.
 - Resize or render target size:
   `raster/src/core/raster_renderer.cpp`, `raster/include/raster/raster_renderer.hpp`,
   `raster/features/preview/preview_raster_pipeline.cpp`, `raster/src/runtime/raster_session.cpp`, then search
-  for `onResize`, `createPreviewAovTargets`, `recreateAovTargets`, `getRenderSize`, and
+  for `onResize`, `resizeRenderTargets`, `recreateAovTargets`, `getRenderSize`, and
   `ensureRasterSessionReady`.
 - Offscreen AOV export:
   `raster/include/raster/aov_texture.hpp`, `raster/features/preview/preview_raster_pipeline.cpp`,
@@ -452,7 +461,7 @@ call sites with `rg`.
   `CopyAovToRenderBuffer`.
 - Raster pipeline:
   `raster/features/preview/preview_raster_pipeline.hpp`, `raster/features/preview/preview_raster_pipeline.cpp`,
-  `raster/src/core/raster_descriptor_sets.cpp`, `raster/features/preview/shaders/raster.vert`,
+  `raster/src/core/raster_renderer_resources.cpp`, `raster/features/preview/shaders/raster.vert`,
   `raster/features/preview/shaders/raster.frag`, then search for `PreviewRasterPipeline`,
   `createGraphicsPipeline`, `createFramebuffer`, `recordPreviewAovs`, and
   `PushConstantRaster`.

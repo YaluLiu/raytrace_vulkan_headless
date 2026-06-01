@@ -8,7 +8,8 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewRasterPipeli
 
 - `include/raster/` contains the public raster API consumed by `hdRobot/`.
 - `private/core/` and `src/core/` contain `RasterRenderer` facade support,
-  frame pass ordering, descriptor forwarding, and output orchestration.
+  private renderer resource helpers, frame pass ordering, and output
+  orchestration.
 - `private/runtime/` and `src/runtime/` contain the Vulkan session shell and
   headless app context.
 - `private/scene/` and `src/scene/` own mesh, material, instance, light,

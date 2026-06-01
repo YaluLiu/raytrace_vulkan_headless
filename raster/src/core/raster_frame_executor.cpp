@@ -1,6 +1,7 @@
 #include "core/raster_frame_executor.hpp"
 
-#include <raster/raster_renderer.hpp>
+#include "core/raster_renderer_internal.hpp"
+#include "core/raster_renderer_resources.hpp"
 
 #include <array>
 
@@ -31,43 +32,56 @@ constexpr std::array<RasterFramePass, 8> kRasterFramePassSequence{
     RasterFramePass::OverlayHeightScans,
 };
 
-void executeRasterFramePass(RasterRenderer& renderer, const VkCommandBuffer& cmdBuf, RasterFramePass pass)
+void executeRasterFramePass(RasterRendererAccess::Impl& impl, const VkCommandBuffer& cmdBuf, RasterFramePass pass)
 {
   switch(pass)
   {
     case RasterFramePass::UpdateUniforms:
-      renderer.recordFrameUniformUpdate(cmdBuf);
+      impl.viewUniforms.updateFrameUniformBuffer(cmdBuf, impl.sizeRef(), impl.gpuScene.getLightCount());
       break;
     case RasterFramePass::UpdateLights:
-      renderer.updateLightBuffer(cmdBuf);
+      impl.gpuScene.updateLightBuffer(cmdBuf);
       break;
     case RasterFramePass::RenderTileAovAtlas:
-      renderer.recordTileAovAtlas(cmdBuf);
+      impl.outputController.recordTileAtlas(cmdBuf, impl.gpuScene, impl.sceneDescriptors, impl.viewUniforms);
       break;
     case RasterFramePass::GenerateLidarPointClouds:
-      renderer.recordLidarPointClouds(cmdBuf);
+      impl.outputController.recordLidarPointClouds(cmdBuf, impl.gpuScene, impl.sceneDescriptors,
+                                                   impl.outputController.getPreviewPipeline());
       break;
     case RasterFramePass::GenerateHeightScans:
-      renderer.recordHeightScans(cmdBuf);
+      impl.outputController.recordHeightScans(cmdBuf, impl.gpuScene);
       break;
     case RasterFramePass::RenderPreviewAovs:
-      renderer.recordPreviewAovs(cmdBuf);
+      impl.outputController.recordPreviewAovs(cmdBuf, impl.gpuScene, impl.sceneDescriptors);
       break;
     case RasterFramePass::OverlayLidarPointCloud:
-      renderer.recordLidarPointOverlay(cmdBuf);
+      impl.outputController.recordLidarPointOverlay(cmdBuf, impl.sceneDescriptors);
       break;
     case RasterFramePass::OverlayHeightScans:
-      renderer.recordHeightScanOverlay(cmdBuf);
+      impl.outputController.recordHeightScanOverlay(cmdBuf, impl.sceneDescriptors);
       break;
   }
 }
 } // namespace
 
+void prepareFrame(RasterRenderer& renderer)
+{
+  ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
+  RasterRendererAccess::impl(renderer).gpuScene.flushRayTracingUpdates();
+}
+
 void recordFramePasses(RasterRenderer& renderer, const VkCommandBuffer& cmdBuf)
 {
+  auto& impl = RasterRendererAccess::impl(renderer);
   for(const RasterFramePass pass : kRasterFramePassSequence)
   {
-    executeRasterFramePass(renderer, cmdBuf, pass);
+    executeRasterFramePass(impl, cmdBuf, pass);
   }
+}
+
+void finishFrame(RasterRenderer& renderer)
+{
+  RasterRendererAccess::impl(renderer).outputController.markTileAovAtlasConsumed();
 }
 } // namespace raster
