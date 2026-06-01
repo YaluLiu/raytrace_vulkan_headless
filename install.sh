@@ -10,15 +10,18 @@ function format(){
 function hydra(){
     set -e
     usd_path="/home/${USER}/software/USD"
+    tbb_dir="${TBB_DIR:-/usr/lib/x86_64-linux-gnu/cmake/TBB}"
     plugin_names=("UsdRaySensor" "UsdRaySensorImaging" "hdRobot")
     project_root="$(pwd)"
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
 
     mkdir -p "${project_root}/output"
+    mkdir -p build
 
     cd build
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DTBB_DIR="${tbb_dir}" \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
     
     cmake --build . --target "${plugin_names[@]}" --config Release -j20
@@ -33,12 +36,14 @@ function hydra(){
 function schema(){
     set -e
     usd_path="/home/${USER}/software/USD"
+    tbb_dir="${TBB_DIR:-/usr/lib/x86_64-linux-gnu/cmake/TBB}"
 
     mkdir -p build_schema
     cd build_schema
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
         -DROBOT_ENGINE_SCHEMA_ONLY=ON \
+        -DTBB_DIR="${tbb_dir}" \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
 
     cmake --build . --target UsdRaySensor --config Release -j20
