@@ -1,9 +1,9 @@
 #pragma once
 
 #include <raster/aov_texture.hpp>
-#include "output/tile/multiview_tile_raster_pipeline.hpp"
-#include "output/tile/multiview_tile_targets.hpp"
-#include "output/tile/tile_aov_channel.hpp"
+#include "features/tile/multiview_tile_raster_pipeline.hpp"
+#include "features/tile/multiview_tile_targets.hpp"
+#include "features/tile/tile_aov_channel.hpp"
 #include <raster/tile_config.hpp>
 
 #include <optional>

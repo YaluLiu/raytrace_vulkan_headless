@@ -1,8 +1,8 @@
-#include "output/point_overlay/point_overlay_pipeline.hpp"
+#include "features/point_overlay/point_overlay_pipeline.hpp"
 
 #include "nvh/fileoperations.hpp"
 #include "nvvk/pipeline_vk.hpp"
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 #include "shaders/common/host_device.h"
 
 #include <array>

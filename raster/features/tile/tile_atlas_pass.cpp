@@ -1,6 +1,6 @@
-#include "output/tile/tile_atlas_pass.hpp"
+#include "features/tile/tile_atlas_pass.hpp"
 
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 #include "scene/raster_gpu_scene.hpp"
 #include "scene/raster_scene_descriptors.hpp"
 #include "scene/raster_view_uniforms.hpp"

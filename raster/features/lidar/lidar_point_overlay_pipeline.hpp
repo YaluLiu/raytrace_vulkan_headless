@@ -2,7 +2,7 @@
 
 #include <raster/lidar_types.hpp>
 
-#include "output/point_overlay/point_overlay_pipeline.hpp"
+#include "features/point_overlay/point_overlay_pipeline.hpp"
 
 #include <vulkan/vulkan_core.h>
 

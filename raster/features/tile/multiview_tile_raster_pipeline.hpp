@@ -6,7 +6,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "nvvk/debug_util_vk.hpp"
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 #include "scene/raster_scene_types.hpp"
 
 class MultiviewTileRasterPipeline final

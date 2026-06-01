@@ -1,4 +1,4 @@
-#include "output/height_scan/height_scan.hpp"
+#include "features/height_scan/height_scan.hpp"
 
 #include <algorithm>
 #include <cmath>

@@ -13,20 +13,22 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewRasterPipeli
   headless app context.
 - `private/scene/` and `src/scene/` own mesh, material, instance, light,
   texture, descriptor, and view uniform resources shared by all outputs.
-- `private/output/preview_raster_pipeline.hpp` and
-  `src/output/preview/preview_raster_pipeline.cpp` own the main raster
-  offscreen AOV targets, graphics pipeline, framebuffer, AOV export backing,
-  and draw command recording.
-- `private/output/tile/` and `src/output/tile/` implement multi-camera tile
-  atlas rendering. Tile output renders multiview batches into layered images,
+- `features/preview/` owns the main raster offscreen AOV targets, graphics
+  pipeline, framebuffer, AOV export backing, draw command recording, and
+  preview shaders.
+- `features/tile/` implements multi-camera tile atlas rendering and owns the
+  tile shaders. Tile output renders multiview batches into layered images,
   copies layers into the enabled and requested per-channel atlases, then exposes
   atlas color/depth through Hydra AOV export.
-- `private/output/lidar/`, `src/output/lidar/`, and `shaders/lidar/` implement
-  LiDAR scan layout, angular range rasterization, GPU point generation, CPU
-  point-cloud readback, and preview color point overlay.
+- `features/lidar/` implements LiDAR scan layout, angular range rasterization,
+  GPU point generation, CPU point-cloud readback, preview color point overlay,
+  and LiDAR shaders.
+- `features/height_scan/` implements height-scan sample layout, GPU sample
+  generation, CPU grid readback, preview overlay, and height-scan shaders.
+- `features/point_overlay/` contains the shared preview point overlay pipeline
+  used by LiDAR and height scan.
 - `shaders/common/host_device.h` defines the shared host/device buffer and push
-  constant layout. Preview shaders live in `shaders/preview/`; tile shaders live
-  in `shaders/tile/`.
+  constant layout used by C++ and GLSL feature code.
 
 ## Frame Flow
 
@@ -37,8 +39,10 @@ pass ordering to `raster::recordFramePasses()`, which executes:
 2. `UpdateLights`
 3. `RenderTileAovAtlas`
 4. `GenerateLidarPointClouds`
-5. `RenderPreviewAovs`
-6. `OverlayLidarPointCloud`
+5. `GenerateHeightScans`
+6. `RenderPreviewAovs`
+7. `OverlayLidarPointCloud`
+8. `OverlayHeightScans`
 
 The raster pipeline binds the shared scene descriptor set, then draws each
 visible instance with `PushConstantRaster` data for model transform, object
@@ -69,9 +73,7 @@ points over the preview color attachment before Hydra copies the color AOV.
 
 Future simulation sensor outputs should start at the output layer:
 
-- Add output implementation files under `src/output/<sensor>/`, private
-  headers under `private/output/<sensor>/`, and shaders under
-  `shaders/<sensor>/`.
+- Add feature implementation files and shaders under `features/<sensor>/`.
 - Extend `RasterOutputController` first, reusing `RasterGpuScene`,
   `RasterSceneDescriptors`, and `RasterViewUniforms` instead of duplicating
   scene, descriptor, or uniform ownership.

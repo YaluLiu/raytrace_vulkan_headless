@@ -1,4 +1,4 @@
-#include "output/lidar/lidar_scan.hpp"
+#include "features/lidar/lidar_scan.hpp"
 
 #include <algorithm>
 #include <cmath>

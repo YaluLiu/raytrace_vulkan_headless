@@ -3,7 +3,7 @@
 #include "nvvk/debug_util_vk.hpp"
 #include "nvvk/memallocator_dma_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 #include <raster/tile_config.hpp>
 
 class MultiviewTileTargets final

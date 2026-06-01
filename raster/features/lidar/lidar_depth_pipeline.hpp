@@ -2,7 +2,7 @@
 
 #include "nvvk/debug_util_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
-#include "output/lidar/lidar_scan.hpp"
+#include "features/lidar/lidar_scan.hpp"
 #include "scene/raster_scene_types.hpp"
 
 #include <span>

@@ -36,20 +36,20 @@ set(RASTER_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_frame_executor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_output_controller.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/core/raster_renderer_internal.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/height_scan/height_scan.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/height_scan/height_scan_generation_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/height_scan/height_scan_pass.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_depth_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_point_cloud_pass.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_point_generation_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_point_overlay_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/lidar/lidar_scan.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/point_overlay/point_overlay_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/preview_raster_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/multiview_tile_raster_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/multiview_tile_targets.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/tile_aov_channel.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/private/output/tile/tile_atlas_pass.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_depth_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_cloud_pass.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_generation_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_overlay_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_scan.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/point_overlay/point_overlay_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/preview_raster_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_raster_pipeline.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_targets.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_aov_channel.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/raster_image_barriers.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/runtime/headless_vk.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/private/scene/raster_gpu_scene.hpp
@@ -65,21 +65,21 @@ set(RASTER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_output_controller.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/raster_renderer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/raster_debug_readback.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/height_scan/height_scan.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/height_scan/height_scan_generation_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/height_scan/height_scan_pass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_depth_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_point_cloud_pass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_point_generation_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_point_overlay_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/lidar/lidar_scan.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/point_overlay/point_overlay_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/preview/preview_raster_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/multiview_tile_raster_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/multiview_tile_targets.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/tile_aov_channel.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/tile_atlas_pass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/output/tile/tile_atlas_renderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_depth_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_cloud_pass.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_generation_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_overlay_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_scan.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/point_overlay/point_overlay_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/preview_raster_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_raster_pipeline.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_targets.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_aov_channel.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_renderer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/raster_session.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/raster_geometry_upload.cpp
@@ -92,22 +92,22 @@ set(RASTER_SOURCES
 )
 
 set(RASTER_SHADER_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/height_scan/height_scan.comp
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/height_scan/height_scan_overlay.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/height_scan/height_scan_overlay.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_depth.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_depth.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_overlay.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_overlay.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/lidar/lidar_points.comp
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/dome_background.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/dome_background.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/raster.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/preview/raster.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/dome_background_tile_multiview.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/dome_background_tile_multiview.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/tile_multiview.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/tile/tile_multiview.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/shaders/height_scan.comp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/shaders/height_scan_overlay.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/shaders/height_scan_overlay.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_depth.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_depth.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_overlay.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_overlay.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_points.comp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/dome_background.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/dome_background.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/raster.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/raster.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/dome_background_tile_multiview.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/dome_background_tile_multiview.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/tile_multiview.frag
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/tile_multiview.vert
 )
 
 set(RASTER_SHADER_HEADERS
@@ -179,12 +179,13 @@ _finalize_target( ${PROJNAME} )
 if(BUILD_TESTING)
   add_executable(raster_height_scan_basis_test
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/height_scan_basis_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/output/height_scan/height_scan.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.cpp
   )
   target_include_directories(raster_height_scan_basis_test
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/private
       ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}
   )
   add_test(NAME raster_height_scan_basis_test COMMAND raster_height_scan_basis_test)
 endif()

@@ -1,4 +1,4 @@
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 
 #include <array>
 #include <cstddef>

@@ -1,7 +1,7 @@
-#include "output/height_scan/height_scan_pass.hpp"
+#include "features/height_scan/height_scan_pass.hpp"
 
 #include "nvvk/commands_vk.hpp"
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 
 #include <algorithm>
 #include <cmath>

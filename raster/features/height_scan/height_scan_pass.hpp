@@ -3,9 +3,9 @@
 #include <raster/height_scan_types.hpp>
 #include <raster/raster_renderer_types.hpp>
 
-#include "output/height_scan/height_scan.hpp"
-#include "output/height_scan/height_scan_generation_pipeline.hpp"
-#include "output/point_overlay/point_overlay_pipeline.hpp"
+#include "features/height_scan/height_scan.hpp"
+#include "features/height_scan/height_scan_generation_pipeline.hpp"
+#include "features/point_overlay/point_overlay_pipeline.hpp"
 #include "shaders/common/host_device.h"
 
 #include "nvvk/debug_util_vk.hpp"

@@ -1,4 +1,4 @@
-#include "output/lidar/lidar_depth_pipeline.hpp"
+#include "features/lidar/lidar_depth_pipeline.hpp"
 
 #include "nvh/fileoperations.hpp"
 #include "nvvk/commands_vk.hpp"

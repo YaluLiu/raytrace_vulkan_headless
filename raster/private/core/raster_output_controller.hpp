@@ -3,10 +3,10 @@
 #include <raster/aov_texture.hpp>
 #include <raster/height_scan_types.hpp>
 #include <raster/lidar_types.hpp>
-#include "output/height_scan/height_scan_pass.hpp"
-#include "output/lidar/lidar_point_cloud_pass.hpp"
-#include "output/preview_raster_pipeline.hpp"
-#include "output/tile/tile_atlas_pass.hpp"
+#include "features/height_scan/height_scan_pass.hpp"
+#include "features/lidar/lidar_point_cloud_pass.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
+#include "features/tile/tile_atlas_pass.hpp"
 #include <raster/tile_config.hpp>
 
 #include <optional>

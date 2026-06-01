@@ -1,7 +1,7 @@
-#include "output/lidar/lidar_point_cloud_pass.hpp"
+#include "features/lidar/lidar_point_cloud_pass.hpp"
 
 #include "nvvk/commands_vk.hpp"
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 
 #include <algorithm>
 #include <cmath>

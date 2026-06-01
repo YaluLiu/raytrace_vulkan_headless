@@ -1,6 +1,6 @@
-#include "output/lidar/lidar_point_overlay_pipeline.hpp"
+#include "features/lidar/lidar_point_overlay_pipeline.hpp"
 
-#include "output/preview_raster_pipeline.hpp"
+#include "features/preview/preview_raster_pipeline.hpp"
 
 void LidarPointOverlayPipeline::setup(VkDevice device, nvvk::DebugUtil& debug)
 {

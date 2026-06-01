@@ -3,9 +3,9 @@
 #include <raster/lidar_types.hpp>
 #include <raster/raster_renderer_types.hpp>
 
-#include "output/lidar/lidar_point_generation_pipeline.hpp"
-#include "output/lidar/lidar_scan.hpp"
-#include "output/point_overlay/point_overlay_pipeline.hpp"
+#include "features/lidar/lidar_point_generation_pipeline.hpp"
+#include "features/lidar/lidar_scan.hpp"
+#include "features/point_overlay/point_overlay_pipeline.hpp"
 #include "scene/raster_scene_types.hpp"
 #include "shaders/common/host_device.h"
 
