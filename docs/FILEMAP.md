@@ -280,8 +280,10 @@ call sites with `rg`.
   mask, sorted sensor forwarding, visualization config forwarding,
   `hdRobot:traceRole = "ground"` routing into engine instance trace masks, and
   ordered AOV copy groups that copy fixed tile AOVs before display tile AOVs
-  and other AOVs. GPU upload still happens here rather than in
-  `CommitResources()`.
+  and other AOVs. Output configuration and sensor forwarding live behind
+  `configureRendererOutputs()`, while GPU resource submission is isolated behind
+  the bridge-side `commitRendererResources()` helper; both still run from the
+  frame path until engine/session ownership moves to the render delegate.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into engine-facing camera specs,
   `Material`, light records, LiDAR and height scan sensor specs,
@@ -449,7 +451,8 @@ call sites with `rg`.
   `engine/features/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/renderBridge.cpp`,
   then search for `RenderFrame`, `recordFramePasses`,
   `recordPreviewAovs`, `recordTileAtlas`, `recordLidarPointClouds`,
-  `recordLidarPointOverlay`, `recordFrameUniformUpdate`, and `updateScene`.
+  `recordLidarPointOverlay`, `recordFrameUniformUpdate`,
+  `configureRendererOutputs`, and `commitRendererResources`.
 - Resize or render target size:
   `engine/src/core/renderer.cpp`, `engine/include/engine/engine.hpp`,
   `engine/features/preview/preview_pipeline.cpp`, `engine/src/runtime/session.cpp`, then search
@@ -613,7 +616,7 @@ The graph report currently identifies these high-connectivity anchors:
 - `RenderFrame()`
 - `destroy()`
 - `ensureEngineReady()`
-- `updateScene()`
+- `commitRendererResources()`
 - `Sync()`
 - `_ProcessPrimvar()`
 

@@ -226,23 +226,8 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
     return false;
   }
 
-  const HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
-  std::vector<HdRobotLidarSensorData> lidarSensors = backendScene.GetActiveLidarSensorSnapshot();
-  std::sort(lidarSensors.begin(), lidarSensors.end(), [](const HdRobotLidarSensorData &lhs,
-                                                         const HdRobotLidarSensorData &rhs) {
-    return lhs.name < rhs.name;
-  });
-  std::vector<HdRobotHeightScanSensorData> heightScanSensors = backendScene.GetActiveHeightScanSensorSnapshot();
-  std::sort(heightScanSensors.begin(), heightScanSensors.end(), [](const HdRobotHeightScanSensorData &lhs,
-                                                                   const HdRobotHeightScanSensorData &rhs) {
-    return lhs.name < rhs.name;
-  });
-  _engine.configureOutputs(ToRendererOutputConfig(
-      _renderParam.GetTileConfig(), ComputeHdRobotRequestedTileAovChannels(hdAovBindings), lidarSensors,
-      _renderParam.GetLidarVisualizationConfig(), heightScanSensors,
-      _renderParam.GetHeightScanVisualizationConfig()));
-  updateLights();
-  updateScene();
+  configureRendererOutputs(hdAovBindings);
+  commitRendererResources();
   _engine.render();
 
   const ::Engine &app = _engine;
@@ -301,8 +286,6 @@ void HdRobotRenderBridge::ensureEngineReady(const GfVec2i &renderSize)
   {
     resizeEngine(renderSize);
   }
-
-  refreshTextureAssetsIfNeeded();
 }
 
 void HdRobotRenderBridge::initializeEngine(const GfVec2i &renderSize)
@@ -327,6 +310,15 @@ void HdRobotRenderBridge::resizeEngine(const GfVec2i &renderSize)
   _glInteropCache.Clear();
   _engine.resize(renderSize[0], renderSize[1]);
   _renderSize = renderSize;
+}
+
+void HdRobotRenderBridge::commitRendererResources()
+{
+  refreshTextureAssetsIfNeeded();
+  updateLights();
+  updateGeometry();
+  updateInstances();
+  updateMaterials();
 }
 
 void HdRobotRenderBridge::uploadInitialScene()
@@ -408,6 +400,25 @@ bool HdRobotRenderBridge::updateCameras(const HdRenderPassStateSharedPtr &render
   return true;
 }
 
+void HdRobotRenderBridge::configureRendererOutputs(const HdRenderPassAovBindingVector &hdAovBindings)
+{
+  const HdRobotBackendScene& backendScene = _renderParam.GetBackendScene();
+  std::vector<HdRobotLidarSensorData> lidarSensors = backendScene.GetActiveLidarSensorSnapshot();
+  std::sort(lidarSensors.begin(), lidarSensors.end(), [](const HdRobotLidarSensorData &lhs,
+                                                         const HdRobotLidarSensorData &rhs) {
+    return lhs.name < rhs.name;
+  });
+  std::vector<HdRobotHeightScanSensorData> heightScanSensors = backendScene.GetActiveHeightScanSensorSnapshot();
+  std::sort(heightScanSensors.begin(), heightScanSensors.end(), [](const HdRobotHeightScanSensorData &lhs,
+                                                                   const HdRobotHeightScanSensorData &rhs) {
+    return lhs.name < rhs.name;
+  });
+  _engine.configureOutputs(ToRendererOutputConfig(
+      _renderParam.GetTileConfig(), ComputeHdRobotRequestedTileAovChannels(hdAovBindings), lidarSensors,
+      _renderParam.GetLidarVisualizationConfig(), heightScanSensors,
+      _renderParam.GetHeightScanVisualizationConfig()));
+}
+
 void HdRobotRenderBridge::updateLights()
 {
   _engine.clearLights();
@@ -416,13 +427,6 @@ void HdRobotRenderBridge::updateLights()
   {
     _engine.addLight(ToLight(curLight));
   }
-}
-
-void HdRobotRenderBridge::updateScene()
-{
-  updateGeometry();
-  updateInstances();
-  updateMaterials();
 }
 
 void HdRobotRenderBridge::updateGeometry()

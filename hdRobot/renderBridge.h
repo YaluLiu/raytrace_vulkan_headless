@@ -26,11 +26,12 @@ private:
   void ensureEngineReady(const GfVec2i& renderSize);
   void initializeEngine(const GfVec2i& renderSize);
   void resizeEngine(const GfVec2i& renderSize);
+  void commitRendererResources();
   void uploadInitialScene();
   void refreshTextureAssetsIfNeeded();
   bool updateCameras(const HdRenderPassStateSharedPtr& renderPassState);
+  void configureRendererOutputs(const HdRenderPassAovBindingVector& hdAovBindings);
   void updateLights();
-  void updateScene();
   void updateGeometry();
   void updateInstances();
   void updateMaterials();
