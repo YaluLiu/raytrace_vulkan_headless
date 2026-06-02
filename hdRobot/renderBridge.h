@@ -31,6 +31,7 @@ private:
   void refreshTextureAssetsIfNeeded();
   bool updateCameras(const HdRenderPassStateSharedPtr& renderPassState);
   void configureRendererOutputs(const HdRenderPassAovBindingVector& hdAovBindings);
+  bool copyRenderedAovs(const HdRenderPassAovBindingVector& hdAovBindings);
   void updateLights();
   void updateGeometry();
   void updateInstances();

@@ -230,7 +230,11 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
   commitRendererResources();
   _engine.render();
 
-  const ::Engine &app = _engine;
+  return copyRenderedAovs(hdAovBindings);
+}
+
+bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdAovBindings)
+{
   bool allAovsCopied = true;
 
   auto copyBinding = [&](const HdRenderPassAovBinding &binding)
@@ -241,7 +245,7 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
     if(spec)
     {
       const HdRobotAovCopyRequest request{binding.aovName, spec->engineAov, spec->copyScaling, aovBuffer};
-      copied = CopyAovToRenderBuffer(app, request, _glInteropCache);
+      copied = CopyAovToRenderBuffer(_engine, request, _glInteropCache);
     }
     else if(IsHdRobotIgnoredAov(binding.aovName))
     {
