@@ -20,9 +20,8 @@ instance ID AOVs through the offscreen framebuffer owned by `PreviewPipeline`.
   tile shaders. Tile output renders multiview batches into layered images,
   copies layers into the enabled and requested per-channel atlases, then exposes
   atlas color/depth through Hydra AOV export.
-- `features/lidar/` implements LiDAR scan layout, angular range graphics projection,
-  GPU point generation, CPU point-cloud readback, preview color point overlay,
-  and LiDAR shaders.
+- `features/lidar/` implements LiDAR scan layout, GPU point generation, CPU
+  point-cloud readback, preview color point overlay, and LiDAR shaders.
 - `features/height_scan/` implements height-scan sample layout, GPU sample
   generation, CPU grid readback, preview overlay, and height-scan shaders.
 - `features/point_overlay/` contains the shared preview point overlay pipeline

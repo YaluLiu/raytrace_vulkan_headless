@@ -40,7 +40,6 @@ set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_depth_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_cloud_pass.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_generation_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_overlay_pipeline.hpp
@@ -69,7 +68,6 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_generation_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_depth_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_cloud_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_generation_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_overlay_pipeline.cpp
@@ -93,8 +91,6 @@ set(ENGINE_SHADER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/shaders/height_scan.comp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/shaders/height_scan_overlay.frag
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/shaders/height_scan_overlay.vert
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_depth.frag
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_depth.vert
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_overlay.frag
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_overlay.vert
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/shaders/lidar_points.comp

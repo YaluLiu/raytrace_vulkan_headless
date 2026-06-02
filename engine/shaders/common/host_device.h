@@ -117,20 +117,6 @@ struct LidarFrameGpu
   uint frameIdHigh;
 };
 
-struct PushConstantLidarDepth
-{
-  mat4 model;
-  vec4 originMaxRange;
-  vec4 forwardAzimuthStart;
-  vec4 rightAzimuthStep;
-  vec4 upVerticalStart;
-  vec4 azimuthEndVerticalEndStep;
-  uint objIndex;
-  uint sensorIndex;
-  uint azimuthSampleCount;
-  uint verticalSampleCount;
-};
-
 struct PushConstantLidarGenerate
 {
   uint sensorIndex;

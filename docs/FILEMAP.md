@@ -170,10 +170,6 @@ call sites with `rg`.
   coordinator owning sensors, visualization config, global point buffer,
   sensor metadata buffer, CPU readback, Vulkan RT point generation, and overlay
   pass orchestration.
-- `engine/features/lidar/lidar_depth_pipeline.hpp` /
-  `engine/features/lidar/lidar_depth_pipeline.cpp`: Legacy single-sensor
-  angular range graphics pipeline. The active LiDAR point path now uses Vulkan RT
-  ray queries through `lidar_points.comp`.
 - `engine/features/lidar/lidar_point_generation_pipeline.hpp` /
   `engine/features/lidar/lidar_point_generation_pipeline.cpp`: Compute
   pipeline that binds the scene TLAS and traces one ray query per LiDAR beam
@@ -248,9 +244,6 @@ call sites with `rg`.
 - `engine/features/tile/shaders/dome_background_tile_multiview.vert` /
   `engine/features/tile/shaders/dome_background_tile_multiview.frag`: Dome background
   variants for multiview tile rendering.
-- `engine/features/lidar/shaders/lidar_depth.vert` /
-  `engine/features/lidar/shaders/lidar_depth.frag`: Legacy mesh variants that project
-  scene geometry into a LiDAR angular range image.
 - `engine/features/lidar/shaders/lidar_points.comp`: Active Vulkan RT LiDAR compute
   shader; performs one ray query against the scene TLAS per beam and writes the
   global LiDAR point buffer.
