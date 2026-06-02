@@ -13,6 +13,8 @@ add_library(
   aovBridgeSpec.h
   renderBridge.cpp
   renderBridge.h
+  renderResources.cpp
+  renderResources.h
   renderBridgeConversions.cpp
   renderBridgeConversions.h
   glInteropCache.cpp

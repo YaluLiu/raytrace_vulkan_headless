@@ -1,19 +1,18 @@
 #include "renderPass.h"
 
 #include "renderBridge.h"
+#include "renderResources.h"
 
 #include <memory>
-#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex*             index,
                                      const HdRprimCollection&   collection,
-                                     HdRobotRenderParam&        renderParam,
-                                     std::string                resourcePath)
+                                     HdRobotRenderResources&    resources)
     : HdRenderPass(index, collection)
     , _isConverged(false)
-    , _bridge(std::make_unique<HdRobotRenderBridge>(renderParam, std::move(resourcePath)))
+    , _bridge(std::make_unique<HdRobotRenderBridge>(resources))
 {
 }
 

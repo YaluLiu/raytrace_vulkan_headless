@@ -158,7 +158,6 @@ public:
   std::vector<HdRobotMeshRecord> ConsumeDirtyMeshGeometry();
   std::vector<HdRobotMeshRecord> ConsumeDirtyMeshInstances();
   std::vector<uint32_t> ConsumeDirtyMaterialIndices();
-  void MarkAllMeshesInstanceDirty();
   void SetMeshRendererState(uint32_t meshIndex, int rendererMeshId, std::vector<int> rendererInstanceIds);
 
 private:

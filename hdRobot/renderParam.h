@@ -57,8 +57,6 @@ class HdRobotRenderParam final : public HdRenderParam
   void SetHeightScanVisualizationConfig(const HdRobotHeightScanVisualizationConfig& config);
   HdRobotHeightScanVisualizationConfig GetHeightScanVisualizationConfig() const;
 
-  void MarkAllMeshesInstanceDirty();
-
 private:
   mutable std::mutex mutex;
   HdRobotBackendScene backendScene;

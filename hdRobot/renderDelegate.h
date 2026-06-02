@@ -6,6 +6,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
+class HdRobotRenderResources;
 
 class HdRobotRenderDelegate final : public HdRenderDelegate
 {
@@ -92,6 +93,7 @@ private:
   const std::string              _resourcePath;
   HdResourceRegistrySharedPtr    _resourceRegistry;
   std::unique_ptr<HdRobotRenderParam> _renderParam;
+  std::unique_ptr<HdRobotRenderResources> _renderResources;
   HdRenderSettingDescriptorList  _settingDescriptors;
   // std::unique_str<HdRobotRenderBuffer> _colorBuffer;
   Hgi*                         _hgi = nullptr;

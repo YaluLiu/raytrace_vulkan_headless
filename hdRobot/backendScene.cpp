@@ -393,19 +393,6 @@ std::vector<uint32_t> HdRobotBackendScene::ConsumeDirtyMaterialIndices()
   return result;
 }
 
-void HdRobotBackendScene::MarkAllMeshesInstanceDirty()
-{
-  std::lock_guard guard(_sceneMutex);
-  for(uint32_t index = 0; index < _meshes.Size(); ++index)
-  {
-    HdRobotMeshRecord* record = _meshes.GetByIndex(index);
-    if(record != nullptr)
-    {
-      record->instanceDirty = true;
-    }
-  }
-}
-
 void HdRobotBackendScene::SetMeshRendererState(uint32_t meshIndex,
                                                int rendererMeshId,
                                                std::vector<int> rendererInstanceIds)

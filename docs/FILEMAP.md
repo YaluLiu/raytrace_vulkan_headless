@@ -60,12 +60,16 @@ call sites with `rg`.
   Source of truth for per-frame engine pass sequencing; preview AOV rendering
   is followed by LiDAR point overlay and then height scan overlay.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
-- `hdRobot/renderDelegate.cpp`: Hydra render delegate construction and render
-  param ownership.
+- `hdRobot/renderDelegate.cpp`: Hydra render delegate construction, render
+  param ownership, and delegate-owned render resource/session ownership.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
   to `HdRobotRenderBridge::RenderFrame`.
-- `hdRobot/renderBridge.cpp`: Bridge between Hydra scene data and
-  `Engine` frame execution.
+- `hdRobot/renderResources.h` / `hdRobot/renderResources.cpp`: Delegate-owned
+  renderer resource/session bridge that owns `Engine`, GL interop cache,
+  engine lifecycle state, Hydra CPU-scene resource submission, committed
+  camera/sensor/output snapshots, and frame-level render tag visibility.
+- `hdRobot/renderBridge.cpp`: Pass-dependent frame bridge between Hydra render
+  pass state and `Engine` frame execution.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
   Hydra-to-engine data conversion helpers used by the bridge for mesh geometry,
   materials, cameras, lights, LiDAR, height scan, visualization, and tile
@@ -270,20 +274,26 @@ call sites with `rg`.
   ownership, supported primitives, render param setup, tile render setting
   descriptors including per-channel tile color/depth enable flags, LiDAR and
   height scan visualization render settings, AOV descriptor lookup through the
-  shared bridge-side AOV spec, and resource access.
+  shared bridge-side AOV spec, render resource/session ownership, and
+  `CommitResources()` routing from pending Hydra CPU updates into renderer
+  resource submission.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
-  and frame execution entry into the bridge.
+  and frame execution entry into the bridge. It borrows delegate-owned
+  `HdRobotRenderResources` and no longer knows `HdRobotRenderParam`.
+- `hdRobot/renderResources.h` / `hdRobot/renderResources.cpp`: Delegate-owned
+  renderer resource/session object. It owns `Engine`, `HdRobotGlInteropCache`,
+  render size, texture upload version, initial scene upload, dirty
+  mesh/material/light resource submission, committed active camera/sensor
+  snapshots, output configuration, and frame-level render tag filtering for
+  existing renderer instances.
 - `hdRobot/renderBridge.h` / `hdRobot/renderBridge.cpp`:
-  Converts Hydra frame state into `Engine` updates and render calls,
-  including backend scene snapshots for cameras, meshes, materials, lights,
-  LiDAR and height scan sensors, the current frame's requested tile AOV channel
-  mask, sorted sensor forwarding, visualization config forwarding,
-  `hdRobot:traceRole = "ground"` routing into engine instance trace masks, and
-  ordered AOV copy groups that copy fixed tile AOVs before display tile AOVs
-  and other AOVs. Output configuration and sensor forwarding live behind
-  `configureRendererOutputs()`, while GPU resource submission is isolated behind
-  the bridge-side `commitRendererResources()` helper; both still run from the
-  frame path until engine/session ownership moves to the render delegate.
+  Converts current Hydra pass state into frame-only renderer work: render
+  state/AOV validation, main render size selection, current pass camera setup,
+  requested tile AOV channel selection, frame render tag application,
+  `Engine::render()`, and ordered AOV copy groups that copy fixed tile AOVs
+  before display tile AOVs and other AOVs. It borrows
+  `HdRobotRenderResources` and does not read `HdRobotRenderParam` or consume
+  backend dirty queues.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into engine-facing camera specs,
   `Material`, light records, LiDAR and height scan sensor specs,
@@ -449,15 +459,16 @@ call sites with `rg`.
   `engine/src/core/frame_executor.cpp`, `engine/src/core/renderer.cpp`,
   `engine/src/core/output_controller.cpp`, `engine/features/tile/tile_atlas_pass.cpp`,
   `engine/features/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/renderBridge.cpp`,
+  `hdRobot/renderResources.cpp`,
   then search for `RenderFrame`, `recordFramePasses`,
   `recordPreviewAovs`, `recordTileAtlas`, `recordLidarPointClouds`,
   `recordLidarPointOverlay`, `recordFrameUniformUpdate`,
-  `configureRendererOutputs`, and `commitRendererResources`.
+  `ConfigureFrameOutputs`, and `CommitResources`.
 - Resize or render target size:
   `engine/src/core/renderer.cpp`, `engine/include/engine/engine.hpp`,
   `engine/features/preview/preview_pipeline.cpp`, `engine/src/runtime/session.cpp`, then search
   for `onResize`, `resizeRenderTargets`, `recreateAovTargets`, `getRenderSize`, and
-  `ensureEngineReady`.
+  `EnsureEngineReady`.
 - Offscreen AOV export:
   `engine/include/engine/aov_texture.hpp`, `engine/features/preview/preview_pipeline.cpp`,
   `engine/src/core/output_controller.cpp`, `engine/features/tile/tile_atlas_pass.cpp`,
@@ -473,11 +484,13 @@ call sites with `rg`.
   `MeshDrawPushConstants`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/renderBridge.cpp`,
-  `hdRobot/renderDelegate.cpp`, then search for `RenderFrame`,
-  `_Execute`, `ApplyPendingUpdates`, and `Sync`.
+  `hdRobot/renderResources.cpp`, `hdRobot/renderDelegate.cpp`, then search
+  for `RenderFrame`, `_Execute`, `ApplyPendingUpdates`, `CommitResources`,
+  and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/renderBridge.cpp`, `engine/include/engine/engine.hpp`,
+  `hdRobot/renderResources.cpp`, `hdRobot/renderBridge.cpp`,
+  `engine/include/engine/engine.hpp`,
   `engine/src/scene/view_uniforms.cpp`, and `engine/features/tile/tile_atlas_pass.cpp`, then
   search for `CreateCamera`,
   `EnqueueCameraUpdate`, `GetActiveCameraSnapshot`,
@@ -615,8 +628,8 @@ The graph report currently identifies these high-connectivity anchors:
 - `createDesc()`
 - `RenderFrame()`
 - `destroy()`
-- `ensureEngineReady()`
-- `commitRendererResources()`
+- `EnsureEngineReady()`
+- `CommitResources()`
 - `Sync()`
 - `_ProcessPrimvar()`
 

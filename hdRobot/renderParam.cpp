@@ -74,9 +74,4 @@ HdRobotHeightScanVisualizationConfig HdRobotRenderParam::GetHeightScanVisualizat
   return heightScanVisualizationConfig;
 }
 
-void HdRobotRenderParam::MarkAllMeshesInstanceDirty()
-{
-  backendScene.MarkAllMeshesInstanceDirty();
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

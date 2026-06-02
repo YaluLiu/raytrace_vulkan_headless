@@ -2,6 +2,7 @@
 #include "instancer.h"
 #include "renderParam.h"
 #include "renderPass.h"
+#include "renderResources.h"
 
 // robot or hdstorm
 #include "aovBridgeSpec.h"
@@ -185,7 +186,8 @@ HdRobotHeightScanVisualizationConfig ReadHeightScanVisualizationConfig(const HdR
 
 HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settingsMap, std::string_view resourcePath)
     : HdRenderDelegate(settingsMap), _resourcePath(resourcePath),
-      _resourceRegistry(std::make_shared<HdResourceRegistry>()), _renderParam(std::make_unique<HdRobotRenderParam>())
+      _resourceRegistry(std::make_shared<HdResourceRegistry>()), _renderParam(std::make_unique<HdRobotRenderParam>()),
+      _renderResources(std::make_unique<HdRobotRenderResources>(_resourcePath))
 {
   _settingDescriptors = CreateRenderSettingDescriptors();
   _PopulateDefaultSettings(_settingDescriptors);
@@ -256,12 +258,12 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken &command, [[maybe_unused
 HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex *index, const HdRprimCollection &collection)
 {
   HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
-  if(!TF_VERIFY(robotRenderParam != nullptr))
+  if(!TF_VERIFY(robotRenderParam != nullptr) || !TF_VERIFY(_renderResources != nullptr))
   {
     return nullptr;
   }
 
-  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, *robotRenderParam, _resourcePath));
+  return HdRenderPassSharedPtr(new HdRobotRenderPass(index, collection, *_renderResources));
 }
 
 HdResourceRegistrySharedPtr HdRobotRenderDelegate::GetResourceRegistry() const
@@ -275,6 +277,10 @@ void HdRobotRenderDelegate::CommitResources(HdChangeTracker *tracker)
   if(_renderParam)
   {
     _renderParam->ApplyPendingSceneUpdates();
+    if(_renderResources)
+    {
+      _renderResources->CommitResources(*_renderParam);
+    }
   }
 }
 
