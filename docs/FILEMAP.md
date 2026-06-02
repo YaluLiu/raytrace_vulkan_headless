@@ -174,9 +174,6 @@ call sites with `rg`.
   `engine/features/lidar/lidar_point_generation_pipeline.cpp`: Compute
   pipeline that binds the scene TLAS and traces one ray query per LiDAR beam
   into `LidarPointGpu` entries.
-- `engine/features/lidar/lidar_point_overlay_pipeline.hpp` /
-  `engine/features/lidar/lidar_point_overlay_pipeline.cpp`: Thin LiDAR
-  compatibility wrapper around the shared point overlay pipeline.
 - `engine/features/point_overlay/point_overlay_pipeline.hpp` /
   `engine/features/point_overlay/point_overlay_pipeline.cpp`: Shared preview
   point overlay graphics pipeline infrastructure for render pass, framebuffer,
@@ -495,7 +492,6 @@ call sites with `rg`.
   `engine/features/lidar/lidar_scan.cpp`,
   `engine/features/lidar/lidar_point_cloud_pass.cpp`,
   `engine/features/lidar/lidar_point_generation_pipeline.cpp`,
-  `engine/features/lidar/lidar_point_overlay_pipeline.cpp`,
   `engine/src/scene/rt_scene.cpp`,
   `engine/features/lidar/shaders/lidar_points.comp`,
   `engine/features/lidar/shaders/lidar_overlay.vert`,

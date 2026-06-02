@@ -42,7 +42,6 @@ set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_cloud_pass.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_generation_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_overlay_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_scan.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/point_overlay/point_overlay_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/preview_pipeline.hpp
@@ -70,7 +69,6 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_cloud_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_generation_pipeline.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_point_overlay_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_scan.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/point_overlay/point_overlay_pipeline.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/preview_pipeline.cpp
