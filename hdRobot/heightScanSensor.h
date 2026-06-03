@@ -15,14 +15,14 @@ class HdRobotRenderParam;
 
 struct HdRobotHeightScanParams
 {
-  float uStart = -10.0f;
-  float uEnd = 10.0f;
+  float uStart = -0.2f;
+  float uEnd = 0.2f;
   float uStep = 0.1f;
-  float vStart = -10.0f;
-  float vEnd = 10.0f;
+  float vStart = -0.5f;
+  float vEnd = 0.5f;
   float vStep = 0.1f;
   glm::vec3 gravityDirectionWs = glm::vec3(0.0f, 0.0f, -1.0f);
-  float maxRange = 200.0f;
+  float maxRange = 5.0f;
 };
 
 struct HdRobotHeightScanSensorData

@@ -228,7 +228,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float verticalStartDeg = -2` |
+    /// | Declaration | `float verticalStartDeg = -85` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRAYSENSOR_API
@@ -250,7 +250,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float verticalEndDeg = -20` |
+    /// | Declaration | `float verticalEndDeg = -35` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRAYSENSOR_API
@@ -272,7 +272,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float verticalStepDeg = 1` |
+    /// | Declaration | `float verticalStepDeg = 5` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRAYSENSOR_API
@@ -294,7 +294,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float maxRange = 200` |
+    /// | Declaration | `float maxRange = 5` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRAYSENSOR_API

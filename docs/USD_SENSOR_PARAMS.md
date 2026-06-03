@@ -37,10 +37,10 @@ sensor local space：`+X` 向右，`+Y` 向上，`-Z` 为前方；方位角 `0` 
 | `azimuthStartDeg`   | `float` | `-90.0` | 方位角起点，单位为度。                         |
 | `azimuthEndDeg`     | `float` | `90.0`  | 方位角终点，单位为度。                         |
 | `azimuthStepDeg`    | `float` | `0.5`   | 方位角采样间隔，实际最小值为 `1.0e-4`。        |
-| `verticalStartDeg`  | `float` | `-2.0`  | 俯仰角起点，单位为度。                         |
-| `verticalEndDeg`    | `float` | `-20.0` | 俯仰角终点，单位为度；允许终点小于起点。       |
-| `verticalStepDeg`   | `float` | `1.0`   | 俯仰角采样间隔，实际最小值为 `1.0e-4`。        |
-| `maxRange`          | `float` | `200.0` | 单条 LiDAR 射线最大追踪距离。                  |
+| `verticalStartDeg`  | `float` | `-85.0` | 俯仰角起点，单位为度。                         |
+| `verticalEndDeg`    | `float` | `-35.0` | 俯仰角终点，单位为度；允许终点大于起点。       |
+| `verticalStepDeg`   | `float` | `5.0`   | 俯仰角采样间隔，实际最小值为 `1.0e-4`。        |
+| `maxRange`          | `float` | `5.0`   | 单条 LiDAR 射线最大追踪距离。                  |
 | `intensity`         | `float` | `1.0`   | 命中点写入点云输出的强度值；负值会被夹到 `0`。 |
 
 等价 USDA 片段：
@@ -52,10 +52,10 @@ def LidarSensor "lidar_sensor"
     float azimuthStartDeg = -90
     float azimuthEndDeg = 90
     float azimuthStepDeg = 0.5
-    float verticalStartDeg = -2
-    float verticalEndDeg = -20
-    float verticalStepDeg = 1
-    float maxRange = 200
+    float verticalStartDeg = -85
+    float verticalEndDeg = -35
+    float verticalStepDeg = 5
+    float maxRange = 5
     float intensity = 1
 }
 ```
@@ -71,14 +71,14 @@ def LidarSensor "lidar_sensor"
 | USD 属性名     | 类型     | 默认值       | 说明                                                           |
 | -------------- | -------- | ------------ | -------------------------------------------------------------- |
 | `enabled`      | `bool`   | `true`       | 是否启用该 `HeightScanSensor`。                                |
-| `uStart`       | `float`  | `-10.0`      | 扫描平面第一轴起点偏移。                                       |
-| `uEnd`         | `float`  | `10.0`       | 扫描平面第一轴终点偏移。                                       |
+| `uStart`       | `float`  | `-0.2`       | 扫描平面第一轴起点偏移。                                       |
+| `uEnd`         | `float`  | `0.2`        | 扫描平面第一轴终点偏移。                                       |
 | `uStep`        | `float`  | `0.1`        | 扫描平面第一轴采样间隔，实际最小值为 `1.0e-4`。                |
-| `vStart`       | `float`  | `-10.0`      | 扫描平面第二轴起点偏移。                                       |
-| `vEnd`         | `float`  | `10.0`       | 扫描平面第二轴终点偏移。                                       |
+| `vStart`       | `float`  | `-0.5`       | 扫描平面第二轴起点偏移。                                       |
+| `vEnd`         | `float`  | `0.5`        | 扫描平面第二轴终点偏移。                                       |
 | `vStep`        | `float`  | `0.1`        | 扫描平面第二轴采样间隔，实际最小值为 `1.0e-4`。                |
 | `gravityDirectionWs` | `float3` | `(0, 0, -1)` | 世界空间重力方向；读取后会归一化，零向量会回退到默认方向。 |
-| `maxRange`     | `float`  | `200.0`      | 单条扫描射线最大追踪距离。                                     |
+| `maxRange`     | `float`  | `5.0`        | 单条扫描射线最大追踪距离。                                     |
 
 等价 USDA 片段：
 
@@ -86,14 +86,14 @@ def LidarSensor "lidar_sensor"
 def HeightScanSensor "height_scan_sensor"
 {
     bool enabled = true
-    float uStart = -10
-    float uEnd = 10
+    float uStart = -0.2
+    float uEnd = 0.2
     float uStep = 0.1
-    float vStart = -10
-    float vEnd = 10
+    float vStart = -0.5
+    float vEnd = 0.5
     float vStep = 0.1
     float3 gravityDirectionWs = (0, 0, -1)
-    float maxRange = 200
+    float maxRange = 5
 }
 ```
 

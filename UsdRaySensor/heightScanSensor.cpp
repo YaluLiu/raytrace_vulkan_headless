@@ -301,13 +301,13 @@ UsdGeomHeightScanSensor::GetEnabled(UsdTimeCode time) const
 float
 UsdGeomHeightScanSensor::GetUStart(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetUStartAttr(), time, -10.0f);
+    return _GetAttrValue(GetUStartAttr(), time, -0.2f);
 }
 
 float
 UsdGeomHeightScanSensor::GetUEnd(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetUEndAttr(), time, 10.0f);
+    return _GetAttrValue(GetUEndAttr(), time, 0.2f);
 }
 
 float
@@ -319,13 +319,13 @@ UsdGeomHeightScanSensor::GetUStep(UsdTimeCode time) const
 float
 UsdGeomHeightScanSensor::GetVStart(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetVStartAttr(), time, -10.0f);
+    return _GetAttrValue(GetVStartAttr(), time, -0.5f);
 }
 
 float
 UsdGeomHeightScanSensor::GetVEnd(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetVEndAttr(), time, 10.0f);
+    return _GetAttrValue(GetVEndAttr(), time, 0.5f);
 }
 
 float
@@ -343,6 +343,6 @@ UsdGeomHeightScanSensor::GetGravityDirectionWs(UsdTimeCode time) const
 float
 UsdGeomHeightScanSensor::GetMaxRange(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetMaxRangeAttr(), time, 200.0f);
+    return _GetAttrValue(GetMaxRangeAttr(), time, 5.0f);
 }
 PXR_NAMESPACE_CLOSE_SCOPE

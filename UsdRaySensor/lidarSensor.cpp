@@ -324,25 +324,25 @@ UsdGeomLidarSensor::GetAzimuthStepDeg(UsdTimeCode time) const
 float
 UsdGeomLidarSensor::GetVerticalStartDeg(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetVerticalStartDegAttr(), time, -2.0f);
+    return _GetAttrValue(GetVerticalStartDegAttr(), time, -85.0f);
 }
 
 float
 UsdGeomLidarSensor::GetVerticalEndDeg(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetVerticalEndDegAttr(), time, -20.0f);
+    return _GetAttrValue(GetVerticalEndDegAttr(), time, -35.0f);
 }
 
 float
 UsdGeomLidarSensor::GetVerticalStepDeg(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetVerticalStepDegAttr(), time, 1.0f);
+    return _GetAttrValue(GetVerticalStepDegAttr(), time, 5.0f);
 }
 
 float
 UsdGeomLidarSensor::GetMaxRange(UsdTimeCode time) const
 {
-    return _GetAttrValue(GetMaxRangeAttr(), time, 200.0f);
+    return _GetAttrValue(GetMaxRangeAttr(), time, 5.0f);
 }
 
 float

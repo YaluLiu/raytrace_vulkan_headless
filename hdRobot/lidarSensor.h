@@ -18,10 +18,10 @@ struct HdRobotLidarParams
   float azimuthStartDeg = -90.0f;
   float azimuthEndDeg = 90.0f;
   float azimuthStepDeg = 0.5f;
-  float verticalStartDeg = -2.0f;
-  float verticalEndDeg = -20.0f;
-  float verticalStepDeg = 1.0f;
-  float maxRange = 200.0f;
+  float verticalStartDeg = -85.0f;
+  float verticalEndDeg = -35.0f;
+  float verticalStepDeg = 5.0f;
+  float maxRange = 5.0f;
   float intensity = 1.0f;
 };
 
