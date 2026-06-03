@@ -6,6 +6,7 @@
 #include "features/lidar/lidar_point_generation_pipeline.hpp"
 #include "features/lidar/lidar_scan.hpp"
 #include "features/point_overlay/point_overlay_pipeline.hpp"
+#include "features/sensor_common/sensor_gpu_buffers.hpp"
 #include "scene/scene_types.hpp"
 #include "shaders/common/host_device.h"
 
@@ -44,8 +45,6 @@ public:
                      const PreviewPipeline& previewPipeline);
 
 private:
-  bool ensurePointCapacity(uint64_t pointCount);
-  bool ensureSensorMetadataBuffer();
   void uploadSensorMetadata();
   std::vector<LidarSensorGpu> buildGpuSensorMetadata() const;
   void destroyBuffers();
@@ -60,13 +59,10 @@ private:
   std::vector<LidarSensorSpec> m_sensors;
   LidarVisualizationConfig m_visualization;
   LidarScanLayout m_layout;
-  uint64_t m_pointCapacity{0};
-  uint32_t m_sensorCapacity{0};
   uint64_t m_frameId{0};
   bool m_frameGenerated{false};
 
-  nvvk::Buffer m_pointBuffer;
-  nvvk::Buffer m_sensorBuffer;
+  SensorGpuBuffers m_buffers;
   std::vector<LidarSensorGpu> m_gpuSensors;
 
   LidarPointGenerationPipeline m_generationPipeline;

@@ -179,6 +179,14 @@ call sites with `rg`.
   point overlay graphics pipeline infrastructure for render pass, framebuffer,
   descriptor resources, push constants, and point-list draw binding. Sensor and
   point/sample layout details stay in overlay-specific vertex shaders.
+- `engine/features/sensor_common/sensor_generation_pipeline.hpp` /
+  `engine/features/sensor_common/sensor_generation_pipeline.cpp`,
+  `engine/features/sensor_common/sensor_gpu_buffers.hpp`, and
+  `engine/features/sensor_common/sensor_readback.hpp`: Shared Vulkan mechanics
+  for LiDAR and height-scan generation: TLAS/metadata/output compute descriptor
+  setup, buffer capacity management, and staging readback. Sensor metadata,
+  CPU frame conversion, and visualization policy remain in the LiDAR and
+  height-scan passes.
 - `engine/include/engine/height_scan_types.hpp`: Public Hydra-free height scan
   sensor pose/params, sample, per-sensor grid, and frame readback contract.
 - `engine/features/height_scan/height_scan.hpp` /

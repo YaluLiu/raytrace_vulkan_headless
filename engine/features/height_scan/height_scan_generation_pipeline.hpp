@@ -2,8 +2,7 @@
 
 #include <engine/renderer_types.hpp>
 
-#include "nvvk/debug_util_vk.hpp"
-#include "nvvk/descriptorsets_vk.hpp"
+#include "features/sensor_common/sensor_generation_pipeline.hpp"
 
 #include <vulkan/vulkan_core.h>
 
@@ -18,20 +17,5 @@ public:
   void dispatch(const VkCommandBuffer& cmdBuf, uint32_t sensorIndex, uint32_t width, uint32_t height);
 
 private:
-  void createDescriptorResources();
-  void createPipeline();
-  void updateDescriptorSet(const TlasDescriptorInfo& tlasInfo, VkBuffer sensorBuffer,
-                           VkBuffer sampleBuffer);
-
-  VkDevice m_device{VK_NULL_HANDLE};
-  nvvk::DebugUtil* m_debug{nullptr};
-  nvvk::DescriptorSetBindings m_bindings;
-  VkDescriptorPool m_descriptorPool{VK_NULL_HANDLE};
-  VkDescriptorSetLayout m_descriptorSetLayout{VK_NULL_HANDLE};
-  VkDescriptorSet m_descriptorSet{VK_NULL_HANDLE};
-  VkPipelineLayout m_pipelineLayout{VK_NULL_HANDLE};
-  VkPipeline m_pipeline{VK_NULL_HANDLE};
-  VkAccelerationStructureKHR m_boundTlas{VK_NULL_HANDLE};
-  VkBuffer m_boundSensorBuffer{VK_NULL_HANDLE};
-  VkBuffer m_boundSampleBuffer{VK_NULL_HANDLE};
+  SensorGenerationPipeline m_pipeline;
 };

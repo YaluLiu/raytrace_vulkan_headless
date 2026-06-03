@@ -6,6 +6,7 @@
 #include "features/height_scan/height_scan.hpp"
 #include "features/height_scan/height_scan_generation_pipeline.hpp"
 #include "features/point_overlay/point_overlay_pipeline.hpp"
+#include "features/sensor_common/sensor_gpu_buffers.hpp"
 #include "shaders/common/host_device.h"
 
 #include "nvvk/debug_util_vk.hpp"
@@ -39,8 +40,6 @@ public:
                      const PreviewPipeline& previewPipeline);
 
 private:
-  bool ensureSampleCapacity(uint64_t sampleCount);
-  bool ensureSensorMetadataBuffer();
   void uploadSensorMetadata();
   std::vector<HeightScanSensorGpu> buildGpuSensorMetadata() const;
   void destroyBuffers();
@@ -54,14 +53,11 @@ private:
 
   std::vector<HeightScanSensorSpec> m_sensors;
   HeightScanLayout m_layout;
-  uint64_t m_sampleCapacity{0};
-  uint32_t m_sensorCapacity{0};
   uint64_t m_frameId{0};
   bool m_frameGenerated{false};
   HeightScanVisualizationConfig m_visualizationConfig;
 
-  nvvk::Buffer m_sampleBuffer;
-  nvvk::Buffer m_sensorBuffer;
+  SensorGpuBuffers m_buffers;
   std::vector<HeightScanSensorGpu> m_gpuSensors;
 
   HeightScanGenerationPipeline m_generationPipeline;
