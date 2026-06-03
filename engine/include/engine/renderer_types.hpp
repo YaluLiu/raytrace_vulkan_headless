@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
 
+// Light is a GPU shader ABI type from host_device.h and must keep its stable layout.
 constexpr uint32_t kTraceMaskInvisible = 0x00u;
 constexpr uint32_t kTraceMaskDefaultGeometry = 0x01u;
 constexpr uint32_t kTraceMaskGround = 0x02u;

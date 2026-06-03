@@ -1,3 +1,3 @@
 #pragma once
 
-#include "../../../shaders/common/host_device.h"
+#include <engine/generated/host_device.h>

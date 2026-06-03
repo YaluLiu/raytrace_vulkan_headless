@@ -19,6 +19,17 @@ add_library(${PROJNAME})
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_NAME="${PROJNAME}")
 target_compile_definitions(${PROJNAME} PUBLIC -DPROJECT_RELDIRECTORY="../../../engine")
 
+set(ENGINE_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/include)
+set(ENGINE_GENERATED_HOST_DEVICE_HEADER
+  ${ENGINE_GENERATED_INCLUDE_DIR}/engine/generated/host_device.h
+)
+file(MAKE_DIRECTORY ${ENGINE_GENERATED_INCLUDE_DIR}/engine/generated)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/host_device.h
+  ${ENGINE_GENERATED_HOST_DEVICE_HEADER}
+  COPYONLY
+)
+
 set(ENGINE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/aov_texture.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/engine.hpp
@@ -127,6 +138,7 @@ compile_glsl(
 target_sources(${PROJNAME}
   PUBLIC
     ${ENGINE_PUBLIC_HEADERS}
+    ${ENGINE_GENERATED_HOST_DEVICE_HEADER}
     ${COMMON_SOURCE_FILES}
   PRIVATE
     ${ENGINE_PRIVATE_HEADERS}
@@ -139,6 +151,7 @@ target_sources(${PROJNAME}
 target_include_directories(${PROJNAME}
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${ENGINE_GENERATED_INCLUDE_DIR}
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -151,6 +164,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
   ${ENGINE_SHADER_SOURCES}
   ${ENGINE_SHADER_HEADERS}
 )
+source_group("Generated" FILES ${ENGINE_GENERATED_HOST_DEVICE_HEADER})
 source_group("Common" FILES ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
 
 set(ENGINE_PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES})
