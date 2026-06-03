@@ -17,6 +17,8 @@ class RtScene final
 public:
   void setup(VkDevice device, uint32_t graphicsQueueIndex, nvvk::ResourceAllocatorDma& allocator);
   void destroy();
+  void destroyAccelerationStructures();
+  void teardown();
 
   void build(std::span<const MeshBuffers> meshes, std::span<const SceneInstance> instances);
   void markBlasDirty(uint32_t meshId);

@@ -6,8 +6,12 @@
 #include "nvvk/resourceallocator_vk.hpp"
 #include <engine/renderer_types.hpp>
 #include <engine/texture_asset.hpp>
+#include "scene/instance_store.hpp"
+#include "scene/light_store.hpp"
+#include "scene/mesh_store.hpp"
 #include "scene/rt_scene.hpp"
 #include "scene/scene_types.hpp"
+#include "scene/texture_store.hpp"
 #include "shaders/common/host_device.h"
 
 #include <optional>
@@ -32,7 +36,6 @@ public:
                   glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
   void rebuildTextureResources(const std::vector<TextureAsset>& textureAssets);
-  void uploadTextureResources(const VkCommandBuffer& cmdBuf, const std::vector<TextureAsset>& textureAssets);
 
   void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask);
   void updateMeshGeometry(uint32_t meshId, const MeshGeometry& geometry);
@@ -50,37 +53,28 @@ public:
   void createLightBuffer();
   void updateLightBuffer(const VkCommandBuffer& cmdBuf);
 
-  size_t getInstanceCount() const { return m_instances.size(); }
-  const SceneInstance& getInstance(size_t index) const { return m_instances[index]; }
-  size_t getMeshSourceCount() const { return m_meshGeometries.size(); }
-  size_t getLightCount() const { return m_lights.size(); }
-  uint32_t getTextureDescriptorCount() const { return static_cast<uint32_t>(m_textures.size()); }
+  size_t getInstanceCount() const { return m_instanceStore.size(); }
+  const SceneInstance& getInstance(size_t index) const { return m_instanceStore.get(index); }
+  size_t getMeshSourceCount() const { return m_meshStore.size(); }
+  size_t getLightCount() const { return m_lightStore.size(); }
+  uint32_t getTextureDescriptorCount() const { return m_textureStore.descriptorCount(); }
 
-  std::span<const MeshBuffers> getMeshBuffers() const { return m_objModel; }
-  std::span<const SceneInstance> getInstances() const { return m_instances; }
-  std::span<const int> getInstanceIds() const { return m_instanceIds; }
-  std::span<const nvvk::Texture> getTextures() const { return m_textures; }
-  const nvvk::Buffer& getObjectDescriptionBuffer() const { return m_bObjDesc; }
-  const nvvk::Buffer& getLightBuffer() const { return m_bLights; }
+  std::span<const MeshBuffers> getMeshBuffers() const { return m_meshStore.buffers(); }
+  std::span<const SceneInstance> getInstances() const { return m_instanceStore.instances(); }
+  std::span<const int> getInstanceIds() const { return m_instanceStore.instanceIds(); }
+  std::span<const nvvk::Texture> getTextures() const { return m_textureStore.textures(); }
+  const nvvk::Buffer& getObjectDescriptionBuffer() const { return m_meshStore.objectDescriptionBuffer(); }
+  const nvvk::Buffer& getLightBuffer() const { return m_lightStore.buffer(); }
 
 private:
-  void destroyTextures();
-  void destroyMeshBuffers();
-
   VkDevice m_device{VK_NULL_HANDLE};
   uint32_t m_graphicsQueueIndex{0};
   nvvk::ResourceAllocatorDma* m_alloc{nullptr};
   nvvk::DebugUtil* m_debug{nullptr};
 
-  std::vector<MeshGeometry> m_meshGeometries;
-  std::vector<MeshBuffers> m_objModel;
-  std::vector<ObjDesc> m_objDesc;
-  std::vector<SceneInstance> m_instances;
-  std::vector<int> m_instanceIds;
-  std::vector<nvvk::Texture> m_textures;
-  std::vector<Light> m_lights;
+  MeshStore m_meshStore;
+  TextureStore m_textureStore;
+  InstanceStore m_instanceStore;
+  LightStore m_lightStore;
   RtScene m_rtScene;
-
-  nvvk::Buffer m_bObjDesc;
-  nvvk::Buffer m_bLights;
 };

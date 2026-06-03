@@ -34,6 +34,33 @@ void RtScene::setup(VkDevice device, uint32_t graphicsQueueIndex, nvvk::Resource
 
 void RtScene::destroy()
 {
+  teardown();
+}
+
+void RtScene::destroyAccelerationStructures()
+{
+  if(!m_setup && !m_built && !m_hasBlas)
+  {
+    return;
+  }
+  const bool restoreBuilder = m_setup && m_device != VK_NULL_HANDLE && m_alloc != nullptr;
+  m_builder.destroy();
+  m_blasInputs.clear();
+  m_meshToBlas.clear();
+  m_tlasInstanceCount = 0;
+  m_built = false;
+  m_hasBlas = false;
+  m_fullRebuildDirty = false;
+  m_tlasDirty = false;
+  if(restoreBuilder)
+  {
+    m_builder.setup(m_device, m_alloc, m_graphicsQueueIndex);
+    m_setup = true;
+  }
+}
+
+void RtScene::teardown()
+{
   if(!m_setup && !m_built && !m_hasBlas)
   {
     return;

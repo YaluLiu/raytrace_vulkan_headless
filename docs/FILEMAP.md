@@ -116,17 +116,30 @@ call sites with `rg`.
   atlas AOVs rather than separate engine outputs.
 - `engine/src/scene/scene_types.hpp`: Shared draw input types used by
   `Engine` and `PreviewPipeline`.
-- `engine/src/scene/gpu_scene.hpp` / `engine/src/scene/gpu_scene.cpp`: Owner of mesh,
-  material, instance, light, texture, object-description, and light GPU
-  resources; uploads mesh geometry and material arrays through separate engine
-  API parameters, provides read-only spans for output passes and facade methods
-  for scene upload/update, and forwards RT acceleration-structure lifecycle
-  and dirty updates into `RtScene`.
+- `engine/src/scene/gpu_scene.hpp` / `engine/src/scene/gpu_scene.cpp`: Facade
+  consumed by `Engine`, frame execution, and output passes; delegates mesh,
+  texture, instance, and light ownership to focused stores, provides the
+  existing read-only spans/buffers for output passes, and remains the only scene
+  class that drives `RtScene` lifecycle and dirty updates.
+- `engine/src/scene/mesh_store.hpp` / `engine/src/scene/mesh_store.cpp`:
+  Owner of source mesh geometry, GPU mesh buffers, material buffers, object
+  descriptions, and the object-description storage buffer used by scene
+  descriptors.
+- `engine/src/scene/texture_store.hpp` / `engine/src/scene/texture_store.cpp`:
+  Owner of decoded/uploaded Vulkan textures, fallback texture creation, texture
+  rebuilds, and texture descriptor count/span queries.
+- `engine/src/scene/instance_store.hpp` /
+  `engine/src/scene/instance_store.cpp`: Owner of renderer instances and
+  external instance ID spans used by preview and tile draw paths.
+- `engine/src/scene/light_store.hpp` / `engine/src/scene/light_store.cpp`:
+  Owner of scene light ABI values plus light storage buffer creation, update,
+  and destruction.
 - `engine/src/scene/rt_scene.hpp` / `engine/src/scene/rt_scene.cpp`: RT
   acceleration-structure mirror for the engine scene; builds BLAS from uploaded
   mesh buffers, builds/updates TLAS from renderer instances, applies per-instance
-  trace masks for normal geometry versus height-scan ground geometry, and
-  exposes the TLAS descriptor primitive for RT LiDAR and height-scan passes.
+  trace masks for normal geometry versus height-scan ground geometry, exposes
+  the TLAS descriptor primitive for RT LiDAR and height-scan passes, and splits
+  acceleration-structure destruction from final setup teardown.
 - `engine/src/scene/scene_descriptors.hpp` /
   `engine/src/scene/scene_descriptors.cpp`: Owner of scene descriptor bindings,
   pool, layout, set, and descriptor updates for frame uniforms, object

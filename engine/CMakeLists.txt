@@ -67,9 +67,13 @@ set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/image_barriers.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/instance_store.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/light_store.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/mesh_store.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/rt_scene.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_descriptors.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/texture_store.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/view_uniforms.hpp
 )
 
@@ -96,9 +100,13 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/session.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/instance_store.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/light_store.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/mesh_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/rt_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/renderer_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_descriptors.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/texture_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/view_uniforms.cpp
 )
 
