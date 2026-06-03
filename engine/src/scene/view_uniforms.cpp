@@ -1,7 +1,5 @@
 #include "scene/view_uniforms.hpp"
 
-#include "nvh/cameramanipulator.hpp"
-
 #include <algorithm>
 #include <cmath>
 
@@ -208,9 +206,12 @@ void ViewUniforms::updateFrameUniformBuffer(const VkCommandBuffer& cmdBuf, VkExt
     return;
   }
 
-  const glm::mat4 view = CameraManip.getMatrix();
-  const FrameUniforms frameUBO =
-      makeFrameUniforms(view, CameraManip.getFov(), m_mainCameraClipStart, m_mainCameraClipEnd, renderSize, lightCount);
+  const FrameUniforms frameUBO = makeFrameUniforms(m_mainViewState.view,
+                                                   m_mainViewState.vfovDeg,
+                                                   m_mainViewState.clipStart,
+                                                   m_mainViewState.clipEnd,
+                                                   renderSize,
+                                                   lightCount);
   recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, 0, frameUBO);
 }
 
@@ -261,21 +262,34 @@ void ViewUniforms::setCameras(std::vector<CameraSpec> cameras)
   m_cameras = std::move(cameras);
 }
 
+void ViewUniforms::setMainViewState(MainViewState state)
+{
+  state.vfovDeg = std::clamp(state.vfovDeg, 1.0f, 179.0f);
+  const auto [clipStart, clipEnd] = sanitizeClipRange(state.clipStart, state.clipEnd);
+  state.clipStart = clipStart;
+  state.clipEnd = clipEnd;
+  m_mainViewState = state;
+}
+
 void ViewUniforms::setMainCamera(const CameraSpec& camera)
 {
   const ResolvedCamera resolved = resolveCamera(camera);
-  m_mainCameraClipStart = resolved.clipStart;
-  m_mainCameraClipEnd = resolved.clipEnd;
-  CameraManip.setCamera({resolved.position, resolved.target, resolved.up, resolved.vfovDeg});
+  setMainViewState(MainViewState{
+      glm::lookAtRH(resolved.position, resolved.target, resolved.up),
+      resolved.vfovDeg,
+      resolved.clipStart,
+      resolved.clipEnd,
+  });
 }
 
 void ViewUniforms::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   const auto [safeStart, safeEnd] = sanitizeClipRange(clipStart, clipEnd);
-  if(std::fabs(m_mainCameraClipStart - safeStart) > 1e-6f || std::fabs(m_mainCameraClipEnd - safeEnd) > 1e-6f)
+  if(std::fabs(m_mainViewState.clipStart - safeStart) > 1e-6f ||
+     std::fabs(m_mainViewState.clipEnd - safeEnd) > 1e-6f)
   {
-    m_mainCameraClipStart = safeStart;
-    m_mainCameraClipEnd = safeEnd;
+    m_mainViewState.clipStart = safeStart;
+    m_mainViewState.clipEnd = safeEnd;
   }
 }
 

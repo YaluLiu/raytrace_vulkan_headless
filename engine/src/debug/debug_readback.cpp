@@ -8,7 +8,8 @@
 
 std::vector<uint32_t> Engine::readObjectIdImage()
 {
-  const auto& previewPipeline = m_outputController.getPreviewPipeline();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& previewPipeline = impl.outputController.getPreviewPipeline();
   const VkExtent2D    aovSize         = previewPipeline.getAovSize();
   const nvvk::Texture& objectIdTexture = previewPipeline.getObjectIdTextureForReadback();
   std::vector<uint32_t> result(aovSize.width * aovSize.height, 0);
@@ -73,7 +74,8 @@ void Engine::saveOffscreenColorToFile(const char* filename)
   VkDevice device = m_impl->device();
   VkQueue  queue  = m_impl->queue();
 
-  const auto& previewPipeline = m_outputController.getPreviewPipeline();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& previewPipeline = impl.outputController.getPreviewPipeline();
   const VkExtent2D     extent       = previewPipeline.getRenderSize();
   const nvvk::Texture& colorTexture = previewPipeline.getColorTextureForReadback();
   VkImage              srcImage     = colorTexture.image;

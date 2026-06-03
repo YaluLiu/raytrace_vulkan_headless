@@ -35,6 +35,7 @@ set(ENGINE_PUBLIC_HEADERS
 set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/frame_executor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/output_controller.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/render_resource_lifecycle.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer_internal.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer_resources.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.hpp
@@ -61,6 +62,7 @@ set(ENGINE_PRIVATE_HEADERS
 set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/frame_executor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/output_controller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/render_resource_lifecycle.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer_resources.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_readback.cpp

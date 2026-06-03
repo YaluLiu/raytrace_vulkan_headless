@@ -1,69 +1,73 @@
 #include "core/renderer_internal.hpp"
-#include "core/renderer_resources.hpp"
+#include "core/render_resource_lifecycle.hpp"
 
 void Engine::uploadMesh(const MeshGeometry& geometry,
                           std::span<const Material> materials,
                           glm::mat4 transform)
 {
-  m_gpuScene.uploadMesh(geometry, materials, transform);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.uploadMesh(geometry, materials, transform);
 }
 
 void Engine::loadTextureAssets(const std::vector<TextureAsset>& textureAssets)
 {
-  m_gpuScene.loadTextureAssets(textureAssets);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.loadTextureAssets(textureAssets);
 }
 
 void Engine::rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset>& textureAssets)
 {
-  vkDeviceWaitIdle(m_impl->device());
-
-  m_outputController.destroyOutputPipelines();
-  m_sceneDescriptors.destroy();
-
-  m_gpuScene.rebuildTextureResources(textureAssets);
-  engine::createSceneDescriptors(*this);
-  engine::updateSceneDescriptorBindings(*this);
-  engine::createOutputPipelines(*this);
+  auto& impl = engine::EngineAccess::impl(*this);
+  vkDeviceWaitIdle(impl.device());
+  engine::RenderResourceLifecycle::rebuildTexturesAndSceneBindings(*this, textureAssets);
 }
 
 uint32_t Engine::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
 {
-  return m_gpuScene.addInstance(transform, objIndex, instanceId);
+  auto& impl = engine::EngineAccess::impl(*this);
+  return impl.gpuScene.addInstance(transform, objIndex, instanceId);
 }
 
 void Engine::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask)
 {
-  m_gpuScene.updateInstance(instanceId, transform, visible, traceMask);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.updateInstance(instanceId, transform, visible, traceMask);
 }
 
 void Engine::updateMeshGeometry(uint32_t meshId, const MeshGeometry& geometry)
 {
-  m_gpuScene.updateMeshGeometry(meshId, geometry);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.updateMeshGeometry(meshId, geometry);
 }
 
 void Engine::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
 {
-  m_gpuScene.updateMaterialsAtRuntime(updates);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.updateMaterialsAtRuntime(updates);
 }
 
 void Engine::addLight(const Light& light)
 {
-  m_gpuScene.addLight(light);
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.addLight(light);
 }
 
 void Engine::clearLights()
 {
-  m_gpuScene.clearLights();
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.clearLights();
 }
 
 size_t Engine::getInstanceCount() const
 {
-  return m_gpuScene.getInstanceCount();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  return impl.gpuScene.getInstanceCount();
 }
 
 InstanceInfo Engine::getInstance(size_t index) const
 {
-  const auto& instance = m_gpuScene.getInstance(index);
+  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& instance = impl.gpuScene.getInstance(index);
   return InstanceInfo{
       instance.transform,
       instance.objIndex,
@@ -74,35 +78,42 @@ InstanceInfo Engine::getInstance(size_t index) const
 
 size_t Engine::getMeshSourceCount() const
 {
-  return m_gpuScene.getMeshSourceCount();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  return impl.gpuScene.getMeshSourceCount();
 }
 
 void Engine::createRayTracingResources()
 {
-  m_gpuScene.createRayTracingResources();
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.createRayTracingResources();
 }
 
 void Engine::destroyRayTracingResources()
 {
-  m_gpuScene.destroyRayTracingResources();
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.destroyRayTracingResources();
 }
 
 void Engine::flushRayTracingUpdates()
 {
-  m_gpuScene.flushRayTracingUpdates();
+  auto& impl = engine::EngineAccess::impl(*this);
+  impl.gpuScene.flushRayTracingUpdates();
 }
 
 bool Engine::hasRayTracingTlas() const
 {
-  return m_gpuScene.hasRayTracingTlas();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  return impl.gpuScene.hasRayTracingTlas();
 }
 
 VkAccelerationStructureKHR Engine::getRayTracingTlas() const
 {
-  return m_gpuScene.getRayTracingTlas();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  return impl.gpuScene.getRayTracingTlas();
 }
 
 std::optional<TlasDescriptorInfo> Engine::getRayTracingTlasDescriptorInfo() const
 {
-  return m_gpuScene.getRayTracingTlasDescriptorInfo();
+  const auto& impl = engine::EngineAccess::impl(*this);
+  return impl.gpuScene.getRayTracingTlasDescriptorInfo();
 }

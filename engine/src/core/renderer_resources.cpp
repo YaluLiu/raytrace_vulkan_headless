@@ -1,5 +1,6 @@
 #include "core/renderer_resources.hpp"
 
+#include "core/render_resource_lifecycle.hpp"
 #include "core/renderer_internal.hpp"
 
 namespace engine
@@ -11,20 +12,6 @@ void updateFrameUniformDescriptor(EngineAccess::Impl& impl)
   impl.sceneDescriptors.updateFrameUniform(impl.viewUniforms.getFrameUniformDescriptorInfo());
 }
 
-void updateTileFrameUniformDescriptor(EngineAccess::Impl& impl)
-{
-  impl.sceneDescriptors.updateTileFrameUniform(impl.viewUniforms.getTileFrameUniformDescriptorInfo());
-}
-
-void ensureViewUniformBuffers(Engine& renderer)
-{
-  auto& impl = EngineAccess::impl(renderer);
-  ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
-  if(impl.viewUniforms.ensureTileFrameUniformBuffer())
-  {
-    updateTileFrameUniformDescriptor(impl);
-  }
-}
 } // namespace
 
 void createSceneDescriptors(Engine& renderer)
@@ -64,28 +51,12 @@ void ensureFrameUniformCapacity(Engine& renderer, uint32_t slotCount)
 
 void createRenderResources(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
-  impl.outputController.createPreviewTargets(impl.sizeRef());
-  impl.gpuScene.createLightBuffer();
-
-  createSceneDescriptors(renderer);
-  ensureViewUniformBuffers(renderer);
-  impl.gpuScene.createObjectDescriptionBuffer();
-  updateSceneDescriptorBindings(renderer);
-  impl.gpuScene.createRayTracingResources();
-
-  createOutputPipelines(renderer);
+  RenderResourceLifecycle::createAll(renderer);
 }
 
 void destroyRenderResources(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
-  impl.outputController.destroy();
-  impl.sceneDescriptors.destroy();
-  impl.viewUniforms.destroy();
-  impl.gpuScene.destroyRayTracingResources();
-  impl.gpuScene.destroy();
-  impl.alloc.deinit();
+  RenderResourceLifecycle::destroyAll(renderer);
 }
 
 void resizeRenderTargets(Engine& renderer, int width, int height)

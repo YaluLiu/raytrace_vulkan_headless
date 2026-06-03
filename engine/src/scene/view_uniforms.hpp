@@ -11,6 +11,14 @@
 
 #include <vulkan/vulkan_core.h>
 
+struct MainViewState
+{
+  glm::mat4 view{1.0f};
+  float vfovDeg{45.0f};
+  float clipStart{0.1f};
+  float clipEnd{1000.0f};
+};
+
 class ViewUniforms final
 {
 public:
@@ -33,10 +41,11 @@ public:
 
   void setCameras(std::vector<CameraSpec> cameras);
   const std::vector<CameraSpec>& getCameras() const { return m_cameras; }
+  void setMainViewState(MainViewState state);
   void setMainCamera(const CameraSpec& camera);
   void setMainCameraClipRange(float clipStart, float clipEnd);
-  float getMainCameraClipStart() const { return m_mainCameraClipStart; }
-  float getMainCameraClipEnd() const { return m_mainCameraClipEnd; }
+  float getMainCameraClipStart() const { return m_mainViewState.clipStart; }
+  float getMainCameraClipEnd() const { return m_mainViewState.clipEnd; }
 
   VkDescriptorBufferInfo getFrameUniformDescriptorInfo() const;
   VkDescriptorBufferInfo getTileFrameUniformDescriptorInfo() const;
@@ -52,6 +61,5 @@ private:
   nvvk::Buffer m_bTileFrameUniforms;
 
   std::vector<CameraSpec> m_cameras;
-  float m_mainCameraClipStart{0.1f};
-  float m_mainCameraClipEnd{1000.0f};
+  MainViewState m_mainViewState;
 };

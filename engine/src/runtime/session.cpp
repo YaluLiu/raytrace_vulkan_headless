@@ -63,6 +63,16 @@ void addExternalSharingExtensions(nvvk::ContextCreateInfo& contextInfo)
     contextInfo.addDeviceExtension(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
 #endif
 }
+
+void syncMainViewStateFromCameraManip(engine::EngineAccess::Impl& impl)
+{
+  impl.viewUniforms.setMainViewState(MainViewState{
+      CameraManip.getMatrix(),
+      CameraManip.getFov(),
+      impl.viewUniforms.getMainCameraClipStart(),
+      impl.viewUniforms.getMainCameraClipEnd(),
+  });
+}
 }
 
 void Engine::setup(int width, int height)
@@ -78,6 +88,7 @@ void Engine::setup(int width, int height)
   setupContext();
   create(impl.vkctx.m_instance, impl.vkctx.m_device, impl.vkctx.m_physicalDevice, impl.vkctx.m_queueGCT.familyIndex,
          {uint32_t(impl.width), uint32_t(impl.height)});
+  syncMainViewStateFromCameraManip(impl);
 }
 
 void Engine::setPluginSearchRoot(std::string pluginSearchRoot)
@@ -96,6 +107,7 @@ void Engine::resize(int w, int h)
   impl.width = w;
   impl.height = h;
   CameraManip.setWindowSize(impl.width, impl.height);
+  syncMainViewStateFromCameraManip(impl);
   onResize(w, h);
 }
 
@@ -172,6 +184,7 @@ void Engine::createRenderResources()
 
 void Engine::render()
 {
+  syncMainViewStateFromCameraManip(engine::EngineAccess::impl(*this));
   engine::prepareFrame(*this);
 
   auto                   curFrame = getCurFrame();

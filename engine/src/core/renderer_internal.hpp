@@ -55,10 +55,3 @@ public:
   static const Impl& impl(const Engine& renderer) { return *renderer.m_impl; }
 };
 }
-
-#define m_alloc (m_impl->alloc)
-#define m_debug (m_impl->debug)
-#define m_gpuScene (m_impl->gpuScene)
-#define m_sceneDescriptors (m_impl->sceneDescriptors)
-#define m_viewUniforms (m_impl->viewUniforms)
-#define m_outputController (m_impl->outputController)
