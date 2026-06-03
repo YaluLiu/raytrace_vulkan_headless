@@ -98,7 +98,7 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_aov_channel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/session.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/engine_session.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/instance_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/light_store.cpp

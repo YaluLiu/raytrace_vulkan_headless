@@ -50,7 +50,7 @@ call sites with `rg`.
 
 ## Runtime Entry Points
 
-- `engine/src/runtime/session.cpp`: `Engine` runtime lifecycle implementation
+- `engine/src/runtime/engine_session.cpp`: `Engine` runtime lifecycle implementation
   for engine-owned Vulkan context setup, resize, command buffer
   begin/end/submit, and render resource cleanup.
 - `engine/include/engine/engine.hpp`: Single public `Engine` orchestration
@@ -482,7 +482,7 @@ call sites with `rg`.
   `ConfigureFrameOutputs`, and `CommitResources`.
 - Resize or render target size:
   `engine/src/core/engine_facade.cpp`, `engine/include/engine/engine.hpp`,
-  `engine/features/preview/preview_pipeline.cpp`, `engine/src/runtime/session.cpp`, then search
+  `engine/features/preview/preview_pipeline.cpp`, `engine/src/runtime/engine_session.cpp`, then search
   for `onResize`, `resizeRenderTargets`, `recreateAovTargets`, `getRenderSize`, and
   `EnsureEngineReady`.
 - Offscreen AOV export:
