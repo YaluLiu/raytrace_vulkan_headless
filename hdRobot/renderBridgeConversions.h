@@ -6,6 +6,8 @@
 #include <engine/output_config.hpp>
 #include <engine/renderer_types.hpp>
 
+#include <pxr/imaging/cameraUtil/conformWindow.h>
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -15,6 +17,7 @@ void ConvertHydraMeshToGeometry(const HydraMesh &mesh, MeshGeometry &geometry);
 
 CameraSpec ToCameraSpec(const HdRobotCameraData &camera);
 std::vector<CameraSpec> ToCameraSpec(const std::vector<HdRobotCameraData> &cameras);
+CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy);
 
 Light ToLight(const HydraLight &light);
 

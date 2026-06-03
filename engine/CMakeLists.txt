@@ -68,6 +68,7 @@ set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/instance_store.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/camera_projection.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/light_store.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/mesh_store.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/rt_scene.hpp
@@ -99,6 +100,7 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/tile_atlas_pass.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/headless_vk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/engine_session.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/camera_projection.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/gpu_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/instance_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/light_store.cpp
@@ -207,6 +209,19 @@ if(BUILD_TESTING)
       ${CMAKE_CURRENT_SOURCE_DIR}
   )
   add_test(NAME engine_height_scan_basis_test COMMAND engine_height_scan_basis_test)
+
+  add_executable(engine_camera_projection_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/camera_projection_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/camera_projection.cpp
+  )
+  target_include_directories(engine_camera_projection_test
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${ENGINE_GENERATED_INCLUDE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+  add_test(NAME engine_camera_projection_test COMMAND engine_camera_projection_test)
 endif()
 
 

@@ -120,8 +120,10 @@ CameraSpec ToCameraSpec(const HdRobotCameraData &camera)
   result.forward = camera.forward;
   result.up = camera.up;
   result.vfov_deg = camera.vfov_deg;
+  result.hfov_deg = camera.hfov_deg;
   result.clipStart = camera.clipStart;
   result.clipEnd = camera.clipEnd;
+  result.conformPolicy = camera.conformPolicy;
   return result;
 }
 
@@ -134,6 +136,24 @@ std::vector<CameraSpec> ToCameraSpec(const std::vector<HdRobotCameraData> &camer
     result.push_back(ToCameraSpec(camera));
   }
   return result;
+}
+
+CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy)
+{
+  switch(policy)
+  {
+    case CameraUtilMatchVertically:
+      return CameraConformPolicy::MatchVertically;
+    case CameraUtilMatchHorizontally:
+      return CameraConformPolicy::MatchHorizontally;
+    case CameraUtilFit:
+      return CameraConformPolicy::Fit;
+    case CameraUtilCrop:
+      return CameraConformPolicy::Crop;
+    case CameraUtilDontConform:
+      return CameraConformPolicy::DontConform;
+  }
+  return CameraConformPolicy::Fit;
 }
 
 Light ToLight(const HydraLight &light)

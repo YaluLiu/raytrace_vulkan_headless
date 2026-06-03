@@ -2,6 +2,7 @@
 
 #include "core/renderer_resources.hpp"
 #include "nvh/cameramanipulator.hpp"
+#include "scene/camera_projection.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -161,7 +162,11 @@ void Engine::setMainCamera(const CameraSpec& camera)
 {
   auto& impl = engine::EngineAccess::impl(*this);
   const auto resolved = resolveMainCameraForManipulator(camera);
-  CameraManip.setCamera({resolved.position, resolved.target, resolved.up, resolved.vfovDeg});
+  CameraSpec projectionCamera = camera;
+  projectionCamera.vfov_deg = resolved.vfovDeg;
+  const VkExtent2D renderSize = impl.sizeRef();
+  const float effectiveVfovDeg = ComputeVerticalFovForRenderTarget(projectionCamera, renderSize);
+  CameraManip.setCamera({resolved.position, resolved.target, resolved.up, effectiveVfovDeg});
   impl.viewUniforms.setMainCamera(camera);
 }
 

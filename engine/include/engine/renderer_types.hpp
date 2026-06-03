@@ -14,6 +14,15 @@ constexpr uint32_t kTraceMaskInvisible = 0x00u;
 constexpr uint32_t kTraceMaskDefaultGeometry = 0x01u;
 constexpr uint32_t kTraceMaskGround = 0x02u;
 
+enum class CameraConformPolicy
+{
+  MatchVertically,
+  MatchHorizontally,
+  Fit,
+  Crop,
+  DontConform,
+};
+
 struct CameraSpec
 {
   std::string name;
@@ -21,8 +30,10 @@ struct CameraSpec
   glm::vec3 forward{0.0f, 0.0f, -1.0f};
   glm::vec3 up{0.0f, 1.0f, 0.0f};
   float vfov_deg{45.0f};
+  float hfov_deg{0.0f};
   float clipStart{0.1f};
   float clipEnd{1000.0f};
+  CameraConformPolicy conformPolicy{CameraConformPolicy::MatchVertically};
 };
 
 struct MaterialUpdate

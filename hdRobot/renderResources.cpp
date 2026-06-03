@@ -237,7 +237,9 @@ struct HdRobotRenderResources::Impl
       return false;
     }
 
-    const HdRobotCameraData& mainCameraData = robotCamera->GetCameraData();
+    HdRobotCameraData mainCameraData = robotCamera->GetCameraData();
+    const CameraConformPolicy frameConformPolicy = ToCameraConformPolicy(renderPassState->GetWindowPolicy());
+    mainCameraData.conformPolicy = frameConformPolicy;
     std::vector<HdRobotCameraData> cameras = camerasSnapshot;
     if(cameras.empty())
     {
@@ -259,6 +261,10 @@ struct HdRobotRenderResources::Impl
     }
 
     cameras.erase(std::remove_if(cameras.begin(), cameras.end(), IsUsdImagingPluginCamera), cameras.end());
+    for(HdRobotCameraData& camera : cameras)
+    {
+      camera.conformPolicy = frameConformPolicy;
+    }
     SortCamerasByName(cameras);
 
     engine.setCameras(ToCameraSpec(cameras));

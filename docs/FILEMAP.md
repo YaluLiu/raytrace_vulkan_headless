@@ -37,8 +37,8 @@ call sites with `rg`.
 - `CMakeLists.txt`: Start here for project-wide package setup and target
   registration; use `-DROBOT_ENGINE_SCHEMA_ONLY=ON` for schema-only builds.
 - `engine/CMakeLists.txt`: Engine renderer library sources, shader
-  compilation, renderer compile definitions, and the focused
-  `engine_height_scan_basis_test` CTest target.
+  compilation, renderer compile definitions, and focused CTest targets such as
+  `engine_height_scan_basis_test` and `engine_camera_projection_test`.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
   metadata generation, and install layout.
 - `UsdRaySensor/CMakeLists.txt`: Schema-only ray-sensor USD plugin target,
@@ -151,7 +151,14 @@ call sites with `rg`.
   descriptions, lights, tile uniforms, and textures.
 - `engine/src/scene/view_uniforms.hpp` / `engine/src/scene/view_uniforms.cpp`: Owner of
   main frame uniforms, tile frame uniforms, camera array, main camera clip
-  range, and uniform buffer update logic.
+  range, and uniform buffer update logic. Uses
+  `engine/src/scene/camera_projection.*` so preview and tile rendering share
+  the same `CameraSpec` projection conformance behavior.
+- `engine/src/scene/camera_projection.hpp` /
+  `engine/src/scene/camera_projection.cpp`: Internal projection helper for
+  `CameraSpec`; builds Vulkan right-handed zero-to-one projection matrices
+  from vertical FOV, optional horizontal FOV, clip range, render target aspect,
+  and `CameraConformPolicy`.
 - `engine/src/core/output_controller.hpp` /
   `engine/src/core/output_controller.cpp`: Output orchestration layer that owns
   the preview AOV pipeline, tile atlas pass, LiDAR point cloud pass, height scan
@@ -212,6 +219,9 @@ call sites with `rg`.
   count, offset, forward-oriented basis, layout, and world-space origin helpers.
 - `engine/tests/height_scan_basis_test.cpp`: Focused CTest coverage for height
   scan basis construction, including forward projection and degenerate fallback.
+- `engine/tests/camera_projection_test.cpp`: Focused CTest coverage for camera
+  projection conformance, including match-horizontal behavior for square
+  filmback cameras rendered into wide tile targets.
 - `engine/features/height_scan/height_scan_generation_pipeline.hpp` /
   `engine/features/height_scan/height_scan_generation_pipeline.cpp`: Compute
   pipeline that binds the scene TLAS and traces one ground-mask ray query per
@@ -397,8 +407,11 @@ call sites with `rg`.
   field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, shared
   `HdRobotCameraData` pose/projection data, and transform-to-camera-data
-  conversion used by cameras and sensor sprims. Camera data is enqueued into
-  the backend scene table. Sensor-specific params live in their sensor headers.
+  conversion used by cameras and sensor sprims. Camera data includes vertical
+  and horizontal FOV so tile camera projections can honor Hydra window
+  conformance instead of deriving horizontal view only from tile aspect. Camera
+  data is enqueued into the backend scene table. Sensor-specific params live in
+  their sensor headers.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
   USD `LidarSensor` prims; caches transform and individual sensor parameters
   from `HdSceneDelegate::Get(id, token)` with type diagnostics, leaves cached
@@ -507,7 +520,8 @@ call sites with `rg`.
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
   `hdRobot/renderResources.cpp`, `hdRobot/renderBridge.cpp`,
   `engine/include/engine/engine.hpp`,
-  `engine/src/scene/view_uniforms.cpp`, and `engine/features/tile/tile_atlas_pass.cpp`, then
+  `engine/src/scene/view_uniforms.cpp`,
+  `engine/src/scene/camera_projection.cpp`, and `engine/features/tile/tile_atlas_pass.cpp`, then
   search for `CreateCamera`,
   `EnqueueCameraUpdate`, `GetActiveCameraSnapshot`,
   `GetActiveLidarSensorSnapshot`, `GetActiveHeightScanSensorSnapshot`,

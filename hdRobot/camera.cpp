@@ -14,6 +14,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 constexpr float kCameraEpsilon = 1.0e-6f;
+
+CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy)
+{
+  switch(policy)
+  {
+    case CameraUtilMatchVertically:
+      return CameraConformPolicy::MatchVertically;
+    case CameraUtilMatchHorizontally:
+      return CameraConformPolicy::MatchHorizontally;
+    case CameraUtilFit:
+      return CameraConformPolicy::Fit;
+    case CameraUtilCrop:
+      return CameraConformPolicy::Crop;
+    case CameraUtilDontConform:
+      return CameraConformPolicy::DontConform;
+  }
+  return CameraConformPolicy::Fit;
+}
 } // namespace
 
 HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform)
@@ -43,19 +61,29 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
 {
   HdRobotCameraData data = HdRobotComputeTransformCameraData(camera.GetId(), camera.GetTransform());
 
-  const float aperture    = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
+  const float verticalAperture = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
+  const float horizontalAperture = camera.GetHorizontalAperture() * GfCamera::APERTURE_UNIT;
   const float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
   float       vfovDeg     = data.vfov_deg;
+  float       hfovDeg     = data.hfov_deg;
   if(camera.GetProjection() == HdCamera::Perspective && focalLength > kCameraEpsilon)
   {
-    const float vfov = 2.0f * std::atan(aperture / (2.0f * focalLength));
+    const float vfov = 2.0f * std::atan(verticalAperture / (2.0f * focalLength));
     vfovDeg          = glm::degrees(vfov);
+    const float hfov = 2.0f * std::atan(horizontalAperture / (2.0f * focalLength));
+    hfovDeg          = glm::degrees(hfov);
   }
   if(!std::isfinite(vfovDeg))
   {
     vfovDeg = 45.0f;
   }
+  if(!std::isfinite(hfovDeg))
+  {
+    hfovDeg = 0.0f;
+  }
   data.vfov_deg = std::clamp(vfovDeg, 1.0f, 179.0f);
+  data.hfov_deg = hfovDeg > 0.0f ? std::clamp(hfovDeg, 1.0f, 179.0f) : 0.0f;
+  data.conformPolicy = ToCameraConformPolicy(camera.GetWindowPolicy());
 
   const GfRange1f clippingRange = camera.GetClippingRange();
   data.clipStart                = std::max(clippingRange.GetMin(), 0.001f);

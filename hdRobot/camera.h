@@ -3,6 +3,7 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/camera.h>
 #include <pxr/usd/sdf/path.h>
+#include <engine/renderer_types.hpp>
 #include <glm/glm.hpp>
 #include <string>
 
@@ -19,8 +20,10 @@ struct HdRobotCameraData
   glm::vec3   forward   = glm::vec3(0.0f, 0.0f, -1.0f);
   glm::vec3   up        = glm::vec3(0.0f, 1.0f, 0.0f);
   float       vfov_deg  = 45.0f;
+  float       hfov_deg  = 0.0f;
   float       clipStart = 0.1f;
   float       clipEnd   = 1000.0f;
+  CameraConformPolicy conformPolicy = CameraConformPolicy::MatchVertically;
 };
 
 HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform);

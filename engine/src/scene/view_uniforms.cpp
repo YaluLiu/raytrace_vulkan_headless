@@ -1,5 +1,7 @@
 #include "scene/view_uniforms.hpp"
 
+#include "scene/camera_projection.hpp"
+
 #include <algorithm>
 #include <cmath>
 
@@ -59,15 +61,12 @@ ResolvedCamera resolveCamera(const CameraSpec& camera)
 }
 
 FrameUniforms makeFrameUniforms(const glm::mat4& view,
-                                float vfovDeg,
-                                float clipStart,
-                                float clipEnd,
+                                const CameraSpec& camera,
                                 VkExtent2D renderSize,
                                 size_t lightCount)
 {
   FrameUniforms frameUBO = {};
-  const float aspectRatio = renderSize.width / static_cast<float>(renderSize.height);
-  glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(vfovDeg), aspectRatio, clipStart, clipEnd);
+  glm::mat4 proj = BuildCameraProjection(camera, renderSize);
 
   frameUBO.camera.viewProj = proj * view;
   frameUBO.camera.view = view;
@@ -126,6 +125,15 @@ void recordTileFrameUniformUpdate(const VkCommandBuffer& cmdBuf, VkBuffer device
   afterBarrier.size = sizeof(tileUBO);
   vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, uboUsageStages, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0,
                        nullptr, 1, &afterBarrier, 0, nullptr);
+}
+
+CameraSpec makeProjectionCamera(const MainViewState& state)
+{
+  CameraSpec camera;
+  camera.vfov_deg = state.vfovDeg;
+  camera.clipStart = state.clipStart;
+  camera.clipEnd = state.clipEnd;
+  return camera;
 }
 } // namespace
 
@@ -206,12 +214,8 @@ void ViewUniforms::updateFrameUniformBuffer(const VkCommandBuffer& cmdBuf, VkExt
     return;
   }
 
-  const FrameUniforms frameUBO = makeFrameUniforms(m_mainViewState.view,
-                                                   m_mainViewState.vfovDeg,
-                                                   m_mainViewState.clipStart,
-                                                   m_mainViewState.clipEnd,
-                                                   renderSize,
-                                                   lightCount);
+  const FrameUniforms frameUBO =
+      makeFrameUniforms(m_mainViewState.view, makeProjectionCamera(m_mainViewState), renderSize, lightCount);
   recordFrameUniformUpdate(cmdBuf, m_bFrameUniforms.buffer, 0, frameUBO);
 }
 
@@ -249,8 +253,11 @@ void ViewUniforms::updateTileFrameUniformBufferForBatch(const VkCommandBuffer& c
     const auto& camera = m_cameras[firstCameraIndex + cameraSlot];
     const auto resolved = resolveCamera(camera);
     const glm::mat4 view = glm::lookAtRH(resolved.position, resolved.target, resolved.up);
-    const auto frameUBO =
-        makeFrameUniforms(view, resolved.vfovDeg, resolved.clipStart, resolved.clipEnd, tileExtent, lightCount);
+    CameraSpec projectionCamera = camera;
+    projectionCamera.vfov_deg = resolved.vfovDeg;
+    projectionCamera.clipStart = resolved.clipStart;
+    projectionCamera.clipEnd = resolved.clipEnd;
+    const auto frameUBO = makeFrameUniforms(view, projectionCamera, tileExtent, lightCount);
     tileUBO.cameras[viewIndex] = frameUBO.camera;
   }
 
