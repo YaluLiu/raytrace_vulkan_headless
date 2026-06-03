@@ -91,6 +91,11 @@ call sites with `rg`.
   rebuilds to create/destroy descriptor sets, view uniforms, preview targets,
   output pipelines, light/object buffers, and RT resources without exposing
   these steps on the public `Engine` API.
+- `engine/src/core/render_resource_lifecycle.hpp` /
+  `engine/src/core/render_resource_lifecycle.cpp`: Private lifecycle
+  coordinator that centralizes full render-resource create/destroy order and
+  texture descriptor/output-pipeline rebuild sequences while keeping the
+  public `Engine` facade unchanged.
 - `engine/src/core/renderer_internal.hpp`: Private bridge from
   `Engine` to its PIMPL-owned GPU scene, descriptors, view uniforms,
   output controller, allocator, and debug utilities.
