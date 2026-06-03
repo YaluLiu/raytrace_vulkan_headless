@@ -81,7 +81,7 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/frame_executor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/output_controller.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/render_resource_lifecycle.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/engine_facade.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/renderer_resources.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_readback.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/height_scan/height_scan.cpp
@@ -104,7 +104,7 @@ set(ENGINE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/light_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/mesh_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/rt_scene.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/renderer_scene.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/engine_scene.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/scene_descriptors.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/texture_store.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/scene/view_uniforms.cpp

@@ -82,7 +82,7 @@ call sites with `rg`.
   scene upload/update entry points, RT TLAS lifecycle and query entry points,
   and AOV export. Frame execution and descriptor/uniform resource steps are
   kept behind private core helpers.
-- `engine/src/core/renderer.cpp`: Core facade setup, resize/lifecycle forwarding,
+- `engine/src/core/engine_facade.cpp`: Core facade setup, resize/lifecycle forwarding,
   AOV texture routing, and delegation into descriptor, view uniform, and output
   controller components.
 - `engine/src/core/renderer_resources.hpp` /
@@ -221,7 +221,7 @@ call sites with `rg`.
   coordinator owning sensors, visualization config, GPU metadata, sample
   buffers, Vulkan RT generation, preview overlay orchestration, and CPU
   readback frames.
-- `engine/src/scene/renderer_scene.cpp`: `Engine` scene facade
+- `engine/src/scene/engine_scene.cpp`: `Engine` scene facade
   implementation for mesh-source and texture upload, instance/geometry runtime
   updates, material/light updates, scene queries, RT TLAS lifecycle/query
   forwarding, and
@@ -472,7 +472,7 @@ call sites with `rg`.
 ## Question Routing
 
 - Frame rendering:
-  `engine/src/core/frame_executor.cpp`, `engine/src/core/renderer.cpp`,
+  `engine/src/core/frame_executor.cpp`, `engine/src/core/engine_facade.cpp`,
   `engine/src/core/output_controller.cpp`, `engine/features/tile/tile_atlas_pass.cpp`,
   `engine/features/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/renderBridge.cpp`,
   `hdRobot/renderResources.cpp`,
@@ -481,7 +481,7 @@ call sites with `rg`.
   `recordLidarPointOverlay`, `recordFrameUniformUpdate`,
   `ConfigureFrameOutputs`, and `CommitResources`.
 - Resize or render target size:
-  `engine/src/core/renderer.cpp`, `engine/include/engine/engine.hpp`,
+  `engine/src/core/engine_facade.cpp`, `engine/include/engine/engine.hpp`,
   `engine/features/preview/preview_pipeline.cpp`, `engine/src/runtime/session.cpp`, then search
   for `onResize`, `resizeRenderTargets`, `recreateAovTargets`, `getRenderSize`, and
   `EnsureEngineReady`.
@@ -598,7 +598,7 @@ call sites with `rg`.
   `baseColorTextureId`.
 - Engine light evaluation:
   `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
-  `hdRobot/renderBridge.cpp`, `engine/src/scene/renderer_scene.cpp`,
+  `hdRobot/renderBridge.cpp`, `engine/src/scene/engine_scene.cpp`,
   `engine/src/scene/gpu_scene.cpp`, `engine/src/scene/scene_descriptors.cpp`,
   `engine/shaders/common/host_device.h`, `engine/features/preview/shaders/mesh.frag`, then search
   for `ToLight`, `updateLights`, `updateLightBuffer`, `eLights`,
@@ -625,7 +625,7 @@ call sites with `rg`.
 - Mesh upload staging:
   `engine/include/engine/mesh_types.hpp`,
   `engine/src/scene/gpu_scene.cpp`,
-  `engine/src/scene/renderer_scene.cpp`, and
+  `engine/src/scene/engine_scene.cpp`, and
   `hdRobot/renderBridgeConversions.cpp`,
   then search for `ConvertHydraMeshToGeometry`, `ToMaterial`,
   `uploadMesh`, `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
