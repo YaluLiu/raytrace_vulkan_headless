@@ -27,45 +27,22 @@ struct HdRobotMeshRecord
   std::vector<int> rendererInstanceIds;
 };
 
-struct HdRobotMaterialRecord
+template <typename DataT>
+struct HdRobotBackendRecord
 {
+  using DataType = DataT;
+
   SdfPath id;
-  HydraMaterial data;
+  DataT data;
   bool active = true;
   bool dirty = true;
 };
 
-struct HdRobotLightRecord
-{
-  SdfPath id;
-  HydraLight data;
-  bool active = true;
-  bool dirty = true;
-};
-
-struct HdRobotCameraRecord
-{
-  SdfPath id;
-  HdRobotCameraData data;
-  bool active = true;
-  bool dirty = true;
-};
-
-struct HdRobotLidarSensorRecord
-{
-  SdfPath id;
-  HdRobotLidarSensorData data;
-  bool active = true;
-  bool dirty = true;
-};
-
-struct HdRobotHeightScanSensorRecord
-{
-  SdfPath id;
-  HdRobotHeightScanSensorData data;
-  bool active = true;
-  bool dirty = true;
-};
+using HdRobotMaterialRecord = HdRobotBackendRecord<HydraMaterial>;
+using HdRobotLightRecord = HdRobotBackendRecord<HydraLight>;
+using HdRobotCameraRecord = HdRobotBackendRecord<HdRobotCameraData>;
+using HdRobotLidarSensorRecord = HdRobotBackendRecord<HdRobotLidarSensorData>;
+using HdRobotHeightScanSensorRecord = HdRobotBackendRecord<HdRobotHeightScanSensorData>;
 
 struct HdRobotMeshUpdate
 {
@@ -76,45 +53,21 @@ struct HdRobotMeshUpdate
   bool instanceDirty = false;
 };
 
-struct HdRobotMaterialUpdate
+template <typename HandleT, typename DataT>
+struct HdRobotBackendUpdate
 {
-  HdRobotMaterialHandle handle;
-  HydraMaterial data;
+  HandleT handle;
+  DataT data;
   bool active = true;
   bool dirty = true;
 };
 
-struct HdRobotLightUpdate
-{
-  HdRobotLightHandle handle;
-  HydraLight data;
-  bool active = true;
-  bool dirty = true;
-};
-
-struct HdRobotCameraUpdate
-{
-  HdRobotCameraHandle handle;
-  HdRobotCameraData data;
-  bool active = true;
-  bool dirty = true;
-};
-
-struct HdRobotLidarSensorUpdate
-{
-  HdRobotLidarSensorHandle handle;
-  HdRobotLidarSensorData data;
-  bool active = true;
-  bool dirty = true;
-};
-
-struct HdRobotHeightScanSensorUpdate
-{
-  HdRobotHeightScanSensorHandle handle;
-  HdRobotHeightScanSensorData data;
-  bool active = true;
-  bool dirty = true;
-};
+using HdRobotMaterialUpdate = HdRobotBackendUpdate<HdRobotMaterialHandle, HydraMaterial>;
+using HdRobotLightUpdate = HdRobotBackendUpdate<HdRobotLightHandle, HydraLight>;
+using HdRobotCameraUpdate = HdRobotBackendUpdate<HdRobotCameraHandle, HdRobotCameraData>;
+using HdRobotLidarSensorUpdate = HdRobotBackendUpdate<HdRobotLidarSensorHandle, HdRobotLidarSensorData>;
+using HdRobotHeightScanSensorUpdate =
+    HdRobotBackendUpdate<HdRobotHeightScanSensorHandle, HdRobotHeightScanSensorData>;
 
 class HdRobotBackendScene
 {
@@ -162,11 +115,6 @@ public:
 
 private:
   void _ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates);
-  void _ApplyMaterialUpdates(std::vector<HdRobotMaterialUpdate>& updates);
-  void _ApplyLightUpdates(std::vector<HdRobotLightUpdate>& updates);
-  void _ApplyCameraUpdates(std::vector<HdRobotCameraUpdate>& updates);
-  void _ApplyLidarSensorUpdates(std::vector<HdRobotLidarSensorUpdate>& updates);
-  void _ApplyHeightScanSensorUpdates(std::vector<HdRobotHeightScanSensorUpdate>& updates);
 
   mutable std::mutex _sceneMutex;
   HdRobotSlotVector<HdRobotMeshRecord, HdRobotMeshHandle> _meshes;
