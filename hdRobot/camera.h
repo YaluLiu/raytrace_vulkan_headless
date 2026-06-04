@@ -11,7 +11,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotBackendScene;
+class HdRobotSceneStore;
 
 struct HdRobotCameraData
 {
@@ -32,7 +32,7 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera);
 class HdRobotCamera final : public HdCamera
 {
 public:
-  HdRobotCamera(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotCameraHandle handle);
+  HdRobotCamera(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotCameraHandle handle);
 
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
@@ -41,7 +41,7 @@ public:
   const HdRobotCameraData& GetCameraData() const;
 
 private:
-  HdRobotBackendScene&      _backendScene;
+  HdRobotSceneStore&      _sceneStore;
   HdRobotCameraHandle       _handle;
   mutable HdRobotCameraData _cameraData;
 };

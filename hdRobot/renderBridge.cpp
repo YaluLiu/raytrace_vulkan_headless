@@ -8,7 +8,7 @@
 #include "aovBridgeSpec.h"
 #include "hydraAovCopy.h"
 #include "renderBuffer.h"
-#include "renderResources.h"
+#include "engineSession.h"
 
 #include <engine/engine.hpp>
 
@@ -69,8 +69,8 @@ std::optional<GfVec2i> GetMainRenderSize(const HdRenderPassStateSharedPtr &rende
 
 } // namespace
 
-HdRobotRenderBridge::HdRobotRenderBridge(HdRobotRenderResources& resources)
-    : _resources(resources)
+HdRobotRenderBridge::HdRobotRenderBridge(HdRobotEngineSession& engineSession)
+    : _engineSession(engineSession)
 {
 }
 
@@ -96,15 +96,15 @@ bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPa
     return false;
   }
 
-  _resources.EnsureEngineReady(*mainRenderSize);
-  if(!_resources.SetFrameCamera(renderPassState))
+  _engineSession.EnsureEngineReady(*mainRenderSize);
+  if(!_engineSession.SetFrameCamera(renderPassState))
   {
     return false;
   }
 
   configureFrameOutputs(hdAovBindings);
-  _resources.ApplyFrameRenderTags(renderTags);
-  _resources.GetEngine().render();
+  _engineSession.ApplyFrameRenderTags(renderTags);
+  _engineSession.GetEngine().render();
 
   return copyRenderedAovs(hdAovBindings);
 }
@@ -121,7 +121,7 @@ bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &h
     if(spec)
     {
       const HdRobotAovCopyRequest request{binding.aovName, spec->engineAov, spec->copyScaling, aovBuffer};
-      copied = CopyAovToRenderBuffer(_resources.GetEngine(), request, _resources.GetGlInteropCache());
+      copied = CopyAovToRenderBuffer(_engineSession.GetEngine(), request, _engineSession.GetGlInteropCache());
     }
     else if(IsHdRobotIgnoredAov(binding.aovName))
     {
@@ -158,7 +158,7 @@ bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &h
 
 void HdRobotRenderBridge::configureFrameOutputs(const HdRenderPassAovBindingVector &hdAovBindings)
 {
-  _resources.ConfigureFrameOutputs(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
+  _engineSession.ConfigureFrameOutputs(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

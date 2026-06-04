@@ -11,7 +11,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotBackendScene;
+class HdRobotSceneStore;
 
 struct HdRobotHeightScanParams
 {
@@ -43,7 +43,7 @@ public:
     AllDirty = HdRaySensorDirtyBits::AllDirty,
   };
 
-  HdRobotHeightScanSensor(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotHeightScanSensorHandle handle);
+  HdRobotHeightScanSensor(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotHeightScanSensorHandle handle);
 
   void Sync(HdSceneDelegate* sceneDelegate,
             HdRenderParam* renderParam,
@@ -55,7 +55,7 @@ private:
   void _SyncParams(HdSceneDelegate* sceneDelegate);
   void _UpdateRenderParam();
 
-  HdRobotBackendScene& _backendScene;
+  HdRobotSceneStore& _sceneStore;
   HdRobotHeightScanSensorHandle _handle;
   GfMatrix4d _transform = GfMatrix4d(1.0);
   bool _enabled = true;

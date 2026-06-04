@@ -18,7 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdRobotMeshRecord
 {
-  uint32_t backendIndex = UINT32_MAX;
+  uint32_t sceneIndex = UINT32_MAX;
   SdfPath id;
   HydraMesh data;
   bool active = true;
@@ -29,7 +29,7 @@ struct HdRobotMeshRecord
 };
 
 template <typename DataT>
-struct HdRobotBackendRecord
+struct HdRobotSceneRecord
 {
   using DataType = DataT;
 
@@ -39,11 +39,11 @@ struct HdRobotBackendRecord
   bool dirty = true;
 };
 
-using HdRobotMaterialRecord = HdRobotBackendRecord<HydraMaterial>;
-using HdRobotLightRecord = HdRobotBackendRecord<HydraLight>;
-using HdRobotCameraRecord = HdRobotBackendRecord<HdRobotCameraData>;
-using HdRobotLidarSensorRecord = HdRobotBackendRecord<HdRobotLidarSensorData>;
-using HdRobotHeightScanSensorRecord = HdRobotBackendRecord<HdRobotHeightScanSensorData>;
+using HdRobotMaterialRecord = HdRobotSceneRecord<HydraMaterial>;
+using HdRobotLightRecord = HdRobotSceneRecord<HydraLight>;
+using HdRobotCameraRecord = HdRobotSceneRecord<HdRobotCameraData>;
+using HdRobotLidarSensorRecord = HdRobotSceneRecord<HdRobotLidarSensorData>;
+using HdRobotHeightScanSensorRecord = HdRobotSceneRecord<HdRobotHeightScanSensorData>;
 
 struct HdRobotMeshUpdate
 {
@@ -55,7 +55,7 @@ struct HdRobotMeshUpdate
 };
 
 template <typename HandleT, typename DataT>
-struct HdRobotBackendUpdate
+struct HdRobotSceneUpdate
 {
   HandleT handle;
   DataT data;
@@ -63,17 +63,17 @@ struct HdRobotBackendUpdate
   bool dirty = true;
 };
 
-using HdRobotMaterialUpdate = HdRobotBackendUpdate<HdRobotMaterialHandle, HydraMaterial>;
-using HdRobotLightUpdate = HdRobotBackendUpdate<HdRobotLightHandle, HydraLight>;
-using HdRobotCameraUpdate = HdRobotBackendUpdate<HdRobotCameraHandle, HdRobotCameraData>;
-using HdRobotLidarSensorUpdate = HdRobotBackendUpdate<HdRobotLidarSensorHandle, HdRobotLidarSensorData>;
+using HdRobotMaterialUpdate = HdRobotSceneUpdate<HdRobotMaterialHandle, HydraMaterial>;
+using HdRobotLightUpdate = HdRobotSceneUpdate<HdRobotLightHandle, HydraLight>;
+using HdRobotCameraUpdate = HdRobotSceneUpdate<HdRobotCameraHandle, HdRobotCameraData>;
+using HdRobotLidarSensorUpdate = HdRobotSceneUpdate<HdRobotLidarSensorHandle, HdRobotLidarSensorData>;
 using HdRobotHeightScanSensorUpdate =
-    HdRobotBackendUpdate<HdRobotHeightScanSensorHandle, HdRobotHeightScanSensorData>;
+    HdRobotSceneUpdate<HdRobotHeightScanSensorHandle, HdRobotHeightScanSensorData>;
 
-class HdRobotBackendScene
+class HdRobotSceneStore
 {
 public:
-  HdRobotBackendScene();
+  HdRobotSceneStore();
 
   HdRobotMeshHandle CreateMesh(const SdfPath& id);
   HdRobotMaterialHandle CreateMaterial(const SdfPath& id);

@@ -7,14 +7,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderBridge;
-class HdRobotRenderResources;
+class HdRobotEngineSession;
 
 class HdRobotRenderPass final : public HdRenderPass
 {
 public:
   HdRobotRenderPass(HdRenderIndex*             index,
                     const HdRprimCollection&   collection,
-                    HdRobotRenderResources&    resources);
+                    HdRobotEngineSession&      engineSession);
 
   ~HdRobotRenderPass() override;
 

@@ -5,16 +5,16 @@ add_library(
   ${PROJNAME} SHARED
   instancer.cpp
   instancer.h
-  backendScene.cpp
-  backendScene.h
+  sceneStore.cpp
+  sceneStore.h
   backendHandles.h
   slotVector.h
   aovBridgeSpec.cpp
   aovBridgeSpec.h
   renderBridge.cpp
   renderBridge.h
-  renderResources.cpp
-  renderResources.h
+  engineSession.cpp
+  engineSession.h
   renderBridgeConversions.cpp
   renderBridgeConversions.h
   glInteropCache.cpp

@@ -7,12 +7,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotRenderResources;
+class HdRobotEngineSession;
 
 class HdRobotRenderBridge final
 {
 public:
-  explicit HdRobotRenderBridge(HdRobotRenderResources& resources);
+  explicit HdRobotRenderBridge(HdRobotEngineSession& engineSession);
   ~HdRobotRenderBridge();
 
   bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
@@ -21,7 +21,7 @@ private:
   void configureFrameOutputs(const HdRenderPassAovBindingVector& hdAovBindings);
   bool copyRenderedAovs(const HdRenderPassAovBindingVector& hdAovBindings);
 
-  HdRobotRenderResources& _resources;
+  HdRobotEngineSession& _engineSession;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

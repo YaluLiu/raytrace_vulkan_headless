@@ -8,13 +8,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotBackendScene;
+class HdRobotSceneStore;
 
 class HdRobotMesh final : public HdMesh
 {
 public:
   HdRobotMesh(const SdfPath& id,
-              HdRobotBackendScene& backendScene,
+              HdRobotSceneStore& sceneStore,
               HdRobotMeshHandle meshHandle,
               HdRobotMaterialHandle displayColorMaterialHandle);
 
@@ -66,7 +66,7 @@ private:
   bool _CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& meshData);
 
 private:
-  HdRobotBackendScene& _backendScene;
+  HdRobotSceneStore& _sceneStore;
   HdRobotMeshHandle _meshHandle;
   HdRobotMaterialHandle _displayColorMaterialHandle;
   HydraMesh _meshData;

@@ -1,6 +1,6 @@
 #include "light.h"
 
-#include "backendScene.h"
+#include "sceneStore.h"
 
 #include <pxr/base/gf/matrix3d.h>
 #include <pxr/base/gf/matrix3f.h>
@@ -37,9 +37,9 @@ float _MaxRgb(const GfVec4f& color)
 // Base Light
 //
 
-HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle)
+HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
     : HdLight(id)
-    , _backendScene(backendScene)
+    , _sceneStore(sceneStore)
     , _handle(handle)
 {
 }
@@ -86,7 +86,7 @@ HdDirtyBits HdRobotLight::GetInitialDirtyBitsMask() const
 
 void HdRobotLight::Finalize([[maybe_unused]] HdRenderParam* renderParam)
 {
-  _backendScene.DestroyLight(_handle);
+  _sceneStore.DestroyLight(_handle);
 }
 
 bool HdRobotLight::_CanSyncLight() const
@@ -96,12 +96,12 @@ bool HdRobotLight::_CanSyncLight() const
 
 void HdRobotLight::_EnqueueLightUpdate(bool active)
 {
-  _backendScene.EnqueueLightUpdate(HdRobotLightUpdate{_handle, _lightData, active});
+  _sceneStore.EnqueueLightUpdate(HdRobotLightUpdate{_handle, _lightData, active});
 }
 
 // --------Sphere Light-------------------------
-HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle)
-    : HdRobotLight(id, backendScene, handle)
+HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+    : HdRobotLight(id, sceneStore, handle)
 {
 }
 
@@ -157,8 +157,8 @@ void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
 }
 
 // --------Simple Light-------------------------
-HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle)
-    : HdRobotLight(id, backendScene, handle)
+HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+    : HdRobotLight(id, sceneStore, handle)
 {
 }
 
@@ -215,8 +215,8 @@ void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
 }
 
 // --------Distant Light-------------------------
-HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle)
-    : HdRobotLight(id, backendScene, handle)
+HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+    : HdRobotLight(id, sceneStore, handle)
 {
 }
 
@@ -271,8 +271,8 @@ void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] 
 }
 
 // --------Dome Light-------------------------
-HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle)
-    : HdRobotLight(id, backendScene, handle)
+HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+    : HdRobotLight(id, sceneStore, handle)
 {
 }
 
@@ -345,7 +345,7 @@ void HdRobotDomeLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] HdR
     else if (light.texturePath != texturePath)
     {
       light.texturePath = texturePath;
-      light.textureID = _backendScene.RegisterTexturePath(texturePath, TextureUsage::Light);
+      light.textureID = _sceneStore.RegisterTexturePath(texturePath, TextureUsage::Light);
     }
   }
 

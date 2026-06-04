@@ -61,11 +61,11 @@ call sites with `rg`.
   is followed by LiDAR point overlay and then height scan overlay.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction, render
-  param ownership, backend scene ownership, and delegate-owned render
+  param ownership, scene store ownership, and delegate-owned render
   resource/session ownership.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
   to `HdRobotRenderBridge::RenderFrame`.
-- `hdRobot/renderResources.h` / `hdRobot/renderResources.cpp`: Delegate-owned
+- `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
   renderer resource/session bridge that owns `Engine`, GL interop cache,
   engine lifecycle state, Hydra CPU-scene resource submission, committed
   camera/sensor/output snapshots, and frame-level render tag visibility.
@@ -301,17 +301,17 @@ call sites with `rg`.
   ownership, supported primitives, render param setup, tile render setting
   descriptors including per-channel tile color/depth enable flags, LiDAR and
   height scan visualization render settings, AOV descriptor lookup through the
-  shared bridge-side AOV spec, backend scene ownership, render resource/session
+  shared bridge-side AOV spec, scene store ownership, render resource/session
   ownership, and `CommitResources()` routing from pending Hydra CPU updates
   into renderer resource submission.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge. It borrows delegate-owned
-  `HdRobotRenderResources` and no longer knows `HdRobotRenderParam`.
-- `hdRobot/renderResources.h` / `hdRobot/renderResources.cpp`: Delegate-owned
+  `HdRobotEngineSession` and no longer knows `HdRobotRenderParam`.
+- `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
   renderer resource/session object. It owns `Engine`, `HdRobotGlInteropCache`,
   render size, texture upload version, initial scene upload, dirty
-  mesh/material/light resource submission from the delegate-owned backend
-  scene, committed active camera/sensor snapshots, output configuration, and
+  mesh/material/light resource submission from the delegate-owned scene store,
+  committed active camera/sensor snapshots, output configuration, and
   frame-level render tag filtering for existing renderer instances.
 - `hdRobot/renderBridge.h` / `hdRobot/renderBridge.cpp`:
   Converts current Hydra pass state into frame-only renderer work: render
@@ -319,22 +319,23 @@ call sites with `rg`.
   requested tile AOV channel selection, frame render tag application,
   `Engine::render()`, and ordered AOV copy groups that copy fixed tile AOVs
   before display tile AOVs and other AOVs. It borrows
-  `HdRobotRenderResources` and does not read `HdRobotRenderParam` or consume
-  backend dirty queues.
+  `HdRobotEngineSession` and does not read `HdRobotRenderParam` or consume
+  scene-store dirty queues.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into engine-facing camera specs,
   `Material`, light records, LiDAR and height scan sensor specs,
   visualization configs, and `TileAtlasConfig`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object for render settings only: tile output, LiDAR visualization,
-  and height scan visualization. It does not own the backend scene table or
+  and height scan visualization. It does not own the scene-store table or
   texture registry.
 - `hdRobot/backendHandles.h`: Stable generation handles for backend mesh,
   material, light, camera, LiDAR sensor, and height scan sensor records.
-- `hdRobot/slotVector.h`: Small handle-indexed slot vector used by the backend
-  scene table; validates index, generation, and occupied state before access.
-- `hdRobot/backendScene.h` / `hdRobot/backendScene.cpp`: CPU-side Hydra backend
-  scene state owned by the render delegate: backend scene table, texture
+- `hdRobot/slotVector.h`: Small handle-indexed slot vector used by the
+  scene-store table; validates index, generation, and occupied state before
+  access.
+- `hdRobot/sceneStore.h` / `hdRobot/sceneStore.cpp`: CPU-side Hydra scene
+  store owned by the render delegate: scene records, texture
   registry, pending update queues, dirty mesh/material consumption, active
   camera/sensor/light snapshots, and renderer mesh/instance ID bookkeeping.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
@@ -412,7 +413,7 @@ call sites with `rg`.
   conversion used by cameras and sensor sprims. Camera data includes vertical
   and horizontal FOV so tile camera projections can honor Hydra window
   conformance instead of deriving horizontal view only from tile aspect. Camera
-  data is enqueued into the backend scene table. Sensor-specific params live in
+  data is enqueued into the scene store. Sensor-specific params live in
   their sensor headers.
 - `hdRobot/lidarSensor.h` / `hdRobot/lidarSensor.cpp`: Hydra sprim for custom
   USD `LidarSensor` prims; caches transform and individual sensor parameters
@@ -428,7 +429,8 @@ call sites with `rg`.
   enqueues active/inactive `HdRobotHeightScanSensorData` updates. The header
   owns `HdRobotHeightScanParams` and `HdRobotHeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light wrappers with backend handles;
-  sync computes local renderer light data and enqueues backend light updates.
+  sync computes local renderer light data and enqueues scene-store light
+  updates.
 - `hdRobot/instancer.h` / `hdRobot/instancer.cpp`: Hydra instancer support.
 - `hdRobot/sceneData.h` / `hdRobot/sceneData.cpp`: Shared scene data helpers.
 
@@ -490,7 +492,7 @@ call sites with `rg`.
   `engine/src/core/frame_executor.cpp`, `engine/src/core/engine_facade.cpp`,
   `engine/src/core/output_controller.cpp`, `engine/features/tile/tile_atlas_pass.cpp`,
   `engine/features/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/renderBridge.cpp`,
-  `hdRobot/renderResources.cpp`,
+  `hdRobot/engineSession.cpp`,
   then search for `RenderFrame`, `recordFramePasses`,
   `recordPreviewAovs`, `recordTileAtlas`, `recordLidarPointClouds`,
   `recordLidarPointOverlay`, `recordFrameUniformUpdate`,
@@ -515,12 +517,12 @@ call sites with `rg`.
   `MeshDrawPushConstants`.
 - Hydra render flow:
   `hdRobot/renderPass.cpp`, `hdRobot/renderBridge.cpp`,
-  `hdRobot/renderResources.cpp`, `hdRobot/renderDelegate.cpp`, then search
+  `hdRobot/engineSession.cpp`, `hdRobot/renderDelegate.cpp`, then search
   for `RenderFrame`, `_Execute`, `ApplyPendingUpdates`, `CommitResources`,
   and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/renderResources.cpp`, `hdRobot/renderBridge.cpp`,
+  `hdRobot/engineSession.cpp`, `hdRobot/renderBridge.cpp`,
   `engine/include/engine/engine.hpp`,
   `engine/src/scene/view_uniforms.cpp`,
   `engine/src/scene/camera_projection.cpp`, and `engine/features/tile/tile_atlas_pass.cpp`, then

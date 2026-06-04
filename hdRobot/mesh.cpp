@@ -1,5 +1,5 @@
 #include "mesh.h"
-#include "backendScene.h"
+#include "sceneStore.h"
 #include "material.h"
 #include "instancer.h"
 #include "tokens.h"
@@ -407,15 +407,15 @@ TfToken _TraceRoleFromValue(const VtValue& value)
 }  // namespace
 
 HdRobotMesh::HdRobotMesh(const SdfPath& id,
-                         HdRobotBackendScene& backendScene,
+                         HdRobotSceneStore& sceneStore,
                          HdRobotMeshHandle meshHandle,
                          HdRobotMaterialHandle displayColorMaterialHandle)
     : HdMesh(id)
-    , _backendScene(backendScene)
+    , _sceneStore(sceneStore)
     , _meshHandle(meshHandle)
     , _displayColorMaterialHandle(displayColorMaterialHandle)
 {
-  _meshData.scene_mat_ids = {_backendScene.ResolveMaterialIndexForUpload(_backendScene.GetDefaultMaterialHandle())};
+  _meshData.scene_mat_ids = {_sceneStore.ResolveMaterialIndexForUpload(_sceneStore.GetDefaultMaterialHandle())};
 }
 
 void HdRobotMesh::setValid(bool value)
@@ -423,7 +423,7 @@ void HdRobotMesh::setValid(bool value)
   if(_meshData.valid != value)
   {
     _meshData.valid = value;
-    _backendScene.EnqueueMeshUpdate(
+    _sceneStore.EnqueueMeshUpdate(
         HdRobotMeshUpdate{_meshHandle, _meshData, value, false, true});
   }
 }
@@ -431,7 +431,7 @@ void HdRobotMesh::setValid(bool value)
 void HdRobotMesh::Finalize(HdRenderParam* renderParam)
 {
   TF_UNUSED(renderParam);
-  _backendScene.DestroyMesh(_meshHandle);
+  _sceneStore.DestroyMesh(_meshHandle);
 }
 
 
@@ -466,7 +466,7 @@ bool HdRobotMesh::ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, cons
     materialTemplate.set_default();
   }
 
-  curMatId = _backendScene.ResolveMaterialIndexForUpload(_displayColorMaterialHandle);
+  curMatId = _sceneStore.ResolveMaterialIndexForUpload(_displayColorMaterialHandle);
   HydraMaterial mat = materialTemplate;
 
   const glm::vec3 color((*displayColor)[0], (*displayColor)[1], (*displayColor)[2]);
@@ -485,7 +485,7 @@ bool HdRobotMesh::ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, cons
     meshData.scene_mat_ids[0] = curMatId;
   }
 
-  _backendScene.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_displayColorMaterialHandle, mat});
+  _sceneStore.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_displayColorMaterialHandle, mat});
   return true;
 }
 
@@ -612,7 +612,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
                                        &materialPrim->GetMaterialData(),
                                        meshData))
       {
-        const int materialIndex = _backendScene.ResolveMaterialIndexForUpload(materialPrim->GetHandle());
+        const int materialIndex = _sceneStore.ResolveMaterialIndexForUpload(materialPrim->GetHandle());
         if(meshData.scene_mat_ids.empty())
         {
           meshData.scene_mat_ids.emplace_back(materialIndex);
@@ -631,7 +631,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
   }
 
   _meshData = meshData;
-  _backendScene.EnqueueMeshUpdate(
+  _sceneStore.EnqueueMeshUpdate(
       HdRobotMeshUpdate{_meshHandle, _meshData, true, geometryDirty, instanceDirty});
 
   *dirtyBits = HdChangeTracker::Clean;
@@ -1059,8 +1059,8 @@ bool HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& mes
   const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
 
   const int defaultSceneMatId = meshData.scene_mat_ids.empty()
-                                    ? _backendScene.ResolveMaterialIndexForUpload(
-                                          _backendScene.GetDefaultMaterialHandle())
+                                    ? _sceneStore.ResolveMaterialIndexForUpload(
+                                          _sceneStore.GetDefaultMaterialHandle())
                                     : meshData.scene_mat_ids[0];
   meshData.scene_mat_ids.clear();
   meshData.scene_mat_ids.emplace_back(defaultSceneMatId);
@@ -1073,7 +1073,7 @@ bool HdRobotMesh::_CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& mes
 
     if(materialPrim)
     {
-      meshData.scene_mat_ids.emplace_back(_backendScene.ResolveMaterialIndexForUpload(materialPrim->GetHandle()));
+      meshData.scene_mat_ids.emplace_back(_sceneStore.ResolveMaterialIndexForUpload(materialPrim->GetHandle()));
       int localMatIdx = static_cast<int>(meshData.scene_mat_ids.size() - 1);
 
       for(int faceIdx : subset.indices)

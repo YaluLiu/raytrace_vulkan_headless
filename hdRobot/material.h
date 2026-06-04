@@ -10,12 +10,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotBackendScene;
+class HdRobotSceneStore;
 
 class HdRobotMaterial final : public HdMaterial
 {
 public:
-  HdRobotMaterial(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotMaterialHandle handle);
+  HdRobotMaterial(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotMaterialHandle handle);
 
   void Finalize(HdRenderParam* renderParam) override;
 
@@ -29,7 +29,7 @@ public:
   const TfToken& GetBaseColorPrimvarName() const;
 
 private:
-  HdRobotBackendScene& _backendScene;
+  HdRobotSceneStore& _sceneStore;
   HdRobotMaterialHandle _handle;
   HydraMaterial        _materialData;
   TfToken              _baseColorPrimvarName;

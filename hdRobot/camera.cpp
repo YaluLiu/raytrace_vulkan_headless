@@ -1,6 +1,6 @@
 #include "camera.h"
 
-#include "backendScene.h"
+#include "sceneStore.h"
 
 #include <pxr/base/gf/camera.h>
 #include <pxr/base/gf/vec3d.h>
@@ -92,9 +92,9 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
   return data;
 }
 
-HdRobotCamera::HdRobotCamera(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotCameraHandle handle)
+HdRobotCamera::HdRobotCamera(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotCameraHandle handle)
     : HdCamera(id)
-    , _backendScene(backendScene)
+    , _sceneStore(sceneStore)
     , _handle(handle)
 {
 }
@@ -111,7 +111,7 @@ const HdRobotCameraData& HdRobotCamera::GetCameraData() const
 
 void HdRobotCamera::Finalize(HdRenderParam*)
 {
-  _backendScene.DestroyCamera(_handle);
+  _sceneStore.DestroyCamera(_handle);
 }
 
 void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
@@ -131,7 +131,7 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
 
   HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
   _cameraData = cameraData;
-  _backendScene.EnqueueCameraUpdate(HdRobotCameraUpdate{_handle, cameraData});
+  _sceneStore.EnqueueCameraUpdate(HdRobotCameraUpdate{_handle, cameraData});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

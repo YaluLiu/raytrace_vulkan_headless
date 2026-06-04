@@ -1,7 +1,7 @@
 #include "renderPass.h"
 
 #include "renderBridge.h"
-#include "renderResources.h"
+#include "engineSession.h"
 
 #include <memory>
 
@@ -9,10 +9,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex*             index,
                                      const HdRprimCollection&   collection,
-                                     HdRobotRenderResources&    resources)
+                                     HdRobotEngineSession&      engineSession)
     : HdRenderPass(index, collection)
     , _isConverged(false)
-    , _bridge(std::make_unique<HdRobotRenderBridge>(resources))
+    , _bridge(std::make_unique<HdRobotRenderBridge>(engineSession))
 {
 }
 

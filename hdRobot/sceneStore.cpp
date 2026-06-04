@@ -1,4 +1,4 @@
-#include "backendScene.h"
+#include "sceneStore.h"
 
 #include <algorithm>
 #include <utility>
@@ -19,7 +19,7 @@ void EnqueuePendingUpdate(std::mutex& mutex, std::vector<UpdateT>& pendingUpdate
 }
 
 template <typename SlotVectorT, typename UpdateT>
-void ApplyBackendDataUpdates(SlotVectorT& records, std::vector<UpdateT>& updates)
+void ApplySceneDataUpdates(SlotVectorT& records, std::vector<UpdateT>& updates)
 {
   for(UpdateT& update : updates)
   {
@@ -49,7 +49,7 @@ std::vector<DataT> GetActiveDataSnapshot(const SlotVectorT& records, IncludeReco
 }
 } // namespace
 
-HdRobotBackendScene::HdRobotBackendScene()
+HdRobotSceneStore::HdRobotSceneStore()
 {
   HdRobotMaterialRecord defaultMaterial;
   defaultMaterial.id = SdfPath::EmptyPath();
@@ -59,7 +59,7 @@ HdRobotBackendScene::HdRobotBackendScene()
   _defaultMaterialHandle = _materials.Allocate(std::move(defaultMaterial));
 }
 
-HdRobotMeshHandle HdRobotBackendScene::CreateMesh(const SdfPath& id)
+HdRobotMeshHandle HdRobotSceneStore::CreateMesh(const SdfPath& id)
 {
   HdRobotMeshRecord record;
   record.id = id;
@@ -69,12 +69,12 @@ HdRobotMeshHandle HdRobotBackendScene::CreateMesh(const SdfPath& id)
   HdRobotMeshHandle handle = _meshes.Allocate(std::move(record));
   if(HdRobotMeshRecord* storedRecord = _meshes.Get(handle))
   {
-    storedRecord->backendIndex = handle.index;
+    storedRecord->sceneIndex = handle.index;
   }
   return handle;
 }
 
-HdRobotMaterialHandle HdRobotBackendScene::CreateMaterial(const SdfPath& id)
+HdRobotMaterialHandle HdRobotSceneStore::CreateMaterial(const SdfPath& id)
 {
   HdRobotMaterialRecord record;
   record.id = id;
@@ -84,7 +84,7 @@ HdRobotMaterialHandle HdRobotBackendScene::CreateMaterial(const SdfPath& id)
   return _materials.Allocate(std::move(record));
 }
 
-HdRobotLightHandle HdRobotBackendScene::CreateLight(const SdfPath& id)
+HdRobotLightHandle HdRobotSceneStore::CreateLight(const SdfPath& id)
 {
   HdRobotLightRecord record;
   record.id = id;
@@ -93,7 +93,7 @@ HdRobotLightHandle HdRobotBackendScene::CreateLight(const SdfPath& id)
   return _lights.Allocate(std::move(record));
 }
 
-HdRobotCameraHandle HdRobotBackendScene::CreateCamera(const SdfPath& id)
+HdRobotCameraHandle HdRobotSceneStore::CreateCamera(const SdfPath& id)
 {
   HdRobotCameraRecord record;
   record.id = id;
@@ -103,7 +103,7 @@ HdRobotCameraHandle HdRobotBackendScene::CreateCamera(const SdfPath& id)
   return _cameras.Allocate(std::move(record));
 }
 
-HdRobotLidarSensorHandle HdRobotBackendScene::CreateLidarSensor(const SdfPath& id)
+HdRobotLidarSensorHandle HdRobotSceneStore::CreateLidarSensor(const SdfPath& id)
 {
   HdRobotLidarSensorRecord record;
   record.id = id;
@@ -113,7 +113,7 @@ HdRobotLidarSensorHandle HdRobotBackendScene::CreateLidarSensor(const SdfPath& i
   return _lidarSensors.Allocate(std::move(record));
 }
 
-HdRobotHeightScanSensorHandle HdRobotBackendScene::CreateHeightScanSensor(const SdfPath& id)
+HdRobotHeightScanSensorHandle HdRobotSceneStore::CreateHeightScanSensor(const SdfPath& id)
 {
   HdRobotHeightScanSensorRecord record;
   record.id = id;
@@ -123,12 +123,12 @@ HdRobotHeightScanSensorHandle HdRobotBackendScene::CreateHeightScanSensor(const 
   return _heightScanSensors.Allocate(std::move(record));
 }
 
-HdRobotMaterialHandle HdRobotBackendScene::GetDefaultMaterialHandle() const
+HdRobotMaterialHandle HdRobotSceneStore::GetDefaultMaterialHandle() const
 {
   return _defaultMaterialHandle;
 }
 
-void HdRobotBackendScene::DestroyMesh(HdRobotMeshHandle handle)
+void HdRobotSceneStore::DestroyMesh(HdRobotMeshHandle handle)
 {
   std::lock_guard guard(_sceneMutex);
   HdRobotMeshRecord* record = _meshes.Get(handle);
@@ -142,7 +142,7 @@ void HdRobotBackendScene::DestroyMesh(HdRobotMeshHandle handle)
   _meshes.Retire(handle);
 }
 
-void HdRobotBackendScene::DestroyMaterial(HdRobotMaterialHandle handle)
+void HdRobotSceneStore::DestroyMaterial(HdRobotMaterialHandle handle)
 {
   std::lock_guard guard(_sceneMutex);
   HdRobotMaterialRecord* record = _materials.Get(handle);
@@ -156,7 +156,7 @@ void HdRobotBackendScene::DestroyMaterial(HdRobotMaterialHandle handle)
   _materials.Retire(handle);
 }
 
-void HdRobotBackendScene::DestroyLight(HdRobotLightHandle handle)
+void HdRobotSceneStore::DestroyLight(HdRobotLightHandle handle)
 {
   std::lock_guard guard(_sceneMutex);
   HdRobotLightRecord* record = _lights.Get(handle);
@@ -170,7 +170,7 @@ void HdRobotBackendScene::DestroyLight(HdRobotLightHandle handle)
   _lights.Retire(handle);
 }
 
-void HdRobotBackendScene::DestroyCamera(HdRobotCameraHandle handle)
+void HdRobotSceneStore::DestroyCamera(HdRobotCameraHandle handle)
 {
   std::lock_guard guard(_sceneMutex);
   HdRobotCameraRecord* record = _cameras.Get(handle);
@@ -183,7 +183,7 @@ void HdRobotBackendScene::DestroyCamera(HdRobotCameraHandle handle)
   _cameras.Retire(handle);
 }
 
-void HdRobotBackendScene::DestroyLidarSensor(HdRobotLidarSensorHandle handle)
+void HdRobotSceneStore::DestroyLidarSensor(HdRobotLidarSensorHandle handle)
 {
   std::lock_guard guard(_sceneMutex);
   HdRobotLidarSensorRecord* record = _lidarSensors.Get(handle);
@@ -196,7 +196,7 @@ void HdRobotBackendScene::DestroyLidarSensor(HdRobotLidarSensorHandle handle)
   _lidarSensors.Retire(handle);
 }
 
-void HdRobotBackendScene::DestroyHeightScanSensor(HdRobotHeightScanSensorHandle handle)
+void HdRobotSceneStore::DestroyHeightScanSensor(HdRobotHeightScanSensorHandle handle)
 {
   std::lock_guard guard(_sceneMutex);
   HdRobotHeightScanSensorRecord* record = _heightScanSensors.Get(handle);
@@ -209,37 +209,37 @@ void HdRobotBackendScene::DestroyHeightScanSensor(HdRobotHeightScanSensorHandle 
   _heightScanSensors.Retire(handle);
 }
 
-void HdRobotBackendScene::EnqueueMeshUpdate(HdRobotMeshUpdate update)
+void HdRobotSceneStore::EnqueueMeshUpdate(HdRobotMeshUpdate update)
 {
   EnqueuePendingUpdate(_pendingMutex, _pendingMeshUpdates, std::move(update));
 }
 
-void HdRobotBackendScene::EnqueueMaterialUpdate(HdRobotMaterialUpdate update)
+void HdRobotSceneStore::EnqueueMaterialUpdate(HdRobotMaterialUpdate update)
 {
   EnqueuePendingUpdate(_pendingMutex, _pendingMaterialUpdates, std::move(update));
 }
 
-void HdRobotBackendScene::EnqueueLightUpdate(HdRobotLightUpdate update)
+void HdRobotSceneStore::EnqueueLightUpdate(HdRobotLightUpdate update)
 {
   EnqueuePendingUpdate(_pendingMutex, _pendingLightUpdates, std::move(update));
 }
 
-void HdRobotBackendScene::EnqueueCameraUpdate(HdRobotCameraUpdate update)
+void HdRobotSceneStore::EnqueueCameraUpdate(HdRobotCameraUpdate update)
 {
   EnqueuePendingUpdate(_pendingMutex, _pendingCameraUpdates, std::move(update));
 }
 
-void HdRobotBackendScene::EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate update)
+void HdRobotSceneStore::EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate update)
 {
   EnqueuePendingUpdate(_pendingMutex, _pendingLidarSensorUpdates, std::move(update));
 }
 
-void HdRobotBackendScene::EnqueueHeightScanSensorUpdate(HdRobotHeightScanSensorUpdate update)
+void HdRobotSceneStore::EnqueueHeightScanSensorUpdate(HdRobotHeightScanSensorUpdate update)
 {
   EnqueuePendingUpdate(_pendingMutex, _pendingHeightScanSensorUpdates, std::move(update));
 }
 
-void HdRobotBackendScene::ApplyPendingUpdates()
+void HdRobotSceneStore::ApplyPendingUpdates()
 {
   std::vector<HdRobotMeshUpdate> meshUpdates;
   std::vector<HdRobotMaterialUpdate> materialUpdates;
@@ -258,33 +258,33 @@ void HdRobotBackendScene::ApplyPendingUpdates()
   }
 
   std::lock_guard guard(_sceneMutex);
-  ApplyBackendDataUpdates(_materials, materialUpdates);
-  ApplyBackendDataUpdates(_lights, lightUpdates);
-  ApplyBackendDataUpdates(_cameras, cameraUpdates);
-  ApplyBackendDataUpdates(_lidarSensors, lidarSensorUpdates);
-  ApplyBackendDataUpdates(_heightScanSensors, heightScanSensorUpdates);
+  ApplySceneDataUpdates(_materials, materialUpdates);
+  ApplySceneDataUpdates(_lights, lightUpdates);
+  ApplySceneDataUpdates(_cameras, cameraUpdates);
+  ApplySceneDataUpdates(_lidarSensors, lidarSensorUpdates);
+  ApplySceneDataUpdates(_heightScanSensors, heightScanSensorUpdates);
   _ApplyMeshUpdates(meshUpdates);
 }
 
-int HdRobotBackendScene::RegisterTexturePath(const std::string& texturePath, TextureUsage usage)
+int HdRobotSceneStore::RegisterTexturePath(const std::string& texturePath, TextureUsage usage)
 {
   std::lock_guard guard(_textureRegistryMutex);
   return _textureRegistry.Register(texturePath, usage);
 }
 
-std::vector<TextureAsset> HdRobotBackendScene::GetTextureAssetsSnapshot() const
+std::vector<TextureAsset> HdRobotSceneStore::GetTextureAssetsSnapshot() const
 {
   std::lock_guard guard(_textureRegistryMutex);
   return _textureRegistry.GetTextureAssets();
 }
 
-uint64_t HdRobotBackendScene::GetTextureRegistryVersion() const
+uint64_t HdRobotSceneStore::GetTextureRegistryVersion() const
 {
   std::lock_guard guard(_textureRegistryMutex);
   return _textureRegistry.GetVersion();
 }
 
-std::optional<HydraMaterial> HdRobotBackendScene::GetMaterialDataCopy(HdRobotMaterialHandle handle) const
+std::optional<HydraMaterial> HdRobotSceneStore::GetMaterialDataCopy(HdRobotMaterialHandle handle) const
 {
   std::lock_guard guard(_sceneMutex);
   const HdRobotMaterialRecord* record = _materials.Get(handle);
@@ -295,7 +295,7 @@ std::optional<HydraMaterial> HdRobotBackendScene::GetMaterialDataCopy(HdRobotMat
   return record->data;
 }
 
-int HdRobotBackendScene::ResolveMaterialIndexForUpload(HdRobotMaterialHandle handle) const
+int HdRobotSceneStore::ResolveMaterialIndexForUpload(HdRobotMaterialHandle handle) const
 {
   if(!IsValid(handle))
   {
@@ -306,19 +306,19 @@ int HdRobotBackendScene::ResolveMaterialIndexForUpload(HdRobotMaterialHandle han
                                            : static_cast<int>(handle.index);
 }
 
-std::vector<HdRobotMeshRecord> HdRobotBackendScene::GetMeshRecordsSnapshot() const
+std::vector<HdRobotMeshRecord> HdRobotSceneStore::GetMeshRecordsSnapshot() const
 {
   std::lock_guard guard(_sceneMutex);
   return _meshes.GetSnapshot();
 }
 
-std::vector<HdRobotMaterialRecord> HdRobotBackendScene::GetMaterialRecordsSnapshot() const
+std::vector<HdRobotMaterialRecord> HdRobotSceneStore::GetMaterialRecordsSnapshot() const
 {
   std::lock_guard guard(_sceneMutex);
   return _materials.GetSnapshot();
 }
 
-std::vector<HydraLight> HdRobotBackendScene::GetActiveLightSnapshot() const
+std::vector<HydraLight> HdRobotSceneStore::GetActiveLightSnapshot() const
 {
   std::lock_guard guard(_sceneMutex);
   return GetActiveDataSnapshot<HydraLight>(_lights, [](const HdRobotLightRecord& record) {
@@ -326,28 +326,28 @@ std::vector<HydraLight> HdRobotBackendScene::GetActiveLightSnapshot() const
   });
 }
 
-std::vector<HdRobotCameraData> HdRobotBackendScene::GetActiveCameraSnapshot() const
+std::vector<HdRobotCameraData> HdRobotSceneStore::GetActiveCameraSnapshot() const
 {
   std::lock_guard guard(_sceneMutex);
   return GetActiveDataSnapshot<HdRobotCameraData>(_cameras,
                                                   [](const HdRobotCameraRecord& record) { return record.active; });
 }
 
-std::vector<HdRobotLidarSensorData> HdRobotBackendScene::GetActiveLidarSensorSnapshot() const
+std::vector<HdRobotLidarSensorData> HdRobotSceneStore::GetActiveLidarSensorSnapshot() const
 {
   std::lock_guard guard(_sceneMutex);
   return GetActiveDataSnapshot<HdRobotLidarSensorData>(
       _lidarSensors, [](const HdRobotLidarSensorRecord& record) { return record.active; });
 }
 
-std::vector<HdRobotHeightScanSensorData> HdRobotBackendScene::GetActiveHeightScanSensorSnapshot() const
+std::vector<HdRobotHeightScanSensorData> HdRobotSceneStore::GetActiveHeightScanSensorSnapshot() const
 {
   std::lock_guard guard(_sceneMutex);
   return GetActiveDataSnapshot<HdRobotHeightScanSensorData>(
       _heightScanSensors, [](const HdRobotHeightScanSensorRecord& record) { return record.active; });
 }
 
-std::vector<HdRobotMeshRecord> HdRobotBackendScene::ConsumeDirtyMeshGeometry()
+std::vector<HdRobotMeshRecord> HdRobotSceneStore::ConsumeDirtyMeshGeometry()
 {
   std::vector<HdRobotMeshRecord> result;
   std::lock_guard guard(_sceneMutex);
@@ -364,7 +364,7 @@ std::vector<HdRobotMeshRecord> HdRobotBackendScene::ConsumeDirtyMeshGeometry()
   return result;
 }
 
-std::vector<HdRobotMeshRecord> HdRobotBackendScene::ConsumeDirtyMeshInstances()
+std::vector<HdRobotMeshRecord> HdRobotSceneStore::ConsumeDirtyMeshInstances()
 {
   std::vector<HdRobotMeshRecord> result;
   std::lock_guard guard(_sceneMutex);
@@ -381,7 +381,7 @@ std::vector<HdRobotMeshRecord> HdRobotBackendScene::ConsumeDirtyMeshInstances()
   return result;
 }
 
-std::vector<uint32_t> HdRobotBackendScene::ConsumeDirtyMaterialIndices()
+std::vector<uint32_t> HdRobotSceneStore::ConsumeDirtyMaterialIndices()
 {
   std::vector<uint32_t> result;
   std::lock_guard guard(_sceneMutex);
@@ -398,7 +398,7 @@ std::vector<uint32_t> HdRobotBackendScene::ConsumeDirtyMaterialIndices()
   return result;
 }
 
-void HdRobotBackendScene::SetMeshRendererState(uint32_t meshIndex,
+void HdRobotSceneStore::SetMeshRendererState(uint32_t meshIndex,
                                                int rendererMeshId,
                                                std::vector<int> rendererInstanceIds)
 {
@@ -414,7 +414,7 @@ void HdRobotBackendScene::SetMeshRendererState(uint32_t meshIndex,
   record->instanceDirty = true;
 }
 
-void HdRobotBackendScene::_ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates)
+void HdRobotSceneStore::_ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates)
 {
   for(HdRobotMeshUpdate& update : updates)
   {

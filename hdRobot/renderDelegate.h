@@ -1,13 +1,13 @@
 #pragma once
 
 #include <pxr/imaging/hd/renderDelegate.h>
-#include "backendScene.h"
+#include "sceneStore.h"
 #include "renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
-class HdRobotRenderResources;
+class HdRobotEngineSession;
 
 class HdRobotRenderDelegate final : public HdRenderDelegate
 {
@@ -93,8 +93,8 @@ private:
   const std::string              _resourcePath;
   HdResourceRegistrySharedPtr    _resourceRegistry;
   std::unique_ptr<HdRobotRenderParam> _renderParam;
-  HdRobotBackendScene _backendScene;
-  std::unique_ptr<HdRobotRenderResources> _renderResources;
+  HdRobotSceneStore _sceneStore;
+  std::unique_ptr<HdRobotEngineSession> _engineSession;
   HdRenderSettingDescriptorList  _settingDescriptors;
   // std::unique_str<HdRobotRenderBuffer> _colorBuffer;
   Hgi*                         _hgi = nullptr;

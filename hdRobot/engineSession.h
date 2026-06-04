@@ -14,21 +14,21 @@ class HdRobotGlInteropCache;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotBackendScene;
+class HdRobotSceneStore;
 class HdRobotRenderParam;
 
-class HdRobotRenderResources final
+class HdRobotEngineSession final
 {
 public:
-  explicit HdRobotRenderResources(std::string resourcePath);
-  ~HdRobotRenderResources();
+  explicit HdRobotEngineSession(std::string resourcePath);
+  ~HdRobotEngineSession();
 
   ::Engine& GetEngine();
   const ::Engine& GetEngine() const;
   ::HdRobotGlInteropCache& GetGlInteropCache();
 
   void EnsureEngineReady(const GfVec2i& renderSize);
-  void CommitResources(HdRobotRenderParam& renderParam, HdRobotBackendScene& backendScene);
+  void CommitResources(HdRobotRenderParam& renderParam, HdRobotSceneStore& sceneStore);
 
   bool SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels);
