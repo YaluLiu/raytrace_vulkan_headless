@@ -64,7 +64,7 @@ call sites with `rg`.
   param ownership, scene store ownership, and delegate-owned render
   resource/session ownership.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
-  to `HdRobotRenderBridge::RenderFrameAndCopyAovs`.
+  to `HdRobotPassBridge::RenderFrameAndCopyAovs`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
   renderer runtime/session object that owns `Engine`, GL interop cache,
   engine lifecycle state, committed camera/sensor/output snapshots, and
@@ -74,9 +74,9 @@ call sites with `rg`.
   owns renderer mesh/instance binding state, initial scene upload, texture
   asset refresh, light/geometry/instance/material incremental submission, and
   render-tag visibility updates for renderer instances.
-- `hdRobot/renderBridge.cpp`: Pass-dependent frame bridge between Hydra render
+- `hdRobot/passBridge.cpp`: Pass-dependent frame bridge between Hydra render
   pass state and `Engine` frame execution.
-- `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
+- `hdRobot/passBridgeConversions.h` / `hdRobot/passBridgeConversions.cpp`:
   Hydra-to-engine data conversion helpers used by the bridge for mesh geometry,
   materials, cameras, lights, LiDAR, height scan, visualization, and tile
   config objects.
@@ -323,7 +323,7 @@ call sites with `rg`.
   scene store, uploads initial meshes/textures, refreshes texture resources,
   submits lights/geometry/instances/material updates, and applies frame render
   tag visibility to bound renderer instances.
-- `hdRobot/renderBridge.h` / `hdRobot/renderBridge.cpp`:
+- `hdRobot/passBridge.h` / `hdRobot/passBridge.cpp`:
   Converts current Hydra pass state into frame-only renderer work: render
   state/AOV validation, main render size selection, current pass camera setup,
   requested tile AOV channel selection, frame render tag application,
@@ -331,7 +331,7 @@ call sites with `rg`.
   AOV spec so fixed tile AOVs copy before display tile AOVs and other AOVs. It
   borrows `HdRobotEngineSession` and does not read `HdRobotRenderParam` or
   consume scene-store dirty queues.
-- `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
+- `hdRobot/passBridgeConversions.h` / `hdRobot/passBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into engine-facing camera specs,
   `Material`, light records, LiDAR and height scan sensor specs,
   visualization configs, and `TileAtlasConfig`.
@@ -502,7 +502,7 @@ call sites with `rg`.
 - Frame rendering:
   `engine/src/core/frame_executor.cpp`, `engine/src/core/engine_facade.cpp`,
   `engine/src/core/output_controller.cpp`, `engine/features/tile/tile_atlas_pass.cpp`,
-  `engine/features/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/renderBridge.cpp`,
+  `engine/features/lidar/lidar_point_cloud_pass.cpp`, `hdRobot/passBridge.cpp`,
   `hdRobot/engineSession.cpp`,
   then search for `RenderFrame`, `recordFramePasses`,
   `recordPreviewAovs`, `recordTileAtlas`, `recordLidarPointClouds`,
@@ -527,13 +527,13 @@ call sites with `rg`.
   `createGraphicsPipeline`, `createFramebuffer`, `recordPreviewAovs`, and
   `MeshDrawPushConstants`.
 - Hydra render flow:
-  `hdRobot/renderPass.cpp`, `hdRobot/renderBridge.cpp`,
+  `hdRobot/renderPass.cpp`, `hdRobot/passBridge.cpp`,
   `hdRobot/engineSession.cpp`, `hdRobot/renderDelegate.cpp`, then search
   for `RenderFrame`, `_Execute`, `ApplyPendingUpdates`, `CommitResources`,
   and `Sync`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
-  `hdRobot/engineSession.cpp`, `hdRobot/renderBridge.cpp`,
+  `hdRobot/engineSession.cpp`, `hdRobot/passBridge.cpp`,
   `engine/include/engine/engine.hpp`,
   `engine/src/scene/view_uniforms.cpp`,
   `engine/src/scene/camera_projection.cpp`, and `engine/features/tile/tile_atlas_pass.cpp`, then
@@ -550,7 +550,7 @@ call sites with `rg`.
   `engine/src/scene/rt_scene.cpp`,
   `engine/features/lidar/shaders/lidar_points.comp`,
   `engine/features/lidar/shaders/lidar_overlay.vert`,
-  `hdRobot/renderDelegate.cpp`, and `hdRobot/renderBridge.cpp`, then search
+  `hdRobot/renderDelegate.cpp`, and `hdRobot/passBridge.cpp`, then search
   for `LidarSensorSpec`, `LidarPointCloudPass`,
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
   `hdRobot:lidar:visualizeEnabled`, `readLidarPointCloudFrame`, and
@@ -560,7 +560,7 @@ call sites with `rg`.
   `UsdRaySensorImaging/plugInfo.json`,
   `UsdRaySensor/plugInfo.json`,
   `UsdRaySensor/generatedSchema.usda`, `hdRobot/lidarSensor.cpp`,
-  `hdRobot/renderDelegate.cpp`, and `hdRobot/renderBridge.cpp`, then search
+  `hdRobot/renderDelegate.cpp`, and `hdRobot/passBridge.cpp`, then search
   for `UsdGeomLidarSensor`, `schemaIdentifier`, `lidarSensor`,
   `CreateLidarSensor`, `EnqueueLidarSensorUpdate`, and `GetActiveLidarSensorSnapshot`.
 - Height scan generation or overlay:
@@ -582,7 +582,7 @@ call sites with `rg`.
   `UsdRaySensor/plugInfo.json`,
   `UsdRaySensor/generatedSchema.usda`,
   `hdRobot/heightScanSensor.cpp`, `hdRobot/renderDelegate.cpp`,
-  `hdRobot/renderBridge.cpp`, and
+  `hdRobot/passBridge.cpp`, and
   `engine/src/scene/rt_scene.cpp`, then search for
   `HeightScanSensorSpec`, `HeightScanVisualizationConfig`,
   `HeightScanPass`, `GenerateHeightScans`, `OverlayHeightScans`,
@@ -594,7 +594,7 @@ call sites with `rg`.
   `setHeightScanVisualizationConfig`, and `readHeightScanFrame`.
 - Hydra mesh sync:
   `hdRobot/mesh.cpp`, `hdRobot/mesh.h`, `hdRobot/tokens.h`,
-  `hdRobot/renderBridge.cpp`, and `engine/src/scene/scene_types.hpp`,
+  `hdRobot/passBridge.cpp`, and `engine/src/scene/scene_types.hpp`,
   then search for `_CreateGiMeshes`, `updateGeometry`, `_AnalyzePrimvars`,
   `traceRole`, `ground`, `traceMask`, and tangent calculation helpers.
 - Material or texture path issues:
@@ -604,7 +604,7 @@ call sites with `rg`.
   `loadMaterial`, and material buffer updates.
 - PBR material struct or shader material layout:
   `engine/include/engine/mesh_types.hpp`, `hdRobot/sceneData.h`,
-  `hdRobot/sceneData.cpp`, `hdRobot/renderBridge.cpp`,
+  `hdRobot/sceneData.cpp`, `hdRobot/passBridge.cpp`,
   `engine/shaders/common/host_device.h`,
   then search for `baseColorFactor`, `emissionFactor`,
   `diffuseTextureId`, `roughnessFactor`, and `normalTextureId`.
@@ -627,7 +627,7 @@ call sites with `rg`.
   `baseColorTextureId`.
 - Engine light evaluation:
   `hdRobot/light.cpp`, `hdRobot/sceneData.cpp`,
-  `hdRobot/renderBridge.cpp`, `engine/src/scene/engine_scene.cpp`,
+  `hdRobot/passBridge.cpp`, `engine/src/scene/engine_scene.cpp`,
   `engine/src/scene/gpu_scene.cpp`, `engine/src/scene/scene_descriptors.cpp`,
   `engine/shaders/common/host_device.h`, `engine/features/preview/shaders/mesh.frag`, then search
   for `ToLight`, `updateLights`, `updateLightBuffer`, `eLights`,
@@ -645,7 +645,7 @@ call sites with `rg`.
   the matching material parser fields.
 - Instancers or material subsets:
   `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
-  `hdRobot/sceneData.cpp`, `hdRobot/renderBridge.cpp`, then search
+  `hdRobot/sceneData.cpp`, `hdRobot/passBridge.cpp`, then search
   for `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
   `materialIds`, and `rendererInstanceIds`.
 - Render buffer or Hgi texture issues:
@@ -655,7 +655,7 @@ call sites with `rg`.
   `engine/include/engine/mesh_types.hpp`,
   `engine/src/scene/gpu_scene.cpp`,
   `engine/src/scene/engine_scene.cpp`, and
-  `hdRobot/renderBridgeConversions.cpp`,
+  `hdRobot/passBridgeConversions.cpp`,
   then search for `ConvertHydraMeshToGeometry`, `ToMaterial`,
   `uploadMesh`, `loadVertices`, `loadIndices`, and `assignMaterialIndices`.
 - Build or install failures:

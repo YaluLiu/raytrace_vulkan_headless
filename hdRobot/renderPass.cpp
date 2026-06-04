@@ -1,6 +1,6 @@
 #include "renderPass.h"
 
-#include "renderBridge.h"
+#include "passBridge.h"
 #include "engineSession.h"
 
 #include <memory>
@@ -12,7 +12,7 @@ HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex*             index,
                                      HdRobotEngineSession&      engineSession)
     : HdRenderPass(index, collection)
     , _isConverged(false)
-    , _bridge(std::make_unique<HdRobotRenderBridge>(engineSession))
+    , _bridge(std::make_unique<HdRobotPassBridge>(engineSession))
 {
 }
 

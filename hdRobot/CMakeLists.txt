@@ -11,14 +11,14 @@ add_library(
   slotVector.h
   aovBridgeSpec.cpp
   aovBridgeSpec.h
-  renderBridge.cpp
-  renderBridge.h
+  passBridge.cpp
+  passBridge.h
   engineSceneSync.cpp
   engineSceneSync.h
   engineSession.cpp
   engineSession.h
-  renderBridgeConversions.cpp
-  renderBridgeConversions.h
+  passBridgeConversions.cpp
+  passBridgeConversions.h
   glInteropCache.cpp
   glInteropCache.h
   hydraAovCopy.cpp

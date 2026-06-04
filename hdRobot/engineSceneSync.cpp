@@ -2,7 +2,7 @@
 
 #include "glInteropCache.h"
 #include "hydraTextureAssetExport.h"
-#include "renderBridgeConversions.h"
+#include "passBridgeConversions.h"
 #include "tokens.h"
 
 #include <engine/engine.hpp>

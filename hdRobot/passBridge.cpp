@@ -1,4 +1,4 @@
-#include "renderBridge.h"
+#include "passBridge.h"
 
 #include <algorithm>
 #include <iostream>
@@ -69,15 +69,15 @@ std::optional<GfVec2i> GetMainRenderSize(const HdRenderPassStateSharedPtr &rende
 
 } // namespace
 
-HdRobotRenderBridge::HdRobotRenderBridge(HdRobotEngineSession& engineSession)
+HdRobotPassBridge::HdRobotPassBridge(HdRobotEngineSession& engineSession)
     : _engineSession(engineSession)
 {
 }
 
-HdRobotRenderBridge::~HdRobotRenderBridge() = default;
+HdRobotPassBridge::~HdRobotPassBridge() = default;
 
-HdRobotFrameRenderResult HdRobotRenderBridge::RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr &renderPassState,
-                                                                     const TfTokenVector &renderTags)
+HdRobotFrameRenderResult HdRobotPassBridge::RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr &renderPassState,
+                                                                    const TfTokenVector &renderTags)
 {
   HdRobotFrameRenderResult result;
   if(!renderPassState)
@@ -112,7 +112,7 @@ HdRobotFrameRenderResult HdRobotRenderBridge::RenderFrameAndCopyAovs(const HdRen
   return result;
 }
 
-bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdAovBindings)
+bool HdRobotPassBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdAovBindings)
 {
   bool allAovsCopied = true;
 
@@ -132,7 +132,7 @@ bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &h
     }
     else
     {
-      std::cerr << "[HdRobotRenderBridge] Unsupported AOV token " << binding.aovName.GetString() << std::endl;
+      std::cerr << "[HdRobotPassBridge] Unsupported AOV token " << binding.aovName.GetString() << std::endl;
     }
     allAovsCopied = allAovsCopied && copied;
     if(aovBuffer != nullptr)
@@ -150,7 +150,7 @@ bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &h
   return allAovsCopied;
 }
 
-void HdRobotRenderBridge::configureRequestedTileAovChannels(const HdRenderPassAovBindingVector &hdAovBindings)
+void HdRobotPassBridge::configureRequestedTileAovChannels(const HdRenderPassAovBindingVector &hdAovBindings)
 {
   _engineSession.ConfigureFrameOutputs(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
 }

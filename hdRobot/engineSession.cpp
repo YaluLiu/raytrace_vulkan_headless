@@ -4,7 +4,7 @@
 #include "sceneStore.h"
 #include "camera.h"
 #include "glInteropCache.h"
-#include "renderBridgeConversions.h"
+#include "passBridgeConversions.h"
 #include "renderParam.h"
 
 #include <engine/engine.hpp>

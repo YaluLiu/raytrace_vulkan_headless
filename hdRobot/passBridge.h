@@ -17,11 +17,11 @@ struct HdRobotFrameRenderResult
   bool IsConverged() const { return frameRendered && aovsCopied; }
 };
 
-class HdRobotRenderBridge final
+class HdRobotPassBridge final
 {
 public:
-  explicit HdRobotRenderBridge(HdRobotEngineSession& engineSession);
-  ~HdRobotRenderBridge();
+  explicit HdRobotPassBridge(HdRobotEngineSession& engineSession);
+  ~HdRobotPassBridge();
 
   HdRobotFrameRenderResult RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr& renderPassState,
                                                   const TfTokenVector& renderTags);
