@@ -26,11 +26,7 @@ bool HdRobotRenderPass::IsConverged() const
 void HdRobotRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags)
 {
   _isConverged = false;
-  if(!_bridge->RenderFrame(renderPassState, renderTags))
-  {
-    return;
-  }
-  _isConverged = true;
+  _isConverged = _bridge->RenderFrameAndCopyAovs(renderPassState, renderTags).IsConverged();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -39,7 +39,6 @@ struct HydraMesh
   std::vector<glm::mat4> instanceTransforms = {glm::mat4{1.0f}};
   bool hasInstances = true;
   glm::mat4 transform = glm::mat4{1.0f};
-  std::vector<int> rendererInstanceIds;
 };
 
 struct HydraMaterial

@@ -24,8 +24,6 @@ struct HdRobotMeshRecord
   bool active = true;
   bool geometryDirty = true;
   bool instanceDirty = true;
-  int rendererMeshId = -1;
-  std::vector<int> rendererInstanceIds;
 };
 
 template <typename DataT>
@@ -116,7 +114,6 @@ public:
   std::vector<HdRobotMeshRecord> ConsumeDirtyMeshGeometry();
   std::vector<HdRobotMeshRecord> ConsumeDirtyMeshInstances();
   std::vector<uint32_t> ConsumeDirtyMaterialIndices();
-  void SetMeshRendererState(uint32_t meshIndex, int rendererMeshId, std::vector<int> rendererInstanceIds);
 
 private:
   void _ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates);

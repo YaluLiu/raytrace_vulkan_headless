@@ -6,6 +6,7 @@
 
 #include "tokens.h"
 
+#include <algorithm>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -153,6 +154,21 @@ int GetHdRobotAovCopyPriority(const TfToken &name)
 {
   const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(name);
   return spec ? spec->copyPriority : kStandardCopyPriority;
+}
+
+std::vector<const HdRenderPassAovBinding *> GetHdRobotAovCopyOrder(const HdRenderPassAovBindingVector &bindings)
+{
+  std::vector<const HdRenderPassAovBinding *> copyOrder;
+  copyOrder.reserve(bindings.size());
+  for(const HdRenderPassAovBinding &binding : bindings)
+  {
+    copyOrder.push_back(&binding);
+  }
+  std::stable_sort(copyOrder.begin(), copyOrder.end(), [](const HdRenderPassAovBinding *lhs,
+                                                          const HdRenderPassAovBinding *rhs) {
+    return GetHdRobotAovCopyPriority(lhs->aovName) < GetHdRobotAovCopyPriority(rhs->aovName);
+  });
+  return copyOrder;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

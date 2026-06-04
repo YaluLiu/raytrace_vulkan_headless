@@ -13,6 +13,8 @@ add_library(
   aovBridgeSpec.h
   renderBridge.cpp
   renderBridge.h
+  engineSceneSync.cpp
+  engineSceneSync.h
   engineSession.cpp
   engineSession.h
   renderBridgeConversions.cpp

@@ -398,22 +398,6 @@ std::vector<uint32_t> HdRobotSceneStore::ConsumeDirtyMaterialIndices()
   return result;
 }
 
-void HdRobotSceneStore::SetMeshRendererState(uint32_t meshIndex,
-                                               int rendererMeshId,
-                                               std::vector<int> rendererInstanceIds)
-{
-  std::lock_guard guard(_sceneMutex);
-  HdRobotMeshRecord* record = _meshes.GetByIndex(meshIndex);
-  if(record == nullptr)
-  {
-    return;
-  }
-  record->rendererMeshId = rendererMeshId;
-  record->rendererInstanceIds = std::move(rendererInstanceIds);
-  record->data.rendererInstanceIds = record->rendererInstanceIds;
-  record->instanceDirty = true;
-}
-
 void HdRobotSceneStore::_ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates)
 {
   for(HdRobotMeshUpdate& update : updates)
@@ -425,12 +409,7 @@ void HdRobotSceneStore::_ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& update
     }
     if(update.data.has_value())
     {
-      std::vector<int> rendererInstanceIds = std::move(record->rendererInstanceIds);
-      const int rendererMeshId = record->rendererMeshId;
       record->data = std::move(*update.data);
-      record->rendererMeshId = rendererMeshId;
-      record->rendererInstanceIds = std::move(rendererInstanceIds);
-      record->data.rendererInstanceIds = record->rendererInstanceIds;
     }
     if(update.active.has_value())
     {

@@ -9,16 +9,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotEngineSession;
 
+struct HdRobotFrameRenderResult
+{
+  bool frameRendered = false;
+  bool aovsCopied = false;
+
+  bool IsConverged() const { return frameRendered && aovsCopied; }
+};
+
 class HdRobotRenderBridge final
 {
 public:
   explicit HdRobotRenderBridge(HdRobotEngineSession& engineSession);
   ~HdRobotRenderBridge();
 
-  bool RenderFrame(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags);
+  HdRobotFrameRenderResult RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr& renderPassState,
+                                                  const TfTokenVector& renderTags);
 
 private:
-  void configureFrameOutputs(const HdRenderPassAovBindingVector& hdAovBindings);
+  void configureRequestedTileAovChannels(const HdRenderPassAovBindingVector& hdAovBindings);
   bool copyRenderedAovs(const HdRenderPassAovBindingVector& hdAovBindings);
 
   HdRobotEngineSession& _engineSession;

@@ -1,20 +1,16 @@
 #include "engineSession.h"
 
+#include "engineSceneSync.h"
 #include "sceneStore.h"
 #include "camera.h"
 #include "glInteropCache.h"
-#include "hydraTextureAssetExport.h"
 #include "renderBridgeConversions.h"
 #include "renderParam.h"
-#include "tokens.h"
 
 #include <engine/engine.hpp>
 
 #include <algorithm>
-#include <cstdint>
 #include <filesystem>
-#include <optional>
-#include <set>
 #include <utility>
 #include <vector>
 
@@ -32,38 +28,6 @@ bool IsUsdImagingPluginCamera(const HdRobotCameraData& camera)
   constexpr const char* kInternalCameraPrefix = "/_UsdImaging_HdRobotRendererPlugin_";
   constexpr const char* kInternalCameraSuffix = "/camera";
   return camera.name.starts_with(kInternalCameraPrefix) && camera.name.ends_with(kInternalCameraSuffix);
-}
-
-TfTokenVector NormalizeRenderTags(TfTokenVector tags)
-{
-  std::sort(tags.begin(), tags.end(), [](const TfToken& a, const TfToken& b) { return a.GetString() < b.GetString(); });
-  tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
-  return tags;
-}
-
-bool RenderTagsEqual(const TfTokenVector& lhs, const TfTokenVector& rhs)
-{
-  if(lhs.size() != rhs.size())
-  {
-    return false;
-  }
-  for(size_t i = 0; i < lhs.size(); ++i)
-  {
-    if(lhs[i] != rhs[i])
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool IsMeshRenderTagMatched(const HydraMesh& mesh, const TfTokenVector& renderTags)
-{
-  if(renderTags.empty())
-  {
-    return true;
-  }
-  return std::find(renderTags.begin(), renderTags.end(), mesh.renderTag) != renderTags.end();
 }
 
 void SortCamerasByName(std::vector<HdRobotCameraData>& cameras)
@@ -87,86 +51,6 @@ void SortHeightScanSensorsByName(std::vector<HdRobotHeightScanSensorData>& senso
                                                const HdRobotHeightScanSensorData& rhs) {
     return lhs.name < rhs.name;
   });
-}
-
-std::vector<Material> CollectMaterialsForMesh(const HydraMesh& mesh,
-                                              const std::vector<HdRobotMaterialRecord>& materials)
-{
-  std::vector<Material> materialsForUpload;
-  materialsForUpload.reserve(mesh.scene_mat_ids.size());
-  for(const int matId : mesh.scene_mat_ids)
-  {
-    const size_t materialIndex = matId >= 0 ? static_cast<size_t>(matId) : 0;
-    const size_t fallbackIndex = materials.empty() ? materialIndex : 0;
-    const size_t resolvedIndex = materialIndex < materials.size() ? materialIndex : fallbackIndex;
-    if(resolvedIndex < materials.size())
-    {
-      materialsForUpload.emplace_back(ToMaterial(materials[resolvedIndex].data));
-    }
-  }
-  if(materialsForUpload.empty())
-  {
-    HydraMaterial fallback;
-    fallback.set_default();
-    materialsForUpload.emplace_back(ToMaterial(fallback));
-  }
-  return materialsForUpload;
-}
-
-struct UploadedMeshState
-{
-  int rendererMeshId = -1;
-  std::vector<int> rendererInstanceIds;
-};
-
-UploadedMeshState UploadMeshToRenderer(::Engine& engine,
-                                       const HydraMesh& mesh,
-                                       const std::vector<HdRobotMaterialRecord>& materials)
-{
-  UploadedMeshState state;
-  state.rendererMeshId = static_cast<int>(engine.getMeshSourceCount());
-
-  MeshGeometry geometry;
-  ConvertHydraMeshToGeometry(mesh, geometry);
-  std::vector<Material> materialsForUpload = CollectMaterialsForMesh(mesh, materials);
-  engine.uploadMesh(geometry, materialsForUpload);
-
-  const size_t firstInstanceId = engine.getInstanceCount() - 1;
-  const auto instance = engine.getInstance(firstInstanceId);
-  const size_t authoredInstanceCount = mesh.instanceTransforms.size();
-  const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
-  for(size_t i = 1; i < rendererInstanceSlotCount; ++i)
-  {
-    engine.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
-  }
-  state.rendererInstanceIds.reserve(rendererInstanceSlotCount);
-  for(size_t i = 0; i < rendererInstanceSlotCount; ++i)
-  {
-    state.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
-  }
-  return state;
-}
-
-bool EnsureMeshRendererInstanceSlots(::Engine& engine, HdRobotMeshRecord& record)
-{
-  if(record.rendererInstanceIds.empty())
-  {
-    return false;
-  }
-
-  const size_t requiredSlotCount = std::max<size_t>(record.data.instanceTransforms.size(), 1);
-  if(record.rendererInstanceIds.size() >= requiredSlotCount)
-  {
-    return false;
-  }
-
-  const InstanceInfo baseInstance = engine.getInstance(static_cast<size_t>(record.rendererInstanceIds.front()));
-  for(size_t i = record.rendererInstanceIds.size(); i < requiredSlotCount; ++i)
-  {
-    const uint32_t rendererInstanceId = engine.addInstance(baseInstance.transform, baseInstance.objIndex, static_cast<int>(i));
-    record.rendererInstanceIds.push_back(static_cast<int>(rendererInstanceId));
-  }
-  return true;
 }
 } // namespace
 
@@ -197,22 +81,13 @@ struct HdRobotEngineSession::Impl
   void CommitResources(HdRobotRenderParam& renderParam, HdRobotSceneStore& sceneStore)
   {
     EnsureEngineReady(isAppInited ? currentRenderSize : BootstrapRenderSize());
-    EnsureInitialResources(sceneStore);
-    RefreshTextureAssetsIfNeeded(sceneStore);
+    sceneSync.EnsureResources(engine, sceneStore, glInteropCache);
 
     CacheCommittedFrameState(renderParam, sceneStore);
     SubmitCommittedCameras();
     ConfigureFrameOutputs(requestedTileAovChannels);
 
-    UpdateLights(sceneStore);
-    UpdateGeometry(sceneStore);
-    if(UpdateInstances(sceneStore))
-    {
-      frameVisibilityDirty = true;
-    }
-    UpdateMaterials(sceneStore);
-
-    frameMeshRecords = sceneStore.GetMeshRecordsSnapshot();
+    sceneSync.SyncSceneToEngine(engine, sceneStore);
   }
 
   void ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels)
@@ -274,42 +149,7 @@ struct HdRobotEngineSession::Impl
 
   void ApplyFrameRenderTags(const TfTokenVector& renderTags)
   {
-    TfTokenVector normalizedRenderTags = NormalizeRenderTags(renderTags);
-    const bool tagsChanged = !RenderTagsEqual(activeRenderTags, normalizedRenderTags);
-    if(!tagsChanged && !frameVisibilityDirty)
-    {
-      return;
-    }
-
-    activeRenderTags = std::move(normalizedRenderTags);
-    for(const HdRobotMeshRecord& record : frameMeshRecords)
-    {
-      const HydraMesh& mesh = record.data;
-      const bool tagMatched = IsMeshRenderTagMatched(mesh, activeRenderTags);
-      const bool meshVisible = record.active && mesh.visible && mesh.valid && tagMatched;
-      const uint32_t traceMask = mesh.traceRole == HdRobotTraceRoleTokens->ground
-                                     ? kTraceMaskGround
-                                     : kTraceMaskDefaultGeometry;
-
-      for(size_t instanceId = 0; instanceId < record.rendererInstanceIds.size(); ++instanceId)
-      {
-        const int rendererInstanceId = record.rendererInstanceIds[instanceId];
-        if(rendererInstanceId < 0)
-        {
-          continue;
-        }
-
-        const bool instanceValid = mesh.hasInstances && (instanceId < mesh.instanceTransforms.size());
-        const bool visible = meshVisible && instanceValid;
-        glm::mat4 transform = glm::transpose(mesh.transform);
-        if(instanceValid)
-        {
-          transform = glm::transpose(mesh.transform * mesh.instanceTransforms[instanceId]);
-        }
-        engine.updateInstance(static_cast<uint32_t>(rendererInstanceId), transform, visible, traceMask);
-      }
-    }
-    frameVisibilityDirty = false;
+    sceneSync.ApplyFrameRenderTags(engine, renderTags);
   }
 
   void InitializeEngine(const GfVec2i& renderSize)
@@ -329,49 +169,6 @@ struct HdRobotEngineSession::Impl
     glInteropCache.Clear();
     engine.resize(renderSize[0], renderSize[1]);
     currentRenderSize = renderSize;
-  }
-
-  void EnsureInitialResources(HdRobotSceneStore& sceneStore)
-  {
-    if(engineResourcesCreated)
-    {
-      return;
-    }
-
-    engine.loadTextureAssets(ExportRegisteredTextures(sceneStore.GetTextureAssetsSnapshot()));
-    uploadedTextureRegistryVersion = sceneStore.GetTextureRegistryVersion();
-    UploadInitialScene(sceneStore);
-    engine.createRenderResources();
-    engineResourcesCreated = true;
-    frameVisibilityDirty = true;
-  }
-
-  void UploadInitialScene(HdRobotSceneStore& sceneStore)
-  {
-    std::vector<HdRobotMeshRecord> meshRecords = sceneStore.GetMeshRecordsSnapshot();
-    const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-    for(const HdRobotMeshRecord& record : meshRecords)
-    {
-      if(!record.active || !record.data.valid)
-      {
-        continue;
-      }
-      UploadedMeshState state = UploadMeshToRenderer(engine, record.data, materialRecords);
-      sceneStore.SetMeshRendererState(record.sceneIndex, state.rendererMeshId, std::move(state.rendererInstanceIds));
-    }
-  }
-
-  void RefreshTextureAssetsIfNeeded(HdRobotSceneStore& sceneStore)
-  {
-    const uint64_t textureRegistryVersion = sceneStore.GetTextureRegistryVersion();
-    if(textureRegistryVersion == uploadedTextureRegistryVersion)
-    {
-      return;
-    }
-
-    glInteropCache.Clear();
-    engine.rebuildTextureResourcesAndSceneBindings(ExportRegisteredTextures(sceneStore.GetTextureAssetsSnapshot()));
-    uploadedTextureRegistryVersion = textureRegistryVersion;
   }
 
   void CacheCommittedFrameState(HdRobotRenderParam& renderParam, const HdRobotSceneStore& sceneStore)
@@ -398,124 +195,12 @@ struct HdRobotEngineSession::Impl
     engine.setCameras(ToCameraSpec(cameras));
   }
 
-  void UpdateLights(const HdRobotSceneStore& sceneStore)
-  {
-    engine.clearLights();
-
-    for(const HydraLight& curLight : sceneStore.GetActiveLightSnapshot())
-    {
-      engine.addLight(ToLight(curLight));
-    }
-  }
-
-  void UpdateGeometry(HdRobotSceneStore& sceneStore)
-  {
-    const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-    for(const HdRobotMeshRecord& record : sceneStore.ConsumeDirtyMeshGeometry())
-    {
-      if(!record.active || !record.data.valid)
-      {
-        continue;
-      }
-      if(record.rendererMeshId < 0)
-      {
-        UploadedMeshState state = UploadMeshToRenderer(engine, record.data, materialRecords);
-        sceneStore.SetMeshRendererState(record.sceneIndex, state.rendererMeshId, std::move(state.rendererInstanceIds));
-        continue;
-      }
-      MeshGeometry geometry;
-      ConvertHydraMeshToGeometry(record.data, geometry);
-      engine.updateMeshGeometry(static_cast<uint32_t>(record.rendererMeshId), geometry);
-    }
-  }
-
-  bool UpdateInstances(HdRobotSceneStore& sceneStore)
-  {
-    bool updatedAnyInstance = false;
-    const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-
-    for(HdRobotMeshRecord record : sceneStore.ConsumeDirtyMeshInstances())
-    {
-      updatedAnyInstance = true;
-      if(record.rendererMeshId < 0 && record.active && record.data.valid)
-      {
-        UploadedMeshState state = UploadMeshToRenderer(engine, record.data, materialRecords);
-        record.rendererMeshId = state.rendererMeshId;
-        record.rendererInstanceIds = std::move(state.rendererInstanceIds);
-        sceneStore.SetMeshRendererState(record.sceneIndex, record.rendererMeshId, record.rendererInstanceIds);
-      }
-      if(EnsureMeshRendererInstanceSlots(engine, record))
-      {
-        sceneStore.SetMeshRendererState(record.sceneIndex, record.rendererMeshId, record.rendererInstanceIds);
-      }
-
-      const HydraMesh& mesh = record.data;
-      const bool meshVisible = record.active && mesh.visible && mesh.valid;
-      const uint32_t traceMask = mesh.traceRole == HdRobotTraceRoleTokens->ground
-                                     ? kTraceMaskGround
-                                     : kTraceMaskDefaultGeometry;
-      for(size_t instanceId = 0; instanceId < record.rendererInstanceIds.size(); ++instanceId)
-      {
-        const int rendererInstanceId = record.rendererInstanceIds[instanceId];
-        if(rendererInstanceId < 0)
-        {
-          continue;
-        }
-
-        const bool instanceValid = mesh.hasInstances && (instanceId < mesh.instanceTransforms.size());
-        const bool visible = meshVisible && instanceValid;
-        glm::mat4 transform = glm::transpose(mesh.transform);
-        if(instanceValid)
-        {
-          transform = glm::transpose(mesh.transform * mesh.instanceTransforms[instanceId]);
-        }
-        engine.updateInstance(static_cast<uint32_t>(rendererInstanceId), transform, visible, traceMask);
-      }
-    }
-    return updatedAnyInstance;
-  }
-
-  void UpdateMaterials(HdRobotSceneStore& sceneStore)
-  {
-    const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-    const std::vector<HdRobotMeshRecord> meshRecords = sceneStore.GetMeshRecordsSnapshot();
-    const std::vector<uint32_t> dirtyMaterialIndices = sceneStore.ConsumeDirtyMaterialIndices();
-    const std::set<uint32_t> dirtyMaterialSet(dirtyMaterialIndices.begin(), dirtyMaterialIndices.end());
-    std::vector<MaterialUpdate> newMaterials;
-    for(const HdRobotMeshRecord& record : meshRecords)
-    {
-      if(record.rendererMeshId < 0)
-      {
-        continue;
-      }
-      const HydraMesh& curMesh = record.data;
-      for(size_t localMatIdx = 0; localMatIdx < curMesh.scene_mat_ids.size(); ++localMatIdx)
-      {
-        int globalMatId = curMesh.scene_mat_ids[localMatIdx];
-        if(globalMatId < 0 || static_cast<size_t>(globalMatId) >= materialRecords.size())
-        {
-          globalMatId = 0;
-        }
-        if(dirtyMaterialSet.find(static_cast<uint32_t>(globalMatId)) != dirtyMaterialSet.end())
-        {
-          Material newMaterial = ToMaterial(materialRecords[static_cast<size_t>(globalMatId)].data);
-          newMaterials.push_back({record.rendererMeshId, static_cast<int>(localMatIdx), newMaterial});
-        }
-      }
-    }
-    if(!newMaterials.empty())
-    {
-      engine.updateMaterialsAtRuntime(newMaterials);
-    }
-  }
-
   std::string resourcePath;
   ::Engine engine;
   ::HdRobotGlInteropCache glInteropCache;
+  HdRobotEngineSceneSync sceneSync;
   bool isAppInited = false;
-  bool engineResourcesCreated = false;
   GfVec2i currentRenderSize{-1, -1};
-  uint64_t uploadedTextureRegistryVersion = 0;
 
   std::vector<HdRobotCameraData> camerasSnapshot;
   std::vector<HdRobotLidarSensorData> lidarSensors;
@@ -524,10 +209,6 @@ struct HdRobotEngineSession::Impl
   HdRobotLidarVisualizationConfig lidarVisualizationConfig;
   HdRobotHeightScanVisualizationConfig heightScanVisualizationConfig;
   TileAovChannelMask requestedTileAovChannels = TileAovChannelMask::ColorDepth();
-
-  TfTokenVector activeRenderTags;
-  std::vector<HdRobotMeshRecord> frameMeshRecords;
-  bool frameVisibilityDirty = true;
 };
 
 HdRobotEngineSession::HdRobotEngineSession(std::string resourcePath)

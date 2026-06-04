@@ -8,6 +8,7 @@
 #include <engine/tile_config.hpp>
 
 #include <optional>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,5 +54,6 @@ bool IsHdRobotFixedSizeTileAov(const TfToken &name);
 bool IsHdRobotDisplayTileAov(const TfToken &name);
 bool IsHdRobotIgnoredAov(const TfToken &name);
 int GetHdRobotAovCopyPriority(const TfToken &name);
+std::vector<const HdRenderPassAovBinding *> GetHdRobotAovCopyOrder(const HdRenderPassAovBindingVector &bindings);
 
 PXR_NAMESPACE_CLOSE_SCOPE

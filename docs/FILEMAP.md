@@ -64,11 +64,16 @@ call sites with `rg`.
   param ownership, scene store ownership, and delegate-owned render
   resource/session ownership.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
-  to `HdRobotRenderBridge::RenderFrame`.
+  to `HdRobotRenderBridge::RenderFrameAndCopyAovs`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
-  renderer resource/session bridge that owns `Engine`, GL interop cache,
-  engine lifecycle state, Hydra CPU-scene resource submission, committed
-  camera/sensor/output snapshots, and frame-level render tag visibility.
+  renderer runtime/session object that owns `Engine`, GL interop cache,
+  engine lifecycle state, committed camera/sensor/output snapshots, and
+  frame-level render tag application routed through the scene sync helper.
+- `hdRobot/engineSceneSync.h` / `hdRobot/engineSceneSync.cpp`: Engine-facing
+  Hydra scene synchronization helper owned by the session implementation;
+  owns renderer mesh/instance binding state, initial scene upload, texture
+  asset refresh, light/geometry/instance/material incremental submission, and
+  render-tag visibility updates for renderer instances.
 - `hdRobot/renderBridge.cpp`: Pass-dependent frame bridge between Hydra render
   pass state and `Engine` frame execution.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
@@ -308,19 +313,24 @@ call sites with `rg`.
   and frame execution entry into the bridge. It borrows delegate-owned
   `HdRobotEngineSession` and no longer knows `HdRobotRenderParam`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
-  renderer resource/session object. It owns `Engine`, `HdRobotGlInteropCache`,
-  render size, texture upload version, initial scene upload, dirty
-  mesh/material/light resource submission from the delegate-owned scene store,
-  committed active camera/sensor snapshots, output configuration, and
-  frame-level render tag filtering for existing renderer instances.
+  renderer runtime/session object. It owns `Engine`, `HdRobotGlInteropCache`,
+  render size, committed active camera/sensor snapshots, output configuration,
+  and a focused `HdRobotEngineSceneSync` member for scene-to-engine
+  synchronization.
+- `hdRobot/engineSceneSync.h` / `hdRobot/engineSceneSync.cpp`: Focused
+  scene-to-engine synchronizer. It consumes `HdRobotSceneStore` snapshots and
+  dirty queues, owns renderer mesh/instance binding state outside the Hydra
+  scene store, uploads initial meshes/textures, refreshes texture resources,
+  submits lights/geometry/instances/material updates, and applies frame render
+  tag visibility to bound renderer instances.
 - `hdRobot/renderBridge.h` / `hdRobot/renderBridge.cpp`:
   Converts current Hydra pass state into frame-only renderer work: render
   state/AOV validation, main render size selection, current pass camera setup,
   requested tile AOV channel selection, frame render tag application,
-  `Engine::render()`, and ordered AOV copy groups that copy fixed tile AOVs
-  before display tile AOVs and other AOVs. It borrows
-  `HdRobotEngineSession` and does not read `HdRobotRenderParam` or consume
-  scene-store dirty queues.
+  `Engine::render()`, and ordered AOV copy groups supplied by the bridge-side
+  AOV spec so fixed tile AOVs copy before display tile AOVs and other AOVs. It
+  borrows `HdRobotEngineSession` and does not read `HdRobotRenderParam` or
+  consume scene-store dirty queues.
 - `hdRobot/renderBridgeConversions.h` / `hdRobot/renderBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into engine-facing camera specs,
   `Material`, light records, LiDAR and height scan sensor specs,
@@ -336,8 +346,9 @@ call sites with `rg`.
   access.
 - `hdRobot/sceneStore.h` / `hdRobot/sceneStore.cpp`: CPU-side Hydra scene
   store owned by the render delegate: scene records, texture
-  registry, pending update queues, dirty mesh/material consumption, active
-  camera/sensor/light snapshots, and renderer mesh/instance ID bookkeeping.
+  registry, pending update queues, dirty mesh/material consumption, and active
+  camera/sensor/light snapshots. Renderer mesh/instance binding state lives in
+  `HdRobotEngineSceneSync`, not in the Hydra scene store.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings, LiDAR/height scan visualization settings,
   mesh `hdRobot:traceRole`, `ground`, and tile AOV tokens. Sensor parameter

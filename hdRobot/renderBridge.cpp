@@ -76,37 +76,40 @@ HdRobotRenderBridge::HdRobotRenderBridge(HdRobotEngineSession& engineSession)
 
 HdRobotRenderBridge::~HdRobotRenderBridge() = default;
 
-bool HdRobotRenderBridge::RenderFrame(const HdRenderPassStateSharedPtr &renderPassState,
-                                       const TfTokenVector &renderTags)
+HdRobotFrameRenderResult HdRobotRenderBridge::RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr &renderPassState,
+                                                                     const TfTokenVector &renderTags)
 {
+  HdRobotFrameRenderResult result;
   if(!renderPassState)
   {
-    return false;
+    return result;
   }
 
   const auto &hdAovBindings = renderPassState->GetAovBindings();
   if(!HasRenderBuffer(hdAovBindings))
   {
-    return false;
+    return result;
   }
 
   const std::optional<GfVec2i> mainRenderSize = GetMainRenderSize(renderPassState, hdAovBindings);
   if(!mainRenderSize)
   {
-    return false;
+    return result;
   }
 
   _engineSession.EnsureEngineReady(*mainRenderSize);
   if(!_engineSession.SetFrameCamera(renderPassState))
   {
-    return false;
+    return result;
   }
 
-  configureFrameOutputs(hdAovBindings);
+  configureRequestedTileAovChannels(hdAovBindings);
   _engineSession.ApplyFrameRenderTags(renderTags);
   _engineSession.GetEngine().render();
+  result.frameRendered = true;
 
-  return copyRenderedAovs(hdAovBindings);
+  result.aovsCopied = copyRenderedAovs(hdAovBindings);
+  return result;
 }
 
 bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdAovBindings)
@@ -138,16 +141,7 @@ bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &h
     }
   };
 
-  std::vector<const HdRenderPassAovBinding *> copyOrder;
-  copyOrder.reserve(hdAovBindings.size());
-  for(const HdRenderPassAovBinding &binding : hdAovBindings)
-  {
-    copyOrder.push_back(&binding);
-  }
-  std::stable_sort(copyOrder.begin(), copyOrder.end(), [](const HdRenderPassAovBinding *lhs,
-                                                          const HdRenderPassAovBinding *rhs) {
-    return GetHdRobotAovCopyPriority(lhs->aovName) < GetHdRobotAovCopyPriority(rhs->aovName);
-  });
+  const std::vector<const HdRenderPassAovBinding *> copyOrder = GetHdRobotAovCopyOrder(hdAovBindings);
   for(const HdRenderPassAovBinding *binding : copyOrder)
   {
     copyBinding(*binding);
@@ -156,7 +150,7 @@ bool HdRobotRenderBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &h
   return allAovsCopied;
 }
 
-void HdRobotRenderBridge::configureFrameOutputs(const HdRenderPassAovBindingVector &hdAovBindings)
+void HdRobotRenderBridge::configureRequestedTileAovChannels(const HdRenderPassAovBindingVector &hdAovBindings)
 {
   _engineSession.ConfigureFrameOutputs(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
 }
