@@ -14,6 +14,7 @@ class HdRobotGlInteropCache;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdRobotBackendScene;
 class HdRobotRenderParam;
 
 class HdRobotRenderResources final
@@ -27,7 +28,7 @@ public:
   ::HdRobotGlInteropCache& GetGlInteropCache();
 
   void EnsureEngineReady(const GfVec2i& renderSize);
-  void CommitResources(HdRobotRenderParam& renderParam);
+  void CommitResources(HdRobotRenderParam& renderParam, HdRobotBackendScene& backendScene);
 
   bool SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels);

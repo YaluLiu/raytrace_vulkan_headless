@@ -1,5 +1,6 @@
 #include "material.h"
 
+#include "backendScene.h"
 #include "materialXParser.h"
 
 #include "pxr/imaging/hd/material.h"
@@ -9,19 +10,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-int RegisterTexture(HdRobotRenderParam& scene, const std::string& texturePath, TextureUsage usage)
+int RegisterTexture(HdRobotBackendScene& backendScene, const std::string& texturePath, TextureUsage usage)
 {
   if (texturePath.empty())
   {
     return -1;
   }
-  return scene.RegisterTexturePath(texturePath, usage);
+  return backendScene.RegisterTexturePath(texturePath, usage);
 }
 }  // namespace
 
-HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene, HdRobotMaterialHandle handle)
+HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotMaterialHandle handle)
     : HdMaterial(id)
-    , _scene(scene)
+    , _backendScene(backendScene)
     , _handle(handle)
 {
   _materialData.set_default();
@@ -30,7 +31,7 @@ HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene, H
 void HdRobotMaterial::Finalize(HdRenderParam* renderParam)
 {
   TF_UNUSED(renderParam);
-  _scene.GetBackendScene().DestroyMaterial(_handle);
+  _backendScene.DestroyMaterial(_handle);
 }
 
 HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
@@ -75,7 +76,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   if (!resource.IsHolding<HdMaterialNetworkMap>())
   {
     _materialData = material;
-    _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
+    _backendScene.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
     return;
   }
 
@@ -87,7 +88,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   {
     TF_WARN("Volume %s unsupported", id.GetText());
     _materialData = material;
-    _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
+    _backendScene.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
     return;
   }
 
@@ -97,7 +98,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
 
   for (const MaterialXTextureBinding& binding : result.textures)
   {
-    const int textureId = RegisterTexture(_scene, binding.assetPath, binding.usage);
+    const int textureId = RegisterTexture(_backendScene, binding.assetPath, binding.usage);
     if (textureId >= 0)
     {
       ApplyMaterialXTextureId(material, binding.usage, textureId);
@@ -105,7 +106,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   }
 
   _materialData = material;
-  _scene.GetBackendScene().EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
+  _backendScene.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -11,6 +11,7 @@
 
 #include <mutex>
 #include <optional>
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -98,6 +99,10 @@ public:
   void EnqueueHeightScanSensorUpdate(HdRobotHeightScanSensorUpdate update);
   void ApplyPendingUpdates();
 
+  int RegisterTexturePath(const std::string& texturePath, TextureUsage usage = TextureUsage::BaseColor);
+  std::vector<TextureAsset> GetTextureAssetsSnapshot() const;
+  uint64_t GetTextureRegistryVersion() const;
+
   std::optional<HydraMaterial> GetMaterialDataCopy(HdRobotMaterialHandle handle) const;
   int ResolveMaterialIndexForUpload(HdRobotMaterialHandle handle) const;
 
@@ -117,6 +122,7 @@ private:
   void _ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates);
 
   mutable std::mutex _sceneMutex;
+  mutable std::mutex _textureRegistryMutex;
   HdRobotSlotVector<HdRobotMeshRecord, HdRobotMeshHandle> _meshes;
   HdRobotSlotVector<HdRobotMaterialRecord, HdRobotMaterialHandle> _materials;
   HdRobotSlotVector<HdRobotLightRecord, HdRobotLightHandle> _lights;
@@ -124,6 +130,7 @@ private:
   HdRobotSlotVector<HdRobotLidarSensorRecord, HdRobotLidarSensorHandle> _lidarSensors;
   HdRobotSlotVector<HdRobotHeightScanSensorRecord, HdRobotHeightScanSensorHandle> _heightScanSensors;
   HdRobotMaterialHandle _defaultMaterialHandle;
+  TextureRegistry _textureRegistry;
 
   std::mutex _pendingMutex;
   std::vector<HdRobotMeshUpdate> _pendingMeshUpdates;

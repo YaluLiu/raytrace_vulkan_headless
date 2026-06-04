@@ -1,6 +1,10 @@
 #pragma once
 
+#include "camera.h"
+#include "heightScanSensor.h"
+#include "lidarSensor.h"
 #include "renderParam.h"
+#include "sceneData.h"
 
 #include <engine/mesh_types.hpp>
 #include <engine/output_config.hpp>

@@ -1,7 +1,7 @@
 #include "heightScanSensor.h"
 
 #include "../UsdRaySensor/tokens.h"
-#include "renderParam.h"
+#include "backendScene.h"
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/gf/vec3f.h>
@@ -94,10 +94,10 @@ HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotHeightScanParams& 
 } // namespace
 
 HdRobotHeightScanSensor::HdRobotHeightScanSensor(const SdfPath& id,
-                                                 HdRobotRenderParam& scene,
+                                                 HdRobotBackendScene& backendScene,
                                                  HdRobotHeightScanSensorHandle handle)
     : HdSprim(id)
-    , _scene(scene)
+    , _backendScene(backendScene)
     , _handle(handle)
 {
 }
@@ -109,7 +109,7 @@ HdDirtyBits HdRobotHeightScanSensor::GetInitialDirtyBitsMask() const
 
 void HdRobotHeightScanSensor::Finalize(HdRenderParam*)
 {
-  _scene.GetBackendScene().DestroyHeightScanSensor(_handle);
+  _backendScene.DestroyHeightScanSensor(_handle);
 }
 
 void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
@@ -137,7 +137,7 @@ void HdRobotHeightScanSensor::_UpdateRenderParam()
   sensorData.name = GetId().GetString();
   sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeHeightScanParams(_params);
-  _scene.GetBackendScene().EnqueueHeightScanSensorUpdate(
+  _backendScene.EnqueueHeightScanSensorUpdate(
       HdRobotHeightScanSensorUpdate{_handle, sensorData, _enabled});
 }
 

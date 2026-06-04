@@ -2,14 +2,16 @@
 
 #include <pxr/imaging/hd/light.h>
 #include "backendHandles.h"
-#include "renderParam.h"
+#include "sceneData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HdRobotBackendScene;
 
 class HdRobotLight : public HdLight
 {
 public:
-  HdRobotLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle);
+  HdRobotLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle);
 
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -20,7 +22,7 @@ protected:
   void    Finalize(HdRenderParam* renderParam) override;
 
 protected:
-  HdRobotRenderParam& _scene;
+  HdRobotBackendScene& _backendScene;
   HdRobotLightHandle  _handle;
   HydraLight          _lightData;
 };
@@ -28,7 +30,7 @@ protected:
 class HdRobotDistantLight final : public HdRobotLight
 {
 public:
-  HdRobotDistantLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle);
+  HdRobotDistantLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -37,7 +39,7 @@ public:
 class HdRobotSphereLight final : public HdRobotLight
 {
 public:
-  HdRobotSphereLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle);
+  HdRobotSphereLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -46,7 +48,7 @@ public:
 class HdRobotSimpleLight final : public HdRobotLight
 {
 public:
-  HdRobotSimpleLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle);
+  HdRobotSimpleLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -55,7 +57,7 @@ public:
 class HdRobotDomeLight final : public HdRobotLight
 {
 public:
-  HdRobotDomeLight(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLightHandle handle);
+  HdRobotDomeLight(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotLightHandle handle);
 
 public:
   std::string GetTexturePath(HdSceneDelegate* sceneDelegate);

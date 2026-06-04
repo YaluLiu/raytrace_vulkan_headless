@@ -1,7 +1,7 @@
 #include "lidarSensor.h"
 
 #include "../UsdRaySensor/tokens.h"
-#include "renderParam.h"
+#include "backendScene.h"
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/value.h>
@@ -77,9 +77,11 @@ HdRobotLidarParams SanitizeLidarParams(const HdRobotLidarParams& source)
 }
 } // namespace
 
-HdRobotLidarSensor::HdRobotLidarSensor(const SdfPath& id, HdRobotRenderParam& scene, HdRobotLidarSensorHandle handle)
+HdRobotLidarSensor::HdRobotLidarSensor(const SdfPath& id,
+                                       HdRobotBackendScene& backendScene,
+                                       HdRobotLidarSensorHandle handle)
     : HdSprim(id)
-    , _scene(scene)
+    , _backendScene(backendScene)
     , _handle(handle)
 {
 }
@@ -91,7 +93,7 @@ HdDirtyBits HdRobotLidarSensor::GetInitialDirtyBitsMask() const
 
 void HdRobotLidarSensor::Finalize(HdRenderParam*)
 {
-  _scene.GetBackendScene().DestroyLidarSensor(_handle);
+  _backendScene.DestroyLidarSensor(_handle);
 }
 
 void HdRobotLidarSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
@@ -113,7 +115,7 @@ void HdRobotLidarSensor::_UpdateRenderParam()
   sensorData.name = GetId().GetString();
   sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeLidarParams(_params);
-  _scene.GetBackendScene().EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate{_handle, sensorData, _enabled});
+  _backendScene.EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate{_handle, sensorData, _enabled});
 }
 
 void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, HdDirtyBits* dirtyBits)

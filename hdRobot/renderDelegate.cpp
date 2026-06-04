@@ -39,18 +39,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-using RprimFactory = HdRprim *(*)(const SdfPath &, HdRobotRenderParam &);
+using RprimFactory = HdRprim *(*)(const SdfPath &, HdRobotBackendScene &);
 
 const static TfTokenVector _supportedRprimTypes = {HdPrimTypeTokens->mesh};
 
 const static std::unordered_map<TfToken, RprimFactory, TfToken::HashFunctor> _rprimFactories = {
-    {HdPrimTypeTokens->mesh, [](const SdfPath &rprimId, HdRobotRenderParam &renderParam) -> HdRprim *
+    {HdPrimTypeTokens->mesh, [](const SdfPath &rprimId, HdRobotBackendScene &backendScene) -> HdRprim *
      {
-       HdRobotBackendScene& backendScene = renderParam.GetBackendScene();
        const HdRobotMeshHandle meshHandle = backendScene.CreateMesh(rprimId);
        const HdRobotMaterialHandle displayColorMaterialHandle =
            backendScene.CreateMaterial(rprimId.AppendChild(TfToken("__displayColorMaterial")));
-       return new HdRobotMesh(rprimId, renderParam, meshHandle, displayColorMaterialHandle);
+       return new HdRobotMesh(rprimId, backendScene, meshHandle, displayColorMaterialHandle);
      }}};
 
 const static TfTokenVector _supportedSprimTypes = {
@@ -257,8 +256,7 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken &command, [[maybe_unused
 
 HdRenderPassSharedPtr HdRobotRenderDelegate::CreateRenderPass(HdRenderIndex *index, const HdRprimCollection &collection)
 {
-  HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
-  if(!TF_VERIFY(robotRenderParam != nullptr) || !TF_VERIFY(_renderResources != nullptr))
+  if(!TF_VERIFY(_renderResources != nullptr))
   {
     return nullptr;
   }
@@ -276,10 +274,10 @@ void HdRobotRenderDelegate::CommitResources(HdChangeTracker *tracker)
   TF_UNUSED(tracker);
   if(_renderParam)
   {
-    _renderParam->ApplyPendingSceneUpdates();
+    _backendScene.ApplyPendingUpdates();
     if(_renderResources)
     {
-      _renderResources->CommitResources(*_renderParam);
+      _renderResources->CommitResources(*_renderParam, _backendScene);
     }
   }
 }
@@ -338,12 +336,7 @@ HdRprim *HdRobotRenderDelegate::CreateRprim(const TfToken &typeId, const SdfPath
   const auto factoryIt = _rprimFactories.find(typeId);
   if(factoryIt != _rprimFactories.end())
   {
-    HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
-    if(!TF_VERIFY(robotRenderParam != nullptr))
-    {
-      return nullptr;
-    }
-    return factoryIt->second(rprimId, *robotRenderParam);
+    return factoryIt->second(rprimId, _backendScene);
   }
 
   return nullptr;
@@ -361,60 +354,54 @@ const TfTokenVector &HdRobotRenderDelegate::GetSupportedSprimTypes() const
 
 HdSprim *HdRobotRenderDelegate::CreateSprim(const TfToken &typeId, const SdfPath &sprimId)
 {
-  HdRobotRenderParam *robotRenderParam = _GetRobotRenderParam();
-  if(!TF_VERIFY(robotRenderParam != nullptr))
-  {
-    return nullptr;
-  }
-
   if(typeId == HdPrimTypeTokens->camera)
   {
     const HdRobotCameraHandle handle =
-        sprimId.IsEmpty() ? HdRobotCameraHandle{} : robotRenderParam->GetBackendScene().CreateCamera(sprimId);
-    return new HdRobotCamera(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotCameraHandle{} : _backendScene.CreateCamera(sprimId);
+    return new HdRobotCamera(sprimId, _backendScene, handle);
   }
   else if(typeId == HdRaySensorPrimTypeTokens->lidarSensor)
   {
     const HdRobotLidarSensorHandle handle =
-        sprimId.IsEmpty() ? HdRobotLidarSensorHandle{} : robotRenderParam->GetBackendScene().CreateLidarSensor(sprimId);
-    return new HdRobotLidarSensor(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotLidarSensorHandle{} : _backendScene.CreateLidarSensor(sprimId);
+    return new HdRobotLidarSensor(sprimId, _backendScene, handle);
   }
   else if(typeId == HdRaySensorPrimTypeTokens->heightScanSensor)
   {
     const HdRobotHeightScanSensorHandle handle = sprimId.IsEmpty()
                                                      ? HdRobotHeightScanSensorHandle{}
-                                                     : robotRenderParam->GetBackendScene().CreateHeightScanSensor(sprimId);
-    return new HdRobotHeightScanSensor(sprimId, *robotRenderParam, handle);
+                                                     : _backendScene.CreateHeightScanSensor(sprimId);
+    return new HdRobotHeightScanSensor(sprimId, _backendScene, handle);
   }
   else if(typeId == HdPrimTypeTokens->material)
   {
     const HdRobotMaterialHandle handle =
-        sprimId.IsEmpty() ? HdRobotMaterialHandle{} : robotRenderParam->GetBackendScene().CreateMaterial(sprimId);
-    return new HdRobotMaterial(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotMaterialHandle{} : _backendScene.CreateMaterial(sprimId);
+    return new HdRobotMaterial(sprimId, _backendScene, handle);
   }
   else if(typeId == HdPrimTypeTokens->distantLight)
   {
     const HdRobotLightHandle handle =
-        sprimId.IsEmpty() ? HdRobotLightHandle{} : robotRenderParam->GetBackendScene().CreateLight(sprimId);
-    return new HdRobotDistantLight(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotLightHandle{} : _backendScene.CreateLight(sprimId);
+    return new HdRobotDistantLight(sprimId, _backendScene, handle);
   }
   else if(typeId == HdPrimTypeTokens->sphereLight)
   {
     const HdRobotLightHandle handle =
-        sprimId.IsEmpty() ? HdRobotLightHandle{} : robotRenderParam->GetBackendScene().CreateLight(sprimId);
-    return new HdRobotSphereLight(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotLightHandle{} : _backendScene.CreateLight(sprimId);
+    return new HdRobotSphereLight(sprimId, _backendScene, handle);
   }
   else if(typeId == HdPrimTypeTokens->simpleLight)
   {
     const HdRobotLightHandle handle =
-        sprimId.IsEmpty() ? HdRobotLightHandle{} : robotRenderParam->GetBackendScene().CreateLight(sprimId);
-    return new HdRobotSimpleLight(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotLightHandle{} : _backendScene.CreateLight(sprimId);
+    return new HdRobotSimpleLight(sprimId, _backendScene, handle);
   }
   else if(typeId == HdPrimTypeTokens->domeLight)
   {
     const HdRobotLightHandle handle =
-        sprimId.IsEmpty() ? HdRobotLightHandle{} : robotRenderParam->GetBackendScene().CreateLight(sprimId);
-    return new HdRobotDomeLight(sprimId, *robotRenderParam, handle);
+        sprimId.IsEmpty() ? HdRobotLightHandle{} : _backendScene.CreateLight(sprimId);
+    return new HdRobotDomeLight(sprimId, _backendScene, handle);
   }
   return nullptr;
 }
@@ -499,11 +486,6 @@ void HdRobotRenderDelegate::SetDrivers(HdDriverVector const &drivers)
   }
 
   TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
-}
-
-HdRobotRenderParam *HdRobotRenderDelegate::_GetRobotRenderParam() const
-{
-  return _renderParam.get();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

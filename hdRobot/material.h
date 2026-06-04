@@ -6,14 +6,16 @@
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include "backendHandles.h"
-#include "renderParam.h"
+#include "sceneData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HdRobotBackendScene;
 
 class HdRobotMaterial final : public HdMaterial
 {
 public:
-  HdRobotMaterial(const SdfPath& id, HdRobotRenderParam& scene, HdRobotMaterialHandle handle);
+  HdRobotMaterial(const SdfPath& id, HdRobotBackendScene& backendScene, HdRobotMaterialHandle handle);
 
   void Finalize(HdRenderParam* renderParam) override;
 
@@ -27,7 +29,7 @@ public:
   const TfToken& GetBaseColorPrimvarName() const;
 
 private:
-  HdRobotRenderParam& _scene;
+  HdRobotBackendScene& _backendScene;
   HdRobotMaterialHandle _handle;
   HydraMaterial        _materialData;
   TfToken              _baseColorPrimvarName;

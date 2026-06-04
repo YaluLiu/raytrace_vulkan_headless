@@ -4,15 +4,17 @@
 #include <pxr/base/gf/vec2f.h>
 #include <optional>
 #include "backendHandles.h"
-#include "renderParam.h"
+#include "sceneData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HdRobotBackendScene;
 
 class HdRobotMesh final : public HdMesh
 {
 public:
   HdRobotMesh(const SdfPath& id,
-              HdRobotRenderParam& scene,
+              HdRobotBackendScene& backendScene,
               HdRobotMeshHandle meshHandle,
               HdRobotMaterialHandle displayColorMaterialHandle);
 
@@ -64,7 +66,7 @@ private:
   bool _CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& meshData);
 
 private:
-  HdRobotRenderParam& _scene;
+  HdRobotBackendScene& _backendScene;
   HdRobotMeshHandle _meshHandle;
   HdRobotMaterialHandle _displayColorMaterialHandle;
   HydraMesh _meshData;

@@ -1,15 +1,9 @@
 #pragma once
 
 #include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/usd/sdf/path.h>
 
 #include <cstdint>
 #include <mutex>
-#include <string>
-#include <vector>
-
-#include "backendScene.h"
-#include "sceneData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,13 +37,6 @@ struct HdRobotHeightScanVisualizationConfig
 class HdRobotRenderParam final : public HdRenderParam
 {
  public:
-  int RegisterTexturePath(const std::string& texturePath, TextureUsage usage = TextureUsage::BaseColor);
-  const std::vector<std::string>& GetTexturePaths() const;
-  const std::vector<TextureAsset>& GetTextureAssets() const;
-  uint64_t GetTextureRegistryVersion() const;
-  HdRobotBackendScene& GetBackendScene();
-  const HdRobotBackendScene& GetBackendScene() const;
-  void ApplyPendingSceneUpdates();
   void SetTileConfig(const HdRobotTileConfig& config);
   HdRobotTileConfig GetTileConfig() const;
   void SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config);
@@ -59,11 +46,9 @@ class HdRobotRenderParam final : public HdRenderParam
 
 private:
   mutable std::mutex mutex;
-  HdRobotBackendScene backendScene;
   HdRobotTileConfig tileConfig;
   HdRobotLidarVisualizationConfig lidarVisualizationConfig;
   HdRobotHeightScanVisualizationConfig heightScanVisualizationConfig;
-  TextureRegistry textureRegistry;
 
 };
 

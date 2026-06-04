@@ -266,6 +266,24 @@ void HdRobotBackendScene::ApplyPendingUpdates()
   _ApplyMeshUpdates(meshUpdates);
 }
 
+int HdRobotBackendScene::RegisterTexturePath(const std::string& texturePath, TextureUsage usage)
+{
+  std::lock_guard guard(_textureRegistryMutex);
+  return _textureRegistry.Register(texturePath, usage);
+}
+
+std::vector<TextureAsset> HdRobotBackendScene::GetTextureAssetsSnapshot() const
+{
+  std::lock_guard guard(_textureRegistryMutex);
+  return _textureRegistry.GetTextureAssets();
+}
+
+uint64_t HdRobotBackendScene::GetTextureRegistryVersion() const
+{
+  std::lock_guard guard(_textureRegistryMutex);
+  return _textureRegistry.GetVersion();
+}
+
 std::optional<HydraMaterial> HdRobotBackendScene::GetMaterialDataCopy(HdRobotMaterialHandle handle) const
 {
   std::lock_guard guard(_sceneMutex);
