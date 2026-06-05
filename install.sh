@@ -21,6 +21,7 @@ function hydra(){
     cd build
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DTBB_DIR="${tbb_dir}" \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
     
@@ -42,6 +43,7 @@ function schema(){
     cd build_schema
     cmake .. -Wno-dev \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DROBOT_ENGINE_SCHEMA_ONLY=ON \
         -DTBB_DIR="${tbb_dir}" \
         -DCMAKE_INSTALL_PREFIX=${usd_path}/plugin/usd
