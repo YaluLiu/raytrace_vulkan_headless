@@ -14,6 +14,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace hdrobot {
+
 namespace
 {
 bool HasRenderBuffer(const HdRenderPassAovBindingVector &bindings)
@@ -69,17 +71,17 @@ std::optional<GfVec2i> GetMainRenderSize(const HdRenderPassStateSharedPtr &rende
 
 } // namespace
 
-HdRobotPassBridge::HdRobotPassBridge(HdRobotEngineSession& engineSession)
+PassBridge::PassBridge(EngineSession& engineSession)
     : _engineSession(engineSession)
 {
 }
 
-HdRobotPassBridge::~HdRobotPassBridge() = default;
+PassBridge::~PassBridge() = default;
 
-HdRobotFrameRenderResult HdRobotPassBridge::RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr &renderPassState,
+FrameRenderResult PassBridge::RenderFrameAndCopyAovs(const HdRenderPassStateSharedPtr &renderPassState,
                                                                     const TfTokenVector &renderTags)
 {
-  HdRobotFrameRenderResult result;
+  FrameRenderResult result;
   if(!renderPassState)
   {
     return result;
@@ -112,7 +114,7 @@ HdRobotFrameRenderResult HdRobotPassBridge::RenderFrameAndCopyAovs(const HdRende
   return result;
 }
 
-bool HdRobotPassBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdAovBindings)
+bool PassBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdAovBindings)
 {
   bool allAovsCopied = true;
 
@@ -120,10 +122,10 @@ bool HdRobotPassBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdA
   {
     auto *aovBuffer = static_cast<HdRobotRenderBuffer *>(binding.renderBuffer);
     bool copied = false;
-    const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(binding.aovName);
+    const std::optional<AovSpec> spec = GetHdRobotAovSpec(binding.aovName);
     if(spec)
     {
-      const HdRobotAovCopyRequest request{binding.aovName, spec->engineAov, spec->copyScaling, aovBuffer};
+      const AovCopyRequest request{binding.aovName, spec->engineAov, spec->copyScaling, aovBuffer};
       copied = CopyAovToRenderBuffer(_engineSession.GetEngine(), request, _engineSession.GetGlInteropCache());
     }
     else if(IsHdRobotIgnoredAov(binding.aovName))
@@ -132,7 +134,7 @@ bool HdRobotPassBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdA
     }
     else
     {
-      std::cerr << "[HdRobotPassBridge] Unsupported AOV token " << binding.aovName.GetString() << std::endl;
+      std::cerr << "[PassBridge] Unsupported AOV token " << binding.aovName.GetString() << std::endl;
     }
     allAovsCopied = allAovsCopied && copied;
     if(aovBuffer != nullptr)
@@ -150,9 +152,11 @@ bool HdRobotPassBridge::copyRenderedAovs(const HdRenderPassAovBindingVector &hdA
   return allAovsCopied;
 }
 
-void HdRobotPassBridge::configureRequestedTileAovChannels(const HdRenderPassAovBindingVector &hdAovBindings)
+void PassBridge::configureRequestedTileAovChannels(const HdRenderPassAovBindingVector &hdAovBindings)
 {
   _engineSession.ConfigureFrameOutputs(ComputeHdRobotRequestedTileAovChannels(hdAovBindings));
 }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

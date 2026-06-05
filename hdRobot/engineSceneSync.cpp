@@ -13,6 +13,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace hdrobot {
+
 namespace
 {
 TfTokenVector NormalizeRenderTags(TfTokenVector tags)
@@ -47,10 +49,10 @@ bool IsMeshRenderTagMatched(const HydraMesh& mesh, const TfTokenVector& renderTa
   return std::find(renderTags.begin(), renderTags.end(), mesh.renderTag) != renderTags.end();
 }
 
-std::vector<Material> CollectMaterialsForMesh(const HydraMesh& mesh,
-                                              const std::vector<HdRobotMaterialRecord>& materials)
+std::vector<::Material> CollectMaterialsForMesh(const HydraMesh& mesh,
+                                                const std::vector<MaterialRecord>& materials)
 {
-  std::vector<Material> materialsForUpload;
+  std::vector<::Material> materialsForUpload;
   materialsForUpload.reserve(mesh.scene_mat_ids.size());
   for(const int matId : mesh.scene_mat_ids)
   {
@@ -71,17 +73,17 @@ std::vector<Material> CollectMaterialsForMesh(const HydraMesh& mesh,
   return materialsForUpload;
 }
 
-HdRobotEngineSceneSync::RendererMeshBinding UploadMeshToRenderer(
+EngineSceneSync::RendererMeshBinding UploadMeshToRenderer(
     ::Engine& engine,
     const HydraMesh& mesh,
-    const std::vector<HdRobotMaterialRecord>& materials)
+    const std::vector<MaterialRecord>& materials)
 {
-  HdRobotEngineSceneSync::RendererMeshBinding binding;
+  EngineSceneSync::RendererMeshBinding binding;
   binding.rendererMeshId = static_cast<int>(engine.getMeshSourceCount());
 
-  MeshGeometry geometry;
+  ::MeshGeometry geometry;
   ConvertHydraMeshToGeometry(mesh, geometry);
-  std::vector<Material> materialsForUpload = CollectMaterialsForMesh(mesh, materials);
+  std::vector<::Material> materialsForUpload = CollectMaterialsForMesh(mesh, materials);
   engine.uploadMesh(geometry, materialsForUpload);
 
   const size_t firstInstanceId = engine.getInstanceCount() - 1;
@@ -100,7 +102,7 @@ HdRobotEngineSceneSync::RendererMeshBinding UploadMeshToRenderer(
   return binding;
 }
 
-bool EnsureRendererInstanceSlots(::Engine& engine, HdRobotEngineSceneSync::RendererMeshBinding& binding, const HydraMesh& mesh)
+bool EnsureRendererInstanceSlots(::Engine& engine, EngineSceneSync::RendererMeshBinding& binding, const HydraMesh& mesh)
 {
   if(binding.rendererInstanceIds.empty())
   {
@@ -123,7 +125,7 @@ bool EnsureRendererInstanceSlots(::Engine& engine, HdRobotEngineSceneSync::Rende
 }
 
 void UpdateRendererInstances(::Engine& engine,
-                             const HdRobotMeshRecord& record,
+                             const MeshRecord& record,
                              const std::vector<int>& rendererInstanceIds,
                              const TfTokenVector& renderTags)
 {
@@ -154,27 +156,27 @@ void UpdateRendererInstances(::Engine& engine,
 }
 } // namespace
 
-HdRobotEngineSceneSync::RendererMeshBinding* HdRobotEngineSceneSync::_GetBinding(uint32_t sceneIndex)
+EngineSceneSync::RendererMeshBinding* EngineSceneSync::_GetBinding(uint32_t sceneIndex)
 {
   const auto bindingIt = _meshBindings.find(sceneIndex);
   return bindingIt == _meshBindings.end() ? nullptr : &bindingIt->second;
 }
 
-const HdRobotEngineSceneSync::RendererMeshBinding* HdRobotEngineSceneSync::_GetBinding(uint32_t sceneIndex) const
+const EngineSceneSync::RendererMeshBinding* EngineSceneSync::_GetBinding(uint32_t sceneIndex) const
 {
   const auto bindingIt = _meshBindings.find(sceneIndex);
   return bindingIt == _meshBindings.end() ? nullptr : &bindingIt->second;
 }
 
-void HdRobotEngineSceneSync::EnsureResources(::Engine& engine,
-                                             HdRobotSceneStore& sceneStore,
-                                             ::HdRobotGlInteropCache& glInteropCache)
+void EngineSceneSync::EnsureResources(::Engine& engine,
+                                             SceneStore& sceneStore,
+                                             GlInteropCache& glInteropCache)
 {
   _EnsureInitialResources(engine, sceneStore);
   _RefreshTextureAssetsIfNeeded(engine, sceneStore, glInteropCache);
 }
 
-void HdRobotEngineSceneSync::SyncSceneToEngine(::Engine& engine, HdRobotSceneStore& sceneStore)
+void EngineSceneSync::SyncSceneToEngine(::Engine& engine, SceneStore& sceneStore)
 {
   _UpdateLights(engine, sceneStore);
   _UpdateGeometry(engine, sceneStore);
@@ -187,7 +189,7 @@ void HdRobotEngineSceneSync::SyncSceneToEngine(::Engine& engine, HdRobotSceneSto
   _frameMeshRecords = sceneStore.GetMeshRecordsSnapshot();
 }
 
-void HdRobotEngineSceneSync::ApplyFrameRenderTags(::Engine& engine, const TfTokenVector& renderTags)
+void EngineSceneSync::ApplyFrameRenderTags(::Engine& engine, const TfTokenVector& renderTags)
 {
   TfTokenVector normalizedRenderTags = NormalizeRenderTags(renderTags);
   const bool tagsChanged = !RenderTagsEqual(_activeRenderTags, normalizedRenderTags);
@@ -197,7 +199,7 @@ void HdRobotEngineSceneSync::ApplyFrameRenderTags(::Engine& engine, const TfToke
   }
 
   _activeRenderTags = std::move(normalizedRenderTags);
-  for(const HdRobotMeshRecord& record : _frameMeshRecords)
+  for(const MeshRecord& record : _frameMeshRecords)
   {
     const RendererMeshBinding* binding = _GetBinding(record.sceneIndex);
     if(binding == nullptr)
@@ -209,7 +211,7 @@ void HdRobotEngineSceneSync::ApplyFrameRenderTags(::Engine& engine, const TfToke
   _frameVisibilityDirty = false;
 }
 
-void HdRobotEngineSceneSync::_EnsureInitialResources(::Engine& engine, HdRobotSceneStore& sceneStore)
+void EngineSceneSync::_EnsureInitialResources(::Engine& engine, SceneStore& sceneStore)
 {
   if(_engineResourcesCreated)
   {
@@ -224,11 +226,11 @@ void HdRobotEngineSceneSync::_EnsureInitialResources(::Engine& engine, HdRobotSc
   _frameVisibilityDirty = true;
 }
 
-void HdRobotEngineSceneSync::_UploadInitialScene(::Engine& engine, HdRobotSceneStore& sceneStore)
+void EngineSceneSync::_UploadInitialScene(::Engine& engine, SceneStore& sceneStore)
 {
-  std::vector<HdRobotMeshRecord> meshRecords = sceneStore.GetMeshRecordsSnapshot();
-  const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-  for(const HdRobotMeshRecord& record : meshRecords)
+  std::vector<MeshRecord> meshRecords = sceneStore.GetMeshRecordsSnapshot();
+  const std::vector<MaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
+  for(const MeshRecord& record : meshRecords)
   {
     if(!record.active || !record.data.valid)
     {
@@ -238,9 +240,9 @@ void HdRobotEngineSceneSync::_UploadInitialScene(::Engine& engine, HdRobotSceneS
   }
 }
 
-void HdRobotEngineSceneSync::_RefreshTextureAssetsIfNeeded(::Engine& engine,
-                                                           HdRobotSceneStore& sceneStore,
-                                                           ::HdRobotGlInteropCache& glInteropCache)
+void EngineSceneSync::_RefreshTextureAssetsIfNeeded(::Engine& engine,
+                                                           SceneStore& sceneStore,
+                                                           GlInteropCache& glInteropCache)
 {
   const uint64_t textureRegistryVersion = sceneStore.GetTextureRegistryVersion();
   if(textureRegistryVersion == _uploadedTextureRegistryVersion)
@@ -253,7 +255,7 @@ void HdRobotEngineSceneSync::_RefreshTextureAssetsIfNeeded(::Engine& engine,
   _uploadedTextureRegistryVersion = textureRegistryVersion;
 }
 
-void HdRobotEngineSceneSync::_UpdateLights(::Engine& engine, const HdRobotSceneStore& sceneStore)
+void EngineSceneSync::_UpdateLights(::Engine& engine, const SceneStore& sceneStore)
 {
   engine.clearLights();
 
@@ -263,10 +265,10 @@ void HdRobotEngineSceneSync::_UpdateLights(::Engine& engine, const HdRobotSceneS
   }
 }
 
-void HdRobotEngineSceneSync::_UpdateGeometry(::Engine& engine, HdRobotSceneStore& sceneStore)
+void EngineSceneSync::_UpdateGeometry(::Engine& engine, SceneStore& sceneStore)
 {
-  const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-  for(const HdRobotMeshRecord& record : sceneStore.ConsumeDirtyMeshGeometry())
+  const std::vector<MaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
+  for(const MeshRecord& record : sceneStore.ConsumeDirtyMeshGeometry())
   {
     if(!record.active || !record.data.valid)
     {
@@ -281,18 +283,18 @@ void HdRobotEngineSceneSync::_UpdateGeometry(::Engine& engine, HdRobotSceneStore
       continue;
     }
 
-    MeshGeometry geometry;
+    ::MeshGeometry geometry;
     ConvertHydraMeshToGeometry(record.data, geometry);
     engine.updateMeshGeometry(static_cast<uint32_t>(binding->rendererMeshId), geometry);
   }
 }
 
-bool HdRobotEngineSceneSync::_UpdateInstances(::Engine& engine, HdRobotSceneStore& sceneStore)
+bool EngineSceneSync::_UpdateInstances(::Engine& engine, SceneStore& sceneStore)
 {
   bool updatedAnyInstance = false;
-  const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
+  const std::vector<MaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
 
-  for(const HdRobotMeshRecord& record : sceneStore.ConsumeDirtyMeshInstances())
+  for(const MeshRecord& record : sceneStore.ConsumeDirtyMeshInstances())
   {
     updatedAnyInstance = true;
     RendererMeshBinding* binding = _GetBinding(record.sceneIndex);
@@ -312,14 +314,14 @@ bool HdRobotEngineSceneSync::_UpdateInstances(::Engine& engine, HdRobotSceneStor
   return updatedAnyInstance;
 }
 
-void HdRobotEngineSceneSync::_UpdateMaterials(::Engine& engine, HdRobotSceneStore& sceneStore)
+void EngineSceneSync::_UpdateMaterials(::Engine& engine, SceneStore& sceneStore)
 {
-  const std::vector<HdRobotMaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
-  const std::vector<HdRobotMeshRecord> meshRecords = sceneStore.GetMeshRecordsSnapshot();
+  const std::vector<MaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
+  const std::vector<MeshRecord> meshRecords = sceneStore.GetMeshRecordsSnapshot();
   const std::vector<uint32_t> dirtyMaterialIndices = sceneStore.ConsumeDirtyMaterialIndices();
   const std::set<uint32_t> dirtyMaterialSet(dirtyMaterialIndices.begin(), dirtyMaterialIndices.end());
-  std::vector<MaterialUpdate> newMaterials;
-  for(const HdRobotMeshRecord& record : meshRecords)
+  std::vector<::MaterialUpdate> newMaterials;
+  for(const MeshRecord& record : meshRecords)
   {
     const RendererMeshBinding* binding = _GetBinding(record.sceneIndex);
     if(binding == nullptr)
@@ -336,7 +338,7 @@ void HdRobotEngineSceneSync::_UpdateMaterials(::Engine& engine, HdRobotSceneStor
       }
       if(dirtyMaterialSet.find(static_cast<uint32_t>(globalMatId)) != dirtyMaterialSet.end())
       {
-        Material newMaterial = ToMaterial(materialRecords[static_cast<size_t>(globalMatId)].data);
+        ::Material newMaterial = ToMaterial(materialRecords[static_cast<size_t>(globalMatId)].data);
         newMaterials.push_back({binding->rendererMeshId, static_cast<int>(localMatIdx), newMaterial});
       }
     }
@@ -346,5 +348,7 @@ void HdRobotEngineSceneSync::_UpdateMaterials(::Engine& engine, HdRobotSceneStor
     engine.updateMaterialsAtRuntime(newMaterials);
   }
 }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

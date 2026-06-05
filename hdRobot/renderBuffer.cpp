@@ -55,9 +55,9 @@ HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
 {
   HgiTextureUsage usage = 0;
 
-  const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(nameToken);
+  const std::optional<hdrobot::AovSpec> spec = GetHdRobotAovSpec(nameToken);
   const bool useDepthTarget = spec && spec->useDepthTargetRenderBuffer;
-  const bool isIdAov = spec && spec->storageRole == HdRobotAovStorageRole::Id;
+  const bool isIdAov = spec && spec->storageRole == hdrobot::AovStorageRole::Id;
 
   switch(format)
   {
@@ -89,7 +89,7 @@ HgiTextureUsage GetTextureUsage(HdFormat format, const TfToken &nameToken)
       break;
   }
 
-  if((spec && spec->storageRole == HdRobotAovStorageRole::Color) || nameToken == HdAovTokens->normal || isIdAov)
+  if((spec && spec->storageRole == hdrobot::AovStorageRole::Color) || nameToken == HdAovTokens->normal || isIdAov)
   {
     usage |= HgiTextureUsageBitsShaderRead;
   }

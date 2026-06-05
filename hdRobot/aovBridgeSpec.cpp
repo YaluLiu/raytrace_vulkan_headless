@@ -17,18 +17,18 @@ constexpr int kFixedTileCopyPriority = 0;
 constexpr int kDisplayTileCopyPriority = 1;
 constexpr int kStandardCopyPriority = 2;
 
-HdRobotAovSpec MakeSpec(Aov engineAov,
+hdrobot::AovSpec MakeSpec(Aov engineAov,
                         HdFormat hdFormat,
-                        HdRobotAovStorageRole storageRole,
+                        hdrobot::AovStorageRole storageRole,
                         bool useDepthTargetRenderBuffer,
-                        HdRobotAovTileKind tileKind,
+                        hdrobot::AovTileKind tileKind,
                         TileAovChannelMask tileChannels,
-                        HdRobotAovCopyScaling copyScaling,
+                        hdrobot::AovCopyScaling copyScaling,
                         int copyPriority,
                         bool multiSampled,
                         VtValue clearValue)
 {
-  return HdRobotAovSpec{
+  return hdrobot::AovSpec{
       engineAov,
       hdFormat,
       storageRole,
@@ -43,65 +43,65 @@ HdRobotAovSpec MakeSpec(Aov engineAov,
 }
 } // namespace
 
-std::optional<HdRobotAovSpec> GetHdRobotAovSpec(const TfToken &name)
+std::optional<hdrobot::AovSpec> GetHdRobotAovSpec(const TfToken &name)
 {
   if(name == HdAovTokens->color)
   {
-    return MakeSpec(Aov::Color, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
-                    false, HdRobotAovTileKind::None, TileAovChannelMask::None(),
-                    HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, true,
+    return MakeSpec(Aov::Color, HdFormatFloat32Vec4, hdrobot::AovStorageRole::Color,
+                    false, hdrobot::AovTileKind::None, TileAovChannelMask::None(),
+                    hdrobot::AovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, true,
                     VtValue(GfVec4f(1.0f)));
   }
   if(name == HdAovTokens->primId)
   {
-    return MakeSpec(Aov::PrimId, HdFormatInt32, HdRobotAovStorageRole::Id,
-                    false, HdRobotAovTileKind::None, TileAovChannelMask::None(),
-                    HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(-1));
+    return MakeSpec(Aov::PrimId, HdFormatInt32, hdrobot::AovStorageRole::Id,
+                    false, hdrobot::AovTileKind::None, TileAovChannelMask::None(),
+                    hdrobot::AovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(-1));
   }
   if(name == HdAovTokens->instanceId)
   {
-    return MakeSpec(Aov::InstanceId, HdFormatInt32, HdRobotAovStorageRole::Id,
-                    false, HdRobotAovTileKind::None, TileAovChannelMask::None(),
-                    HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(-1));
+    return MakeSpec(Aov::InstanceId, HdFormatInt32, hdrobot::AovStorageRole::Id,
+                    false, hdrobot::AovTileKind::None, TileAovChannelMask::None(),
+                    hdrobot::AovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(-1));
   }
   if(name == HdAovTokens->depth || name == HdAovTokens->depthStencil)
   {
-    return MakeSpec(Aov::Depth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
-                    true, HdRobotAovTileKind::None, TileAovChannelMask::None(),
-                    HdRobotAovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(1.0f));
+    return MakeSpec(Aov::Depth, HdFormatFloat32, hdrobot::AovStorageRole::Depth,
+                    true, hdrobot::AovTileKind::None, TileAovChannelMask::None(),
+                    hdrobot::AovCopyScaling::AllowScaleToDestination, kStandardCopyPriority, false, VtValue(1.0f));
   }
   if(name == HdRobotAovTokens->tileColor)
   {
-    return MakeSpec(Aov::TileColor, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
-                    false, HdRobotAovTileKind::FixedSize, TileAovChannelMask::FromChannel(TileAovChannel::Color),
-                    HdRobotAovCopyScaling::RequireExactSourceSize, kFixedTileCopyPriority, true,
+    return MakeSpec(Aov::TileColor, HdFormatFloat32Vec4, hdrobot::AovStorageRole::Color,
+                    false, hdrobot::AovTileKind::FixedSize, TileAovChannelMask::FromChannel(TileAovChannel::Color),
+                    hdrobot::AovCopyScaling::RequireExactSourceSize, kFixedTileCopyPriority, true,
                     VtValue(GfVec4f(1.0f)));
   }
   if(name == HdRobotAovTokens->tileDepth)
   {
-    return MakeSpec(Aov::TileDepth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
-                    false, HdRobotAovTileKind::FixedSize, TileAovChannelMask::FromChannel(TileAovChannel::Depth),
-                    HdRobotAovCopyScaling::RequireExactSourceSize, kFixedTileCopyPriority, false, VtValue(1.0f));
+    return MakeSpec(Aov::TileDepth, HdFormatFloat32, hdrobot::AovStorageRole::Depth,
+                    false, hdrobot::AovTileKind::FixedSize, TileAovChannelMask::FromChannel(TileAovChannel::Depth),
+                    hdrobot::AovCopyScaling::RequireExactSourceSize, kFixedTileCopyPriority, false, VtValue(1.0f));
   }
   if(name == HdRobotAovTokens->tileDisplayColor)
   {
-    return MakeSpec(Aov::TileColor, HdFormatFloat32Vec4, HdRobotAovStorageRole::Color,
-                    false, HdRobotAovTileKind::Display, TileAovChannelMask::FromChannel(TileAovChannel::Color),
-                    HdRobotAovCopyScaling::AllowScaleToDestination, kDisplayTileCopyPriority, true,
+    return MakeSpec(Aov::TileColor, HdFormatFloat32Vec4, hdrobot::AovStorageRole::Color,
+                    false, hdrobot::AovTileKind::Display, TileAovChannelMask::FromChannel(TileAovChannel::Color),
+                    hdrobot::AovCopyScaling::AllowScaleToDestination, kDisplayTileCopyPriority, true,
                     VtValue(GfVec4f(1.0f)));
   }
   if(name == HdRobotAovTokens->tileDisplayDepth)
   {
-    return MakeSpec(Aov::TileDepth, HdFormatFloat32, HdRobotAovStorageRole::Depth,
-                    false, HdRobotAovTileKind::Display, TileAovChannelMask::FromChannel(TileAovChannel::Depth),
-                    HdRobotAovCopyScaling::AllowScaleToDestination, kDisplayTileCopyPriority, false, VtValue(1.0f));
+    return MakeSpec(Aov::TileDepth, HdFormatFloat32, hdrobot::AovStorageRole::Depth,
+                    false, hdrobot::AovTileKind::Display, TileAovChannelMask::FromChannel(TileAovChannel::Depth),
+                    hdrobot::AovCopyScaling::AllowScaleToDestination, kDisplayTileCopyPriority, false, VtValue(1.0f));
   }
   return std::nullopt;
 }
 
 HdAovDescriptor GetHdRobotDefaultAovDescriptor(const TfToken &name)
 {
-  const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(name);
+  const std::optional<hdrobot::AovSpec> spec = GetHdRobotAovSpec(name);
   if(!spec)
   {
     return HdAovDescriptor();
@@ -119,7 +119,7 @@ TileAovChannelMask ComputeHdRobotRequestedTileAovChannels(const HdRenderPassAovB
       continue;
     }
 
-    const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(binding.aovName);
+    const std::optional<hdrobot::AovSpec> spec = GetHdRobotAovSpec(binding.aovName);
     if(spec && spec->tileChannels.any())
     {
       channels |= spec->tileChannels;
@@ -130,14 +130,14 @@ TileAovChannelMask ComputeHdRobotRequestedTileAovChannels(const HdRenderPassAovB
 
 bool IsHdRobotFixedSizeTileAov(const TfToken &name)
 {
-  const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(name);
-  return spec && spec->tileKind == HdRobotAovTileKind::FixedSize;
+  const std::optional<hdrobot::AovSpec> spec = GetHdRobotAovSpec(name);
+  return spec && spec->tileKind == hdrobot::AovTileKind::FixedSize;
 }
 
 bool IsHdRobotDisplayTileAov(const TfToken &name)
 {
-  const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(name);
-  return spec && spec->tileKind == HdRobotAovTileKind::Display;
+  const std::optional<hdrobot::AovSpec> spec = GetHdRobotAovSpec(name);
+  return spec && spec->tileKind == hdrobot::AovTileKind::Display;
 }
 
 bool IsHdRobotIgnoredAov(const TfToken &name)
@@ -152,7 +152,7 @@ bool IsHdRobotIgnoredAov(const TfToken &name)
 
 int GetHdRobotAovCopyPriority(const TfToken &name)
 {
-  const std::optional<HdRobotAovSpec> spec = GetHdRobotAovSpec(name);
+  const std::optional<hdrobot::AovSpec> spec = GetHdRobotAovSpec(name);
   return spec ? spec->copyPriority : kStandardCopyPriority;
 }
 

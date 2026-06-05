@@ -8,15 +8,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
+namespace hdrobot {
+class SceneStore;
+}
 
 class HdRobotMesh final : public HdMesh
 {
 public:
   HdRobotMesh(const SdfPath& id,
-              HdRobotSceneStore& sceneStore,
-              HdRobotMeshHandle meshHandle,
-              HdRobotMaterialHandle displayColorMaterialHandle);
+              hdrobot::SceneStore& sceneStore,
+              hdrobot::MeshHandle meshHandle,
+              hdrobot::MaterialHandle displayColorMaterialHandle);
 
   void Finalize(HdRenderParam* renderParam) override;
   void setValid(bool value);
@@ -66,9 +68,9 @@ private:
   bool _CreateGiMeshes(HdSceneDelegate* sceneDelegate, HydraMesh& meshData);
 
 private:
-  HdRobotSceneStore& _sceneStore;
-  HdRobotMeshHandle _meshHandle;
-  HdRobotMaterialHandle _displayColorMaterialHandle;
+  hdrobot::SceneStore& _sceneStore;
+  hdrobot::MeshHandle _meshHandle;
+  hdrobot::MaterialHandle _displayColorMaterialHandle;
   HydraMesh _meshData;
 };
 

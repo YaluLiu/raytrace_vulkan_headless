@@ -11,9 +11,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
+namespace hdrobot {
 
-struct HdRobotCameraData
+class SceneStore;
+
+struct CameraData
 {
   std::string name;
   glm::vec3   position  = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -26,24 +28,26 @@ struct HdRobotCameraData
   CameraConformPolicy conformPolicy = CameraConformPolicy::MatchVertically;
 };
 
-HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform);
-HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera);
+} // namespace hdrobot
+
+hdrobot::CameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform);
+hdrobot::CameraData HdRobotComputeCameraData(const HdCamera& camera);
 
 class HdRobotCamera final : public HdCamera
 {
 public:
-  HdRobotCamera(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotCameraHandle handle);
+  HdRobotCamera(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::CameraHandle handle);
 
 public:
   HdDirtyBits GetInitialDirtyBitsMask() const override;
   void Finalize(HdRenderParam* renderParam) override;
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
-  const HdRobotCameraData& GetCameraData() const;
+  const hdrobot::CameraData& GetCameraData() const;
 
 private:
-  HdRobotSceneStore&      _sceneStore;
-  HdRobotCameraHandle       _handle;
-  mutable HdRobotCameraData _cameraData;
+  hdrobot::SceneStore& _sceneStore;
+  hdrobot::CameraHandle _handle;
+  mutable hdrobot::CameraData _cameraData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

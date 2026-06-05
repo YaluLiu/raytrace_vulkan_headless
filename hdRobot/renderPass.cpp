@@ -7,12 +7,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::EngineSession;
+using hdrobot::PassBridge;
+
 HdRobotRenderPass::HdRobotRenderPass(HdRenderIndex*             index,
                                      const HdRprimCollection&   collection,
-                                     HdRobotEngineSession&      engineSession)
+                                     EngineSession&      engineSession)
     : HdRenderPass(index, collection)
     , _isConverged(false)
-    , _bridge(std::make_unique<HdRobotPassBridge>(engineSession))
+    , _bridge(std::make_unique<PassBridge>(engineSession))
 {
 }
 

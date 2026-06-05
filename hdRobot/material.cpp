@@ -8,9 +8,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::MaterialHandle;
+using hdrobot::MaterialUpdate;
+using hdrobot::SceneStore;
+
 namespace
 {
-int RegisterTexture(HdRobotSceneStore& sceneStore, const std::string& texturePath, TextureUsage usage)
+int RegisterTexture(SceneStore& sceneStore, const std::string& texturePath, TextureUsage usage)
 {
   if (texturePath.empty())
   {
@@ -20,7 +24,7 @@ int RegisterTexture(HdRobotSceneStore& sceneStore, const std::string& texturePat
 }
 }  // namespace
 
-HdRobotMaterial::HdRobotMaterial(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotMaterialHandle handle)
+HdRobotMaterial::HdRobotMaterial(const SdfPath& id, SceneStore& sceneStore, MaterialHandle handle)
     : HdMaterial(id)
     , _sceneStore(sceneStore)
     , _handle(handle)
@@ -39,7 +43,7 @@ HdDirtyBits HdRobotMaterial::GetInitialDirtyBitsMask() const
   return DirtyBits::DirtyParams;
 }
 
-HdRobotMaterialHandle HdRobotMaterial::GetHandle() const
+MaterialHandle HdRobotMaterial::GetHandle() const
 {
   return _handle;
 }
@@ -76,7 +80,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   if (!resource.IsHolding<HdMaterialNetworkMap>())
   {
     _materialData = material;
-    _sceneStore.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
+    _sceneStore.EnqueueMaterialUpdate(MaterialUpdate{_handle, _materialData});
     return;
   }
 
@@ -88,7 +92,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   {
     TF_WARN("Volume %s unsupported", id.GetText());
     _materialData = material;
-    _sceneStore.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
+    _sceneStore.EnqueueMaterialUpdate(MaterialUpdate{_handle, _materialData});
     return;
   }
 
@@ -106,7 +110,7 @@ void HdRobotMaterial::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* render
   }
 
   _materialData = material;
-  _sceneStore.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_handle, _materialData});
+  _sceneStore.EnqueueMaterialUpdate(MaterialUpdate{_handle, _materialData});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

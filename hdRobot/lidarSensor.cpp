@@ -12,6 +12,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::LidarParams;
+using hdrobot::LidarSensorData;
+using hdrobot::LidarSensorHandle;
+using hdrobot::LidarSensorUpdate;
+using hdrobot::SceneStore;
+
 namespace
 {
 constexpr float kLidarParamEpsilon = 1.0e-4f;
@@ -62,9 +68,9 @@ void ReadCachedParam(HdSceneDelegate* sceneDelegate,
   *target = value.UncheckedGet<T>();
 }
 
-HdRobotLidarParams SanitizeLidarParams(const HdRobotLidarParams& source)
+LidarParams SanitizeLidarParams(const LidarParams& source)
 {
-  HdRobotLidarParams params;
+  LidarParams params;
   params.azimuthStartDeg = source.azimuthStartDeg;
   params.azimuthEndDeg = source.azimuthEndDeg;
   params.azimuthStepDeg = ClampStep(source.azimuthStepDeg, params.azimuthStepDeg);
@@ -78,8 +84,8 @@ HdRobotLidarParams SanitizeLidarParams(const HdRobotLidarParams& source)
 } // namespace
 
 HdRobotLidarSensor::HdRobotLidarSensor(const SdfPath& id,
-                                       HdRobotSceneStore& sceneStore,
-                                       HdRobotLidarSensorHandle handle)
+                                       SceneStore& sceneStore,
+                                       LidarSensorHandle handle)
     : HdSprim(id)
     , _sceneStore(sceneStore)
     , _handle(handle)
@@ -111,11 +117,11 @@ void HdRobotLidarSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
 
 void HdRobotLidarSensor::_UpdateRenderParam()
 {
-  HdRobotLidarSensorData sensorData;
+  LidarSensorData sensorData;
   sensorData.name = GetId().GetString();
   sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeLidarParams(_params);
-  _sceneStore.EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate{_handle, sensorData, _enabled});
+  _sceneStore.EnqueueLidarSensorUpdate(LidarSensorUpdate{_handle, sensorData, _enabled});
 }
 
 void HdRobotLidarSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, HdDirtyBits* dirtyBits)

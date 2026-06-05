@@ -24,6 +24,12 @@
 #include <string>
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::MaterialHandle;
+using hdrobot::MaterialUpdate;
+using hdrobot::MeshHandle;
+using hdrobot::MeshUpdate;
+using hdrobot::SceneStore;
+
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (st)(st0)(st_0)(st1)(st_1)(UV0)(UV1)(tangents)(tangentSigns)(bitangentSigns)(leftHanded));
 
 namespace {
@@ -407,9 +413,9 @@ TfToken _TraceRoleFromValue(const VtValue& value)
 }  // namespace
 
 HdRobotMesh::HdRobotMesh(const SdfPath& id,
-                         HdRobotSceneStore& sceneStore,
-                         HdRobotMeshHandle meshHandle,
-                         HdRobotMaterialHandle displayColorMaterialHandle)
+                         SceneStore& sceneStore,
+                         MeshHandle meshHandle,
+                         MaterialHandle displayColorMaterialHandle)
     : HdMesh(id)
     , _sceneStore(sceneStore)
     , _meshHandle(meshHandle)
@@ -424,7 +430,7 @@ void HdRobotMesh::setValid(bool value)
   {
     _meshData.valid = value;
     _sceneStore.EnqueueMeshUpdate(
-        HdRobotMeshUpdate{_meshHandle, _meshData, value, false, true});
+        MeshUpdate{_meshHandle, _meshData, value, false, true});
   }
 }
 
@@ -485,7 +491,7 @@ bool HdRobotMesh::ApplyDisplayColorMaterial(HdSceneDelegate* sceneDelegate, cons
     meshData.scene_mat_ids[0] = curMatId;
   }
 
-  _sceneStore.EnqueueMaterialUpdate(HdRobotMaterialUpdate{_displayColorMaterialHandle, mat});
+  _sceneStore.EnqueueMaterialUpdate(MaterialUpdate{_displayColorMaterialHandle, mat});
   return true;
 }
 
@@ -632,7 +638,7 @@ void HdRobotMesh::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPara
 
   _meshData = meshData;
   _sceneStore.EnqueueMeshUpdate(
-      HdRobotMeshUpdate{_meshHandle, _meshData, true, geometryDirty, instanceDirty});
+      MeshUpdate{_meshHandle, _meshData, true, geometryDirty, instanceDirty});
 
   *dirtyBits = HdChangeTracker::Clean;
 }

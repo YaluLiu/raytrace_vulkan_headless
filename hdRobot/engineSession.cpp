@@ -16,6 +16,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace hdrobot {
+
 namespace
 {
 GfVec2i BootstrapRenderSize()
@@ -23,38 +25,38 @@ GfVec2i BootstrapRenderSize()
   return GfVec2i(1, 1);
 }
 
-bool IsUsdImagingPluginCamera(const HdRobotCameraData& camera)
+bool IsUsdImagingPluginCamera(const CameraData& camera)
 {
   constexpr const char* kInternalCameraPrefix = "/_UsdImaging_HdRobotRendererPlugin_";
   constexpr const char* kInternalCameraSuffix = "/camera";
   return camera.name.starts_with(kInternalCameraPrefix) && camera.name.ends_with(kInternalCameraSuffix);
 }
 
-void SortCamerasByName(std::vector<HdRobotCameraData>& cameras)
+void SortCamerasByName(std::vector<CameraData>& cameras)
 {
-  std::sort(cameras.begin(), cameras.end(), [](const HdRobotCameraData& lhs, const HdRobotCameraData& rhs) {
+  std::sort(cameras.begin(), cameras.end(), [](const CameraData& lhs, const CameraData& rhs) {
     return lhs.name < rhs.name;
   });
 }
 
-void SortLidarSensorsByName(std::vector<HdRobotLidarSensorData>& sensors)
+void SortLidarSensorsByName(std::vector<LidarSensorData>& sensors)
 {
-  std::sort(sensors.begin(), sensors.end(), [](const HdRobotLidarSensorData& lhs,
-                                               const HdRobotLidarSensorData& rhs) {
+  std::sort(sensors.begin(), sensors.end(), [](const LidarSensorData& lhs,
+                                               const LidarSensorData& rhs) {
     return lhs.name < rhs.name;
   });
 }
 
-void SortHeightScanSensorsByName(std::vector<HdRobotHeightScanSensorData>& sensors)
+void SortHeightScanSensorsByName(std::vector<HeightScanSensorData>& sensors)
 {
-  std::sort(sensors.begin(), sensors.end(), [](const HdRobotHeightScanSensorData& lhs,
-                                               const HdRobotHeightScanSensorData& rhs) {
+  std::sort(sensors.begin(), sensors.end(), [](const HeightScanSensorData& lhs,
+                                               const HeightScanSensorData& rhs) {
     return lhs.name < rhs.name;
   });
 }
 } // namespace
 
-struct HdRobotEngineSession::Impl
+struct EngineSession::Impl
 {
   explicit Impl(std::string resourcePath)
       : resourcePath(std::move(resourcePath))
@@ -78,7 +80,7 @@ struct HdRobotEngineSession::Impl
     }
   }
 
-  void CommitResources(HdRobotRenderParam& renderParam, HdRobotSceneStore& sceneStore)
+  void CommitResources(RenderParam& renderParam, SceneStore& sceneStore)
   {
     EnsureEngineReady(isAppInited ? currentRenderSize : BootstrapRenderSize());
     sceneSync.EnsureResources(engine, sceneStore, glInteropCache);
@@ -112,17 +114,17 @@ struct HdRobotEngineSession::Impl
       return false;
     }
 
-    HdRobotCameraData mainCameraData = robotCamera->GetCameraData();
+    CameraData mainCameraData = robotCamera->GetCameraData();
     const CameraConformPolicy frameConformPolicy = ToCameraConformPolicy(renderPassState->GetWindowPolicy());
     mainCameraData.conformPolicy = frameConformPolicy;
-    std::vector<HdRobotCameraData> cameras = camerasSnapshot;
+    std::vector<CameraData> cameras = camerasSnapshot;
     if(cameras.empty())
     {
       cameras.push_back(mainCameraData);
     }
     else
     {
-      const auto cameraIt = std::find_if(cameras.begin(), cameras.end(), [&mainCameraData](const HdRobotCameraData& camera) {
+      const auto cameraIt = std::find_if(cameras.begin(), cameras.end(), [&mainCameraData](const CameraData& camera) {
         return camera.name == mainCameraData.name;
       });
       if(cameraIt == cameras.end())
@@ -136,7 +138,7 @@ struct HdRobotEngineSession::Impl
     }
 
     cameras.erase(std::remove_if(cameras.begin(), cameras.end(), IsUsdImagingPluginCamera), cameras.end());
-    for(HdRobotCameraData& camera : cameras)
+    for(CameraData& camera : cameras)
     {
       camera.conformPolicy = frameConformPolicy;
     }
@@ -171,7 +173,7 @@ struct HdRobotEngineSession::Impl
     currentRenderSize = renderSize;
   }
 
-  void CacheCommittedFrameState(HdRobotRenderParam& renderParam, const HdRobotSceneStore& sceneStore)
+  void CacheCommittedFrameState(RenderParam& renderParam, const SceneStore& sceneStore)
   {
     camerasSnapshot = sceneStore.GetActiveCameraSnapshot();
     SortCamerasByName(camerasSnapshot);
@@ -189,7 +191,7 @@ struct HdRobotEngineSession::Impl
 
   void SubmitCommittedCameras()
   {
-    std::vector<HdRobotCameraData> cameras = camerasSnapshot;
+    std::vector<CameraData> cameras = camerasSnapshot;
     cameras.erase(std::remove_if(cameras.begin(), cameras.end(), IsUsdImagingPluginCamera), cameras.end());
     SortCamerasByName(cameras);
     engine.setCameras(ToCameraSpec(cameras));
@@ -197,65 +199,67 @@ struct HdRobotEngineSession::Impl
 
   std::string resourcePath;
   ::Engine engine;
-  ::HdRobotGlInteropCache glInteropCache;
-  HdRobotEngineSceneSync sceneSync;
+  GlInteropCache glInteropCache;
+  EngineSceneSync sceneSync;
   bool isAppInited = false;
   GfVec2i currentRenderSize{-1, -1};
 
-  std::vector<HdRobotCameraData> camerasSnapshot;
-  std::vector<HdRobotLidarSensorData> lidarSensors;
-  std::vector<HdRobotHeightScanSensorData> heightScanSensors;
-  HdRobotTileConfig tileConfig;
-  HdRobotLidarVisualizationConfig lidarVisualizationConfig;
-  HdRobotHeightScanVisualizationConfig heightScanVisualizationConfig;
+  std::vector<CameraData> camerasSnapshot;
+  std::vector<LidarSensorData> lidarSensors;
+  std::vector<HeightScanSensorData> heightScanSensors;
+  TileConfig tileConfig;
+  LidarVisualizationConfig lidarVisualizationConfig;
+  HeightScanVisualizationConfig heightScanVisualizationConfig;
   TileAovChannelMask requestedTileAovChannels = TileAovChannelMask::ColorDepth();
 };
 
-HdRobotEngineSession::HdRobotEngineSession(std::string resourcePath)
+EngineSession::EngineSession(std::string resourcePath)
     : _impl(std::make_unique<Impl>(std::move(resourcePath)))
 {
 }
 
-HdRobotEngineSession::~HdRobotEngineSession() = default;
+EngineSession::~EngineSession() = default;
 
-::Engine& HdRobotEngineSession::GetEngine()
+::Engine& EngineSession::GetEngine()
 {
   return _impl->engine;
 }
 
-const ::Engine& HdRobotEngineSession::GetEngine() const
+const ::Engine& EngineSession::GetEngine() const
 {
   return _impl->engine;
 }
 
-::HdRobotGlInteropCache& HdRobotEngineSession::GetGlInteropCache()
+GlInteropCache& EngineSession::GetGlInteropCache()
 {
   return _impl->glInteropCache;
 }
 
-void HdRobotEngineSession::EnsureEngineReady(const GfVec2i& renderSize)
+void EngineSession::EnsureEngineReady(const GfVec2i& renderSize)
 {
   _impl->EnsureEngineReady(renderSize);
 }
 
-void HdRobotEngineSession::CommitResources(HdRobotRenderParam& renderParam, HdRobotSceneStore& sceneStore)
+void EngineSession::CommitResources(RenderParam& renderParam, SceneStore& sceneStore)
 {
   _impl->CommitResources(renderParam, sceneStore);
 }
 
-bool HdRobotEngineSession::SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState)
+bool EngineSession::SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState)
 {
   return _impl->SetFrameCamera(renderPassState);
 }
 
-void HdRobotEngineSession::ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels)
+void EngineSession::ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels)
 {
   _impl->ConfigureFrameOutputs(requestedTileChannels);
 }
 
-void HdRobotEngineSession::ApplyFrameRenderTags(const TfTokenVector& renderTags)
+void EngineSession::ApplyFrameRenderTags(const TfTokenVector& renderTags)
 {
   _impl->ApplyFrameRenderTags(renderTags);
 }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

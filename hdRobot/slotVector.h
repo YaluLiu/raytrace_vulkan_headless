@@ -9,8 +9,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace hdrobot {
+
 template <typename T, typename HandleT>
-class HdRobotSlotVector
+class SlotVector
 {
 public:
   HandleT Allocate(T value)
@@ -145,5 +147,7 @@ private:
   std::vector<Slot> _slots;
   std::vector<uint32_t> _freeList;
 };
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -6,12 +6,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
+namespace hdrobot {
+class SceneStore;
+}
 
 class HdRobotLight : public HdLight
 {
 public:
-  HdRobotLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle);
+  HdRobotLight(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::LightHandle handle);
 
   HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -22,15 +24,15 @@ protected:
   void    Finalize(HdRenderParam* renderParam) override;
 
 protected:
-  HdRobotSceneStore& _sceneStore;
-  HdRobotLightHandle  _handle;
+  hdrobot::SceneStore& _sceneStore;
+  hdrobot::LightHandle _handle;
   HydraLight          _lightData;
 };
 
 class HdRobotDistantLight final : public HdRobotLight
 {
 public:
-  HdRobotDistantLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle);
+  HdRobotDistantLight(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::LightHandle handle);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -39,7 +41,7 @@ public:
 class HdRobotSphereLight final : public HdRobotLight
 {
 public:
-  HdRobotSphereLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle);
+  HdRobotSphereLight(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::LightHandle handle);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -48,7 +50,7 @@ public:
 class HdRobotSimpleLight final : public HdRobotLight
 {
 public:
-  HdRobotSimpleLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle);
+  HdRobotSimpleLight(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::LightHandle handle);
 
 public:
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
@@ -57,7 +59,7 @@ public:
 class HdRobotDomeLight final : public HdRobotLight
 {
 public:
-  HdRobotDomeLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle);
+  HdRobotDomeLight(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::LightHandle handle);
 
 public:
   std::string GetTexturePath(HdSceneDelegate* sceneDelegate);

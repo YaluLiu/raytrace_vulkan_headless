@@ -10,25 +10,27 @@
 #include <string>
 
 class Engine;
-class HdRobotGlInteropCache;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
-class HdRobotRenderParam;
+namespace hdrobot {
 
-class HdRobotEngineSession final
+class GlInteropCache;
+class SceneStore;
+class RenderParam;
+
+class EngineSession final
 {
 public:
-  explicit HdRobotEngineSession(std::string resourcePath);
-  ~HdRobotEngineSession();
+  explicit EngineSession(std::string resourcePath);
+  ~EngineSession();
 
   ::Engine& GetEngine();
   const ::Engine& GetEngine() const;
-  ::HdRobotGlInteropCache& GetGlInteropCache();
+  GlInteropCache& GetGlInteropCache();
 
   void EnsureEngineReady(const GfVec2i& renderSize);
-  void CommitResources(HdRobotRenderParam& renderParam, HdRobotSceneStore& sceneStore);
+  void CommitResources(RenderParam& renderParam, SceneStore& sceneStore);
 
   bool SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels);
@@ -38,5 +40,7 @@ private:
   struct Impl;
   std::unique_ptr<Impl> _impl;
 };
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

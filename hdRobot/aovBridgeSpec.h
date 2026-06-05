@@ -12,42 +12,46 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum class HdRobotAovStorageRole
+namespace hdrobot {
+
+enum class AovStorageRole
 {
   Color,
   Depth,
   Id,
 };
 
-enum class HdRobotAovTileKind
+enum class AovTileKind
 {
   None,
   FixedSize,
   Display,
 };
 
-enum class HdRobotAovCopyScaling
+enum class AovCopyScaling
 {
   RequireExactSourceSize,
   AllowScaleToDestination,
 };
 
-struct HdRobotAovSpec
+struct AovSpec
 {
   Aov engineAov;
   HdFormat hdFormat;
-  HdRobotAovStorageRole storageRole;
+  AovStorageRole storageRole;
   // Tile depth atlas copies use R32F color-compatible textures, not GL depth attachments.
   bool useDepthTargetRenderBuffer;
-  HdRobotAovTileKind tileKind;
+  AovTileKind tileKind;
   TileAovChannelMask tileChannels;
-  HdRobotAovCopyScaling copyScaling;
+  AovCopyScaling copyScaling;
   int copyPriority;
   bool multiSampled;
   VtValue clearValue;
 };
 
-std::optional<HdRobotAovSpec> GetHdRobotAovSpec(const TfToken &name);
+} // namespace hdrobot
+
+std::optional<hdrobot::AovSpec> GetHdRobotAovSpec(const TfToken &name);
 HdAovDescriptor GetHdRobotDefaultAovDescriptor(const TfToken &name);
 TileAovChannelMask ComputeHdRobotRequestedTileAovChannels(const HdRenderPassAovBindingVector &bindings);
 bool IsHdRobotFixedSizeTileAov(const TfToken &name);

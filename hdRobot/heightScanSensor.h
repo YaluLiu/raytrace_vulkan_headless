@@ -11,9 +11,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
+namespace hdrobot {
 
-struct HdRobotHeightScanParams
+class SceneStore;
+
+struct HeightScanParams
 {
   float uStart = -0.2f;
   float uEnd = 0.2f;
@@ -25,12 +27,14 @@ struct HdRobotHeightScanParams
   float maxRange = 5.0f;
 };
 
-struct HdRobotHeightScanSensorData
+struct HeightScanSensorData
 {
   std::string name;
-  HdRobotCameraData camera;
-  HdRobotHeightScanParams params;
+  CameraData camera;
+  HeightScanParams params;
 };
+
+} // namespace hdrobot
 
 class HdRobotHeightScanSensor final : public HdSprim
 {
@@ -43,7 +47,7 @@ public:
     AllDirty = HdRaySensorDirtyBits::AllDirty,
   };
 
-  HdRobotHeightScanSensor(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotHeightScanSensorHandle handle);
+  HdRobotHeightScanSensor(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::HeightScanSensorHandle handle);
 
   void Sync(HdSceneDelegate* sceneDelegate,
             HdRenderParam* renderParam,
@@ -55,11 +59,11 @@ private:
   void _SyncParams(HdSceneDelegate* sceneDelegate);
   void _UpdateRenderParam();
 
-  HdRobotSceneStore& _sceneStore;
-  HdRobotHeightScanSensorHandle _handle;
+  hdrobot::SceneStore& _sceneStore;
+  hdrobot::HeightScanSensorHandle _handle;
   GfMatrix4d _transform = GfMatrix4d(1.0);
   bool _enabled = true;
-  HdRobotHeightScanParams _params;
+  hdrobot::HeightScanParams _params;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

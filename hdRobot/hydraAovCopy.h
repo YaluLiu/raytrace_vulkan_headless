@@ -5,22 +5,27 @@
 #include <pxr/base/tf/token.h>
 
 class Engine;
-class HdRobotGlInteropCache;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRobotRenderBuffer;
 
-struct HdRobotAovCopyRequest
+namespace hdrobot {
+
+class GlInteropCache;
+
+struct AovCopyRequest
 {
   TfToken aovName;
   Aov engineAov;
-  HdRobotAovCopyScaling scaling;
+  AovCopyScaling scaling;
   HdRobotRenderBuffer *renderBuffer{nullptr};
 };
 
 bool CopyAovToRenderBuffer(const ::Engine &app,
-                           const HdRobotAovCopyRequest &request,
-                           ::HdRobotGlInteropCache &glInteropCache);
+                           const AovCopyRequest &request,
+                           GlInteropCache &glInteropCache);
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

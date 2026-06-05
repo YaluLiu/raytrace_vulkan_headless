@@ -11,9 +11,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
+namespace hdrobot {
 
-struct HdRobotLidarParams
+class SceneStore;
+
+struct LidarParams
 {
   float azimuthStartDeg = -90.0f;
   float azimuthEndDeg = 90.0f;
@@ -25,12 +27,14 @@ struct HdRobotLidarParams
   float intensity = 1.0f;
 };
 
-struct HdRobotLidarSensorData
+struct LidarSensorData
 {
   std::string name;
-  HdRobotCameraData camera;
-  HdRobotLidarParams params;
+  CameraData camera;
+  LidarParams params;
 };
+
+} // namespace hdrobot
 
 class HdRobotLidarSensor final : public HdSprim
 {
@@ -43,7 +47,7 @@ public:
     AllDirty = HdRaySensorDirtyBits::AllDirty,
   };
 
-  HdRobotLidarSensor(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLidarSensorHandle handle);
+  HdRobotLidarSensor(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::LidarSensorHandle handle);
 
   void Sync(HdSceneDelegate* sceneDelegate,
             HdRenderParam* renderParam,
@@ -55,11 +59,11 @@ private:
   void _SyncParams(HdSceneDelegate* sceneDelegate);
   void _UpdateRenderParam();
 
-  HdRobotSceneStore& _sceneStore;
-  HdRobotLidarSensorHandle _handle;
+  hdrobot::SceneStore& _sceneStore;
+  hdrobot::LidarSensorHandle _handle;
   GfMatrix4d _transform = GfMatrix4d(1.0);
   bool _enabled = true;
-  HdRobotLidarParams _params;
+  hdrobot::LidarParams _params;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

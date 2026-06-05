@@ -6,47 +6,51 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdRobotMeshHandle
+namespace hdrobot {
+
+struct MeshHandle
 {
   uint32_t index = UINT32_MAX;
   uint32_t generation = 0;
 };
 
-struct HdRobotMaterialHandle
+struct MaterialHandle
 {
   uint32_t index = UINT32_MAX;
   uint32_t generation = 0;
 };
 
-struct HdRobotLightHandle
+struct LightHandle
 {
   uint32_t index = UINT32_MAX;
   uint32_t generation = 0;
 };
 
-struct HdRobotCameraHandle
+struct CameraHandle
 {
   uint32_t index = UINT32_MAX;
   uint32_t generation = 0;
 };
 
-struct HdRobotLidarSensorHandle
+struct LidarSensorHandle
 {
   uint32_t index = UINT32_MAX;
   uint32_t generation = 0;
 };
 
-struct HdRobotHeightScanSensorHandle
+struct HeightScanSensorHandle
 {
   uint32_t index = UINT32_MAX;
   uint32_t generation = 0;
 };
 
-inline bool IsValid(const HdRobotMeshHandle& handle) { return handle.index != UINT32_MAX; }
-inline bool IsValid(const HdRobotMaterialHandle& handle) { return handle.index != UINT32_MAX; }
-inline bool IsValid(const HdRobotLightHandle& handle) { return handle.index != UINT32_MAX; }
-inline bool IsValid(const HdRobotCameraHandle& handle) { return handle.index != UINT32_MAX; }
-inline bool IsValid(const HdRobotLidarSensorHandle& handle) { return handle.index != UINT32_MAX; }
-inline bool IsValid(const HdRobotHeightScanSensorHandle& handle) { return handle.index != UINT32_MAX; }
+inline bool IsValid(const MeshHandle& handle) { return handle.index != UINT32_MAX; }
+inline bool IsValid(const MaterialHandle& handle) { return handle.index != UINT32_MAX; }
+inline bool IsValid(const LightHandle& handle) { return handle.index != UINT32_MAX; }
+inline bool IsValid(const CameraHandle& handle) { return handle.index != UINT32_MAX; }
+inline bool IsValid(const LidarSensorHandle& handle) { return handle.index != UINT32_MAX; }
+inline bool IsValid(const HeightScanSensorHandle& handle) { return handle.index != UINT32_MAX; }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

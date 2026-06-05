@@ -7,7 +7,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdRobotTileConfig
+namespace hdrobot {
+
+struct TileConfig
 {
   bool     enabled = false;
   bool     colorEnabled = true;
@@ -18,7 +20,7 @@ struct HdRobotTileConfig
   uint32_t gridRows = 10;
 };
 
-struct HdRobotLidarVisualizationConfig
+struct LidarVisualizationConfig
 {
   bool enabled = false;
   uint32_t sensorIndex = 0;
@@ -26,7 +28,7 @@ struct HdRobotLidarVisualizationConfig
   bool visualizeAllSensors = false;
 };
 
-struct HdRobotHeightScanVisualizationConfig
+struct HeightScanVisualizationConfig
 {
   bool enabled = false;
   uint32_t sensorIndex = 0;
@@ -34,22 +36,24 @@ struct HdRobotHeightScanVisualizationConfig
   bool visualizeAllSensors = false;
 };
 
-class HdRobotRenderParam final : public HdRenderParam
+class RenderParam final : public HdRenderParam
 {
  public:
-  void SetTileConfig(const HdRobotTileConfig& config);
-  HdRobotTileConfig GetTileConfig() const;
-  void SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config);
-  HdRobotLidarVisualizationConfig GetLidarVisualizationConfig() const;
-  void SetHeightScanVisualizationConfig(const HdRobotHeightScanVisualizationConfig& config);
-  HdRobotHeightScanVisualizationConfig GetHeightScanVisualizationConfig() const;
+  void SetTileConfig(const TileConfig& config);
+  TileConfig GetTileConfig() const;
+  void SetLidarVisualizationConfig(const LidarVisualizationConfig& config);
+  LidarVisualizationConfig GetLidarVisualizationConfig() const;
+  void SetHeightScanVisualizationConfig(const HeightScanVisualizationConfig& config);
+  HeightScanVisualizationConfig GetHeightScanVisualizationConfig() const;
 
 private:
   mutable std::mutex mutex;
-  HdRobotTileConfig tileConfig;
-  HdRobotLidarVisualizationConfig lidarVisualizationConfig;
-  HdRobotHeightScanVisualizationConfig heightScanVisualizationConfig;
+  TileConfig tileConfig;
+  LidarVisualizationConfig lidarVisualizationConfig;
+  HeightScanVisualizationConfig heightScanVisualizationConfig;
 
 };
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

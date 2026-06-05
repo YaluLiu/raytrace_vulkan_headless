@@ -10,12 +10,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotSceneStore;
+namespace hdrobot {
+class SceneStore;
+}
 
 class HdRobotMaterial final : public HdMaterial
 {
 public:
-  HdRobotMaterial(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotMaterialHandle handle);
+  HdRobotMaterial(const SdfPath& id, hdrobot::SceneStore& sceneStore, hdrobot::MaterialHandle handle);
 
   void Finalize(HdRenderParam* renderParam) override;
 
@@ -24,13 +26,13 @@ public:
 
   void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
 
-  HdRobotMaterialHandle GetHandle() const;
+  hdrobot::MaterialHandle GetHandle() const;
   const HydraMaterial& GetMaterialData() const;
   const TfToken& GetBaseColorPrimvarName() const;
 
 private:
-  HdRobotSceneStore& _sceneStore;
-  HdRobotMaterialHandle _handle;
+  hdrobot::SceneStore& _sceneStore;
+  hdrobot::MaterialHandle _handle;
   HydraMaterial        _materialData;
   TfToken              _baseColorPrimvarName;
 };

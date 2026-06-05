@@ -2,40 +2,44 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void HdRobotRenderParam::SetTileConfig(const HdRobotTileConfig& config)
+namespace hdrobot {
+
+void RenderParam::SetTileConfig(const TileConfig& config)
 {
   std::lock_guard guard(mutex);
   tileConfig = config;
 }
 
-HdRobotTileConfig HdRobotRenderParam::GetTileConfig() const
+TileConfig RenderParam::GetTileConfig() const
 {
   std::lock_guard guard(mutex);
   return tileConfig;
 }
 
-void HdRobotRenderParam::SetLidarVisualizationConfig(const HdRobotLidarVisualizationConfig& config)
+void RenderParam::SetLidarVisualizationConfig(const LidarVisualizationConfig& config)
 {
   std::lock_guard guard(mutex);
   lidarVisualizationConfig = config;
 }
 
-HdRobotLidarVisualizationConfig HdRobotRenderParam::GetLidarVisualizationConfig() const
+LidarVisualizationConfig RenderParam::GetLidarVisualizationConfig() const
 {
   std::lock_guard guard(mutex);
   return lidarVisualizationConfig;
 }
 
-void HdRobotRenderParam::SetHeightScanVisualizationConfig(const HdRobotHeightScanVisualizationConfig& config)
+void RenderParam::SetHeightScanVisualizationConfig(const HeightScanVisualizationConfig& config)
 {
   std::lock_guard guard(mutex);
   heightScanVisualizationConfig = config;
 }
 
-HdRobotHeightScanVisualizationConfig HdRobotRenderParam::GetHeightScanVisualizationConfig() const
+HeightScanVisualizationConfig RenderParam::GetHeightScanVisualizationConfig() const
 {
   std::lock_guard guard(mutex);
   return heightScanVisualizationConfig;
 }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -4,6 +4,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace hdrobot {
+
 namespace
 {
 
@@ -54,12 +56,12 @@ glm::vec2 GetMeshTexCoord(const HydraMesh &mesh, size_t vertexIndex, bool useAut
 
 }  // namespace
 
-Material ToMaterial(const HydraMaterial &material)
+::Material ToMaterial(const HydraMaterial &material)
 {
-  return ConvertHydraMaterialFields<Material>(material);
+  return ConvertHydraMaterialFields<::Material>(material);
 }
 
-void ConvertHydraMeshToGeometry(const HydraMesh &mesh, MeshGeometry &geometry)
+void ConvertHydraMeshToGeometry(const HydraMesh &mesh, ::MeshGeometry &geometry)
 {
   geometry.vertices.clear();
   geometry.indices.clear();
@@ -112,9 +114,9 @@ void ConvertHydraMeshToGeometry(const HydraMesh &mesh, MeshGeometry &geometry)
   }
 }
 
-CameraSpec ToCameraSpec(const HdRobotCameraData &camera)
+::CameraSpec ToCameraSpec(const CameraData &camera)
 {
-  CameraSpec result;
+  ::CameraSpec result;
   result.name = camera.name;
   result.position = camera.position;
   result.forward = camera.forward;
@@ -127,18 +129,18 @@ CameraSpec ToCameraSpec(const HdRobotCameraData &camera)
   return result;
 }
 
-std::vector<CameraSpec> ToCameraSpec(const std::vector<HdRobotCameraData> &cameras)
+std::vector<::CameraSpec> ToCameraSpec(const std::vector<CameraData> &cameras)
 {
-  std::vector<CameraSpec> result;
+  std::vector<::CameraSpec> result;
   result.reserve(cameras.size());
-  for(const HdRobotCameraData &camera : cameras)
+  for(const CameraData &camera : cameras)
   {
     result.push_back(ToCameraSpec(camera));
   }
   return result;
 }
 
-CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy)
+::CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy)
 {
   switch(policy)
   {
@@ -156,9 +158,9 @@ CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy)
   return CameraConformPolicy::Fit;
 }
 
-Light ToLight(const HydraLight &light)
+::Light ToLight(const HydraLight &light)
 {
-  Light result;
+  ::Light result;
   result.type = light.type;
   result.textureID = light.textureID;
   result.baseEmission = light.baseEmission;
@@ -172,9 +174,9 @@ Light ToLight(const HydraLight &light)
   return result;
 }
 
-LidarSensorSpec ToLidarSensorSpec(const HdRobotLidarSensorData &sensor)
+::LidarSensorSpec ToLidarSensorSpec(const LidarSensorData &sensor)
 {
-  LidarSensorSpec result;
+  ::LidarSensorSpec result;
   result.name = sensor.name;
   result.position = sensor.camera.position;
   result.forward = sensor.camera.forward;
@@ -190,20 +192,20 @@ LidarSensorSpec ToLidarSensorSpec(const HdRobotLidarSensorData &sensor)
   return result;
 }
 
-std::vector<LidarSensorSpec> ToLidarSensorSpec(const std::vector<HdRobotLidarSensorData> &sensors)
+std::vector<::LidarSensorSpec> ToLidarSensorSpec(const std::vector<LidarSensorData> &sensors)
 {
-  std::vector<LidarSensorSpec> result;
+  std::vector<::LidarSensorSpec> result;
   result.reserve(sensors.size());
-  for(const HdRobotLidarSensorData &sensor : sensors)
+  for(const LidarSensorData &sensor : sensors)
   {
     result.push_back(ToLidarSensorSpec(sensor));
   }
   return result;
 }
 
-HeightScanSensorSpec ToHeightScanSensorSpec(const HdRobotHeightScanSensorData &sensor)
+::HeightScanSensorSpec ToHeightScanSensorSpec(const HeightScanSensorData &sensor)
 {
-  HeightScanSensorSpec result;
+  ::HeightScanSensorSpec result;
   result.name = sensor.name;
   result.position = sensor.camera.position;
   result.forward = sensor.camera.forward;
@@ -219,21 +221,21 @@ HeightScanSensorSpec ToHeightScanSensorSpec(const HdRobotHeightScanSensorData &s
   return result;
 }
 
-std::vector<HeightScanSensorSpec> ToHeightScanSensorSpec(
-    const std::vector<HdRobotHeightScanSensorData> &sensors)
+std::vector<::HeightScanSensorSpec> ToHeightScanSensorSpec(
+    const std::vector<HeightScanSensorData> &sensors)
 {
-  std::vector<HeightScanSensorSpec> result;
+  std::vector<::HeightScanSensorSpec> result;
   result.reserve(sensors.size());
-  for(const HdRobotHeightScanSensorData &sensor : sensors)
+  for(const HeightScanSensorData &sensor : sensors)
   {
     result.push_back(ToHeightScanSensorSpec(sensor));
   }
   return result;
 }
 
-LidarVisualizationConfig ToLidarVisualizationConfig(const HdRobotLidarVisualizationConfig &config)
+::LidarVisualizationConfig ToLidarVisualizationConfig(const LidarVisualizationConfig &config)
 {
-  LidarVisualizationConfig result;
+  ::LidarVisualizationConfig result;
   result.enabled = config.enabled;
   result.visualizeAllSensors = config.visualizeAllSensors;
   result.sensorIndex = config.sensorIndex;
@@ -241,10 +243,10 @@ LidarVisualizationConfig ToLidarVisualizationConfig(const HdRobotLidarVisualizat
   return result;
 }
 
-HeightScanVisualizationConfig ToHeightScanVisualizationConfig(
-    const HdRobotHeightScanVisualizationConfig &config)
+::HeightScanVisualizationConfig ToHeightScanVisualizationConfig(
+    const HeightScanVisualizationConfig &config)
 {
-  HeightScanVisualizationConfig result;
+  ::HeightScanVisualizationConfig result;
   result.enabled = config.enabled;
   result.sensorIndex = config.sensorIndex;
   result.pointSizePixels = config.pointSizePixels;
@@ -252,9 +254,9 @@ HeightScanVisualizationConfig ToHeightScanVisualizationConfig(
   return result;
 }
 
-TileAtlasConfig ToTileAtlasConfig(const HdRobotTileConfig &config)
+::TileAtlasConfig ToTileAtlasConfig(const TileConfig &config)
 {
-  TileAtlasConfig result;
+  ::TileAtlasConfig result;
   result.enabled = config.enabled;
   result.colorEnabled = config.colorEnabled;
   result.depthEnabled = config.depthEnabled;
@@ -266,15 +268,15 @@ TileAtlasConfig ToTileAtlasConfig(const HdRobotTileConfig &config)
   return result;
 }
 
-RendererOutputConfig ToRendererOutputConfig(
-    const HdRobotTileConfig &tileConfig,
+::RendererOutputConfig ToRendererOutputConfig(
+    const TileConfig &tileConfig,
     TileAovChannelMask requestedTileAovChannels,
-    const std::vector<HdRobotLidarSensorData> &lidarSensors,
-    const HdRobotLidarVisualizationConfig &lidarVisualizationConfig,
-    const std::vector<HdRobotHeightScanSensorData> &heightScanSensors,
-    const HdRobotHeightScanVisualizationConfig &heightScanVisualizationConfig)
+    const std::vector<LidarSensorData> &lidarSensors,
+    const LidarVisualizationConfig &lidarVisualizationConfig,
+    const std::vector<HeightScanSensorData> &heightScanSensors,
+    const HeightScanVisualizationConfig &heightScanVisualizationConfig)
 {
-  RendererOutputConfig result;
+  ::RendererOutputConfig result;
   result.tile.atlas = ToTileAtlasConfig(tileConfig);
   result.tile.requestedChannels = requestedTileAovChannels;
   result.lidar.sensors = ToLidarSensorSpec(lidarSensors);
@@ -283,5 +285,7 @@ RendererOutputConfig ToRendererOutputConfig(
   result.heightScan.visualization = ToHeightScanVisualizationConfig(heightScanVisualizationConfig);
   return result;
 }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

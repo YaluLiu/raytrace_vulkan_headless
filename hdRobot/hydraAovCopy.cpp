@@ -10,6 +10,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace hdrobot {
+
 namespace
 {
 void ClearGlErrors()
@@ -46,8 +48,8 @@ void DeleteFramebuffers(GLuint readFbo, GLuint drawFbo)
 } // namespace
 
 bool CopyAovToRenderBuffer(const ::Engine &app,
-                           const HdRobotAovCopyRequest &request,
-                           ::HdRobotGlInteropCache &glInteropCache)
+                           const AovCopyRequest &request,
+                           GlInteropCache &glInteropCache)
 {
   const TfToken &name = request.aovName;
   HdRobotRenderBuffer *renderBuffer = request.renderBuffer;
@@ -73,7 +75,7 @@ bool CopyAovToRenderBuffer(const ::Engine &app,
     return false;
   }
 
-  if(request.scaling == HdRobotAovCopyScaling::RequireExactSourceSize &&
+  if(request.scaling == AovCopyScaling::RequireExactSourceSize &&
      (src->extent.width != static_cast<uint32_t>(width) || src->extent.height != static_cast<uint32_t>(height)))
   {
     std::cerr << "[HydraAovCopy] AOV " << name.GetString()
@@ -178,5 +180,7 @@ bool CopyAovToRenderBuffer(const ::Engine &app,
   srcTextureId = glInteropCache.GetOrImportSourceGlTexture(*src);
   return copyFromSourceTexture(srcTextureId);
 }
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

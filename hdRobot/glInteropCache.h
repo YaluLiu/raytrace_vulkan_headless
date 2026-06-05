@@ -2,15 +2,20 @@
 
 #include <engine/aov_texture.hpp>
 #include <nvgl/extensions_gl.hpp>
+#include <pxr/pxr.h>
 
 #include <memory>
 
-class HdRobotGlInteropCache {
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace hdrobot {
+
+class GlInteropCache {
 public:
-  HdRobotGlInteropCache();
-  HdRobotGlInteropCache(const HdRobotGlInteropCache &) = delete;
-  HdRobotGlInteropCache &operator=(const HdRobotGlInteropCache &) = delete;
-  ~HdRobotGlInteropCache();
+  GlInteropCache();
+  GlInteropCache(const GlInteropCache &) = delete;
+  GlInteropCache &operator=(const GlInteropCache &) = delete;
+  ~GlInteropCache();
 
   GLuint GetOrImportSourceGlTexture(const ExportedAovTexture &texture);
   void Evict(const ExportedAovTexture &texture);
@@ -20,3 +25,7 @@ private:
   struct Impl;
   std::unique_ptr<Impl> _impl;
 };
+
+} // namespace hdrobot
+
+PXR_NAMESPACE_CLOSE_SCOPE

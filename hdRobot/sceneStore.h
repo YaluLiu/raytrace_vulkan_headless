@@ -16,7 +16,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdRobotMeshRecord
+namespace hdrobot {
+
+struct MeshRecord
 {
   uint32_t sceneIndex = UINT32_MAX;
   SdfPath id;
@@ -27,7 +29,7 @@ struct HdRobotMeshRecord
 };
 
 template <typename DataT>
-struct HdRobotSceneRecord
+struct SceneRecord
 {
   using DataType = DataT;
 
@@ -37,15 +39,15 @@ struct HdRobotSceneRecord
   bool dirty = true;
 };
 
-using HdRobotMaterialRecord = HdRobotSceneRecord<HydraMaterial>;
-using HdRobotLightRecord = HdRobotSceneRecord<HydraLight>;
-using HdRobotCameraRecord = HdRobotSceneRecord<HdRobotCameraData>;
-using HdRobotLidarSensorRecord = HdRobotSceneRecord<HdRobotLidarSensorData>;
-using HdRobotHeightScanSensorRecord = HdRobotSceneRecord<HdRobotHeightScanSensorData>;
+using MaterialRecord = SceneRecord<HydraMaterial>;
+using LightRecord = SceneRecord<HydraLight>;
+using CameraRecord = SceneRecord<CameraData>;
+using LidarSensorRecord = SceneRecord<LidarSensorData>;
+using HeightScanSensorRecord = SceneRecord<HeightScanSensorData>;
 
-struct HdRobotMeshUpdate
+struct MeshUpdate
 {
-  HdRobotMeshHandle handle;
+  MeshHandle handle;
   std::optional<HydraMesh> data;
   std::optional<bool> active;
   bool geometryDirty = false;
@@ -53,7 +55,7 @@ struct HdRobotMeshUpdate
 };
 
 template <typename HandleT, typename DataT>
-struct HdRobotSceneUpdate
+struct SceneUpdate
 {
   HandleT handle;
   DataT data;
@@ -61,81 +63,83 @@ struct HdRobotSceneUpdate
   bool dirty = true;
 };
 
-using HdRobotMaterialUpdate = HdRobotSceneUpdate<HdRobotMaterialHandle, HydraMaterial>;
-using HdRobotLightUpdate = HdRobotSceneUpdate<HdRobotLightHandle, HydraLight>;
-using HdRobotCameraUpdate = HdRobotSceneUpdate<HdRobotCameraHandle, HdRobotCameraData>;
-using HdRobotLidarSensorUpdate = HdRobotSceneUpdate<HdRobotLidarSensorHandle, HdRobotLidarSensorData>;
-using HdRobotHeightScanSensorUpdate =
-    HdRobotSceneUpdate<HdRobotHeightScanSensorHandle, HdRobotHeightScanSensorData>;
+using MaterialUpdate = SceneUpdate<MaterialHandle, HydraMaterial>;
+using LightUpdate = SceneUpdate<LightHandle, HydraLight>;
+using CameraUpdate = SceneUpdate<CameraHandle, CameraData>;
+using LidarSensorUpdate = SceneUpdate<LidarSensorHandle, LidarSensorData>;
+using HeightScanSensorUpdate =
+    SceneUpdate<HeightScanSensorHandle, HeightScanSensorData>;
 
-class HdRobotSceneStore
+class SceneStore
 {
 public:
-  HdRobotSceneStore();
+  SceneStore();
 
-  HdRobotMeshHandle CreateMesh(const SdfPath& id);
-  HdRobotMaterialHandle CreateMaterial(const SdfPath& id);
-  HdRobotLightHandle CreateLight(const SdfPath& id);
-  HdRobotCameraHandle CreateCamera(const SdfPath& id);
-  HdRobotLidarSensorHandle CreateLidarSensor(const SdfPath& id);
-  HdRobotHeightScanSensorHandle CreateHeightScanSensor(const SdfPath& id);
+  MeshHandle CreateMesh(const SdfPath& id);
+  MaterialHandle CreateMaterial(const SdfPath& id);
+  LightHandle CreateLight(const SdfPath& id);
+  CameraHandle CreateCamera(const SdfPath& id);
+  LidarSensorHandle CreateLidarSensor(const SdfPath& id);
+  HeightScanSensorHandle CreateHeightScanSensor(const SdfPath& id);
 
-  HdRobotMaterialHandle GetDefaultMaterialHandle() const;
+  MaterialHandle GetDefaultMaterialHandle() const;
 
-  void DestroyMesh(HdRobotMeshHandle handle);
-  void DestroyMaterial(HdRobotMaterialHandle handle);
-  void DestroyLight(HdRobotLightHandle handle);
-  void DestroyCamera(HdRobotCameraHandle handle);
-  void DestroyLidarSensor(HdRobotLidarSensorHandle handle);
-  void DestroyHeightScanSensor(HdRobotHeightScanSensorHandle handle);
+  void DestroyMesh(MeshHandle handle);
+  void DestroyMaterial(MaterialHandle handle);
+  void DestroyLight(LightHandle handle);
+  void DestroyCamera(CameraHandle handle);
+  void DestroyLidarSensor(LidarSensorHandle handle);
+  void DestroyHeightScanSensor(HeightScanSensorHandle handle);
 
-  void EnqueueMeshUpdate(HdRobotMeshUpdate update);
-  void EnqueueMaterialUpdate(HdRobotMaterialUpdate update);
-  void EnqueueLightUpdate(HdRobotLightUpdate update);
-  void EnqueueCameraUpdate(HdRobotCameraUpdate update);
-  void EnqueueLidarSensorUpdate(HdRobotLidarSensorUpdate update);
-  void EnqueueHeightScanSensorUpdate(HdRobotHeightScanSensorUpdate update);
+  void EnqueueMeshUpdate(MeshUpdate update);
+  void EnqueueMaterialUpdate(MaterialUpdate update);
+  void EnqueueLightUpdate(LightUpdate update);
+  void EnqueueCameraUpdate(CameraUpdate update);
+  void EnqueueLidarSensorUpdate(LidarSensorUpdate update);
+  void EnqueueHeightScanSensorUpdate(HeightScanSensorUpdate update);
   void ApplyPendingUpdates();
 
   int RegisterTexturePath(const std::string& texturePath, TextureUsage usage = TextureUsage::BaseColor);
   std::vector<TextureAsset> GetTextureAssetsSnapshot() const;
   uint64_t GetTextureRegistryVersion() const;
 
-  std::optional<HydraMaterial> GetMaterialDataCopy(HdRobotMaterialHandle handle) const;
-  int ResolveMaterialIndexForUpload(HdRobotMaterialHandle handle) const;
+  std::optional<HydraMaterial> GetMaterialDataCopy(MaterialHandle handle) const;
+  int ResolveMaterialIndexForUpload(MaterialHandle handle) const;
 
-  std::vector<HdRobotMeshRecord> GetMeshRecordsSnapshot() const;
-  std::vector<HdRobotMaterialRecord> GetMaterialRecordsSnapshot() const;
+  std::vector<MeshRecord> GetMeshRecordsSnapshot() const;
+  std::vector<MaterialRecord> GetMaterialRecordsSnapshot() const;
   std::vector<HydraLight> GetActiveLightSnapshot() const;
-  std::vector<HdRobotCameraData> GetActiveCameraSnapshot() const;
-  std::vector<HdRobotLidarSensorData> GetActiveLidarSensorSnapshot() const;
-  std::vector<HdRobotHeightScanSensorData> GetActiveHeightScanSensorSnapshot() const;
+  std::vector<CameraData> GetActiveCameraSnapshot() const;
+  std::vector<LidarSensorData> GetActiveLidarSensorSnapshot() const;
+  std::vector<HeightScanSensorData> GetActiveHeightScanSensorSnapshot() const;
 
-  std::vector<HdRobotMeshRecord> ConsumeDirtyMeshGeometry();
-  std::vector<HdRobotMeshRecord> ConsumeDirtyMeshInstances();
+  std::vector<MeshRecord> ConsumeDirtyMeshGeometry();
+  std::vector<MeshRecord> ConsumeDirtyMeshInstances();
   std::vector<uint32_t> ConsumeDirtyMaterialIndices();
 
 private:
-  void _ApplyMeshUpdates(std::vector<HdRobotMeshUpdate>& updates);
+  void _ApplyMeshUpdates(std::vector<MeshUpdate>& updates);
 
   mutable std::mutex _sceneMutex;
   mutable std::mutex _textureRegistryMutex;
-  HdRobotSlotVector<HdRobotMeshRecord, HdRobotMeshHandle> _meshes;
-  HdRobotSlotVector<HdRobotMaterialRecord, HdRobotMaterialHandle> _materials;
-  HdRobotSlotVector<HdRobotLightRecord, HdRobotLightHandle> _lights;
-  HdRobotSlotVector<HdRobotCameraRecord, HdRobotCameraHandle> _cameras;
-  HdRobotSlotVector<HdRobotLidarSensorRecord, HdRobotLidarSensorHandle> _lidarSensors;
-  HdRobotSlotVector<HdRobotHeightScanSensorRecord, HdRobotHeightScanSensorHandle> _heightScanSensors;
-  HdRobotMaterialHandle _defaultMaterialHandle;
+  SlotVector<MeshRecord, MeshHandle> _meshes;
+  SlotVector<MaterialRecord, MaterialHandle> _materials;
+  SlotVector<LightRecord, LightHandle> _lights;
+  SlotVector<CameraRecord, CameraHandle> _cameras;
+  SlotVector<LidarSensorRecord, LidarSensorHandle> _lidarSensors;
+  SlotVector<HeightScanSensorRecord, HeightScanSensorHandle> _heightScanSensors;
+  MaterialHandle _defaultMaterialHandle;
   TextureRegistry _textureRegistry;
 
   std::mutex _pendingMutex;
-  std::vector<HdRobotMeshUpdate> _pendingMeshUpdates;
-  std::vector<HdRobotMaterialUpdate> _pendingMaterialUpdates;
-  std::vector<HdRobotLightUpdate> _pendingLightUpdates;
-  std::vector<HdRobotCameraUpdate> _pendingCameraUpdates;
-  std::vector<HdRobotLidarSensorUpdate> _pendingLidarSensorUpdates;
-  std::vector<HdRobotHeightScanSensorUpdate> _pendingHeightScanSensorUpdates;
+  std::vector<MeshUpdate> _pendingMeshUpdates;
+  std::vector<MaterialUpdate> _pendingMaterialUpdates;
+  std::vector<LightUpdate> _pendingLightUpdates;
+  std::vector<CameraUpdate> _pendingCameraUpdates;
+  std::vector<LidarSensorUpdate> _pendingLidarSensorUpdates;
+  std::vector<HeightScanSensorUpdate> _pendingHeightScanSensorUpdates;
 };
+
+} // namespace hdrobot
 
 PXR_NAMESPACE_CLOSE_SCOPE

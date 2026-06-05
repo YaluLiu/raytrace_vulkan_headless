@@ -64,7 +64,7 @@ call sites with `rg`.
   param ownership, scene store ownership, and delegate-owned render
   resource/session ownership.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
-  to `HdRobotPassBridge::RenderFrameAndCopyAovs`.
+  to `hdrobot::PassBridge::RenderFrameAndCopyAovs`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
   renderer runtime/session object that owns `Engine`, GL interop cache,
   engine lifecycle state, committed camera/sensor/output snapshots, and
@@ -311,14 +311,14 @@ call sites with `rg`.
   into renderer resource submission.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge. It borrows delegate-owned
-  `HdRobotEngineSession` and no longer knows `HdRobotRenderParam`.
+  `hdrobot::EngineSession` and no longer knows `hdrobot::RenderParam`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
-  renderer runtime/session object. It owns `Engine`, `HdRobotGlInteropCache`,
+  renderer runtime/session object. It owns `Engine`, `hdrobot::GlInteropCache`,
   render size, committed active camera/sensor snapshots, output configuration,
-  and a focused `HdRobotEngineSceneSync` member for scene-to-engine
+  and a focused `hdrobot::EngineSceneSync` member for scene-to-engine
   synchronization.
 - `hdRobot/engineSceneSync.h` / `hdRobot/engineSceneSync.cpp`: Focused
-  scene-to-engine synchronizer. It consumes `HdRobotSceneStore` snapshots and
+  scene-to-engine synchronizer. It consumes `hdrobot::SceneStore` snapshots and
   dirty queues, owns renderer mesh/instance binding state outside the Hydra
   scene store, uploads initial meshes/textures, refreshes texture resources,
   submits lights/geometry/instances/material updates, and applies frame render
@@ -329,26 +329,30 @@ call sites with `rg`.
   requested tile AOV channel selection, frame render tag application,
   `Engine::render()`, and ordered AOV copy groups supplied by the bridge-side
   AOV spec so fixed tile AOVs copy before display tile AOVs and other AOVs. It
-  borrows `HdRobotEngineSession` and does not read `HdRobotRenderParam` or
+  borrows `hdrobot::EngineSession` and does not read `hdrobot::RenderParam` or
   consume scene-store dirty queues.
 - `hdRobot/passBridgeConversions.h` / `hdRobot/passBridgeConversions.cpp`:
   Converts Hydra-side bridge structs into engine-facing camera specs,
   `Material`, light records, LiDAR and height scan sensor specs,
   visualization configs, and `TileAtlasConfig`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
-  parameter object for render settings only: tile output, LiDAR visualization,
-  and height scan visualization. It does not own the scene-store table or
-  texture registry.
+  parameter object for render settings only. Internal bridge/config types such
+  as `RenderParam`, `TileConfig`, and visualization configs live in
+  `pxr::hdrobot`; the class does not own the scene-store table or texture
+  registry.
 - `hdRobot/backendHandles.h`: Stable generation handles for backend mesh,
-  material, light, camera, LiDAR sensor, and height scan sensor records.
+  material, light, camera, LiDAR sensor, and height scan sensor records under
+  `pxr::hdrobot`.
 - `hdRobot/slotVector.h`: Small handle-indexed slot vector used by the
-  scene-store table; validates index, generation, and occupied state before
-  access.
+  scene-store table; `hdrobot::SlotVector` validates index, generation, and
+  occupied state before access.
 - `hdRobot/sceneStore.h` / `hdRobot/sceneStore.cpp`: CPU-side Hydra scene
-  store owned by the render delegate: scene records, texture
-  registry, pending update queues, dirty mesh/material consumption, and active
-  camera/sensor/light snapshots. Renderer mesh/instance binding state lives in
-  `HdRobotEngineSceneSync`, not in the Hydra scene store.
+  store owned by the render delegate. Internal records, handles, update DTOs,
+  sensor/camera data, and `SceneStore` live in `pxr::hdrobot`; the store owns
+  scene records, texture registry, pending update queues, dirty mesh/material
+  consumption, and active camera/sensor/light snapshots. Renderer
+  mesh/instance binding state lives in `hdrobot::EngineSceneSync`, not in the
+  Hydra scene store.
 - `hdRobot/tokens.h` / `hdRobot/tokens.cpp`: Hydra token definitions,
   including tile render settings, LiDAR/height scan visualization settings,
   mesh `hdRobot:traceRole`, `ground`, and tile AOV tokens. Sensor parameter
@@ -357,7 +361,8 @@ call sites with `rg`.
 - `hdRobot/aovBridgeSpec.h` / `hdRobot/aovBridgeSpec.cpp`: Single source of
   truth for Hydra AOV token mapping to engine AOVs, Hydra default AOV
   descriptors, tile AOV channel request masks, copy ordering, and fixed-size
-  versus display tile copy policy.
+  versus display tile copy policy. Internal policy structs/enums such as
+  `AovSpec`, `AovStorageRole`, and `AovCopyScaling` live in `pxr::hdrobot`.
 - `hdRobot/plugInfo.json`: Hydra render delegate plugin metadata. The custom
   sensor USD schema metadata lives in `UsdRaySensor/`, and adapter metadata
   lives in `UsdRaySensorImaging/`.
@@ -420,7 +425,7 @@ call sites with `rg`.
   and primvar-reader traversal, texture binding metadata, and `HydraMaterial`
   field mapping.
 - `hdRobot/camera.h` / `hdRobot/camera.cpp`: Camera sync, shared
-  `HdRobotCameraData` pose/projection data, and transform-to-camera-data
+  `hdrobot::CameraData` pose/projection data, and transform-to-camera-data
   conversion used by cameras and sensor sprims. Camera data includes vertical
   and horizontal FOV so tile camera projections can honor Hydra window
   conformance instead of deriving horizontal view only from tile aspect. Camera
@@ -430,15 +435,15 @@ call sites with `rg`.
   USD `LidarSensor` prims; caches transform and individual sensor parameters
   from `HdSceneDelegate::Get(id, token)` with type diagnostics, leaves cached
   defaults intact for empty values, validates/clamps params, and enqueues
-  active/inactive `HdRobotLidarSensorData` updates. The header owns
-  `HdRobotLidarParams` and `HdRobotLidarSensorData`.
+  active/inactive `hdrobot::LidarSensorData` updates. The header owns
+  `hdrobot::LidarParams` and `hdrobot::LidarSensorData`.
 - `hdRobot/heightScanSensor.h` / `hdRobot/heightScanSensor.cpp`: Hydra sprim
   for custom USD `HeightScanSensor` prims; caches transform and individual
   sensor parameters from `HdSceneDelegate::Get(id, token)` with type
   diagnostics, leaves cached defaults intact for empty values,
   validates/clamps params, derives camera forward/up from the transform, and
-  enqueues active/inactive `HdRobotHeightScanSensorData` updates. The header
-  owns `HdRobotHeightScanParams` and `HdRobotHeightScanSensorData`.
+  enqueues active/inactive `hdrobot::HeightScanSensorData` updates. The header
+  owns `hdrobot::HeightScanParams` and `hdrobot::HeightScanSensorData`.
 - `hdRobot/light.h` / `hdRobot/light.cpp`: Light wrappers with backend handles;
   sync computes local renderer light data and enqueues scene-store light
   updates.
@@ -455,14 +460,14 @@ call sites with `rg`.
   Resolves registered Hydra material texture assets and exports encoded bytes
   for engine upload.
 - `hdRobot/hydraAovCopy.h` / `hdRobot/hydraAovCopy.cpp`: Maps Hydra
-  AOV copy requests to exported engine AOV textures and copies them into Hydra
-  render buffers through OpenGL interop; fixed `tileColor` and `tileDepth`
-  copies require exact atlas-size render buffers, while display tile AOV copy
-  requests can use GL blit scaling.
+  `hdrobot::AovCopyRequest` values to exported engine AOV textures and copies
+  them into Hydra render buffers through OpenGL interop; fixed `tileColor` and
+  `tileDepth` copies require exact atlas-size render buffers, while display
+  tile AOV copy requests can use GL blit scaling.
 - `hdRobot/glInteropCache.h` / `hdRobot/glInteropCache.cpp`: Hydra-owned
-  Vulkan external-memory import cache for engine AOV textures exposed as
-  source OpenGL textures, including per-export eviction used for one retry after
-  stale import or copy failures.
+  `hdrobot::GlInteropCache` for engine AOV textures exposed as source OpenGL
+  textures, including per-export eviction used for one retry after stale import
+  or copy failures.
 - `hdRobot/utils.h` / `hdRobot/utils.cpp`: Utility functions shared by the
   Hydra plugin.
 

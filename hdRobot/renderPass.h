@@ -6,15 +6,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRobotPassBridge;
-class HdRobotEngineSession;
+namespace hdrobot {
+class EngineSession;
+class PassBridge;
+}
 
 class HdRobotRenderPass final : public HdRenderPass
 {
 public:
   HdRobotRenderPass(HdRenderIndex*             index,
                     const HdRprimCollection&   collection,
-                    HdRobotEngineSession&      engineSession);
+                    hdrobot::EngineSession&      engineSession);
 
   ~HdRobotRenderPass() override;
 
@@ -26,7 +28,7 @@ protected:
 
 private:
   bool                                _isConverged;
-  std::unique_ptr<HdRobotPassBridge> _bridge;
+  std::unique_ptr<hdrobot::PassBridge> _bridge;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

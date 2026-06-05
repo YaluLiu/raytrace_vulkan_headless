@@ -13,6 +13,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::HeightScanParams;
+using hdrobot::HeightScanSensorData;
+using hdrobot::HeightScanSensorHandle;
+using hdrobot::HeightScanSensorUpdate;
+using hdrobot::SceneStore;
+
 namespace
 {
 constexpr float kSensorEpsilon = 1.0e-6f;
@@ -78,9 +84,9 @@ void ReadCachedParam(HdSceneDelegate* sceneDelegate,
   *target = value.UncheckedGet<T>();
 }
 
-HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotHeightScanParams& source)
+HeightScanParams SanitizeHeightScanParams(const HeightScanParams& source)
 {
-  HdRobotHeightScanParams params;
+  HeightScanParams params;
   params.uStart = source.uStart;
   params.uEnd = source.uEnd;
   params.uStep = ClampStep(source.uStep, params.uStep);
@@ -94,8 +100,8 @@ HdRobotHeightScanParams SanitizeHeightScanParams(const HdRobotHeightScanParams& 
 } // namespace
 
 HdRobotHeightScanSensor::HdRobotHeightScanSensor(const SdfPath& id,
-                                                 HdRobotSceneStore& sceneStore,
-                                                 HdRobotHeightScanSensorHandle handle)
+                                                 SceneStore& sceneStore,
+                                                 HeightScanSensorHandle handle)
     : HdSprim(id)
     , _sceneStore(sceneStore)
     , _handle(handle)
@@ -133,12 +139,12 @@ void HdRobotHeightScanSensor::_SyncParams(HdSceneDelegate* sceneDelegate)
 
 void HdRobotHeightScanSensor::_UpdateRenderParam()
 {
-  HdRobotHeightScanSensorData sensorData;
+  HeightScanSensorData sensorData;
   sensorData.name = GetId().GetString();
   sensorData.camera = HdRobotComputeTransformCameraData(GetId(), _transform);
   sensorData.params = SanitizeHeightScanParams(_params);
   _sceneStore.EnqueueHeightScanSensorUpdate(
-      HdRobotHeightScanSensorUpdate{_handle, sensorData, _enabled});
+      HeightScanSensorUpdate{_handle, sensorData, _enabled});
 }
 
 void HdRobotHeightScanSensor::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam*, HdDirtyBits* dirtyBits)

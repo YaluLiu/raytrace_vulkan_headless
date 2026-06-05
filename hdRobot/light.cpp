@@ -17,6 +17,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::IsValid;
+using hdrobot::LightHandle;
+using hdrobot::LightUpdate;
+using hdrobot::SceneStore;
+
 namespace
 {
 float _AreaEllipsoid(float radiusX, float radiusY, float radiusZ)
@@ -37,7 +42,7 @@ float _MaxRgb(const GfVec4f& color)
 // Base Light
 //
 
-HdRobotLight::HdRobotLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+HdRobotLight::HdRobotLight(const SdfPath& id, SceneStore& sceneStore, LightHandle handle)
     : HdLight(id)
     , _sceneStore(sceneStore)
     , _handle(handle)
@@ -96,11 +101,11 @@ bool HdRobotLight::_CanSyncLight() const
 
 void HdRobotLight::_EnqueueLightUpdate(bool active)
 {
-  _sceneStore.EnqueueLightUpdate(HdRobotLightUpdate{_handle, _lightData, active});
+  _sceneStore.EnqueueLightUpdate(LightUpdate{_handle, _lightData, active});
 }
 
 // --------Sphere Light-------------------------
-HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+HdRobotSphereLight::HdRobotSphereLight(const SdfPath& id, SceneStore& sceneStore, LightHandle handle)
     : HdRobotLight(id, sceneStore, handle)
 {
 }
@@ -157,7 +162,7 @@ void HdRobotSphereLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
 }
 
 // --------Simple Light-------------------------
-HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+HdRobotSimpleLight::HdRobotSimpleLight(const SdfPath& id, SceneStore& sceneStore, LightHandle handle)
     : HdRobotLight(id, sceneStore, handle)
 {
 }
@@ -215,7 +220,7 @@ void HdRobotSimpleLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] H
 }
 
 // --------Distant Light-------------------------
-HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+HdRobotDistantLight::HdRobotDistantLight(const SdfPath& id, SceneStore& sceneStore, LightHandle handle)
     : HdRobotLight(id, sceneStore, handle)
 {
 }
@@ -271,7 +276,7 @@ void HdRobotDistantLight::Sync(HdSceneDelegate* sceneDelegate, [[maybe_unused]] 
 }
 
 // --------Dome Light-------------------------
-HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotLightHandle handle)
+HdRobotDomeLight::HdRobotDomeLight(const SdfPath& id, SceneStore& sceneStore, LightHandle handle)
     : HdRobotLight(id, sceneStore, handle)
 {
 }

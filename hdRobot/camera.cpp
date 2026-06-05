@@ -11,6 +11,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using hdrobot::CameraData;
+using hdrobot::CameraHandle;
+using hdrobot::CameraUpdate;
+using hdrobot::SceneStore;
+
 namespace
 {
 constexpr float kCameraEpsilon = 1.0e-6f;
@@ -34,7 +39,7 @@ CameraConformPolicy ToCameraConformPolicy(CameraUtilConformWindowPolicy policy)
 }
 } // namespace
 
-HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform)
+CameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfMatrix4d& transform)
 {
   GfVec3d position = transform.Transform(GfVec3d(0.0, 0.0, 0.0));
   GfVec3d forward  = transform.TransformDir(GfVec3d(0.0, 0.0, -1.0));
@@ -43,7 +48,7 @@ HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfM
   forward.Normalize();
   up.Normalize();
 
-  HdRobotCameraData data;
+  CameraData data;
   data.name     = id.GetString();
   data.position = glm::vec3(position[0], position[1], position[2]);
   data.forward  = glm::vec3(forward[0], forward[1], forward[2]);
@@ -57,9 +62,9 @@ HdRobotCameraData HdRobotComputeTransformCameraData(const SdfPath& id, const GfM
   return data;
 }
 
-HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
+CameraData HdRobotComputeCameraData(const HdCamera& camera)
 {
-  HdRobotCameraData data = HdRobotComputeTransformCameraData(camera.GetId(), camera.GetTransform());
+  CameraData data = HdRobotComputeTransformCameraData(camera.GetId(), camera.GetTransform());
 
   const float verticalAperture = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
   const float horizontalAperture = camera.GetHorizontalAperture() * GfCamera::APERTURE_UNIT;
@@ -92,7 +97,7 @@ HdRobotCameraData HdRobotComputeCameraData(const HdCamera& camera)
   return data;
 }
 
-HdRobotCamera::HdRobotCamera(const SdfPath& id, HdRobotSceneStore& sceneStore, HdRobotCameraHandle handle)
+HdRobotCamera::HdRobotCamera(const SdfPath& id, SceneStore& sceneStore, CameraHandle handle)
     : HdCamera(id)
     , _sceneStore(sceneStore)
     , _handle(handle)
@@ -104,7 +109,7 @@ HdDirtyBits HdRobotCamera::GetInitialDirtyBitsMask() const
   return HdCamera::AllDirty;
 }
 
-const HdRobotCameraData& HdRobotCamera::GetCameraData() const
+const CameraData& HdRobotCamera::GetCameraData() const
 {
   return _cameraData;
 }
@@ -129,9 +134,9 @@ void HdRobotCamera::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderPa
     return;
   }
 
-  HdRobotCameraData cameraData = HdRobotComputeCameraData(*this);
+  CameraData cameraData = HdRobotComputeCameraData(*this);
   _cameraData = cameraData;
-  _sceneStore.EnqueueCameraUpdate(HdRobotCameraUpdate{_handle, cameraData});
+  _sceneStore.EnqueueCameraUpdate(CameraUpdate{_handle, cameraData});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

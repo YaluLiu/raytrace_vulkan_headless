@@ -118,28 +118,28 @@ void *GetGlProcAddress(const char *name) {
 
 bool RequiredGlExtensionsAvailable() {
   if (!has_GL_VERSION_4_5) {
-    std::cerr << "[HdRobotGlInteropCache] OpenGL 4.5 functions required for "
+    std::cerr << "[GlInteropCache] OpenGL 4.5 functions required for "
                  "DSA texture/FBO copies are unavailable"
               << std::endl;
     return false;
   }
 
   if (!has_GL_EXT_memory_object) {
-    std::cerr << "[HdRobotGlInteropCache] GL_EXT_memory_object is unavailable"
+    std::cerr << "[GlInteropCache] GL_EXT_memory_object is unavailable"
               << std::endl;
     return false;
   }
 
 #ifdef _WIN32
   if (!has_GL_EXT_memory_object_win32) {
-    std::cerr << "[HdRobotGlInteropCache] GL_EXT_memory_object_win32 is "
+    std::cerr << "[GlInteropCache] GL_EXT_memory_object_win32 is "
                  "unavailable"
               << std::endl;
     return false;
   }
 #else
   if (!has_GL_EXT_memory_object_fd) {
-    std::cerr << "[HdRobotGlInteropCache] GL_EXT_memory_object_fd is "
+    std::cerr << "[GlInteropCache] GL_EXT_memory_object_fd is "
                  "unavailable"
               << std::endl;
     return false;
@@ -176,7 +176,7 @@ bool CheckGlError(const char *operation) {
     return true;
   }
 
-  std::cerr << "[HdRobotGlInteropCache] " << operation
+  std::cerr << "[GlInteropCache] " << operation
             << " failed with GL error 0x" << std::hex << error << std::dec
             << std::endl;
   return false;
@@ -219,7 +219,7 @@ bool ImportVulkanMemoryToGl(const ExportedAovTexture &texture,
       reinterpret_cast<PFN_vkGetMemoryWin32HandleKHR>(
           vkGetDeviceProcAddr(texture.device, "vkGetMemoryWin32HandleKHR"));
   if (getMemoryWin32Handle == nullptr) {
-    std::cerr << "[HdRobotGlInteropCache] Missing vkGetMemoryWin32HandleKHR"
+    std::cerr << "[GlInteropCache] Missing vkGetMemoryWin32HandleKHR"
               << std::endl;
     return false;
   }
@@ -233,7 +233,7 @@ bool ImportVulkanMemoryToGl(const ExportedAovTexture &texture,
   const VkResult result =
       getMemoryWin32Handle(texture.device, &handleInfo, &handle);
   if (result != VK_SUCCESS || handle == nullptr) {
-    std::cerr << "[HdRobotGlInteropCache] vkGetMemoryWin32HandleKHR failed: "
+    std::cerr << "[GlInteropCache] vkGetMemoryWin32HandleKHR failed: "
               << result << std::endl;
     return false;
   }
@@ -256,7 +256,7 @@ bool ImportVulkanMemoryToGl(const ExportedAovTexture &texture,
   const auto getMemoryFd = reinterpret_cast<PFN_vkGetMemoryFdKHR>(
       vkGetDeviceProcAddr(texture.device, "vkGetMemoryFdKHR"));
   if (getMemoryFd == nullptr) {
-    std::cerr << "[HdRobotGlInteropCache] Missing vkGetMemoryFdKHR"
+    std::cerr << "[GlInteropCache] Missing vkGetMemoryFdKHR"
               << std::endl;
     return false;
   }
@@ -268,7 +268,7 @@ bool ImportVulkanMemoryToGl(const ExportedAovTexture &texture,
   int fd = -1;
   const VkResult result = getMemoryFd(texture.device, &fdInfo, &fd);
   if (result != VK_SUCCESS || fd < 0) {
-    std::cerr << "[HdRobotGlInteropCache] vkGetMemoryFdKHR failed: " << result
+    std::cerr << "[GlInteropCache] vkGetMemoryFdKHR failed: " << result
               << std::endl;
     return false;
   }
@@ -298,29 +298,33 @@ CacheKey MakeCacheKey(const ExportedAovTexture &texture) {
 }
 } // namespace
 
-struct HdRobotGlInteropCache::Impl {
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace hdrobot {
+
+struct GlInteropCache::Impl {
   std::mutex mutex;
   std::unordered_map<CacheKey, CacheEntry, CacheKeyHash> cache;
 };
 
-HdRobotGlInteropCache::HdRobotGlInteropCache()
+GlInteropCache::GlInteropCache()
     : _impl(std::make_unique<Impl>()) {}
 
-HdRobotGlInteropCache::~HdRobotGlInteropCache() { Clear(); }
+GlInteropCache::~GlInteropCache() { Clear(); }
 
-GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
+GLuint GlInteropCache::GetOrImportSourceGlTexture(
     const ExportedAovTexture &texture) {
   if (texture.device == VK_NULL_HANDLE || texture.image == VK_NULL_HANDLE ||
       texture.memory == VK_NULL_HANDLE || texture.memorySize == 0 ||
       texture.extent.width == 0 || texture.extent.height == 0) {
-    std::cerr << "[HdRobotGlInteropCache] Invalid AOV texture export metadata"
+    std::cerr << "[GlInteropCache] Invalid AOV texture export metadata"
               << std::endl;
     return 0;
   }
 
   const GLint internalFormat = GetGlInternalFormat(texture.format);
   if (internalFormat == 0) {
-    std::cerr << "[HdRobotGlInteropCache] Unsupported AOV VkFormat: "
+    std::cerr << "[GlInteropCache] Unsupported AOV VkFormat: "
               << texture.format << std::endl;
     return 0;
   }
@@ -377,7 +381,7 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
 
   if (entry.texture == 0 || !CheckGlError("glTextureStorageMem2DEXT")) {
     if (entry.texture == 0) {
-      std::cerr << "[HdRobotGlInteropCache] glCreateTextures returned 0"
+      std::cerr << "[GlInteropCache] glCreateTextures returned 0"
                 << std::endl;
     }
     DestroyEntry(entry);
@@ -388,7 +392,7 @@ GLuint HdRobotGlInteropCache::GetOrImportSourceGlTexture(
   return entry.texture;
 }
 
-void HdRobotGlInteropCache::Evict(const ExportedAovTexture &texture) {
+void GlInteropCache::Evict(const ExportedAovTexture &texture) {
   std::lock_guard<std::mutex> lock(_impl->mutex);
   const CacheKey key = MakeCacheKey(texture);
   const auto it = _impl->cache.find(key);
@@ -400,10 +404,14 @@ void HdRobotGlInteropCache::Evict(const ExportedAovTexture &texture) {
   _impl->cache.erase(it);
 }
 
-void HdRobotGlInteropCache::Clear() {
+void GlInteropCache::Clear() {
   std::lock_guard<std::mutex> lock(_impl->mutex);
   for (auto &cacheItem : _impl->cache) {
     DestroyEntry(cacheItem.second);
   }
   _impl->cache.clear();
 }
+
+} // namespace hdrobot
+
+PXR_NAMESPACE_CLOSE_SCOPE
