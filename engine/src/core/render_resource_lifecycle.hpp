@@ -11,9 +11,9 @@ namespace engine
 class RenderResourceLifecycle final
 {
 public:
-  static void createAll(Engine& renderer);
-  static void destroyAll(Engine& renderer);
-  static void recreateSceneDescriptorsAndOutputPipelines(Engine& renderer);
+  static void createResourcesInDependencyOrder(Engine& renderer);
+  static void destroyResourcesInShutdownOrder(Engine& renderer);
+
   static void rebuildTexturesAndSceneBindings(Engine& renderer, const std::vector<TextureAsset>& textureAssets);
 };
 } // namespace engine

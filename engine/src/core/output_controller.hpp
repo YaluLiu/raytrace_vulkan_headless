@@ -38,10 +38,7 @@ public:
   void recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                          const GpuScene& scene,
                          const SceneDescriptors& descriptors);
-  void recordLidarPointClouds(const VkCommandBuffer& cmdBuf,
-                              const GpuScene& scene,
-                              SceneDescriptors& descriptors,
-                              const PreviewPipeline& previewPipeline);
+  void recordLidarPointClouds(const VkCommandBuffer& cmdBuf, const GpuScene& scene);
   void recordHeightScans(const VkCommandBuffer& cmdBuf, const GpuScene& scene);
   void recordLidarPointOverlay(const VkCommandBuffer& cmdBuf, SceneDescriptors& descriptors);
   void recordHeightScanOverlay(const VkCommandBuffer& cmdBuf, SceneDescriptors& descriptors);

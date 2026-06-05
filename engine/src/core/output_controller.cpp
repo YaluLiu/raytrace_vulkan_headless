@@ -68,13 +68,8 @@ void OutputController::recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                                             scene.getInstanceIds());
 }
 
-void OutputController::recordLidarPointClouds(const VkCommandBuffer& cmdBuf,
-                                                    const GpuScene& scene,
-                                                    SceneDescriptors& descriptors,
-                                                    const PreviewPipeline& previewPipeline)
+void OutputController::recordLidarPointClouds(const VkCommandBuffer& cmdBuf, const GpuScene& scene)
 {
-  (void)descriptors;
-  (void)previewPipeline;
   m_lidarPointCloudPass.recordGenerate(cmdBuf, scene.getRayTracingTlasDescriptorInfo());
 }
 

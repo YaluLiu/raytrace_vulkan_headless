@@ -7,38 +7,69 @@ namespace engine
 {
 namespace
 {
-void updateTileFrameUniformDescriptor(EngineAccess::Impl& impl)
+void refreshTileFrameUniformDescriptorBinding(EngineAccess::Impl& impl)
 {
   impl.sceneDescriptors.updateTileFrameUniform(impl.viewUniforms.getTileFrameUniformDescriptorInfo());
 }
 
-void ensureViewUniformBuffers(Engine& renderer)
+void createSceneDescriptorsForCurrentScene(Engine& renderer)
+{
+  auto& impl = EngineAccess::impl(renderer);
+  impl.sceneDescriptors.create(impl.device(), impl.gpuScene.getTextureDescriptorCount(), true);
+}
+
+void refreshSceneDescriptorBindings(Engine& renderer)
+{
+  auto& impl = EngineAccess::impl(renderer);
+  VkDescriptorBufferInfo dbiSceneDesc{impl.gpuScene.getObjectDescriptionBuffer().buffer, 0, VK_WHOLE_SIZE};
+  VkDescriptorBufferInfo dbiLights{impl.gpuScene.getLightBuffer().buffer, 0, VK_WHOLE_SIZE};
+  impl.sceneDescriptors.update(impl.viewUniforms.getFrameUniformDescriptorInfo(), dbiSceneDesc, dbiLights,
+                               impl.viewUniforms.getTileFrameUniformDescriptorInfo(), impl.gpuScene.getTextures());
+}
+
+void rebuildOutputPipelinesForCurrentSceneLayout(Engine& renderer)
+{
+  auto& impl = EngineAccess::impl(renderer);
+  impl.outputController.rebuildPipelinesForSceneLayout(impl.sceneDescriptors.layout());
+}
+
+void ensureViewUniformBuffersAndDescriptorBindings(Engine& renderer)
 {
   auto& impl = EngineAccess::impl(renderer);
   ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
   if(impl.viewUniforms.ensureTileFrameUniformBuffer())
   {
-    updateTileFrameUniformDescriptor(impl);
+    refreshTileFrameUniformDescriptorBinding(impl);
   }
+}
+
+void rebuildSceneDescriptorsThenOutputPipelines(Engine& renderer)
+{
+  auto& impl = EngineAccess::impl(renderer);
+  impl.outputController.destroyOutputPipelines();
+  impl.sceneDescriptors.destroy();
+  createSceneDescriptorsForCurrentScene(renderer);
+  refreshSceneDescriptorBindings(renderer);
+  rebuildOutputPipelinesForCurrentSceneLayout(renderer);
 }
 } // namespace
 
-void RenderResourceLifecycle::createAll(Engine& renderer)
+void RenderResourceLifecycle::createResourcesInDependencyOrder(Engine& renderer)
 {
   auto& impl = EngineAccess::impl(renderer);
   impl.outputController.createPreviewTargets(impl.sizeRef());
   impl.gpuScene.createLightBuffer();
 
-  createSceneDescriptors(renderer);
-  ensureViewUniformBuffers(renderer);
+  createSceneDescriptorsForCurrentScene(renderer);
+  ensureViewUniformBuffersAndDescriptorBindings(renderer);
   impl.gpuScene.createObjectDescriptionBuffer();
-  updateSceneDescriptorBindings(renderer);
+  refreshSceneDescriptorBindings(renderer);
   impl.gpuScene.createRayTracingResources();
 
-  createOutputPipelines(renderer);
+  rebuildOutputPipelinesForCurrentSceneLayout(renderer);
 }
 
-void RenderResourceLifecycle::destroyAll(Engine& renderer)
+void RenderResourceLifecycle::destroyResourcesInShutdownOrder(Engine& renderer)
 {
   auto& impl = EngineAccess::impl(renderer);
   impl.outputController.destroy();
@@ -49,20 +80,10 @@ void RenderResourceLifecycle::destroyAll(Engine& renderer)
   impl.alloc.deinit();
 }
 
-void RenderResourceLifecycle::recreateSceneDescriptorsAndOutputPipelines(Engine& renderer)
-{
-  auto& impl = EngineAccess::impl(renderer);
-  impl.outputController.destroyOutputPipelines();
-  impl.sceneDescriptors.destroy();
-  createSceneDescriptors(renderer);
-  updateSceneDescriptorBindings(renderer);
-  createOutputPipelines(renderer);
-}
-
 void RenderResourceLifecycle::rebuildTexturesAndSceneBindings(Engine& renderer,
                                                               const std::vector<TextureAsset>& textureAssets)
 {
   EngineAccess::impl(renderer).gpuScene.rebuildTextureResources(textureAssets);
-  recreateSceneDescriptorsAndOutputPipelines(renderer);
+  rebuildSceneDescriptorsThenOutputPipelines(renderer);
 }
 } // namespace engine

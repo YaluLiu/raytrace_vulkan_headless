@@ -21,7 +21,7 @@ enum class FramePass
   OverlayHeightScans,
 };
 
-constexpr std::array<FramePass, 8> kFramePassSequence{
+constexpr std::array<FramePass, 8> kFramePassOrder{
     FramePass::UpdateUniforms,
     FramePass::UpdateLights,
     FramePass::RenderTileAovAtlas,
@@ -32,7 +32,7 @@ constexpr std::array<FramePass, 8> kFramePassSequence{
     FramePass::OverlayHeightScans,
 };
 
-void executeFramePass(EngineAccess::Impl& impl, const VkCommandBuffer& cmdBuf, FramePass pass)
+void recordFramePass(EngineAccess::Impl& impl, const VkCommandBuffer& cmdBuf, FramePass pass)
 {
   switch(pass)
   {
@@ -46,8 +46,7 @@ void executeFramePass(EngineAccess::Impl& impl, const VkCommandBuffer& cmdBuf, F
       impl.outputController.recordTileAtlas(cmdBuf, impl.gpuScene, impl.sceneDescriptors, impl.viewUniforms);
       break;
     case FramePass::GenerateLidarPointClouds:
-      impl.outputController.recordLidarPointClouds(cmdBuf, impl.gpuScene, impl.sceneDescriptors,
-                                                   impl.outputController.getPreviewPipeline());
+      impl.outputController.recordLidarPointClouds(cmdBuf, impl.gpuScene);
       break;
     case FramePass::GenerateHeightScans:
       impl.outputController.recordHeightScans(cmdBuf, impl.gpuScene);
@@ -74,9 +73,9 @@ void prepareFrame(Engine& renderer)
 void recordFramePasses(Engine& renderer, const VkCommandBuffer& cmdBuf)
 {
   auto& impl = EngineAccess::impl(renderer);
-  for(const FramePass pass : kFramePassSequence)
+  for(const FramePass pass : kFramePassOrder)
   {
-    executeFramePass(impl, cmdBuf, pass);
+    recordFramePass(impl, cmdBuf, pass);
   }
 }
 

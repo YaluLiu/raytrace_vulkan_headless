@@ -93,14 +93,14 @@ call sites with `rg`.
   controller components.
 - `engine/src/core/renderer_resources.hpp` /
   `engine/src/core/renderer_resources.cpp`: Private render-resource
-  helper layer used by `Engine`, frame preparation, and texture-resource
-  rebuilds to create/destroy descriptor sets, view uniforms, preview targets,
-  output pipelines, light/object buffers, and RT resources without exposing
-  these steps on the public `Engine` API.
+  helper layer used by `Engine` facade/session code for render-resource
+  create/destroy entry points, preview resize, and frame uniform capacity
+  refresh without exposing these steps on the public `Engine` API.
 - `engine/src/core/render_resource_lifecycle.hpp` /
   `engine/src/core/render_resource_lifecycle.cpp`: Private lifecycle
-  coordinator that centralizes full render-resource create/destroy order and
-  texture descriptor/output-pipeline rebuild sequences while keeping the
+  coordinator that centralizes dependency-ordered render-resource creation,
+  shutdown-ordered destruction, scene descriptor binding refresh, output
+  pipeline rebuild, and texture-resource rebinding sequences while keeping the
   public `Engine` facade unchanged.
 - `engine/src/core/renderer_internal.hpp`: Private bridge from
   `Engine` to its PIMPL-owned GPU scene, descriptors, view uniforms,
@@ -169,7 +169,8 @@ call sites with `rg`.
   `engine/src/core/output_controller.cpp`: Output orchestration layer that owns
   the preview AOV pipeline, tile atlas pass, LiDAR point cloud pass, height scan
   pass, AOV texture query routing, and fan-out from the renderer output
-  configuration snapshot into the concrete output passes.
+  configuration snapshot into the concrete output passes. Pass recording
+  methods expose only the scene/descriptor inputs each output actually needs.
 - `engine/features/preview/preview_pipeline.hpp` / `engine/features/preview/preview_pipeline.cpp`:
   Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
   depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
@@ -244,9 +245,9 @@ call sites with `rg`.
   `rebuildTextureResourcesAndSceneBindings` coordination across descriptors and
   output pipelines.
 - `engine/src/core/renderer_resources.cpp`: Private `Engine`
-  resource orchestration for descriptor creation/update, frame uniform buffer
-  capacity, preview target resize, render-resource creation/destruction, and
-  output pipeline rebuilds.
+  resource wrappers for render-resource creation/destruction, preview target
+  resize, and frame uniform buffer capacity; descriptor/pipeline rebuild
+  sequencing lives in `engine/src/core/render_resource_lifecycle.cpp`.
 - `engine/src/image_barriers.hpp`: Vulkan image layout/barrier helpers.
 - `engine/src/runtime/headless_vk.cpp`: Headless Vulkan offline app context support.
 
