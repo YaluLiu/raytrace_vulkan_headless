@@ -56,7 +56,7 @@ private:
   VkRenderPass m_renderPass{VK_NULL_HANDLE};
   VkFramebuffer m_framebuffer{VK_NULL_HANDLE};
   VkFormat m_colorFormat{VK_FORMAT_UNDEFINED};
-  VkFormat m_depthFormat{VK_FORMAT_UNDEFINED};
+  VkFormat m_depthAttachmentFormat{VK_FORMAT_UNDEFINED};
   VkExtent2D m_extent{0, 0};
   VkBuffer m_boundSensorBuffer{VK_NULL_HANDLE};
   VkBuffer m_boundPointBuffer{VK_NULL_HANDLE};

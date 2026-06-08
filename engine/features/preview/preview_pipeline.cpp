@@ -47,7 +47,7 @@ void PreviewPipeline::setup(VkDevice device,
   _graphicsQueueIndex = graphicsQueueIndex;
   _transientAllocator = &transientAllocator;
   _debug              = &debug;
-  _offscreenDepthFormat = nvvk::findDepthFormat(physicalDevice);
+  _offscreenDepthAttachmentFormat = nvvk::findDepthFormat(physicalDevice);
   _sharedAlloc.init(device, physicalDevice);
 }
 
@@ -56,8 +56,8 @@ void PreviewPipeline::destroy()
   destroyGraphicsPipeline();
   if(_transientAllocator != nullptr)
   {
-    _transientAllocator->destroy(_offscreenDepth);
-    _offscreenDepth = {};
+    _transientAllocator->destroy(_offscreenDepthAttachment);
+    _offscreenDepthAttachment = {};
   }
   if(_device != VK_NULL_HANDLE)
   {
@@ -119,26 +119,27 @@ void PreviewPipeline::recreateAovTargets(VkExtent2D size)
   createOffscreenImage(_offscreenDepthAov, _offscreenDepthAovFormat, kAovUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                        _aovSize);
 
-  _transientAllocator->destroy(_offscreenDepth);
+  _transientAllocator->destroy(_offscreenDepthAttachment);
   auto depthCreateInfo =
-      nvvk::makeImage2DCreateInfo(_renderSize, _offscreenDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+      nvvk::makeImage2DCreateInfo(_renderSize, _offscreenDepthAttachmentFormat,
+                                  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   {
     nvvk::Image image = _transientAllocator->createImage(depthCreateInfo);
 
     VkImageViewCreateInfo depthStencilView{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     depthStencilView.viewType         = VK_IMAGE_VIEW_TYPE_2D;
-    depthStencilView.format           = _offscreenDepthFormat;
+    depthStencilView.format           = _offscreenDepthAttachmentFormat;
     depthStencilView.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
     depthStencilView.image            = image.image;
 
-    _offscreenDepth = _transientAllocator->createTexture(image, depthStencilView);
+    _offscreenDepthAttachment = _transientAllocator->createTexture(image, depthStencilView);
   }
 
   {
     nvvk::CommandPool genCmdBuf(_device, _graphicsQueueIndex);
     auto              cmdBuf = genCmdBuf.createCommandBuffer();
     nvvk::cmdBarrierImageLayout(cmdBuf, _offscreenColor.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-    nvvk::cmdBarrierImageLayout(cmdBuf, _offscreenDepth.image, VK_IMAGE_LAYOUT_UNDEFINED,
+    nvvk::cmdBarrierImageLayout(cmdBuf, _offscreenDepthAttachment.image, VK_IMAGE_LAYOUT_UNDEFINED,
                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
     nvvk::cmdBarrierImageLayout(cmdBuf, _offscreenObjectId.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     nvvk::cmdBarrierImageLayout(cmdBuf, _offscreenInstanceId.image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -170,7 +171,7 @@ void PreviewPipeline::createGraphicsPipeline(VkDescriptorSetLayout sceneDescript
 
   std::vector<VkFormat> colorAttachmentFormats{
       _offscreenColorFormat, _offscreenObjectIdFormat, _offscreenInstanceIdFormat, _offscreenDepthAovFormat};
-  _renderPass = nvvk::createRenderPass(_device, colorAttachmentFormats, _offscreenDepthFormat, 1, true, true,
+  _renderPass = nvvk::createRenderPass(_device, colorAttachmentFormats, _offscreenDepthAttachmentFormat, 1, true, true,
                                        VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL);
 
   nvvk::GraphicsPipelineState pipelineState;
@@ -426,7 +427,7 @@ void PreviewPipeline::createFramebuffer()
      || _offscreenObjectId.descriptor.imageView == VK_NULL_HANDLE
      || _offscreenInstanceId.descriptor.imageView == VK_NULL_HANDLE
      || _offscreenDepthAov.descriptor.imageView == VK_NULL_HANDLE
-     || _offscreenDepth.descriptor.imageView == VK_NULL_HANDLE)
+     || _offscreenDepthAttachment.descriptor.imageView == VK_NULL_HANDLE)
   {
     return;
   }
@@ -435,7 +436,8 @@ void PreviewPipeline::createFramebuffer()
 
   std::array<VkImageView, 5> attachments{_offscreenColor.descriptor.imageView, _offscreenObjectId.descriptor.imageView,
                                          _offscreenInstanceId.descriptor.imageView,
-                                         _offscreenDepthAov.descriptor.imageView, _offscreenDepth.descriptor.imageView};
+                                         _offscreenDepthAov.descriptor.imageView,
+                                         _offscreenDepthAttachment.descriptor.imageView};
 
   VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
   framebufferInfo.renderPass      = _renderPass;

@@ -85,7 +85,7 @@ bool PointOverlayPipeline::ensureResources(VkDescriptorSetLayout sceneDescriptor
                                m_renderPass != VK_NULL_HANDLE &&
                                m_sceneDescriptorSetLayout == sceneDescriptorSetLayout &&
                                m_colorFormat == previewPipeline.getColorFormat() &&
-                               m_depthFormat == previewPipeline.getDepthAttachmentFormat();
+                               m_depthAttachmentFormat == previewPipeline.getDepthAttachmentFormat();
   const VkExtent2D renderSize = previewPipeline.getRenderSize();
   const bool framebufferMatches = m_framebuffer != VK_NULL_HANDLE && m_extent.width == renderSize.width &&
                                   m_extent.height == renderSize.height;
@@ -94,7 +94,7 @@ bool PointOverlayPipeline::ensureResources(VkDescriptorSetLayout sceneDescriptor
     destroyGraphicsPipeline();
     m_sceneDescriptorSetLayout = sceneDescriptorSetLayout;
     m_colorFormat = previewPipeline.getColorFormat();
-    m_depthFormat = previewPipeline.getDepthAttachmentFormat();
+    m_depthAttachmentFormat = previewPipeline.getDepthAttachmentFormat();
     createRenderPass();
     createGraphicsPipeline();
   }
@@ -196,7 +196,7 @@ void PointOverlayPipeline::createRenderPass()
   attachments[0].initialLayout = VK_IMAGE_LAYOUT_GENERAL;
   attachments[0].finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-  attachments[1].format = m_depthFormat;
+  attachments[1].format = m_depthAttachmentFormat;
   attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
   attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;

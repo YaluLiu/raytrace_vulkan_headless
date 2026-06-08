@@ -23,7 +23,7 @@ public:
   uint32_t getLayerCount() const { return _layerCount; }
   VkFramebuffer getFramebuffer() const { return _framebuffer; }
   const nvvk::Texture& getColorTexture() const { return _colorLayers; }
-  const nvvk::Texture& getDepthAovTexture() const { return _depthLayers; }
+  const nvvk::Texture& getDepthAovTexture() const { return _depthAovLayers; }
   const nvvk::Texture& getDepthAttachmentTexture() const { return _depthAttachment; }
 
 private:
@@ -46,8 +46,8 @@ private:
   nvvk::Texture _colorLayers;
   VkFormat _colorFormat{VK_FORMAT_R32G32B32A32_SFLOAT};
 
-  nvvk::Texture _depthLayers;
-  VkFormat _depthFormat{VK_FORMAT_R32_SFLOAT};
+  nvvk::Texture _depthAovLayers;
+  VkFormat _depthAovFormat{VK_FORMAT_R32_SFLOAT};
 
   nvvk::Texture _depthAttachment;
   VkFormat _depthAttachmentFormat{VK_FORMAT_X8_D24_UNORM_PACK32};

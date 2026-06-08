@@ -172,8 +172,8 @@ call sites with `rg`.
   configuration snapshot into the concrete output passes. Pass recording
   methods expose only the scene/descriptor inputs each output actually needs.
 - `engine/features/preview/preview_pipeline.hpp` / `engine/features/preview/preview_pipeline.cpp`:
-  Main preview/offscreen AOV pipeline wrapper owning color/depth/id images,
-  depth attachment, render pass, framebuffer, graphics pipelines, AOV texture
+  Main preview/offscreen AOV pipeline wrapper owning color/depth-AOV/id images,
+  a separate render-pass depth attachment, framebuffer, graphics pipelines, AOV texture
   export backing, dynamic frame-uniform descriptor binding, and draw command
   recording.
 - `engine/include/engine/tile_config.hpp`: Pure engine tile output configuration contract,
@@ -257,7 +257,7 @@ call sites with `rg`.
   `color`, `depth`, `primId`, `instanceId`, `tileColor`, and `tileDepth`.
 - `engine/features/preview/preview_pipeline.hpp` / `engine/features/preview/preview_pipeline.cpp`: Offscreen
   target allocation, resize refresh, AOV texture export backing, direct
-  color/depth/id target selection, and framebuffer rebuilds.
+  color/depth-AOV/id target selection, and framebuffer rebuilds.
 - `engine/src/core/output_controller.cpp`: `GetAovTexture` routing for standard
   preview AOVs and current tile atlas export images.
 - `engine/features/tile/tile_aov_channel.hpp` / `engine/features/tile/tile_aov_channel.cpp`,
@@ -492,7 +492,7 @@ call sites with `rg`.
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.
 - `engine/features/preview/shaders/mesh.frag`: Minimal mesh fragment shader writing color,
-  primId, instanceId, normalized depth AOV attachments, and sphere/simple light
+  primId, instanceId, normalized depth AOV targets, and sphere/simple light
   diffuse shading from the shared light buffer. DomeLight surface lighting is
   converted to neutral luminance so its intensity illuminates materials without
   tinting their base color.

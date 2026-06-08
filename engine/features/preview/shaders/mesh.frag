@@ -45,7 +45,7 @@ layout(location = 6) flat in int inInstanceId;
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out int outObjId;
 layout(location = 2) out int outInstanceId;
-layout(location = 3) out float outDepth;
+layout(location = 3) out float outDepthAov;
 
 vec4 sampleTextureRgba(int textureId, vec2 texCoord, vec4 fallbackValue)
 {
@@ -143,5 +143,5 @@ void main()
   outColor = vec4(litColor, 1.0);
   outObjId = int(inObjIndex);
   outInstanceId = inInstanceId;
-  outDepth = gl_FragCoord.z;
+  outDepthAov = gl_FragCoord.z;
 }

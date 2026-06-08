@@ -42,9 +42,9 @@ public:
   VkFormat getObjectIdFormat() const { return _offscreenObjectIdFormat; }
   VkFormat getInstanceIdFormat() const { return _offscreenInstanceIdFormat; }
   VkFormat getDepthAovFormat() const { return _offscreenDepthAovFormat; }
-  VkFormat getDepthAttachmentFormat() const { return _offscreenDepthFormat; }
+  VkFormat getDepthAttachmentFormat() const { return _offscreenDepthAttachmentFormat; }
   VkImageView getColorImageView() const { return _offscreenColor.descriptor.imageView; }
-  VkImageView getDepthAttachmentImageView() const { return _offscreenDepth.descriptor.imageView; }
+  VkImageView getDepthAttachmentImageView() const { return _offscreenDepthAttachment.descriptor.imageView; }
   const nvvk::Texture& getColorTextureForReadback() const { return _offscreenColor; }
   const nvvk::Texture& getDepthAovTextureForReadback() const { return _offscreenDepthAov; }
   const nvvk::Texture& getObjectIdTextureForReadback() const { return _offscreenObjectId; }
@@ -85,8 +85,8 @@ private:
   nvvk::Texture _offscreenDepthAov;
   VkFormat      _offscreenDepthAovFormat{VK_FORMAT_R32_SFLOAT};
 
-  nvvk::Texture _offscreenDepth;
-  VkFormat      _offscreenDepthFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
+  nvvk::Texture _offscreenDepthAttachment;
+  VkFormat      _offscreenDepthAttachmentFormat{VK_FORMAT_X8_D24_UNORM_PACK32};
 
   VkExtent2D _renderSize{0, 0};
   VkExtent2D _aovSize{0, 0};

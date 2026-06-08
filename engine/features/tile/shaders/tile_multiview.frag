@@ -44,7 +44,7 @@ layout(location = 4) in vec4 inWorldTangent;
 layout(location = 5) flat in uint inObjIndex;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out float outDepth;
+layout(location = 1) out float outDepthAov;
 
 vec4 sampleTextureRgba(int textureId, vec2 texCoord, vec4 fallbackValue)
 {
@@ -140,5 +140,5 @@ void main()
   vec3 litColor = baseColor * lighting;
 
   outColor = vec4(litColor, 1.0);
-  outDepth = gl_FragCoord.z;
+  outDepthAov = gl_FragCoord.z;
 }

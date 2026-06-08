@@ -23,7 +23,7 @@ layout(location = 0) in vec2 inNdc;
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out int outObjId;
 layout(location = 2) out int outInstanceId;
-layout(location = 3) out float outDepth;
+layout(location = 3) out float outDepthAov;
 
 vec3 reconstructWorldDirection(vec2 ndc)
 {
@@ -44,5 +44,5 @@ void main()
   outColor = vec4(color, 1.0);
   outObjId = -1;
   outInstanceId = -1;
-  outDepth = 1.0;
+  outDepthAov = 1.0;
 }
