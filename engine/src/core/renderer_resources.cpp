@@ -7,7 +7,7 @@ namespace engine
 {
 namespace
 {
-void refreshFrameUniformDescriptorBinding(EngineAccess::Impl& impl)
+void refreshFrameUniformDescriptorBinding(EngineImplAccess::Impl& impl)
 {
   impl.sceneDescriptors.updateFrameUniform(impl.viewUniforms.getFrameUniformDescriptorInfo());
 }
@@ -21,7 +21,7 @@ uint32_t getRequiredFrameUniformSlots(const Engine& /*renderer*/)
 
 void ensureFrameUniformCapacity(Engine& renderer, uint32_t slotCount)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   if(impl.viewUniforms.ensureFrameUniformCapacity(slotCount))
   {
     refreshFrameUniformDescriptorBinding(impl);
@@ -45,7 +45,7 @@ void resizeRenderTargets(Engine& renderer, int width, int height)
     return;
   }
 
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   if(width == static_cast<int>(impl.sizeRef().width) && height == static_cast<int>(impl.sizeRef().height))
   {
     return;

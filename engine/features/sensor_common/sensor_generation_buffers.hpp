@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-class SensorGpuBuffers final
+class SensorGenerationBuffers final
 {
 public:
   void setup(nvvk::ResourceAllocatorDma& allocator, nvvk::DebugUtil& debug)

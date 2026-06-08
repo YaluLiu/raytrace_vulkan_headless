@@ -92,7 +92,7 @@ void Engine::setup(const VkInstance& instance,
                            uint32_t queueFamily)
 {
   m_impl->setup(instance, device, physicalDevice, queueFamily);
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   impl.alloc.init(device, physicalDevice);
   impl.alloc.getStaging()->setFreeUnusedOnRelease(false);
   impl.debug.setup(impl.device());
@@ -104,63 +104,63 @@ void Engine::setup(const VkInstance& instance,
 
 const std::vector<CameraSpec>& Engine::getCameras() const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.viewUniforms.getCameras();
 }
 
 std::optional<ExportedAovTexture> Engine::GetAovTexture(Aov aov) const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.outputController.getAovTexture(aov);
 }
 
 void Engine::configureOutputs(RendererOutputConfig config)
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   impl.outputController.applyConfig(std::move(config));
   engine::ensureFrameUniformCapacity(*this, engine::getRequiredFrameUniformSlots(*this));
 }
 
 LidarFramePointCloud Engine::readLidarPointCloudFrame()
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.outputController.readLidarPointCloudFrame();
 }
 
 HeightScanFrame Engine::readHeightScanFrame()
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.outputController.readHeightScanFrame();
 }
 
 void Engine::setMainCameraClipRange(float clipStart, float clipEnd)
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   impl.viewUniforms.setMainCameraClipRange(clipStart, clipEnd);
 }
 
 float Engine::getMainCameraClipStart() const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.viewUniforms.getMainCameraClipStart();
 }
 
 float Engine::getMainCameraClipEnd() const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.viewUniforms.getMainCameraClipEnd();
 }
 
 void Engine::setCameras(std::vector<CameraSpec> cameras)
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   impl.viewUniforms.setCameras(std::move(cameras));
   engine::ensureFrameUniformCapacity(*this, engine::getRequiredFrameUniformSlots(*this));
 }
 
 void Engine::setMainCamera(const CameraSpec& camera)
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   const auto resolved = resolveMainCameraForManipulator(camera);
   CameraSpec projectionCamera = camera;
   projectionCamera.verticalFovDegrees = resolved.verticalFovDegrees;
@@ -172,19 +172,19 @@ void Engine::setMainCamera(const CameraSpec& camera)
 
 TileAtlasConfig Engine::getTileConfig() const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.outputController.getTileConfig();
 }
 
 bool Engine::isTileMultiviewSupported() const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.outputController.isTileMultiviewSupported();
 }
 
 uint32_t Engine::getTileMultiviewMaxViewCount() const
 {
-  const auto& impl = engine::EngineAccess::impl(*this);
+  const auto& impl = engine::EngineImplAccess::impl(*this);
   return impl.outputController.getTileMultiviewMaxViewCount();
 }
 

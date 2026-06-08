@@ -6,7 +6,7 @@
 #include "features/height_scan/height_scan.hpp"
 #include "features/height_scan/height_scan_generation_pipeline.hpp"
 #include "features/point_overlay/point_overlay_pipeline.hpp"
-#include "features/sensor_common/sensor_gpu_buffers.hpp"
+#include "features/sensor_common/sensor_generation_buffers.hpp"
 #include "shaders/common/host_device.h"
 
 #include "nvvk/debug_util_vk.hpp"
@@ -57,7 +57,7 @@ private:
   bool m_frameGenerated{false};
   HeightScanVisualizationConfig m_visualizationConfig;
 
-  SensorGpuBuffers m_buffers;
+  SensorGenerationBuffers m_buffers;
   std::vector<HeightScanSensorGpu> m_gpuSensorMetadata;
 
   HeightScanGenerationPipeline m_generationPipeline;

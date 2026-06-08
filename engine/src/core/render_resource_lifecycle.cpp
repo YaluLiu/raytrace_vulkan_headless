@@ -7,20 +7,20 @@ namespace engine
 {
 namespace
 {
-void refreshTileFrameUniformDescriptorBinding(EngineAccess::Impl& impl)
+void refreshTileFrameUniformDescriptorBinding(EngineImplAccess::Impl& impl)
 {
   impl.sceneDescriptors.updateTileFrameUniform(impl.viewUniforms.getTileFrameUniformDescriptorInfo());
 }
 
 void createSceneDescriptorsForCurrentScene(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   impl.sceneDescriptors.create(impl.device(), impl.gpuScene.getTextureDescriptorCount(), true);
 }
 
 void refreshSceneDescriptorBindings(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   VkDescriptorBufferInfo dbiSceneDesc{impl.gpuScene.getObjectDescriptionBuffer().buffer, 0, VK_WHOLE_SIZE};
   VkDescriptorBufferInfo dbiLights{impl.gpuScene.getLightBuffer().buffer, 0, VK_WHOLE_SIZE};
   impl.sceneDescriptors.update(impl.viewUniforms.getFrameUniformDescriptorInfo(), dbiSceneDesc, dbiLights,
@@ -29,13 +29,13 @@ void refreshSceneDescriptorBindings(Engine& renderer)
 
 void rebuildOutputPipelinesForCurrentSceneLayout(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   impl.outputController.rebuildPipelinesForSceneLayout(impl.sceneDescriptors.layout());
 }
 
 void ensureViewUniformBuffersAndDescriptorBindings(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
   if(impl.viewUniforms.ensureTileFrameUniformBuffer())
   {
@@ -45,7 +45,7 @@ void ensureViewUniformBuffersAndDescriptorBindings(Engine& renderer)
 
 void rebuildSceneDescriptorsThenOutputPipelines(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   impl.outputController.destroyOutputPipelines();
   impl.sceneDescriptors.destroy();
   createSceneDescriptorsForCurrentScene(renderer);
@@ -56,7 +56,7 @@ void rebuildSceneDescriptorsThenOutputPipelines(Engine& renderer)
 
 void RenderResourceLifecycle::createResourcesInDependencyOrder(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   impl.outputController.createPreviewTargets(impl.sizeRef());
   impl.gpuScene.createLightBuffer();
 
@@ -71,7 +71,7 @@ void RenderResourceLifecycle::createResourcesInDependencyOrder(Engine& renderer)
 
 void RenderResourceLifecycle::destroyResourcesInShutdownOrder(Engine& renderer)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   impl.outputController.destroy();
   impl.sceneDescriptors.destroy();
   impl.viewUniforms.destroy();
@@ -83,7 +83,7 @@ void RenderResourceLifecycle::destroyResourcesInShutdownOrder(Engine& renderer)
 void RenderResourceLifecycle::rebuildTexturesAndSceneBindings(Engine& renderer,
                                                               const std::vector<TextureAsset>& textureAssets)
 {
-  EngineAccess::impl(renderer).gpuScene.rebuildTextureResources(textureAssets);
+  EngineImplAccess::impl(renderer).gpuScene.rebuildTextureResources(textureAssets);
   rebuildSceneDescriptorsThenOutputPipelines(renderer);
 }
 } // namespace engine

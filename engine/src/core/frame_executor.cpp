@@ -32,7 +32,7 @@ constexpr std::array<FramePass, 8> kFramePassOrder{
     FramePass::OverlayHeightScans,
 };
 
-void recordFramePass(EngineAccess::Impl& impl, const VkCommandBuffer& cmdBuf, FramePass pass)
+void recordFramePass(EngineImplAccess::Impl& impl, const VkCommandBuffer& cmdBuf, FramePass pass)
 {
   switch(pass)
   {
@@ -67,12 +67,12 @@ void recordFramePass(EngineAccess::Impl& impl, const VkCommandBuffer& cmdBuf, Fr
 void prepareFrame(Engine& renderer)
 {
   ensureFrameUniformCapacity(renderer, getRequiredFrameUniformSlots(renderer));
-  EngineAccess::impl(renderer).gpuScene.flushRayTracingUpdates();
+  EngineImplAccess::impl(renderer).gpuScene.flushRayTracingUpdates();
 }
 
 void recordFramePasses(Engine& renderer, const VkCommandBuffer& cmdBuf)
 {
-  auto& impl = EngineAccess::impl(renderer);
+  auto& impl = EngineImplAccess::impl(renderer);
   for(const FramePass pass : kFramePassOrder)
   {
     recordFramePass(impl, cmdBuf, pass);
@@ -81,6 +81,6 @@ void recordFramePasses(Engine& renderer, const VkCommandBuffer& cmdBuf)
 
 void finishFrame(Engine& renderer)
 {
-  EngineAccess::impl(renderer).outputController.markTileAovAtlasConsumed();
+  EngineImplAccess::impl(renderer).outputController.markTileAovAtlasConsumed();
 }
 } // namespace engine

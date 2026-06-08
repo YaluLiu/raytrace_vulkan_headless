@@ -57,7 +57,7 @@ set(ENGINE_PRIVATE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/features/lidar/lidar_scan.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/point_overlay/point_overlay_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/sensor_common/sensor_generation_pipeline.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/features/sensor_common/sensor_gpu_buffers.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/sensor_common/sensor_generation_buffers.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/sensor_common/sensor_readback.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/preview_pipeline.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/multiview_tile_pipeline.hpp

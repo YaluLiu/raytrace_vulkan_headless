@@ -213,7 +213,7 @@ call sites with `rg`.
   point/sample layout details stay in overlay-specific vertex shaders.
 - `engine/features/sensor_common/sensor_generation_pipeline.hpp` /
   `engine/features/sensor_common/sensor_generation_pipeline.cpp`,
-  `engine/features/sensor_common/sensor_gpu_buffers.hpp`, and
+  `engine/features/sensor_common/sensor_generation_buffers.hpp`, and
   `engine/features/sensor_common/sensor_readback.hpp`: Shared Vulkan mechanics
   for LiDAR and height-scan generation: TLAS, sensor-metadata, and generated
   samples compute descriptor setup, buffer capacity management, and staging

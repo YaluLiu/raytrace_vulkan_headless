@@ -6,7 +6,7 @@
 #include "features/lidar/lidar_point_generation_pipeline.hpp"
 #include "features/lidar/lidar_scan.hpp"
 #include "features/point_overlay/point_overlay_pipeline.hpp"
-#include "features/sensor_common/sensor_gpu_buffers.hpp"
+#include "features/sensor_common/sensor_generation_buffers.hpp"
 #include "scene/scene_types.hpp"
 #include "shaders/common/host_device.h"
 
@@ -62,7 +62,7 @@ private:
   uint64_t m_frameId{0};
   bool m_frameGenerated{false};
 
-  SensorGpuBuffers m_buffers;
+  SensorGenerationBuffers m_buffers;
   std::vector<LidarSensorGpu> m_gpuSensorMetadata;
 
   LidarPointGenerationPipeline m_generationPipeline;

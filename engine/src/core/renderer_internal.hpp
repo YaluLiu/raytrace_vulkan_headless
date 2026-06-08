@@ -46,7 +46,7 @@ struct Engine::Impl final : nvvkhl::AppOffline
 
 namespace engine
 {
-class EngineAccess final
+class EngineImplAccess final
 {
 public:
   using Impl = Engine::Impl;

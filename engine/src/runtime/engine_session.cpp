@@ -64,7 +64,7 @@ void addExternalSharingExtensions(nvvk::ContextCreateInfo& contextInfo)
 #endif
 }
 
-void syncMainViewStateFromCameraManip(engine::EngineAccess::Impl& impl)
+void syncMainViewStateFromCameraManip(engine::EngineImplAccess::Impl& impl)
 {
   impl.viewUniforms.setMainViewState(MainViewState{
       CameraManip.getMatrix(),
@@ -77,7 +77,7 @@ void syncMainViewStateFromCameraManip(engine::EngineAccess::Impl& impl)
 
 void Engine::setup(int width, int height)
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   impl.width = width;
   impl.height = height;
   impl.cleaned = false;
@@ -93,7 +93,7 @@ void Engine::setup(int width, int height)
 
 void Engine::setPluginSearchRoot(std::string pluginSearchRoot)
 {
-  engine::EngineAccess::impl(*this).pluginSearchRoot = std::move(pluginSearchRoot);
+  engine::EngineImplAccess::impl(*this).pluginSearchRoot = std::move(pluginSearchRoot);
 }
 
 void Engine::resize(int width, int height)
@@ -103,7 +103,7 @@ void Engine::resize(int width, int height)
     return;
   }
 
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   impl.width = width;
   impl.height = height;
   CameraManip.setWindowSize(impl.width, impl.height);
@@ -113,7 +113,7 @@ void Engine::resize(int width, int height)
 
 void Engine::setupContext()
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   NVPSystem system("session");
 
   defaultSearchPaths.clear();
@@ -179,12 +179,12 @@ void Engine::setupContext()
 void Engine::createRenderResources()
 {
   engine::createRenderResources(*this);
-  engine::EngineAccess::impl(*this).resourcesCreated = true;
+  engine::EngineImplAccess::impl(*this).resourcesCreated = true;
 }
 
 void Engine::render()
 {
-  syncMainViewStateFromCameraManip(engine::EngineAccess::impl(*this));
+  syncMainViewStateFromCameraManip(engine::EngineImplAccess::impl(*this));
   engine::prepareFrame(*this);
 
   auto                   curFrame = getCurFrame();
@@ -215,7 +215,7 @@ void Engine::saveFrame(std::string outputImagePath)
 
 void Engine::cleanup()
 {
-  auto& impl = engine::EngineAccess::impl(*this);
+  auto& impl = engine::EngineImplAccess::impl(*this);
   if(impl.cleaned)
   {
     return;

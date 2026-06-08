@@ -16,7 +16,7 @@
 
 namespace engine
 {
-class EngineAccess;
+class EngineImplAccess;
 }
 
 class Engine
@@ -98,7 +98,7 @@ public:
   size_t getMeshSourceCount() const;
 
 private:
-  friend class engine::EngineAccess;
+  friend class engine::EngineImplAccess;
 
   struct Impl;
   std::unique_ptr<Impl> m_impl;
