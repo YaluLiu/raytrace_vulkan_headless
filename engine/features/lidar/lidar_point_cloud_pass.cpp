@@ -33,8 +33,8 @@ void LidarPointCloudPass::destroy()
   m_overlayPipeline.destroy();
   m_generationPipeline.destroy();
   destroyBuffers();
-  m_sensors.clear();
-  m_gpuSensors.clear();
+  m_configuredSensors.clear();
+  m_gpuSensorMetadata.clear();
   m_layout = {};
   m_device = VK_NULL_HANDLE;
   m_physicalDevice = VK_NULL_HANDLE;
@@ -50,15 +50,15 @@ void LidarPointCloudPass::destroyGraphicsPipeline()
 
 void LidarPointCloudPass::configure(LidarOutputConfig config)
 {
-  m_visualization = config.visualization;
-  m_sensors = std::move(config.sensors);
-  m_layout = BuildLidarScanLayout(m_sensors);
-  m_gpuSensors = buildGpuSensorMetadata();
+  m_visualizationConfig = config.visualization;
+  m_configuredSensors = std::move(config.sensors);
+  m_layout = BuildLidarScanLayout(m_configuredSensors);
+  m_gpuSensorMetadata = buildGpuSensorMetadata();
   m_frameGenerated = false;
-  if(m_layout.empty() || m_gpuSensors.size() != m_layout.sensors.size())
+  if(m_layout.empty() || m_gpuSensorMetadata.size() != m_layout.sensors.size())
   {
     m_layout = {};
-    m_gpuSensors.clear();
+    m_gpuSensorMetadata.clear();
     destroyBuffers();
   }
 }
@@ -77,7 +77,7 @@ LidarFramePointCloud LidarPointCloudPass::readPointCloudFrame()
       ReadDeviceBuffer(m_device,
                        m_graphicsQueueIndex,
                        *m_allocator,
-                       m_buffers.outputBuffer().buffer,
+                       m_buffers.generatedSamplesBuffer().buffer,
                        pointBytes,
                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
                        VK_ACCESS_SHADER_WRITE_BIT,
@@ -139,19 +139,22 @@ void LidarPointCloudPass::recordGenerate(const VkCommandBuffer& cmdBuf,
     return;
   }
 
-  if(m_gpuSensors.size() > std::numeric_limits<uint32_t>::max() ||
-     !m_buffers.ensureOutputCapacity(m_layout.totalPointCount, sizeof(LidarPointGpu), "LidarPointBuffer") ||
-     !m_buffers.ensureSensorCapacity(static_cast<uint32_t>(m_gpuSensors.size()),
-                                     sizeof(LidarSensorGpu),
-                                     "LidarSensorMetadataBuffer"))
+  if(m_gpuSensorMetadata.size() > std::numeric_limits<uint32_t>::max() ||
+     !m_buffers.ensureGeneratedSampleCapacity(m_layout.totalPointCount,
+                                              sizeof(LidarPointGpu),
+                                              "LidarPointBuffer") ||
+     !m_buffers.ensureSensorMetadataCapacity(static_cast<uint32_t>(m_gpuSensorMetadata.size()),
+                                             sizeof(LidarSensorGpu),
+                                             "LidarSensorMetadataBuffer"))
   {
     m_frameGenerated = false;
     return;
   }
-  uploadSensorMetadata();
+  uploadSensorMetadataToGpu();
 
-  if(!m_generationPipeline.ensureResources(*tlasInfo, m_buffers.sensorBuffer().buffer,
-                                           m_buffers.outputBuffer().buffer))
+  if(!m_generationPipeline.ensureResources(*tlasInfo,
+                                           m_buffers.sensorMetadataBuffer().buffer,
+                                           m_buffers.generatedSamplesBuffer().buffer))
   {
     m_frameGenerated = false;
     return;
@@ -160,7 +163,7 @@ void LidarPointCloudPass::recordGenerate(const VkCommandBuffer& cmdBuf,
   bool generatedAnySensor = false;
   for(const LidarSensorMetadata& metadata : m_layout.sensors)
   {
-    if(metadata.sensorIndex >= m_sensors.size() || metadata.azimuthSampleCount == 0 ||
+    if(metadata.sensorIndex >= m_configuredSensors.size() || metadata.azimuthSampleCount == 0 ||
        metadata.verticalSampleCount == 0)
     {
       continue;
@@ -173,7 +176,7 @@ void LidarPointCloudPass::recordGenerate(const VkCommandBuffer& cmdBuf,
     VkBufferMemoryBarrier pointBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     pointBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
     pointBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
-    pointBarrier.buffer = m_buffers.outputBuffer().buffer;
+    pointBarrier.buffer = m_buffers.generatedSamplesBuffer().buffer;
     pointBarrier.offset = metadata.pointOffset * sizeof(LidarPointGpu);
     pointBarrier.size = metadata.pointCount * sizeof(LidarPointGpu);
     vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -188,18 +191,21 @@ void LidarPointCloudPass::recordOverlay(const VkCommandBuffer& cmdBuf,
                                         VkDescriptorSetLayout sceneDescriptorSetLayout,
                                         const PreviewPipeline& previewPipeline)
 {
-  if(!currentLayoutGenerated() || !m_visualization.enabled || m_visualization.pointSizePixels <= 0.0f)
+  if(!currentLayoutGenerated() || !m_visualizationConfig.enabled ||
+     m_visualizationConfig.pointSizePixels <= 0.0f)
   {
     return;
   }
 
-  if(!m_overlayPipeline.ensureResources(sceneDescriptorSetLayout, previewPipeline, m_buffers.sensorBuffer().buffer,
-                                        m_buffers.outputBuffer().buffer))
+  if(!m_overlayPipeline.ensureResources(sceneDescriptorSetLayout,
+                                        previewPipeline,
+                                        m_buffers.sensorMetadataBuffer().buffer,
+                                        m_buffers.generatedSamplesBuffer().buffer))
   {
     return;
   }
 
-  if(m_visualization.visualizeAllSensors)
+  if(m_visualizationConfig.visualizeAllSensors)
   {
     for(const LidarSensorMetadata& metadata : m_layout.sensors)
     {
@@ -208,38 +214,39 @@ void LidarPointCloudPass::recordOverlay(const VkCommandBuffer& cmdBuf,
         continue;
       }
       m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, metadata.sensorIndex,
-                             m_visualization.pointSizePixels,
+                             m_visualizationConfig.pointSizePixels,
                              static_cast<uint32_t>(std::min<uint64_t>(metadata.pointCount,
                                                                       std::numeric_limits<uint32_t>::max())));
     }
     return;
   }
 
-  if(m_visualization.sensorIndex >= m_layout.sensors.size())
+  if(m_visualizationConfig.sensorIndex >= m_layout.sensors.size())
   {
     return;
   }
 
-  const LidarSensorMetadata& metadata = m_layout.sensors[m_visualization.sensorIndex];
-  m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, m_visualization.sensorIndex,
-                         m_visualization.pointSizePixels,
+  const LidarSensorMetadata& metadata = m_layout.sensors[m_visualizationConfig.sensorIndex];
+  m_overlayPipeline.draw(cmdBuf, previewPipeline, sceneDescriptorSet, m_visualizationConfig.sensorIndex,
+                         m_visualizationConfig.pointSizePixels,
                          static_cast<uint32_t>(std::min<uint64_t>(metadata.pointCount,
                                                                   std::numeric_limits<uint32_t>::max())));
 }
 
-void LidarPointCloudPass::uploadSensorMetadata()
+void LidarPointCloudPass::uploadSensorMetadataToGpu()
 {
-  if(m_buffers.sensorBuffer().buffer == VK_NULL_HANDLE || m_gpuSensors.empty() || m_allocator == nullptr)
+  if(m_buffers.sensorMetadataBuffer().buffer == VK_NULL_HANDLE || m_gpuSensorMetadata.empty() ||
+     m_allocator == nullptr)
   {
     return;
   }
-  void* mapped = m_allocator->map(m_buffers.sensorBuffer());
+  void* mapped = m_allocator->map(m_buffers.sensorMetadataBuffer());
   if(mapped == nullptr)
   {
     return;
   }
-  std::memcpy(mapped, m_gpuSensors.data(), m_gpuSensors.size() * sizeof(LidarSensorGpu));
-  m_allocator->unmap(m_buffers.sensorBuffer());
+  std::memcpy(mapped, m_gpuSensorMetadata.data(), m_gpuSensorMetadata.size() * sizeof(LidarSensorGpu));
+  m_allocator->unmap(m_buffers.sensorMetadataBuffer());
 }
 
 std::vector<LidarSensorGpu> LidarPointCloudPass::buildGpuSensorMetadata() const
@@ -256,7 +263,7 @@ std::vector<LidarSensorGpu> LidarPointCloudPass::buildGpuSensorMetadata() const
       return {};
     }
 
-    const LidarSensorSpec& sensor = m_sensors[metadata.sensorIndex];
+    const LidarSensorSpec& sensor = m_configuredSensors[metadata.sensorIndex];
     const LidarBasis basis = BuildLidarBasis(sensor);
 
     LidarSensorGpu gpu{};
@@ -284,7 +291,10 @@ void LidarPointCloudPass::destroyBuffers()
 
 bool LidarPointCloudPass::currentLayoutGenerated() const
 {
-  return m_frameGenerated && !m_layout.empty() && m_gpuSensors.size() == m_layout.sensors.size() &&
-         m_buffers.outputBuffer().buffer != VK_NULL_HANDLE && m_buffers.sensorBuffer().buffer != VK_NULL_HANDLE &&
-         m_buffers.outputCapacity() >= m_layout.totalPointCount && m_buffers.sensorCapacity() >= m_gpuSensors.size();
+  return m_frameGenerated && !m_layout.empty() &&
+         m_gpuSensorMetadata.size() == m_layout.sensors.size() &&
+         m_buffers.generatedSamplesBuffer().buffer != VK_NULL_HANDLE &&
+         m_buffers.sensorMetadataBuffer().buffer != VK_NULL_HANDLE &&
+         m_buffers.generatedSampleCapacity() >= m_layout.totalPointCount &&
+         m_buffers.sensorMetadataCapacity() >= m_gpuSensorMetadata.size();
 }

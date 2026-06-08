@@ -45,7 +45,7 @@ public:
                      const PreviewPipeline& previewPipeline);
 
 private:
-  void uploadSensorMetadata();
+  void uploadSensorMetadataToGpu();
   std::vector<LidarSensorGpu> buildGpuSensorMetadata() const;
   void destroyBuffers();
   bool currentLayoutGenerated() const;
@@ -56,14 +56,14 @@ private:
   nvvk::ResourceAllocatorDma* m_allocator{nullptr};
   nvvk::DebugUtil* m_debug{nullptr};
 
-  std::vector<LidarSensorSpec> m_sensors;
-  LidarVisualizationConfig m_visualization;
+  std::vector<LidarSensorSpec> m_configuredSensors;
+  LidarVisualizationConfig m_visualizationConfig;
   LidarScanLayout m_layout;
   uint64_t m_frameId{0};
   bool m_frameGenerated{false};
 
   SensorGpuBuffers m_buffers;
-  std::vector<LidarSensorGpu> m_gpuSensors;
+  std::vector<LidarSensorGpu> m_gpuSensorMetadata;
 
   LidarPointGenerationPipeline m_generationPipeline;
   PointOverlayPipeline m_overlayPipeline;

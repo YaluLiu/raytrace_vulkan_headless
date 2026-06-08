@@ -12,7 +12,7 @@ public:
   void setup(VkDevice device, nvvk::DebugUtil& debug);
   void destroy();
 
-  bool ensureResources(const TlasDescriptorInfo& tlasInfo, VkBuffer sensorBuffer, VkBuffer pointBuffer);
+  bool ensureResources(const TlasDescriptorInfo& tlasInfo, VkBuffer sensorMetadataBuffer, VkBuffer pointBuffer);
   void dispatch(const VkCommandBuffer& cmdBuf, uint32_t sensorIndex, uint32_t width, uint32_t height);
 
 private:

@@ -39,8 +39,8 @@ void PointOverlayPipeline::destroy()
   m_descriptorPool = VK_NULL_HANDLE;
   m_descriptorSetLayout = VK_NULL_HANDLE;
   m_descriptorSet = VK_NULL_HANDLE;
-  m_boundSensorBuffer = VK_NULL_HANDLE;
-  m_boundPointBuffer = VK_NULL_HANDLE;
+  m_boundSensorMetadataBuffer = VK_NULL_HANDLE;
+  m_boundGeneratedSamplesBuffer = VK_NULL_HANDLE;
   m_device = VK_NULL_HANDLE;
   m_debug = nullptr;
   m_config = {};
@@ -62,11 +62,12 @@ void PointOverlayPipeline::destroyGraphicsPipeline()
 
 bool PointOverlayPipeline::ensureResources(VkDescriptorSetLayout sceneDescriptorSetLayout,
                                            const PreviewPipeline& previewPipeline,
-                                           VkBuffer sensorBuffer,
-                                           VkBuffer pointBuffer)
+                                           VkBuffer sensorMetadataBuffer,
+                                           VkBuffer generatedSamplesBuffer)
 {
-  if(m_device == VK_NULL_HANDLE || sceneDescriptorSetLayout == VK_NULL_HANDLE || sensorBuffer == VK_NULL_HANDLE ||
-     pointBuffer == VK_NULL_HANDLE || previewPipeline.getColorImageView() == VK_NULL_HANDLE ||
+  if(m_device == VK_NULL_HANDLE || sceneDescriptorSetLayout == VK_NULL_HANDLE ||
+     sensorMetadataBuffer == VK_NULL_HANDLE || generatedSamplesBuffer == VK_NULL_HANDLE ||
+     previewPipeline.getColorImageView() == VK_NULL_HANDLE ||
      previewPipeline.getDepthAttachmentImageView() == VK_NULL_HANDLE)
   {
     return false;
@@ -76,9 +77,10 @@ bool PointOverlayPipeline::ensureResources(VkDescriptorSetLayout sceneDescriptor
   {
     createDescriptorResources();
   }
-  if(m_boundSensorBuffer != sensorBuffer || m_boundPointBuffer != pointBuffer)
+  if(m_boundSensorMetadataBuffer != sensorMetadataBuffer ||
+     m_boundGeneratedSamplesBuffer != generatedSamplesBuffer)
   {
-    updateDescriptorSet(sensorBuffer, pointBuffer);
+    updateDescriptorSet(sensorMetadataBuffer, generatedSamplesBuffer);
   }
 
   const bool pipelineMatches = m_pipeline != VK_NULL_HANDLE && m_pipelineLayout != VK_NULL_HANDLE &&
@@ -111,10 +113,10 @@ void PointOverlayPipeline::draw(const VkCommandBuffer& cmdBuf,
                                 const PreviewPipeline& previewPipeline,
                                 VkDescriptorSet sceneDescriptorSet,
                                 uint32_t sensorIndex,
-                                float pointSizePixels,
+                                float overlayPointSizePixels,
                                 uint32_t vertexCount)
 {
-  if(vertexCount == 0 || pointSizePixels <= 0.0f || m_renderPass == VK_NULL_HANDLE ||
+  if(vertexCount == 0 || overlayPointSizePixels <= 0.0f || m_renderPass == VK_NULL_HANDLE ||
      m_framebuffer == VK_NULL_HANDLE || m_pipeline == VK_NULL_HANDLE || m_pipelineLayout == VK_NULL_HANDLE ||
      m_descriptorSet == VK_NULL_HANDLE || sceneDescriptorSet == VK_NULL_HANDLE)
   {
@@ -150,7 +152,7 @@ void PointOverlayPipeline::draw(const VkCommandBuffer& cmdBuf,
 
   PushConstantPointOverlay pushConstant{};
   pushConstant.sensorIndex = sensorIndex;
-  pushConstant.pointSizePixels = pointSizePixels;
+  pushConstant.pointSizePixels = overlayPointSizePixels;
   vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                      sizeof(pushConstant), &pushConstant);
   vkCmdDraw(cmdBuf, vertexCount, 1, 0, 0);
@@ -172,16 +174,16 @@ void PointOverlayPipeline::createDescriptorResources()
   m_descriptorSet = nvvk::allocateDescriptorSet(m_device, m_descriptorPool, m_descriptorSetLayout);
 }
 
-void PointOverlayPipeline::updateDescriptorSet(VkBuffer sensorBuffer, VkBuffer pointBuffer)
+void PointOverlayPipeline::updateDescriptorSet(VkBuffer sensorMetadataBuffer, VkBuffer generatedSamplesBuffer)
 {
-  VkDescriptorBufferInfo sensors{sensorBuffer, 0, VK_WHOLE_SIZE};
-  VkDescriptorBufferInfo points{pointBuffer, 0, VK_WHOLE_SIZE};
+  VkDescriptorBufferInfo sensorMetadataInfo{sensorMetadataBuffer, 0, VK_WHOLE_SIZE};
+  VkDescriptorBufferInfo generatedSamplesInfo{generatedSamplesBuffer, 0, VK_WHOLE_SIZE};
   std::vector<VkWriteDescriptorSet> writes;
-  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 0, &sensors));
-  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 1, &points));
+  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 0, &sensorMetadataInfo));
+  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 1, &generatedSamplesInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-  m_boundSensorBuffer = sensorBuffer;
-  m_boundPointBuffer = pointBuffer;
+  m_boundSensorMetadataBuffer = sensorMetadataBuffer;
+  m_boundGeneratedSamplesBuffer = generatedSamplesBuffer;
 }
 
 void PointOverlayPipeline::createRenderPass()

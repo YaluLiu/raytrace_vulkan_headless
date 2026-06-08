@@ -17,10 +17,10 @@ void LidarPointGenerationPipeline::destroy()
 }
 
 bool LidarPointGenerationPipeline::ensureResources(const TlasDescriptorInfo& tlasInfo,
-                                                   VkBuffer sensorBuffer,
+                                                   VkBuffer sensorMetadataBuffer,
                                                    VkBuffer pointBuffer)
 {
-  return m_pipeline.ensureResources(tlasInfo, sensorBuffer, pointBuffer);
+  return m_pipeline.ensureResources(tlasInfo, sensorMetadataBuffer, pointBuffer);
 }
 
 void LidarPointGenerationPipeline::dispatch(const VkCommandBuffer& cmdBuf,

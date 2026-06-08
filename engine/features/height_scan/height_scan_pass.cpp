@@ -50,8 +50,8 @@ void HeightScanPass::destroy()
   m_overlayPipeline.destroy();
   m_generationPipeline.destroy();
   destroyBuffers();
-  m_sensors.clear();
-  m_gpuSensors.clear();
+  m_configuredSensors.clear();
+  m_gpuSensorMetadata.clear();
   m_layout = {};
   m_device = VK_NULL_HANDLE;
   m_physicalDevice = VK_NULL_HANDLE;
@@ -68,14 +68,14 @@ void HeightScanPass::destroyGraphicsPipeline()
 void HeightScanPass::configure(HeightScanOutputConfig config)
 {
   m_visualizationConfig = config.visualization;
-  m_sensors = std::move(config.sensors);
-  m_layout = BuildHeightScanLayout(m_sensors);
-  m_gpuSensors = buildGpuSensorMetadata();
+  m_configuredSensors = std::move(config.sensors);
+  m_layout = BuildHeightScanLayout(m_configuredSensors);
+  m_gpuSensorMetadata = buildGpuSensorMetadata();
   m_frameGenerated = false;
-  if(m_layout.empty() || m_gpuSensors.size() != m_layout.sensors.size())
+  if(m_layout.empty() || m_gpuSensorMetadata.size() != m_layout.sensors.size())
   {
     m_layout = {};
-    m_gpuSensors.clear();
+    m_gpuSensorMetadata.clear();
     destroyBuffers();
   }
 }
@@ -103,7 +103,7 @@ HeightScanFrame HeightScanPass::readHeightScanFrame()
       ReadDeviceBuffer(m_device,
                        m_graphicsQueueIndex,
                        *m_allocator,
-                       m_buffers.outputBuffer().buffer,
+                       m_buffers.generatedSamplesBuffer().buffer,
                        sampleBytes,
                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                        VK_ACCESS_SHADER_WRITE_BIT,
@@ -158,22 +158,22 @@ void HeightScanPass::recordGenerate(const VkCommandBuffer& cmdBuf,
     return;
   }
 
-  if(m_gpuSensors.size() > std::numeric_limits<uint32_t>::max() ||
-     !m_buffers.ensureOutputCapacity(m_layout.totalSampleCount,
-                                     sizeof(HeightScanSampleGpu),
-                                     "HeightScanSampleBuffer") ||
-     !m_buffers.ensureSensorCapacity(static_cast<uint32_t>(m_gpuSensors.size()),
-                                     sizeof(HeightScanSensorGpu),
-                                     "HeightScanSensorMetadataBuffer"))
+  if(m_gpuSensorMetadata.size() > std::numeric_limits<uint32_t>::max() ||
+     !m_buffers.ensureGeneratedSampleCapacity(m_layout.totalSampleCount,
+                                              sizeof(HeightScanSampleGpu),
+                                              "HeightScanSampleBuffer") ||
+     !m_buffers.ensureSensorMetadataCapacity(static_cast<uint32_t>(m_gpuSensorMetadata.size()),
+                                             sizeof(HeightScanSensorGpu),
+                                             "HeightScanSensorMetadataBuffer"))
   {
     m_frameGenerated = false;
     return;
   }
-  uploadSensorMetadata();
+  uploadSensorMetadataToGpu();
 
   if(!m_generationPipeline.ensureResources(*tlasInfo,
-                                           m_buffers.sensorBuffer().buffer,
-                                           m_buffers.outputBuffer().buffer))
+                                           m_buffers.sensorMetadataBuffer().buffer,
+                                           m_buffers.generatedSamplesBuffer().buffer))
   {
     m_frameGenerated = false;
     return;
@@ -182,7 +182,8 @@ void HeightScanPass::recordGenerate(const VkCommandBuffer& cmdBuf,
   bool generatedAnySensor = false;
   for(const HeightScanSensorMetadata& metadata : m_layout.sensors)
   {
-    if(metadata.sensorIndex >= m_sensors.size() || metadata.uSampleCount == 0 || metadata.vSampleCount == 0)
+    if(metadata.sensorIndex >= m_configuredSensors.size() || metadata.uSampleCount == 0 ||
+       metadata.vSampleCount == 0)
     {
       continue;
     }
@@ -193,7 +194,7 @@ void HeightScanPass::recordGenerate(const VkCommandBuffer& cmdBuf,
     VkBufferMemoryBarrier sampleBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     sampleBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
     sampleBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
-    sampleBarrier.buffer = m_buffers.outputBuffer().buffer;
+    sampleBarrier.buffer = m_buffers.generatedSamplesBuffer().buffer;
     sampleBarrier.offset = metadata.sampleOffset * sizeof(HeightScanSampleGpu);
     sampleBarrier.size = metadata.sampleCount * sizeof(HeightScanSampleGpu);
     vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -210,13 +211,16 @@ void HeightScanPass::recordOverlay(const VkCommandBuffer& cmdBuf,
 {
   if(!currentLayoutGenerated() || !m_visualizationConfig.enabled ||
      m_visualizationConfig.pointSizePixels <= 0.0f ||
-     m_buffers.outputBuffer().buffer == VK_NULL_HANDLE || m_buffers.sensorBuffer().buffer == VK_NULL_HANDLE)
+     m_buffers.generatedSamplesBuffer().buffer == VK_NULL_HANDLE ||
+     m_buffers.sensorMetadataBuffer().buffer == VK_NULL_HANDLE)
   {
     return;
   }
 
-  if(!m_overlayPipeline.ensureResources(sceneDescriptorSetLayout, previewPipeline, m_buffers.sensorBuffer().buffer,
-                                        m_buffers.outputBuffer().buffer))
+  if(!m_overlayPipeline.ensureResources(sceneDescriptorSetLayout,
+                                        previewPipeline,
+                                        m_buffers.sensorMetadataBuffer().buffer,
+                                        m_buffers.generatedSamplesBuffer().buffer))
   {
     return;
   }
@@ -249,19 +253,21 @@ void HeightScanPass::recordOverlay(const VkCommandBuffer& cmdBuf,
                                                                   std::numeric_limits<uint32_t>::max())));
 }
 
-void HeightScanPass::uploadSensorMetadata()
+void HeightScanPass::uploadSensorMetadataToGpu()
 {
-  if(m_buffers.sensorBuffer().buffer == VK_NULL_HANDLE || m_gpuSensors.empty() || m_allocator == nullptr)
+  if(m_buffers.sensorMetadataBuffer().buffer == VK_NULL_HANDLE || m_gpuSensorMetadata.empty() ||
+     m_allocator == nullptr)
   {
     return;
   }
-  void* mapped = m_allocator->map(m_buffers.sensorBuffer());
+  void* mapped = m_allocator->map(m_buffers.sensorMetadataBuffer());
   if(mapped == nullptr)
   {
     return;
   }
-  std::memcpy(mapped, m_gpuSensors.data(), m_gpuSensors.size() * sizeof(HeightScanSensorGpu));
-  m_allocator->unmap(m_buffers.sensorBuffer());
+  std::memcpy(mapped, m_gpuSensorMetadata.data(),
+              m_gpuSensorMetadata.size() * sizeof(HeightScanSensorGpu));
+  m_allocator->unmap(m_buffers.sensorMetadataBuffer());
 }
 
 std::vector<HeightScanSensorGpu> HeightScanPass::buildGpuSensorMetadata() const
@@ -270,7 +276,7 @@ std::vector<HeightScanSensorGpu> HeightScanPass::buildGpuSensorMetadata() const
   result.reserve(m_layout.sensors.size());
   for(const HeightScanSensorMetadata& metadata : m_layout.sensors)
   {
-    if(metadata.sensorIndex >= m_sensors.size() ||
+    if(metadata.sensorIndex >= m_configuredSensors.size() ||
        metadata.sampleOffset > std::numeric_limits<uint32_t>::max() ||
        metadata.sampleCount > std::numeric_limits<uint32_t>::max() ||
        metadata.sampleOffset + metadata.sampleCount >
@@ -279,7 +285,7 @@ std::vector<HeightScanSensorGpu> HeightScanPass::buildGpuSensorMetadata() const
       return {};
     }
 
-    const HeightScanSensorSpec& sensor = m_sensors[metadata.sensorIndex];
+    const HeightScanSensorSpec& sensor = m_configuredSensors[metadata.sensorIndex];
     const HeightScanBasis basis = BuildHeightScanBasis(sensor);
     const float uStart = sanitizeRangeValue(sensor.params.uStart, sensor.params.uEnd);
     const float uEnd = sanitizeRangeValue(sensor.params.uEnd, sensor.params.uStart);
@@ -310,7 +316,10 @@ void HeightScanPass::destroyBuffers()
 
 bool HeightScanPass::currentLayoutGenerated() const
 {
-  return m_frameGenerated && !m_layout.empty() && m_gpuSensors.size() == m_layout.sensors.size() &&
-         m_buffers.outputBuffer().buffer != VK_NULL_HANDLE && m_buffers.sensorBuffer().buffer != VK_NULL_HANDLE &&
-         m_buffers.outputCapacity() >= m_layout.totalSampleCount && m_buffers.sensorCapacity() >= m_gpuSensors.size();
+  return m_frameGenerated && !m_layout.empty() &&
+         m_gpuSensorMetadata.size() == m_layout.sensors.size() &&
+         m_buffers.generatedSamplesBuffer().buffer != VK_NULL_HANDLE &&
+         m_buffers.sensorMetadataBuffer().buffer != VK_NULL_HANDLE &&
+         m_buffers.generatedSampleCapacity() >= m_layout.totalSampleCount &&
+         m_buffers.sensorMetadataCapacity() >= m_gpuSensorMetadata.size();
 }

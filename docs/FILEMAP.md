@@ -199,9 +199,9 @@ call sites with `rg`.
   basis, beam direction, and per-sensor layout helpers.
 - `engine/features/lidar/lidar_point_cloud_pass.hpp` /
   `engine/features/lidar/lidar_point_cloud_pass.cpp`: LiDAR output
-  coordinator owning sensors, visualization config, global point buffer,
-  sensor metadata buffer, CPU readback, Vulkan RT point generation, and overlay
-  pass orchestration.
+  coordinator owning configured sensor specs, visualization config, GPU sensor
+  metadata, generated point samples buffer, CPU readback, Vulkan RT point
+  generation, and overlay pass orchestration.
 - `engine/features/lidar/lidar_point_generation_pipeline.hpp` /
   `engine/features/lidar/lidar_point_generation_pipeline.cpp`: Compute
   pipeline that binds the scene TLAS and traces one ray query per LiDAR beam
@@ -215,10 +215,10 @@ call sites with `rg`.
   `engine/features/sensor_common/sensor_generation_pipeline.cpp`,
   `engine/features/sensor_common/sensor_gpu_buffers.hpp`, and
   `engine/features/sensor_common/sensor_readback.hpp`: Shared Vulkan mechanics
-  for LiDAR and height-scan generation: TLAS/metadata/output compute descriptor
-  setup, buffer capacity management, and staging readback. Sensor metadata,
-  CPU frame conversion, and visualization policy remain in the LiDAR and
-  height-scan passes.
+  for LiDAR and height-scan generation: TLAS, sensor-metadata, and generated
+  samples compute descriptor setup, buffer capacity management, and staging
+  readback. Sensor metadata construction, CPU frame conversion, and
+  visualization policy remain in the LiDAR and height-scan passes.
 - `engine/include/engine/height_scan_types.hpp`: Public Hydra-free height scan
   sensor pose/params, sample, per-sensor grid, and frame readback contract.
 - `engine/features/height_scan/height_scan.hpp` /
@@ -235,9 +235,9 @@ call sites with `rg`.
   height scan grid sample.
 - `engine/features/height_scan/height_scan_pass.hpp` /
   `engine/features/height_scan/height_scan_pass.cpp`: Height scan output
-  coordinator owning sensors, visualization config, GPU metadata, sample
-  buffers, Vulkan RT generation, preview overlay orchestration, and CPU
-  readback frames.
+  coordinator owning configured sensor specs, visualization config, GPU sensor
+  metadata, generated sample buffer, Vulkan RT generation, preview overlay
+  orchestration, and CPU readback frames.
 - `engine/src/scene/engine_scene.cpp`: `Engine` scene facade
   implementation for mesh-source and texture upload, instance/geometry runtime
   updates, material/light updates, scene queries, RT TLAS lifecycle/query
@@ -286,10 +286,10 @@ call sites with `rg`.
   variants for multiview tile rendering.
 - `engine/features/lidar/shaders/lidar_points.comp`: Active Vulkan RT LiDAR compute
   shader; performs one ray query against the scene TLAS per beam and writes the
-  global LiDAR point buffer.
+  generated LiDAR point samples buffer.
 - `engine/features/height_scan/shaders/height_scan.comp`: Active Vulkan RT height scan
   compute shader; traces only TLAS instances carrying the ground trace mask and
-  writes height scan sample buffers for CPU readback.
+  writes the generated height scan sample buffer for CPU readback.
 - `engine/features/lidar/shaders/lidar_overlay.vert` /
   `engine/features/lidar/shaders/lidar_overlay.frag`: Preview point overlay shaders for
   valid LiDAR hits.

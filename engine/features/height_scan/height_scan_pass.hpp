@@ -40,7 +40,7 @@ public:
                      const PreviewPipeline& previewPipeline);
 
 private:
-  void uploadSensorMetadata();
+  void uploadSensorMetadataToGpu();
   std::vector<HeightScanSensorGpu> buildGpuSensorMetadata() const;
   void destroyBuffers();
   bool currentLayoutGenerated() const;
@@ -51,14 +51,14 @@ private:
   nvvk::ResourceAllocatorDma* m_allocator{nullptr};
   nvvk::DebugUtil* m_debug{nullptr};
 
-  std::vector<HeightScanSensorSpec> m_sensors;
+  std::vector<HeightScanSensorSpec> m_configuredSensors;
   HeightScanLayout m_layout;
   uint64_t m_frameId{0};
   bool m_frameGenerated{false};
   HeightScanVisualizationConfig m_visualizationConfig;
 
   SensorGpuBuffers m_buffers;
-  std::vector<HeightScanSensorGpu> m_gpuSensors;
+  std::vector<HeightScanSensorGpu> m_gpuSensorMetadata;
 
   HeightScanGenerationPipeline m_generationPipeline;
   PointOverlayPipeline m_overlayPipeline;

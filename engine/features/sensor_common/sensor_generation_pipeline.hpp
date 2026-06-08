@@ -22,13 +22,17 @@ public:
   void setup(VkDevice device, nvvk::DebugUtil& debug, SensorGenerationPipelineConfig config);
   void destroy();
 
-  bool ensureResources(const TlasDescriptorInfo& tlasInfo, VkBuffer sensorBuffer, VkBuffer outputBuffer);
+  bool ensureResources(const TlasDescriptorInfo& tlasInfo,
+                       VkBuffer sensorMetadataBuffer,
+                       VkBuffer generatedSamplesBuffer);
   void dispatch(const VkCommandBuffer& cmdBuf, const void* pushConstant, uint32_t width, uint32_t height);
 
 private:
   void createDescriptorResources();
   void createPipeline();
-  void updateDescriptorSet(const TlasDescriptorInfo& tlasInfo, VkBuffer sensorBuffer, VkBuffer outputBuffer);
+  void updateDescriptorSet(const TlasDescriptorInfo& tlasInfo,
+                           VkBuffer sensorMetadataBuffer,
+                           VkBuffer generatedSamplesBuffer);
 
   VkDevice m_device{VK_NULL_HANDLE};
   nvvk::DebugUtil* m_debug{nullptr};
@@ -42,6 +46,6 @@ private:
   VkPipelineLayout m_pipelineLayout{VK_NULL_HANDLE};
   VkPipeline m_pipeline{VK_NULL_HANDLE};
   VkAccelerationStructureKHR m_boundTlas{VK_NULL_HANDLE};
-  VkBuffer m_boundSensorBuffer{VK_NULL_HANDLE};
-  VkBuffer m_boundOutputBuffer{VK_NULL_HANDLE};
+  VkBuffer m_boundSensorMetadataBuffer{VK_NULL_HANDLE};
+  VkBuffer m_boundGeneratedSamplesBuffer{VK_NULL_HANDLE};
 };

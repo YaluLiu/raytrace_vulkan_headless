@@ -35,8 +35,8 @@ void SensorGenerationPipeline::destroy()
   m_descriptorSetLayout = VK_NULL_HANDLE;
   m_descriptorSet = VK_NULL_HANDLE;
   m_boundTlas = VK_NULL_HANDLE;
-  m_boundSensorBuffer = VK_NULL_HANDLE;
-  m_boundOutputBuffer = VK_NULL_HANDLE;
+  m_boundSensorMetadataBuffer = VK_NULL_HANDLE;
+  m_boundGeneratedSamplesBuffer = VK_NULL_HANDLE;
   m_device = VK_NULL_HANDLE;
   m_debug = nullptr;
   m_debugLabel.clear();
@@ -45,11 +45,12 @@ void SensorGenerationPipeline::destroy()
 }
 
 bool SensorGenerationPipeline::ensureResources(const TlasDescriptorInfo& tlasInfo,
-                                               VkBuffer sensorBuffer,
-                                               VkBuffer outputBuffer)
+                                               VkBuffer sensorMetadataBuffer,
+                                               VkBuffer generatedSamplesBuffer)
 {
   if(m_device == VK_NULL_HANDLE || tlasInfo.accelerationStructure == VK_NULL_HANDLE ||
-     sensorBuffer == VK_NULL_HANDLE || outputBuffer == VK_NULL_HANDLE || m_shaderSpvPath.empty())
+     sensorMetadataBuffer == VK_NULL_HANDLE || generatedSamplesBuffer == VK_NULL_HANDLE ||
+     m_shaderSpvPath.empty())
   {
     return false;
   }
@@ -61,10 +62,11 @@ bool SensorGenerationPipeline::ensureResources(const TlasDescriptorInfo& tlasInf
   {
     createPipeline();
   }
-  if(m_boundTlas != tlasInfo.accelerationStructure || m_boundSensorBuffer != sensorBuffer ||
-     m_boundOutputBuffer != outputBuffer)
+  if(m_boundTlas != tlasInfo.accelerationStructure ||
+     m_boundSensorMetadataBuffer != sensorMetadataBuffer ||
+     m_boundGeneratedSamplesBuffer != generatedSamplesBuffer)
   {
-    updateDescriptorSet(tlasInfo, sensorBuffer, outputBuffer);
+    updateDescriptorSet(tlasInfo, sensorMetadataBuffer, generatedSamplesBuffer);
   }
   return m_descriptorSet != VK_NULL_HANDLE && m_pipeline != VK_NULL_HANDLE && m_pipelineLayout != VK_NULL_HANDLE;
 }
@@ -144,16 +146,16 @@ void SensorGenerationPipeline::createPipeline()
 }
 
 void SensorGenerationPipeline::updateDescriptorSet(const TlasDescriptorInfo& tlasInfo,
-                                                   VkBuffer sensorBuffer,
-                                                   VkBuffer outputBuffer)
+                                                   VkBuffer sensorMetadataBuffer,
+                                                   VkBuffer generatedSamplesBuffer)
 {
   VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure{
       VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
   accelerationStructure.accelerationStructureCount = 1;
   accelerationStructure.pAccelerationStructures = &tlasInfo.accelerationStructure;
 
-  VkDescriptorBufferInfo sensors{sensorBuffer, 0, VK_WHOLE_SIZE};
-  VkDescriptorBufferInfo output{outputBuffer, 0, VK_WHOLE_SIZE};
+  VkDescriptorBufferInfo sensorMetadataInfo{sensorMetadataBuffer, 0, VK_WHOLE_SIZE};
+  VkDescriptorBufferInfo generatedSamplesInfo{generatedSamplesBuffer, 0, VK_WHOLE_SIZE};
 
   std::vector<VkWriteDescriptorSet> writes;
   VkWriteDescriptorSet tlasWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -163,11 +165,11 @@ void SensorGenerationPipeline::updateDescriptorSet(const TlasDescriptorInfo& tla
   tlasWrite.descriptorCount = 1;
   tlasWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   writes.emplace_back(tlasWrite);
-  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 1, &sensors));
-  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 2, &output));
+  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 1, &sensorMetadataInfo));
+  writes.emplace_back(m_bindings.makeWrite(m_descriptorSet, 2, &generatedSamplesInfo));
   vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 
   m_boundTlas = tlasInfo.accelerationStructure;
-  m_boundSensorBuffer = sensorBuffer;
-  m_boundOutputBuffer = outputBuffer;
+  m_boundSensorMetadataBuffer = sensorMetadataBuffer;
+  m_boundGeneratedSamplesBuffer = generatedSamplesBuffer;
 }

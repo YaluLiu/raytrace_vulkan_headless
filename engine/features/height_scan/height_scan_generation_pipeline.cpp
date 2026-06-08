@@ -17,10 +17,10 @@ void HeightScanGenerationPipeline::destroy()
 }
 
 bool HeightScanGenerationPipeline::ensureResources(const TlasDescriptorInfo& tlasInfo,
-                                                   VkBuffer sensorBuffer,
+                                                   VkBuffer sensorMetadataBuffer,
                                                    VkBuffer sampleBuffer)
 {
-  return m_pipeline.ensureResources(tlasInfo, sensorBuffer, sampleBuffer);
+  return m_pipeline.ensureResources(tlasInfo, sensorMetadataBuffer, sampleBuffer);
 }
 
 void HeightScanGenerationPipeline::dispatch(const VkCommandBuffer& cmdBuf,

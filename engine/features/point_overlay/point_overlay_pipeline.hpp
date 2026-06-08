@@ -26,18 +26,18 @@ public:
 
   bool ensureResources(VkDescriptorSetLayout sceneDescriptorSetLayout,
                        const PreviewPipeline& previewPipeline,
-                       VkBuffer sensorBuffer,
-                       VkBuffer pointBuffer);
+                       VkBuffer sensorMetadataBuffer,
+                       VkBuffer generatedSamplesBuffer);
   void draw(const VkCommandBuffer& cmdBuf,
             const PreviewPipeline& previewPipeline,
             VkDescriptorSet sceneDescriptorSet,
             uint32_t sensorIndex,
-            float pointSizePixels,
+            float overlayPointSizePixels,
             uint32_t vertexCount);
 
 private:
   void createDescriptorResources();
-  void updateDescriptorSet(VkBuffer sensorBuffer, VkBuffer pointBuffer);
+  void updateDescriptorSet(VkBuffer sensorMetadataBuffer, VkBuffer generatedSamplesBuffer);
   void createRenderPass();
   void createFramebuffer(const PreviewPipeline& previewPipeline);
   void createGraphicsPipeline();
@@ -58,6 +58,6 @@ private:
   VkFormat m_colorFormat{VK_FORMAT_UNDEFINED};
   VkFormat m_depthAttachmentFormat{VK_FORMAT_UNDEFINED};
   VkExtent2D m_extent{0, 0};
-  VkBuffer m_boundSensorBuffer{VK_NULL_HANDLE};
-  VkBuffer m_boundPointBuffer{VK_NULL_HANDLE};
+  VkBuffer m_boundSensorMetadataBuffer{VK_NULL_HANDLE};
+  VkBuffer m_boundGeneratedSamplesBuffer{VK_NULL_HANDLE};
 };
