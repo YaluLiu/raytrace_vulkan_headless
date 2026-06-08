@@ -14,8 +14,8 @@ struct TileConfig
   bool     enabled = false;
   bool     colorEnabled = true;
   bool     depthEnabled = true;
-  uint32_t cameraWidth = 1920;
-  uint32_t cameraHeight = 1080;
+  uint32_t tilePixelWidth = 1920;
+  uint32_t tilePixelHeight = 1080;
   uint32_t gridColumns = 10;
   uint32_t gridRows = 10;
 };

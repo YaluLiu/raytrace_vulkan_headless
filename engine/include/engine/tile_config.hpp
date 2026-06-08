@@ -45,21 +45,21 @@ struct TileAtlasConfig {
   bool enabled = false;
   bool colorEnabled = true;
   bool depthEnabled = true;
-  uint32_t cameraWidth = 1920;
-  uint32_t cameraHeight = 1080;
+  uint32_t tilePixelWidth = 1920;
+  uint32_t tilePixelHeight = 1080;
   uint32_t gridColumns = 10;
   uint32_t gridRows = 10;
 
   void sanitize() {
-    cameraWidth = std::max<uint32_t>(cameraWidth, 1);
-    cameraHeight = std::max<uint32_t>(cameraHeight, 1);
+    tilePixelWidth = std::max<uint32_t>(tilePixelWidth, 1);
+    tilePixelHeight = std::max<uint32_t>(tilePixelHeight, 1);
     gridColumns = std::max<uint32_t>(gridColumns, 1);
     gridRows = std::max<uint32_t>(gridRows, 1);
   }
 
-  VkExtent2D tileExtent() const { return {cameraWidth, cameraHeight}; }
+  VkExtent2D tileExtent() const { return {tilePixelWidth, tilePixelHeight}; }
   VkExtent2D atlasExtent() const {
-    return {cameraWidth * gridColumns, cameraHeight * gridRows};
+    return {tilePixelWidth * gridColumns, tilePixelHeight * gridRows};
   }
   uint32_t capacity() const { return gridColumns * gridRows; }
   TileAovChannelMask enabledChannels() const {
@@ -82,8 +82,8 @@ struct TileAtlasConfig {
 
   bool operator==(const TileAtlasConfig &rhs) const {
     return enabled == rhs.enabled && colorEnabled == rhs.colorEnabled && depthEnabled == rhs.depthEnabled &&
-           cameraWidth == rhs.cameraWidth &&
-           cameraHeight == rhs.cameraHeight && gridColumns == rhs.gridColumns &&
+           tilePixelWidth == rhs.tilePixelWidth &&
+           tilePixelHeight == rhs.tilePixelHeight && gridColumns == rhs.gridColumns &&
            gridRows == rhs.gridRows;
   }
 

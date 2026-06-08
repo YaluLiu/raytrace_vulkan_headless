@@ -177,8 +177,8 @@ call sites with `rg`.
   export backing, dynamic frame-uniform descriptor binding, and draw command
   recording.
 - `engine/include/engine/tile_config.hpp`: Pure engine tile output configuration contract,
-  including enable flag, per-camera tile size, grid dimensions, and positive
-  value normalization.
+  including enable flag, per-tile pixel dimensions, grid dimensions, and
+  positive value normalization.
 - `engine/features/tile/tile_aov_channel.hpp` / `engine/features/tile/tile_aov_channel.cpp`: Single-channel
   tile atlas output resource used by the multiview path; owns one atlas image,
   optional external-memory export, and layered image copies into row-major tile
@@ -339,8 +339,10 @@ call sites with `rg`.
 - `hdRobot/renderParam.h` / `hdRobot/renderParam.cpp`: Shared Hydra render
   parameter object for render settings only. Internal bridge/config types such
   as `RenderParam`, `TileConfig`, and visualization configs live in
-  `pxr::hdrobot`; the class does not own the scene-store table or texture
-  registry.
+  `pxr::hdrobot`; tile dimensions use `tilePixelWidth`/`tilePixelHeight` even
+  though compatibility render setting tokens remain `hdRobot:tile:cameraWidth`
+  and `hdRobot:tile:cameraHeight`. The class does not own the scene-store table
+  or texture registry.
 - `hdRobot/backendHandles.h`: Stable generation handles for backend mesh,
   material, light, camera, LiDAR sensor, and height scan sensor records under
   `pxr::hdrobot`.

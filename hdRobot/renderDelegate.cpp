@@ -86,9 +86,9 @@ HdRenderSettingDescriptorList CreateRenderSettingDescriptors()
       HdRenderSettingDescriptor{"Enable tile depth output", HdRobotRenderSettingTokens->tileDepthEnabled,
                                 VtValue(defaults.depthEnabled)},
       HdRenderSettingDescriptor{"Tile camera width", HdRobotRenderSettingTokens->tileCameraWidth,
-                                VtValue(static_cast<int>(defaults.cameraWidth))},
+                                VtValue(static_cast<int>(defaults.tilePixelWidth))},
       HdRenderSettingDescriptor{"Tile camera height", HdRobotRenderSettingTokens->tileCameraHeight,
-                                VtValue(static_cast<int>(defaults.cameraHeight))},
+                                VtValue(static_cast<int>(defaults.tilePixelHeight))},
       HdRenderSettingDescriptor{"Tile grid columns", HdRobotRenderSettingTokens->tileGridColumns,
                                 VtValue(static_cast<int>(defaults.gridColumns))},
       HdRenderSettingDescriptor{"Tile grid rows", HdRobotRenderSettingTokens->tileGridRows,
@@ -149,10 +149,10 @@ TileConfig ReadTileConfig(const HdRenderDelegate &delegate)
       delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileColorEnabled, config.colorEnabled);
   config.depthEnabled =
       delegate.GetRenderSetting<bool>(HdRobotRenderSettingTokens->tileDepthEnabled, config.depthEnabled);
-  config.cameraWidth =
-      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraWidth, config.cameraWidth);
-  config.cameraHeight =
-      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraHeight, config.cameraHeight);
+  config.tilePixelWidth =
+      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraWidth, config.tilePixelWidth);
+  config.tilePixelHeight =
+      GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileCameraHeight, config.tilePixelHeight);
   config.gridColumns =
       GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileGridColumns, config.gridColumns);
   config.gridRows = GetPositiveRenderSetting(delegate, HdRobotRenderSettingTokens->tileGridRows, config.gridRows);

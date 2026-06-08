@@ -79,11 +79,11 @@ void Engine::saveOffscreenColorToFile(const char* filename)
   const VkExtent2D     extent       = previewPipeline.getRenderSize();
   const nvvk::Texture& colorTexture = previewPipeline.getColorTextureForReadback();
   VkImage              srcImage     = colorTexture.image;
-  uint32_t   w         = extent.width;
-  uint32_t   h         = extent.height;
+  uint32_t   imageWidth = extent.width;
+  uint32_t   imageHeight = extent.height;
   size_t     pixelSize = 4 * sizeof(float);  // VK_FORMAT_R32G32B32A32_SFLOAT
 
-  VkDeviceSize imageSize = w * h * pixelSize;
+  VkDeviceSize imageSize = imageWidth * imageHeight * pixelSize;
 
   VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   bufferInfo.size        = imageSize;
@@ -126,7 +126,7 @@ void Engine::saveOffscreenColorToFile(const char* filename)
   region.imageSubresource.baseArrayLayer = 0;
   region.imageSubresource.layerCount     = 1;
   region.imageOffset                     = {0, 0, 0};
-  region.imageExtent                     = {w, h, 1};
+  region.imageExtent                     = {imageWidth, imageHeight, 1};
 
   vkCmdCopyImageToBuffer(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer, 1, &region);
 
@@ -141,10 +141,10 @@ void Engine::saveOffscreenColorToFile(const char* filename)
   void* data = nullptr;
   vkMapMemory(device, stagingMemory, 0, imageSize, 0, &data);
 
-  std::vector<uint8_t> imageData(w * h * 4);
+  std::vector<uint8_t> imageData(imageWidth * imageHeight * 4);
   float*               src = reinterpret_cast<float*>(data);
 
-  for(uint32_t i = 0; i < w * h; ++i)
+  for(uint32_t i = 0; i < imageWidth * imageHeight; ++i)
   {
     float r              = src[i * 4 + 0];
     float g              = src[i * 4 + 1];
@@ -158,7 +158,7 @@ void Engine::saveOffscreenColorToFile(const char* filename)
 
   vkUnmapMemory(device, stagingMemory);
 
-  stbi_write_png(filename, w, h, 4, imageData.data(), w * 4);
+  stbi_write_png(filename, imageWidth, imageHeight, 4, imageData.data(), imageWidth * 4);
 
   vkFreeMemory(device, stagingMemory, nullptr);
   vkDestroyBuffer(device, stagingBuffer, nullptr);

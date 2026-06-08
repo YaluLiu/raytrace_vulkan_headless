@@ -14,7 +14,7 @@
 struct MainViewState
 {
   glm::mat4 view{1.0f};
-  float vfovDeg{45.0f};
+  float verticalFovDegrees{45.0f};
   float clipStart{0.1f};
   float clipEnd{1000.0f};
 };

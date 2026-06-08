@@ -59,7 +59,9 @@ draws. Tile output does not save tile color or tile depth files locally; Hydra
 consumes the atlas through tile AOV render buffers.
 
 The atlas size is controlled only by tile configuration:
-`tileCameraWidth * gridColumns` by `tileCameraHeight * gridRows`.
+`tilePixelWidth * gridColumns` by `tilePixelHeight * gridRows`. Hydra render
+setting tokens keep the existing `hdRobot:tile:cameraWidth` and
+`hdRobot:tile:cameraHeight` names for compatibility.
 
 LiDAR output is a sensor-specific point-cloud contract, not a `Aov`.
 Hydra forwards sorted LiDAR sensors and visualization settings to

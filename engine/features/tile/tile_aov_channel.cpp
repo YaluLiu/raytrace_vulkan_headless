@@ -164,9 +164,9 @@ VkRect2D TileAovChannelAtlas::getTileRect(uint32_t tileIndex) const
   const uint32_t column = tileIndex % m_config.gridColumns;
   const uint32_t row = tileIndex / m_config.gridColumns;
   VkRect2D rect{};
-  rect.offset = {static_cast<int32_t>(column * m_config.cameraWidth),
-                 static_cast<int32_t>(row * m_config.cameraHeight)};
-  rect.extent = {m_config.cameraWidth, m_config.cameraHeight};
+  rect.offset = {static_cast<int32_t>(column * m_config.tilePixelWidth),
+                 static_cast<int32_t>(row * m_config.tilePixelHeight)};
+  rect.extent = {m_config.tilePixelWidth, m_config.tilePixelHeight};
   return rect;
 }
 

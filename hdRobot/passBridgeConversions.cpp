@@ -121,8 +121,8 @@ void ConvertHydraMeshToGeometry(const HydraMesh &mesh, ::MeshGeometry &geometry)
   result.position = camera.position;
   result.forward = camera.forward;
   result.up = camera.up;
-  result.vfov_deg = camera.vfov_deg;
-  result.hfov_deg = camera.hfov_deg;
+  result.verticalFovDegrees = camera.verticalFovDegrees;
+  result.horizontalFovDegrees = camera.horizontalFovDegrees;
   result.clipStart = camera.clipStart;
   result.clipEnd = camera.clipEnd;
   result.conformPolicy = camera.conformPolicy;
@@ -260,8 +260,8 @@ std::vector<::HeightScanSensorSpec> ToHeightScanSensorSpec(
   result.enabled = config.enabled;
   result.colorEnabled = config.colorEnabled;
   result.depthEnabled = config.depthEnabled;
-  result.cameraWidth = config.cameraWidth;
-  result.cameraHeight = config.cameraHeight;
+  result.tilePixelWidth = config.tilePixelWidth;
+  result.tilePixelHeight = config.tilePixelHeight;
   result.gridColumns = config.gridColumns;
   result.gridRows = config.gridRows;
   result.sanitize();

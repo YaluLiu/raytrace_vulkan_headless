@@ -96,19 +96,19 @@ void Engine::setPluginSearchRoot(std::string pluginSearchRoot)
   engine::EngineAccess::impl(*this).pluginSearchRoot = std::move(pluginSearchRoot);
 }
 
-void Engine::resize(int w, int h)
+void Engine::resize(int width, int height)
 {
-  if(w <= 0 || h <= 0)
+  if(width <= 0 || height <= 0)
   {
     return;
   }
 
   auto& impl = engine::EngineAccess::impl(*this);
-  impl.width = w;
-  impl.height = h;
+  impl.width = width;
+  impl.height = height;
   CameraManip.setWindowSize(impl.width, impl.height);
   syncMainViewStateFromCameraManip(impl);
-  onResize(w, h);
+  onResize(width, height);
 }
 
 void Engine::setupContext()

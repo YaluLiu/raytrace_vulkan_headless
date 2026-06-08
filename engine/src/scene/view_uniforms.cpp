@@ -14,7 +14,7 @@ struct ResolvedCamera
   glm::vec3 position{0.0f};
   glm::vec3 target{0.0f, 0.0f, -1.0f};
   glm::vec3 up{0.0f, 1.0f, 0.0f};
-  float vfovDeg{45.0f};
+  float verticalFovDegrees{45.0f};
   float clipStart{0.1f};
   float clipEnd{1000.0f};
 };
@@ -53,7 +53,7 @@ ResolvedCamera resolveCamera(const CameraSpec& camera)
   }
 
   resolved.target = resolved.position + forward;
-  resolved.vfovDeg = std::clamp(camera.vfov_deg, 1.0f, 179.0f);
+  resolved.verticalFovDegrees = std::clamp(camera.verticalFovDegrees, 1.0f, 179.0f);
   const auto [clipStart, clipEnd] = sanitizeClipRange(camera.clipStart, camera.clipEnd);
   resolved.clipStart = clipStart;
   resolved.clipEnd = clipEnd;
@@ -130,7 +130,7 @@ void recordTileFrameUniformUpdate(const VkCommandBuffer& cmdBuf, VkBuffer device
 CameraSpec makeProjectionCamera(const MainViewState& state)
 {
   CameraSpec camera;
-  camera.vfov_deg = state.vfovDeg;
+  camera.verticalFovDegrees = state.verticalFovDegrees;
   camera.clipStart = state.clipStart;
   camera.clipEnd = state.clipEnd;
   return camera;
@@ -254,7 +254,7 @@ void ViewUniforms::updateTileFrameUniformBufferForBatch(const VkCommandBuffer& c
     const auto resolved = resolveCamera(camera);
     const glm::mat4 view = glm::lookAtRH(resolved.position, resolved.target, resolved.up);
     CameraSpec projectionCamera = camera;
-    projectionCamera.vfov_deg = resolved.vfovDeg;
+    projectionCamera.verticalFovDegrees = resolved.verticalFovDegrees;
     projectionCamera.clipStart = resolved.clipStart;
     projectionCamera.clipEnd = resolved.clipEnd;
     const auto frameUBO = makeFrameUniforms(view, projectionCamera, tileExtent, lightCount);
@@ -271,7 +271,7 @@ void ViewUniforms::setCameras(std::vector<CameraSpec> cameras)
 
 void ViewUniforms::setMainViewState(MainViewState state)
 {
-  state.vfovDeg = std::clamp(state.vfovDeg, 1.0f, 179.0f);
+  state.verticalFovDegrees = std::clamp(state.verticalFovDegrees, 1.0f, 179.0f);
   const auto [clipStart, clipEnd] = sanitizeClipRange(state.clipStart, state.clipEnd);
   state.clipStart = clipStart;
   state.clipEnd = clipEnd;
@@ -283,7 +283,7 @@ void ViewUniforms::setMainCamera(const CameraSpec& camera)
   const ResolvedCamera resolved = resolveCamera(camera);
   setMainViewState(MainViewState{
       glm::lookAtRH(resolved.position, resolved.target, resolved.up),
-      resolved.vfovDeg,
+      resolved.verticalFovDegrees,
       resolved.clipStart,
       resolved.clipEnd,
   });

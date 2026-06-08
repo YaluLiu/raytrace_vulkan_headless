@@ -15,7 +15,7 @@ struct ResolvedMainCamera
   glm::vec3 position{0.0f};
   glm::vec3 target{0.0f, 0.0f, -1.0f};
   glm::vec3 up{0.0f, 1.0f, 0.0f};
-  float vfovDeg{45.0f};
+  float verticalFovDegrees{45.0f};
 };
 
 ResolvedMainCamera resolveMainCameraForManipulator(const CameraSpec& camera)
@@ -36,7 +36,7 @@ ResolvedMainCamera resolveMainCameraForManipulator(const CameraSpec& camera)
   }
 
   resolved.target = resolved.position + forward;
-  resolved.vfovDeg = std::clamp(camera.vfov_deg, 1.0f, 179.0f);
+  resolved.verticalFovDegrees = std::clamp(camera.verticalFovDegrees, 1.0f, 179.0f);
   return resolved;
 }
 } // namespace
@@ -163,10 +163,10 @@ void Engine::setMainCamera(const CameraSpec& camera)
   auto& impl = engine::EngineAccess::impl(*this);
   const auto resolved = resolveMainCameraForManipulator(camera);
   CameraSpec projectionCamera = camera;
-  projectionCamera.vfov_deg = resolved.vfovDeg;
+  projectionCamera.verticalFovDegrees = resolved.verticalFovDegrees;
   const VkExtent2D renderSize = impl.sizeRef();
-  const float effectiveVfovDeg = ComputeVerticalFovForRenderTarget(projectionCamera, renderSize);
-  CameraManip.setCamera({resolved.position, resolved.target, resolved.up, effectiveVfovDeg});
+  const float effectiveVerticalFovDegrees = ComputeVerticalFovForRenderTarget(projectionCamera, renderSize);
+  CameraManip.setCamera({resolved.position, resolved.target, resolved.up, effectiveVerticalFovDegrees});
   impl.viewUniforms.setMainCamera(camera);
 }
 
@@ -188,7 +188,7 @@ uint32_t Engine::getTileMultiviewMaxViewCount() const
   return impl.outputController.getTileMultiviewMaxViewCount();
 }
 
-void Engine::onResize(int w, int h)
+void Engine::onResize(int width, int height)
 {
-  engine::resizeRenderTargets(*this, w, h);
+  engine::resizeRenderTargets(*this, width, height);
 }

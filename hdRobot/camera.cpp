@@ -69,25 +69,26 @@ CameraData HdRobotComputeCameraData(const HdCamera& camera)
   const float verticalAperture = camera.GetVerticalAperture() * GfCamera::APERTURE_UNIT;
   const float horizontalAperture = camera.GetHorizontalAperture() * GfCamera::APERTURE_UNIT;
   const float focalLength = camera.GetFocalLength() * GfCamera::FOCAL_LENGTH_UNIT;
-  float       vfovDeg     = data.vfov_deg;
-  float       hfovDeg     = data.hfov_deg;
+  float       verticalFovDegrees   = data.verticalFovDegrees;
+  float       horizontalFovDegrees = data.horizontalFovDegrees;
   if(camera.GetProjection() == HdCamera::Perspective && focalLength > kCameraEpsilon)
   {
-    const float vfov = 2.0f * std::atan(verticalAperture / (2.0f * focalLength));
-    vfovDeg          = glm::degrees(vfov);
-    const float hfov = 2.0f * std::atan(horizontalAperture / (2.0f * focalLength));
-    hfovDeg          = glm::degrees(hfov);
+    const float verticalFov = 2.0f * std::atan(verticalAperture / (2.0f * focalLength));
+    verticalFovDegrees = glm::degrees(verticalFov);
+    const float horizontalFov = 2.0f * std::atan(horizontalAperture / (2.0f * focalLength));
+    horizontalFovDegrees = glm::degrees(horizontalFov);
   }
-  if(!std::isfinite(vfovDeg))
+  if(!std::isfinite(verticalFovDegrees))
   {
-    vfovDeg = 45.0f;
+    verticalFovDegrees = 45.0f;
   }
-  if(!std::isfinite(hfovDeg))
+  if(!std::isfinite(horizontalFovDegrees))
   {
-    hfovDeg = 0.0f;
+    horizontalFovDegrees = 0.0f;
   }
-  data.vfov_deg = std::clamp(vfovDeg, 1.0f, 179.0f);
-  data.hfov_deg = hfovDeg > 0.0f ? std::clamp(hfovDeg, 1.0f, 179.0f) : 0.0f;
+  data.verticalFovDegrees = std::clamp(verticalFovDegrees, 1.0f, 179.0f);
+  data.horizontalFovDegrees =
+      horizontalFovDegrees > 0.0f ? std::clamp(horizontalFovDegrees, 1.0f, 179.0f) : 0.0f;
   data.conformPolicy = ToCameraConformPolicy(camera.GetWindowPolicy());
 
   const GfRange1f clippingRange = camera.GetClippingRange();

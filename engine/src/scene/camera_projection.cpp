@@ -7,17 +7,17 @@
 
 namespace
 {
-constexpr float kDefaultFovDeg = 45.0f;
-constexpr float kMinFovDeg = 1.0f;
-constexpr float kMaxFovDeg = 179.0f;
+constexpr float kDefaultFovDegrees = 45.0f;
+constexpr float kMinFovDegrees = 1.0f;
+constexpr float kMaxFovDegrees = 179.0f;
 
-float clampFov(float fovDeg, float fallback = kDefaultFovDeg)
+float clampFov(float fovDegrees, float fallback = kDefaultFovDegrees)
 {
-  if(!std::isfinite(fovDeg))
+  if(!std::isfinite(fovDegrees))
   {
     return fallback;
   }
-  return std::clamp(fovDeg, kMinFovDeg, kMaxFovDeg);
+  return std::clamp(fovDegrees, kMinFovDegrees, kMaxFovDegrees);
 }
 
 float safeAspect(VkExtent2D renderSize)
@@ -31,7 +31,7 @@ float safeAspect(VkExtent2D renderSize)
 
 bool hasHorizontalFov(const CameraSpec& camera)
 {
-  return std::isfinite(camera.hfov_deg) && camera.hfov_deg > 0.0f;
+  return std::isfinite(camera.horizontalFovDegrees) && camera.horizontalFovDegrees > 0.0f;
 }
 
 CameraConformPolicy resolveFitOrCrop(CameraConformPolicy policy, float sourceAspect, float targetAspect)
@@ -52,14 +52,14 @@ CameraConformPolicy resolveFitOrCrop(CameraConformPolicy policy, float sourceAsp
 
 glm::vec2 computeTanHalfWindow(const CameraSpec& camera, float targetAspect)
 {
-  const float verticalFov = glm::radians(clampFov(camera.vfov_deg));
+  const float verticalFov = glm::radians(clampFov(camera.verticalFovDegrees));
   glm::vec2 tanHalfWindow{std::tan(verticalFov * 0.5f) * targetAspect, std::tan(verticalFov * 0.5f)};
   if(!hasHorizontalFov(camera))
   {
     return tanHalfWindow;
   }
 
-  const float horizontalFov = glm::radians(clampFov(camera.hfov_deg, camera.vfov_deg));
+  const float horizontalFov = glm::radians(clampFov(camera.horizontalFovDegrees, camera.verticalFovDegrees));
   tanHalfWindow.x = std::tan(horizontalFov * 0.5f);
   tanHalfWindow.y = std::tan(verticalFov * 0.5f);
   if(tanHalfWindow.x <= 0.0f || tanHalfWindow.y <= 0.0f)

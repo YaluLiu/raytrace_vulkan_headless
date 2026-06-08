@@ -20,8 +20,8 @@ void RequireNear(const char* label, float actual, float expected, float toleranc
 int main()
 {
   CameraSpec squareFilmback;
-  squareFilmback.vfov_deg = 90.0f;
-  squareFilmback.hfov_deg = 90.0f;
+  squareFilmback.verticalFovDegrees = 90.0f;
+  squareFilmback.horizontalFovDegrees = 90.0f;
   squareFilmback.clipStart = 0.01f;
   squareFilmback.clipEnd = 100.0f;
 
@@ -40,7 +40,7 @@ int main()
   RequireNear("match-vertical y scale", projection[1][1], 1.0f);
 
   CameraSpec legacyVerticalOnly;
-  legacyVerticalOnly.vfov_deg = 90.0f;
+  legacyVerticalOnly.verticalFovDegrees = 90.0f;
   projection = BuildCameraProjection(legacyVerticalOnly, wideTarget);
   RequireNear("legacy x scale", projection[0][0], 9.0f / 16.0f);
   RequireNear("legacy y scale", projection[1][1], 1.0f);
