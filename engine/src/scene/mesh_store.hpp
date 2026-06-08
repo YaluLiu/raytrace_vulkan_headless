@@ -33,7 +33,7 @@ public:
   uint32_t uploadMesh(const VkCommandBuffer& cmdBuf,
                       const MeshGeometry& geometry,
                       std::span<const Material> materials);
-  bool updateGeometry(uint32_t meshId, const MeshGeometry& geometry);
+  bool updateGeometry(uint32_t meshIndex, const MeshGeometry& geometry);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
   void createObjectDescriptionBuffer();
 

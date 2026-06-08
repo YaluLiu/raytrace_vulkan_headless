@@ -22,22 +22,22 @@ void Engine::rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAs
   engine::RenderResourceLifecycle::rebuildTexturesAndSceneBindings(*this, textureAssets);
 }
 
-uint32_t Engine::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
+uint32_t Engine::addInstance(const glm::mat4& transform, uint32_t meshIndex, int externalInstanceId)
 {
   auto& impl = engine::EngineAccess::impl(*this);
-  return impl.gpuScene.addInstance(transform, objIndex, instanceId);
+  return impl.gpuScene.addInstance(transform, meshIndex, externalInstanceId);
 }
 
-void Engine::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask)
+void Engine::updateInstance(uint32_t rendererInstanceIndex, glm::mat4 transform, bool visible, uint32_t traceMask)
 {
   auto& impl = engine::EngineAccess::impl(*this);
-  impl.gpuScene.updateInstance(instanceId, transform, visible, traceMask);
+  impl.gpuScene.updateInstance(rendererInstanceIndex, transform, visible, traceMask);
 }
 
-void Engine::updateMeshGeometry(uint32_t meshId, const MeshGeometry& geometry)
+void Engine::updateMeshGeometry(uint32_t meshIndex, const MeshGeometry& geometry)
 {
   auto& impl = engine::EngineAccess::impl(*this);
-  impl.gpuScene.updateMeshGeometry(meshId, geometry);
+  impl.gpuScene.updateMeshGeometry(meshIndex, geometry);
 }
 
 void Engine::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates)
@@ -70,7 +70,7 @@ InstanceInfo Engine::getInstance(size_t index) const
   const auto& instance = impl.gpuScene.getInstance(index);
   return InstanceInfo{
       instance.transform,
-      instance.objIndex,
+      instance.meshIndex,
       0,
       instance.visible,
   };

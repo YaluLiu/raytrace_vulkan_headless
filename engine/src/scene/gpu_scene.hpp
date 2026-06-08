@@ -30,15 +30,15 @@ public:
              nvvk::DebugUtil& debug);
   void destroy();
 
-  uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
+  uint32_t addInstance(const glm::mat4& transform, uint32_t meshIndex, int externalInstanceId = 0);
   void uploadMesh(const MeshGeometry& geometry,
                   std::span<const Material> materials,
                   glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
   void rebuildTextureResources(const std::vector<TextureAsset>& textureAssets);
 
-  void updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask);
-  void updateMeshGeometry(uint32_t meshId, const MeshGeometry& geometry);
+  void updateInstance(uint32_t rendererInstanceIndex, glm::mat4 transform, bool visible, uint32_t traceMask);
+  void updateMeshGeometry(uint32_t meshIndex, const MeshGeometry& geometry);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
   void createRayTracingResources();
   void destroyRayTracingResources();
@@ -61,7 +61,7 @@ public:
 
   std::span<const MeshBuffers> getMeshBuffers() const { return m_meshStore.buffers(); }
   std::span<const SceneInstance> getInstances() const { return m_instanceStore.instances(); }
-  std::span<const int> getInstanceIds() const { return m_instanceStore.instanceIds(); }
+  std::span<const int> getExternalInstanceIds() const { return m_instanceStore.externalInstanceIds(); }
   std::span<const nvvk::Texture> getTextures() const { return m_textureStore.textures(); }
   const nvvk::Buffer& getObjectDescriptionBuffer() const { return m_meshStore.objectDescriptionBuffer(); }
   const nvvk::Buffer& getLightBuffer() const { return m_lightStore.buffer(); }

@@ -141,7 +141,7 @@ call sites with `rg`.
   rebuilds, and texture descriptor count/span queries.
 - `engine/src/scene/instance_store.hpp` /
   `engine/src/scene/instance_store.cpp`: Owner of renderer instances and
-  external instance ID spans used by preview and tile draw paths.
+  `externalInstanceIds()` spans used by preview and tile draw paths.
 - `engine/src/scene/light_store.hpp` / `engine/src/scene/light_store.cpp`:
   Owner of scene light ABI values plus light storage buffer creation, update,
   and destruction.
@@ -486,8 +486,8 @@ call sites with `rg`.
 - `engine/shaders/common/host_device.h`: Shared host/device structs and constants.
   `FrameUniforms` carries one camera/light-count slot selected by dynamic
   uniform offset; `TileFrameUniforms` carries per-batch multiview tile cameras;
-  `MeshDrawPushConstants` carries per-draw model/object/instance data for the
-  graphics path.
+  `MeshDrawPushConstants` carries per-draw transform, shader object-index ABI,
+  and external instance data for the graphics path.
 - `engine/features/preview/shaders/mesh.vert`: Minimal mesh vertex shader for mesh
   positions, normals, vertex colors, texcoords, tangents, and per-instance
   transform/object metadata.
@@ -653,7 +653,7 @@ call sites with `rg`.
   `hdRobot/instancer.cpp`, `hdRobot/mesh.cpp`,
   `hdRobot/sceneData.cpp`, `hdRobot/passBridge.cpp`, then search
   for `ComputeFlattenedTransforms`, `GetGeomSubsets`, `scene_mat_ids`,
-  `materialIds`, and `rendererInstanceIds`.
+  `materialIds`, and `rendererInstanceIndices`.
 - Render buffer or Hgi texture issues:
   `hdRobot/renderBuffer.cpp`, `hdRobot/renderBuffer.h`, then search for
   `createDesc`, `ConvertToHgiTexture`, `Allocate`, and `GetFormat`.

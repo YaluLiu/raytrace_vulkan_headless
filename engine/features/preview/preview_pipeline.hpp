@@ -29,9 +29,9 @@ public:
 
   void recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                  VkDescriptorSet sceneDescriptorSet,
-                 std::span<const MeshBuffers> objModels,
+                 std::span<const MeshBuffers> meshBuffers,
                  std::span<const SceneInstance> instances,
-                 std::span<const int> instanceIds,
+                 std::span<const int> externalInstanceIds,
                  uint32_t frameUniformOffset = 0);
 
   std::optional<ExportedAovTexture> getAovTexture(Aov aov) const;
@@ -57,9 +57,9 @@ private:
                            VkViewport viewport,
                            VkRect2D scissor,
                            VkDescriptorSet sceneDescriptorSet,
-                           std::span<const MeshBuffers> objModels,
+                           std::span<const MeshBuffers> meshBuffers,
                            std::span<const SceneInstance> instances,
-                           std::span<const int> instanceIds,
+                           std::span<const int> externalInstanceIds,
                            uint32_t frameUniformOffset);
   void createOffscreenImage(nvvk::Texture& texture, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent);
   void createFramebuffer();

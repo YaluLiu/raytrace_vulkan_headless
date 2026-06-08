@@ -71,55 +71,55 @@ uint32_t MeshStore::uploadMesh(const VkCommandBuffer& cmdBuf,
     gpuMaterials.emplace_back(PrepareUploadMaterialForGpu(material));
   }
 
-  MeshBuffers model;
-  model.nbIndices = static_cast<uint32_t>(geometry.indices.size());
-  model.nbVertices = static_cast<uint32_t>(geometry.vertices.size());
-  model.vertexBufferSize = sizeof(MeshVertex) * geometry.vertices.size();
-  model.indexBufferSize = sizeof(uint32_t) * geometry.indices.size();
+  MeshBuffers mesh;
+  mesh.nbIndices = static_cast<uint32_t>(geometry.indices.size());
+  mesh.nbVertices = static_cast<uint32_t>(geometry.vertices.size());
+  mesh.vertexBufferSize = sizeof(MeshVertex) * geometry.vertices.size();
+  mesh.indexBufferSize = sizeof(uint32_t) * geometry.indices.size();
 
   VkBufferUsageFlags deviceAddressFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                           VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-  model.vertexBuffer =
+  mesh.vertexBuffer =
       m_alloc->createBuffer(cmdBuf, geometry.vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | deviceAddressFlags);
-  model.indexBuffer =
+  mesh.indexBuffer =
       m_alloc->createBuffer(cmdBuf, geometry.indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | deviceAddressFlags);
-  model.matColorBuffer = m_alloc->createBuffer(cmdBuf, gpuMaterials, deviceAddressFlags);
-  model.matIndexBuffer = m_alloc->createBuffer(cmdBuf, geometry.materialIndices, deviceAddressFlags);
+  mesh.matColorBuffer = m_alloc->createBuffer(cmdBuf, gpuMaterials, deviceAddressFlags);
+  mesh.matIndexBuffer = m_alloc->createBuffer(cmdBuf, geometry.materialIndices, deviceAddressFlags);
 
-  std::string objNb = std::to_string(m_records.size());
-  m_debug->setObjectName(model.vertexBuffer.buffer, (std::string("vertex_" + objNb)));
-  m_debug->setObjectName(model.indexBuffer.buffer, (std::string("index_" + objNb)));
-  m_debug->setObjectName(model.matColorBuffer.buffer, (std::string("mat_" + objNb)));
-  m_debug->setObjectName(model.matIndexBuffer.buffer, (std::string("matIdx_" + objNb)));
+  std::string meshDebugIndex = std::to_string(m_records.size());
+  m_debug->setObjectName(mesh.vertexBuffer.buffer, (std::string("vertex_" + meshDebugIndex)));
+  m_debug->setObjectName(mesh.indexBuffer.buffer, (std::string("index_" + meshDebugIndex)));
+  m_debug->setObjectName(mesh.matColorBuffer.buffer, (std::string("mat_" + meshDebugIndex)));
+  m_debug->setObjectName(mesh.matIndexBuffer.buffer, (std::string("matIdx_" + meshDebugIndex)));
 
   ObjDesc desc;
   desc.txtOffset = 0;
-  desc.vertexAddress = nvvk::getBufferDeviceAddress(m_device, model.vertexBuffer.buffer);
-  desc.indexAddress = nvvk::getBufferDeviceAddress(m_device, model.indexBuffer.buffer);
-  desc.materialAddress = nvvk::getBufferDeviceAddress(m_device, model.matColorBuffer.buffer);
-  desc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, model.matIndexBuffer.buffer);
+  desc.vertexAddress = nvvk::getBufferDeviceAddress(m_device, mesh.vertexBuffer.buffer);
+  desc.indexAddress = nvvk::getBufferDeviceAddress(m_device, mesh.indexBuffer.buffer);
+  desc.materialAddress = nvvk::getBufferDeviceAddress(m_device, mesh.matColorBuffer.buffer);
+  desc.materialIndexAddress = nvvk::getBufferDeviceAddress(m_device, mesh.matIndexBuffer.buffer);
 
   const uint32_t meshIndex = static_cast<uint32_t>(m_records.size());
-  m_records.emplace_back(MeshRecord{geometry, model, desc});
-  m_buffers.emplace_back(model);
+  m_records.emplace_back(MeshRecord{geometry, mesh, desc});
+  m_buffers.emplace_back(mesh);
   m_objectDescriptions.emplace_back(desc);
   return meshIndex;
 }
 
-bool MeshStore::updateGeometry(uint32_t meshId, const MeshGeometry& geometry)
+bool MeshStore::updateGeometry(uint32_t meshIndex, const MeshGeometry& geometry)
 {
-  if(meshId >= m_records.size() || meshId >= m_buffers.size())
+  if(meshIndex >= m_records.size() || meshIndex >= m_buffers.size())
   {
     return false;
   }
 
-  MeshRecord& record = m_records[meshId];
+  MeshRecord& record = m_records[meshIndex];
   record.geometry = geometry;
 
   std::vector<MeshVertex>& now_vertices = record.geometry.vertices;
   std::vector<uint32_t>& now_indices = record.geometry.indices;
-  MeshBuffers& model = m_buffers[meshId];
+  MeshBuffers& mesh = m_buffers[meshIndex];
 
   nvvk::CommandPool genCmdBuf(m_device, m_graphicsQueueIndex);
   VkCommandBuffer cmdBuf = genCmdBuf.createCommandBuffer();
@@ -135,31 +135,31 @@ bool MeshStore::updateGeometry(uint32_t meshId, const MeshGeometry& geometry)
 
   if(vertexBytes > 0)
   {
-    if(model.vertexBuffer.buffer != VK_NULL_HANDLE && model.vertexBufferSize >= vertexBytes)
+    if(mesh.vertexBuffer.buffer != VK_NULL_HANDLE && mesh.vertexBufferSize >= vertexBytes)
     {
-      m_alloc->getStaging()->cmdToBuffer(cmdBuf, model.vertexBuffer.buffer, 0, vertexBytes, now_vertices.data());
-      AddTransferBarrier(cmdBuf, model.vertexBuffer.buffer, vertexBytes, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+      m_alloc->getStaging()->cmdToBuffer(cmdBuf, mesh.vertexBuffer.buffer, 0, vertexBytes, now_vertices.data());
+      AddTransferBarrier(cmdBuf, mesh.vertexBuffer.buffer, vertexBytes, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
     }
     else
     {
-      m_alloc->destroy(model.vertexBuffer);
-      model.vertexBuffer =
+      m_alloc->destroy(mesh.vertexBuffer);
+      mesh.vertexBuffer =
           m_alloc->createBuffer(cmdBuf, vertexBytes, now_vertices.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | storageFlags);
-      model.vertexBufferSize = vertexBytes;
-      AddTransferBarrier(cmdBuf, model.vertexBuffer.buffer, vertexBytes, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+      mesh.vertexBufferSize = vertexBytes;
+      AddTransferBarrier(cmdBuf, mesh.vertexBuffer.buffer, vertexBytes, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
-      if(meshId < m_objectDescriptions.size())
+      if(meshIndex < m_objectDescriptions.size())
       {
-        m_objectDescriptions[meshId].vertexAddress = nvvk::getBufferDeviceAddress(m_device, model.vertexBuffer.buffer);
-        record.objectDescription = m_objectDescriptions[meshId];
+        m_objectDescriptions[meshIndex].vertexAddress = nvvk::getBufferDeviceAddress(m_device, mesh.vertexBuffer.buffer);
+        record.objectDescription = m_objectDescriptions[meshIndex];
         if(m_objectDescriptionBuffer.buffer != VK_NULL_HANDLE)
         {
-          const VkDeviceSize descOffset = sizeof(ObjDesc) * meshId;
+          const VkDeviceSize descOffset = sizeof(ObjDesc) * meshIndex;
           vkCmdUpdateBuffer(cmdBuf,
                             m_objectDescriptionBuffer.buffer,
                             descOffset,
                             sizeof(ObjDesc),
-                            &m_objectDescriptions[meshId]);
+                            &m_objectDescriptions[meshIndex]);
 
           VkBufferMemoryBarrier descBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
           descBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -174,26 +174,26 @@ bool MeshStore::updateGeometry(uint32_t meshId, const MeshGeometry& geometry)
     }
   }
 
-  const bool indexCountChanged = model.nbIndices != newNbIndices;
+  const bool indexCountChanged = mesh.nbIndices != newNbIndices;
   if(indexBytes > 0 && indexCountChanged)
   {
-    if(model.indexBuffer.buffer != VK_NULL_HANDLE && model.indexBufferSize >= indexBytes)
+    if(mesh.indexBuffer.buffer != VK_NULL_HANDLE && mesh.indexBufferSize >= indexBytes)
     {
-      m_alloc->getStaging()->cmdToBuffer(cmdBuf, model.indexBuffer.buffer, 0, indexBytes, now_indices.data());
+      m_alloc->getStaging()->cmdToBuffer(cmdBuf, mesh.indexBuffer.buffer, 0, indexBytes, now_indices.data());
     }
     else
     {
-      m_alloc->destroy(model.indexBuffer);
-      model.indexBuffer =
+      m_alloc->destroy(mesh.indexBuffer);
+      mesh.indexBuffer =
           m_alloc->createBuffer(cmdBuf, indexBytes, now_indices.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | storageFlags);
-      model.indexBufferSize = indexBytes;
+      mesh.indexBufferSize = indexBytes;
     }
-    AddTransferBarrier(cmdBuf, model.indexBuffer.buffer, indexBytes, VK_ACCESS_INDEX_READ_BIT);
+    AddTransferBarrier(cmdBuf, mesh.indexBuffer.buffer, indexBytes, VK_ACCESS_INDEX_READ_BIT);
   }
 
-  model.nbVertices = newNbVertices;
-  model.nbIndices = newNbIndices;
-  record.buffers = model;
+  mesh.nbVertices = newNbVertices;
+  mesh.nbIndices = newNbIndices;
+  record.buffers = mesh;
 
   genCmdBuf.submitAndWait(cmdBuf);
   m_alloc->finalizeAndReleaseStaging();
@@ -215,7 +215,7 @@ void MeshStore::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& upda
     VkBufferMemoryBarrier preBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     preBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
     preBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    preBarrier.buffer = m_buffers[upd.modelIndex].matColorBuffer.buffer;
+    preBarrier.buffer = m_buffers[upd.meshIndex].matColorBuffer.buffer;
     preBarrier.offset = offset;
     preBarrier.size = sizeof(Material);
 
@@ -227,7 +227,7 @@ void MeshStore::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& upda
   for(const auto& upd : updates)
   {
     VkDeviceSize offset = upd.materialIndex * sizeof(Material);
-    vkCmdUpdateBuffer(cmdBuf, m_buffers[upd.modelIndex].matColorBuffer.buffer, offset, sizeof(Material),
+    vkCmdUpdateBuffer(cmdBuf, m_buffers[upd.meshIndex].matColorBuffer.buffer, offset, sizeof(Material),
                       &upd.newMaterial);
   }
 
@@ -238,7 +238,7 @@ void MeshStore::updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& upda
     VkBufferMemoryBarrier postBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
     postBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     postBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    postBarrier.buffer = m_buffers[upd.modelIndex].matColorBuffer.buffer;
+    postBarrier.buffer = m_buffers[upd.meshIndex].matColorBuffer.buffer;
     postBarrier.offset = offset;
     postBarrier.size = sizeof(Material);
 
@@ -268,12 +268,12 @@ void MeshStore::destroyMeshBuffers()
 {
   if(m_alloc != nullptr)
   {
-    for(auto& model : m_buffers)
+    for(auto& mesh : m_buffers)
     {
-      m_alloc->destroy(model.vertexBuffer);
-      m_alloc->destroy(model.indexBuffer);
-      m_alloc->destroy(model.matColorBuffer);
-      m_alloc->destroy(model.matIndexBuffer);
+      m_alloc->destroy(mesh.vertexBuffer);
+      m_alloc->destroy(mesh.indexBuffer);
+      m_alloc->destroy(mesh.matColorBuffer);
+      m_alloc->destroy(mesh.matIndexBuffer);
     }
   }
   m_buffers.clear();

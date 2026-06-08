@@ -179,7 +179,7 @@ void TileAtlasPass::record(const VkCommandBuffer& cmdBuf,
     const bool rendered =
         m_multiviewTilePipeline.draw(cmdBuf, m_multiviewTileTargets.getFramebuffer(), tileExtent,
                                                 descriptors.set(), scene.getMeshBuffers(), scene.getInstances(),
-                                                scene.getInstanceIds());
+                                                scene.getExternalInstanceIds());
     bool copied = rendered;
     if(copied && channels.contains(TileAovChannel::Color))
     {

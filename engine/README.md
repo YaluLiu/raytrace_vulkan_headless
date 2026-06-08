@@ -44,10 +44,10 @@ pass ordering to `engine::recordFramePasses()`, which executes:
 8. `OverlayHeightScans`
 
 The graphics pipeline binds the shared scene descriptor set, then draws each
-visible instance with `MeshDrawPushConstants` data for model transform, object
-index, and instance ID. The main frame uniform uses slot 0; tile cameras are
-uploaded through the dedicated `TileFrameUniforms` buffer used by the multiview
-shaders.
+visible instance with `MeshDrawPushConstants` data for transform, the shader
+object-index ABI value sourced from the C++ `meshIndex`, and external instance
+ID. The main frame uniform uses slot 0; tile cameras are uploaded through the
+dedicated `TileFrameUniforms` buffer used by the multiview shaders.
 
 When tile output is enabled, the engine renderer renders cameras from the
 current camera array into layered multiview tile targets, then copies each layer

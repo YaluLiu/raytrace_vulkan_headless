@@ -27,9 +27,9 @@ public:
                  VkFramebuffer framebuffer,
                  VkExtent2D tileExtent,
                  VkDescriptorSet sceneDescriptorSet,
-                 std::span<const MeshBuffers> objModels,
+                 std::span<const MeshBuffers> meshBuffers,
                  std::span<const SceneInstance> instances,
-                 std::span<const int> instanceIds);
+                 std::span<const int> externalInstanceIds);
 
 private:
   void createRenderPass();

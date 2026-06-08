@@ -50,11 +50,11 @@ void GpuScene::destroy()
   m_instanceStore.clear();
 }
 
-uint32_t GpuScene::addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId)
+uint32_t GpuScene::addInstance(const glm::mat4& transform, uint32_t meshIndex, int externalInstanceId)
 {
-  const uint32_t index = m_instanceStore.addInstance(transform, objIndex, instanceId);
+  const uint32_t instanceIndex = m_instanceStore.addInstance(transform, meshIndex, externalInstanceId);
   m_rtScene.markTlasDirty();
-  return index;
+  return instanceIndex;
 }
 
 void GpuScene::uploadMesh(const MeshGeometry& geometry,
@@ -82,19 +82,19 @@ void GpuScene::rebuildTextureResources(const std::vector<TextureAsset>& textureA
   m_textureStore.rebuildTextureResources(textureAssets);
 }
 
-void GpuScene::updateInstance(uint32_t instanceId, glm::mat4 transform, bool visible, uint32_t traceMask)
+void GpuScene::updateInstance(uint32_t rendererInstanceIndex, glm::mat4 transform, bool visible, uint32_t traceMask)
 {
-  if(m_instanceStore.updateInstance(instanceId, transform, visible, traceMask))
+  if(m_instanceStore.updateInstance(rendererInstanceIndex, transform, visible, traceMask))
   {
     m_rtScene.markTlasDirty();
   }
 }
 
-void GpuScene::updateMeshGeometry(uint32_t meshId, const MeshGeometry& geometry)
+void GpuScene::updateMeshGeometry(uint32_t meshIndex, const MeshGeometry& geometry)
 {
-  if(m_meshStore.updateGeometry(meshId, geometry))
+  if(m_meshStore.updateGeometry(meshIndex, geometry))
   {
-    m_rtScene.markBlasDirty(meshId);
+    m_rtScene.markBlasDirty(meshIndex);
   }
 }
 

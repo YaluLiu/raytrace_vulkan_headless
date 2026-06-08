@@ -236,9 +236,9 @@ bool MultiviewTilePipeline::draw(const VkCommandBuffer& cmdBuf,
                                             VkFramebuffer framebuffer,
                                             VkExtent2D tileExtent,
                                             VkDescriptorSet sceneDescriptorSet,
-                                            std::span<const MeshBuffers> objModels,
+                                            std::span<const MeshBuffers> meshBuffers,
                                             std::span<const SceneInstance> instances,
-                                            std::span<const int> instanceIds)
+                                            std::span<const int> externalInstanceIds)
 {
   if(_graphicsPipeline == VK_NULL_HANDLE || _domeBackgroundPipeline == VK_NULL_HANDLE || _pipelineLayout == VK_NULL_HANDLE
      || _renderPass == VK_NULL_HANDLE || framebuffer == VK_NULL_HANDLE || sceneDescriptorSet == VK_NULL_HANDLE
@@ -288,29 +288,29 @@ bool MultiviewTilePipeline::draw(const VkCommandBuffer& cmdBuf,
   for(size_t instanceIndex = 0; instanceIndex < instances.size(); ++instanceIndex)
   {
     const SceneInstance& instance = instances[instanceIndex];
-    if(!instance.visible || instance.objIndex >= objModels.size())
+    if(!instance.visible || instance.meshIndex >= meshBuffers.size())
     {
       continue;
     }
 
-    const MeshBuffers& model = objModels[instance.objIndex];
-    if(model.nbIndices == 0 || model.vertexBuffer.buffer == VK_NULL_HANDLE || model.indexBuffer.buffer == VK_NULL_HANDLE)
+    const MeshBuffers& mesh = meshBuffers[instance.meshIndex];
+    if(mesh.nbIndices == 0 || mesh.vertexBuffer.buffer == VK_NULL_HANDLE || mesh.indexBuffer.buffer == VK_NULL_HANDLE)
     {
       continue;
     }
 
     VkDeviceSize vertexOffset = 0;
-    vkCmdBindVertexBuffers(cmdBuf, 0, 1, &model.vertexBuffer.buffer, &vertexOffset);
-    vkCmdBindIndexBuffer(cmdBuf, model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(cmdBuf, 0, 1, &mesh.vertexBuffer.buffer, &vertexOffset);
+    vkCmdBindIndexBuffer(cmdBuf, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     MeshDrawPushConstants pushConstant{};
     pushConstant.model      = instance.transform;
-    pushConstant.objIndex   = instance.objIndex;
+    pushConstant.objIndex   = instance.meshIndex; // Shader ABI field name.
     pushConstant.instanceId =
-        instanceIndex < instanceIds.size() ? instanceIds[instanceIndex] : static_cast<int>(instanceIndex);
+        instanceIndex < externalInstanceIds.size() ? externalInstanceIds[instanceIndex] : static_cast<int>(instanceIndex);
     vkCmdPushConstants(cmdBuf, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                        sizeof(MeshDrawPushConstants), &pushConstant);
-    vkCmdDrawIndexed(cmdBuf, model.nbIndices, 1, 0, 0, 0);
+    vkCmdDrawIndexed(cmdBuf, mesh.nbIndices, 1, 0, 0, 0);
   }
 
   vkCmdEndRenderPass(cmdBuf);

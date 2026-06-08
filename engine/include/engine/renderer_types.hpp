@@ -38,7 +38,7 @@ struct CameraSpec
 
 struct MaterialUpdate
 {
-  int modelIndex;
+  int meshIndex;
   int materialIndex;
   Material newMaterial;
 };
@@ -46,8 +46,8 @@ struct MaterialUpdate
 struct InstanceInfo
 {
   glm::mat4 transform{1.0f};
-  uint32_t objIndex{0};
-  int instanceId{0};
+  uint32_t meshIndex{0};
+  int externalInstanceId{0};
   bool visible{true};
 };
 

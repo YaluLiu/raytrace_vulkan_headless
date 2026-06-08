@@ -21,8 +21,8 @@ class EngineSceneSync final
 public:
   struct RendererMeshBinding
   {
-    int rendererMeshId = -1;
-    std::vector<int> rendererInstanceIds;
+    int rendererMeshIndex = -1;
+    std::vector<int> rendererInstanceIndices;
   };
 
   void EnsureResources(::Engine& engine, SceneStore& sceneStore, GlInteropCache& glInteropCache);

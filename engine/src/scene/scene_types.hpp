@@ -23,7 +23,7 @@ struct MeshBuffers
 struct SceneInstance
 {
   glm::mat4 transform{1.0f};
-  uint32_t  objIndex{0};
+  uint32_t  meshIndex{0};
   uint32_t  traceMask{kTraceMaskDefaultGeometry};
   bool      visible{true};
 };

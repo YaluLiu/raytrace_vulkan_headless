@@ -65,7 +65,7 @@ void OutputController::recordPreviewAovs(const VkCommandBuffer& cmdBuf,
                                                const SceneDescriptors& descriptors)
 {
   m_previewPipeline.recordPreviewAovs(cmdBuf, descriptors.set(), scene.getMeshBuffers(), scene.getInstances(),
-                                            scene.getInstanceIds());
+                                            scene.getExternalInstanceIds());
 }
 
 void OutputController::recordLidarPointClouds(const VkCommandBuffer& cmdBuf, const GpuScene& scene)

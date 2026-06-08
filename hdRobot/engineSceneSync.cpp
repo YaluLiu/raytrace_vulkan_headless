@@ -79,54 +79,55 @@ EngineSceneSync::RendererMeshBinding UploadMeshToRenderer(
     const std::vector<MaterialRecord>& materials)
 {
   EngineSceneSync::RendererMeshBinding binding;
-  binding.rendererMeshId = static_cast<int>(engine.getMeshSourceCount());
+  binding.rendererMeshIndex = static_cast<int>(engine.getMeshSourceCount());
 
   ::MeshGeometry geometry;
   ConvertHydraMeshToGeometry(mesh, geometry);
   std::vector<::Material> materialsForUpload = CollectMaterialsForMesh(mesh, materials);
   engine.uploadMesh(geometry, materialsForUpload);
 
-  const size_t firstInstanceId = engine.getInstanceCount() - 1;
-  const auto instance = engine.getInstance(firstInstanceId);
+  const size_t firstRendererInstanceIndex = engine.getInstanceCount() - 1;
+  const auto instance = engine.getInstance(firstRendererInstanceIndex);
   const size_t authoredInstanceCount = mesh.instanceTransforms.size();
   const size_t rendererInstanceSlotCount = std::max<size_t>(authoredInstanceCount, 1);
   for(size_t i = 1; i < rendererInstanceSlotCount; ++i)
   {
-    engine.addInstance(instance.transform, instance.objIndex, static_cast<int>(i));
+    engine.addInstance(instance.transform, instance.meshIndex, static_cast<int>(i));
   }
-  binding.rendererInstanceIds.reserve(rendererInstanceSlotCount);
+  binding.rendererInstanceIndices.reserve(rendererInstanceSlotCount);
   for(size_t i = 0; i < rendererInstanceSlotCount; ++i)
   {
-    binding.rendererInstanceIds.push_back(static_cast<int>(i + firstInstanceId));
+    binding.rendererInstanceIndices.push_back(static_cast<int>(i + firstRendererInstanceIndex));
   }
   return binding;
 }
 
 bool EnsureRendererInstanceSlots(::Engine& engine, EngineSceneSync::RendererMeshBinding& binding, const HydraMesh& mesh)
 {
-  if(binding.rendererInstanceIds.empty())
+  if(binding.rendererInstanceIndices.empty())
   {
     return false;
   }
 
   const size_t requiredSlotCount = std::max<size_t>(mesh.instanceTransforms.size(), 1);
-  if(binding.rendererInstanceIds.size() >= requiredSlotCount)
+  if(binding.rendererInstanceIndices.size() >= requiredSlotCount)
   {
     return false;
   }
 
-  const InstanceInfo baseInstance = engine.getInstance(static_cast<size_t>(binding.rendererInstanceIds.front()));
-  for(size_t i = binding.rendererInstanceIds.size(); i < requiredSlotCount; ++i)
+  const InstanceInfo baseInstance = engine.getInstance(static_cast<size_t>(binding.rendererInstanceIndices.front()));
+  for(size_t i = binding.rendererInstanceIndices.size(); i < requiredSlotCount; ++i)
   {
-    const uint32_t rendererInstanceId = engine.addInstance(baseInstance.transform, baseInstance.objIndex, static_cast<int>(i));
-    binding.rendererInstanceIds.push_back(static_cast<int>(rendererInstanceId));
+    const uint32_t rendererInstanceIndex =
+        engine.addInstance(baseInstance.transform, baseInstance.meshIndex, static_cast<int>(i));
+    binding.rendererInstanceIndices.push_back(static_cast<int>(rendererInstanceIndex));
   }
   return true;
 }
 
 void UpdateRendererInstances(::Engine& engine,
                              const MeshRecord& record,
-                             const std::vector<int>& rendererInstanceIds,
+                             const std::vector<int>& rendererInstanceIndices,
                              const TfTokenVector& renderTags)
 {
   const HydraMesh& mesh = record.data;
@@ -136,22 +137,22 @@ void UpdateRendererInstances(::Engine& engine,
                                  ? kTraceMaskGround
                                  : kTraceMaskDefaultGeometry;
 
-  for(size_t instanceId = 0; instanceId < rendererInstanceIds.size(); ++instanceId)
+  for(size_t instanceIndex = 0; instanceIndex < rendererInstanceIndices.size(); ++instanceIndex)
   {
-    const int rendererInstanceId = rendererInstanceIds[instanceId];
-    if(rendererInstanceId < 0)
+    const int rendererInstanceIndex = rendererInstanceIndices[instanceIndex];
+    if(rendererInstanceIndex < 0)
     {
       continue;
     }
 
-    const bool instanceValid = mesh.hasInstances && (instanceId < mesh.instanceTransforms.size());
+    const bool instanceValid = mesh.hasInstances && (instanceIndex < mesh.instanceTransforms.size());
     const bool visible = meshVisible && instanceValid;
     glm::mat4 transform = glm::transpose(mesh.transform);
     if(instanceValid)
     {
-      transform = glm::transpose(mesh.transform * mesh.instanceTransforms[instanceId]);
+      transform = glm::transpose(mesh.transform * mesh.instanceTransforms[instanceIndex]);
     }
-    engine.updateInstance(static_cast<uint32_t>(rendererInstanceId), transform, visible, traceMask);
+    engine.updateInstance(static_cast<uint32_t>(rendererInstanceIndex), transform, visible, traceMask);
   }
 }
 } // namespace
@@ -206,7 +207,7 @@ void EngineSceneSync::ApplyFrameRenderTags(::Engine& engine, const TfTokenVector
     {
       continue;
     }
-    UpdateRendererInstances(engine, record, binding->rendererInstanceIds, _activeRenderTags);
+    UpdateRendererInstances(engine, record, binding->rendererInstanceIndices, _activeRenderTags);
   }
   _frameVisibilityDirty = false;
 }
@@ -285,7 +286,7 @@ void EngineSceneSync::_UpdateGeometry(::Engine& engine, SceneStore& sceneStore)
 
     ::MeshGeometry geometry;
     ConvertHydraMeshToGeometry(record.data, geometry);
-    engine.updateMeshGeometry(static_cast<uint32_t>(binding->rendererMeshId), geometry);
+    engine.updateMeshGeometry(static_cast<uint32_t>(binding->rendererMeshIndex), geometry);
   }
 }
 
@@ -309,7 +310,7 @@ bool EngineSceneSync::_UpdateInstances(::Engine& engine, SceneStore& sceneStore)
     }
 
     EnsureRendererInstanceSlots(engine, *binding, record.data);
-    UpdateRendererInstances(engine, record, binding->rendererInstanceIds, TfTokenVector{});
+    UpdateRendererInstances(engine, record, binding->rendererInstanceIndices, TfTokenVector{});
   }
   return updatedAnyInstance;
 }
@@ -339,7 +340,7 @@ void EngineSceneSync::_UpdateMaterials(::Engine& engine, SceneStore& sceneStore)
       if(dirtyMaterialSet.find(static_cast<uint32_t>(globalMatId)) != dirtyMaterialSet.end())
       {
         ::Material newMaterial = ToMaterial(materialRecords[static_cast<size_t>(globalMatId)].data);
-        newMaterials.push_back({binding->rendererMeshId, static_cast<int>(localMatIdx), newMaterial});
+        newMaterials.push_back({binding->rendererMeshIndex, static_cast<int>(localMatIdx), newMaterial});
       }
     }
   }

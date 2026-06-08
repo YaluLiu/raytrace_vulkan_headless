@@ -21,7 +21,7 @@ public:
   void teardown();
 
   void build(std::span<const MeshBuffers> meshes, std::span<const SceneInstance> instances);
-  void markBlasDirty(uint32_t meshId);
+  void markBlasDirty(uint32_t meshIndex);
   void markTlasDirty();
   void flush(std::span<const MeshBuffers> meshes, std::span<const SceneInstance> instances);
 

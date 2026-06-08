@@ -56,12 +56,12 @@ public:
                   glm::mat4 transform = glm::mat4(1));
   void loadTextureAssets(const std::vector<TextureAsset>& textureAssets);
   void rebuildTextureResourcesAndSceneBindings(const std::vector<TextureAsset>& textureAssets);
-  uint32_t addInstance(const glm::mat4& transform, uint32_t objIndex, int instanceId = 0);
-  void updateInstance(uint32_t instanceId,
+  uint32_t addInstance(const glm::mat4& transform, uint32_t meshIndex, int externalInstanceId = 0);
+  void updateInstance(uint32_t rendererInstanceIndex,
                       glm::mat4 transform,
                       bool visible,
                       uint32_t traceMask = kTraceMaskDefaultGeometry);
-  void updateMeshGeometry(uint32_t meshId, const MeshGeometry& geometry);
+  void updateMeshGeometry(uint32_t meshIndex, const MeshGeometry& geometry);
   void updateMaterialsAtRuntime(const std::vector<MaterialUpdate>& updates);
   void createRayTracingResources();
   void destroyRayTracingResources();

@@ -235,13 +235,13 @@ std::vector<VkAccelerationStructureInstanceKHR> RtScene::makeTlasInstances(
   for(size_t instanceIndex = 0; instanceIndex < instances.size(); ++instanceIndex)
   {
     const SceneInstance& instance = instances[instanceIndex];
-    const bool meshIndexValid = instance.objIndex < meshes.size() && instance.objIndex < m_meshToBlas.size();
+    const bool meshIndexValid = instance.meshIndex < meshes.size() && instance.meshIndex < m_meshToBlas.size();
     if(!meshIndexValid)
     {
       continue;
     }
 
-    const uint32_t blasIndex = m_meshToBlas[instance.objIndex];
+    const uint32_t blasIndex = m_meshToBlas[instance.meshIndex];
     if(blasIndex == kInvalidBlasIndex)
     {
       continue;
