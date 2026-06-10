@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/lidar_types.hpp>
 #include <engine/tile_config.hpp>
 
 #include <pxr/base/gf/vec2i.h>
@@ -31,6 +32,7 @@ public:
 
   void EnsureEngineReady(const GfVec2i& renderSize);
   void CommitResources(RenderParam& renderParam, SceneStore& sceneStore);
+  ::LidarFramePointCloud CaptureLidarPointCloudFrame(RenderParam& renderParam, SceneStore& sceneStore);
 
   bool SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState);
   void ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels);

@@ -61,14 +61,16 @@ call sites with `rg`.
   is followed by LiDAR point overlay and then height scan overlay.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction, render
-  param ownership, scene store ownership, and delegate-owned render
-  resource/session ownership.
+  param ownership, scene store ownership, delegate-owned render
+  resource/session ownership, and one-shot command handling such as LiDAR
+  point cloud CSV export through `InvokeCommand()`.
 - `hdRobot/renderPass.cpp`: Hydra render pass entry; delegates frame execution
   to `hdrobot::PassBridge::RenderFrameAndCopyAovs`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
   renderer runtime/session object that owns `Engine`, GL interop cache,
-  engine lifecycle state, committed camera/sensor/output snapshots, and
-  frame-level render tag application routed through the scene sync helper.
+  engine lifecycle state, committed camera/sensor/output snapshots, one-shot
+  LiDAR point cloud capture for readback consumers, and frame-level render tag
+  application routed through the scene sync helper.
 - `hdRobot/engineSceneSync.h` / `hdRobot/engineSceneSync.cpp`: Engine-facing
   Hydra scene synchronization helper owned by the session implementation;
   owns renderer mesh/instance binding state, initial scene upload, texture
@@ -308,16 +310,17 @@ call sites with `rg`.
   descriptors including per-channel tile color/depth enable flags, LiDAR and
   height scan visualization render settings, AOV descriptor lookup through the
   shared bridge-side AOV spec, scene store ownership, render resource/session
-  ownership, and `CommitResources()` routing from pending Hydra CPU updates
-  into renderer resource submission.
+  ownership, LiDAR point cloud CSV export command handling, and
+  `CommitResources()` routing from pending Hydra CPU updates into renderer
+  resource submission.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge. It borrows delegate-owned
   `hdrobot::EngineSession` and no longer knows `hdrobot::RenderParam`.
 - `hdRobot/engineSession.h` / `hdRobot/engineSession.cpp`: Delegate-owned
   renderer runtime/session object. It owns `Engine`, `hdrobot::GlInteropCache`,
   render size, committed active camera/sensor snapshots, output configuration,
-  and a focused `hdrobot::EngineSceneSync` member for scene-to-engine
-  synchronization.
+  LiDAR point cloud capture, and a focused `hdrobot::EngineSceneSync` member
+  for scene-to-engine synchronization.
 - `hdRobot/engineSceneSync.h` / `hdRobot/engineSceneSync.cpp`: Focused
   scene-to-engine synchronizer. It consumes `hdrobot::SceneStore` snapshots and
   dirty queues, owns renderer mesh/instance binding state outside the Hydra
@@ -561,7 +564,8 @@ call sites with `rg`.
   `hdRobot/renderDelegate.cpp`, and `hdRobot/passBridge.cpp`, then search
   for `LidarSensorSpec`, `LidarPointCloudPass`,
   `GenerateLidarPointClouds`, `OverlayLidarPointCloud`,
-  `hdRobot:lidar:visualizeEnabled`, `readLidarPointCloudFrame`, and
+  `hdRobot:lidar:visualizeEnabled`, `exportLidarPointCloud`,
+  `CaptureLidarPointCloudFrame`, `readLidarPointCloudFrame`, and
   `BuildLidarScanLayout`.
   For Hydra-side LiDAR discovery, start with
   `UsdRaySensorImaging/lidarSensorAdapter.cpp`,

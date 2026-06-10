@@ -92,6 +92,14 @@ struct EngineSession::Impl
     sceneSync.SyncSceneToEngine(engine, sceneStore);
   }
 
+  ::LidarFramePointCloud CaptureLidarPointCloudFrame(RenderParam& renderParam, SceneStore& sceneStore)
+  {
+    sceneStore.ApplyPendingUpdates();
+    CommitResources(renderParam, sceneStore);
+    engine.render();
+    return engine.readLidarPointCloudFrame();
+  }
+
   void ConfigureFrameOutputs(TileAovChannelMask requestedTileChannels)
   {
     requestedTileAovChannels = requestedTileChannels;
@@ -243,6 +251,11 @@ void EngineSession::EnsureEngineReady(const GfVec2i& renderSize)
 void EngineSession::CommitResources(RenderParam& renderParam, SceneStore& sceneStore)
 {
   _impl->CommitResources(renderParam, sceneStore);
+}
+
+::LidarFramePointCloud EngineSession::CaptureLidarPointCloudFrame(RenderParam& renderParam, SceneStore& sceneStore)
+{
+  return _impl->CaptureLidarPointCloudFrame(renderParam, sceneStore);
 }
 
 bool EngineSession::SetFrameCamera(const HdRenderPassStateSharedPtr& renderPassState)
