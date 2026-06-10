@@ -49,6 +49,11 @@ bool IsMeshRenderTagMatched(const HydraMesh& mesh, const TfTokenVector& renderTa
   return std::find(renderTags.begin(), renderTags.end(), mesh.renderTag) != renderTags.end();
 }
 
+bool ShouldUploadMeshToRenderer(const HydraMesh& mesh)
+{
+  return mesh.renderTag == HdRenderTagTokens->geometry && !mesh.points.empty() && !mesh.faces.empty();
+}
+
 std::vector<::Material> CollectMaterialsForMesh(const HydraMesh& mesh,
                                                 const std::vector<MaterialRecord>& materials)
 {
@@ -233,7 +238,7 @@ void EngineSceneSync::_UploadInitialScene(::Engine& engine, SceneStore& sceneSto
   const std::vector<MaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
   for(const MeshRecord& record : meshRecords)
   {
-    if(!record.active || !record.data.valid)
+    if(!record.active || !record.data.valid || !ShouldUploadMeshToRenderer(record.data))
     {
       continue;
     }
@@ -271,7 +276,7 @@ void EngineSceneSync::_UpdateGeometry(::Engine& engine, SceneStore& sceneStore)
   const std::vector<MaterialRecord> materialRecords = sceneStore.GetMaterialRecordsSnapshot();
   for(const MeshRecord& record : sceneStore.ConsumeDirtyMeshGeometry())
   {
-    if(!record.active || !record.data.valid)
+    if(!record.active || !record.data.valid || !ShouldUploadMeshToRenderer(record.data))
     {
       continue;
     }
@@ -299,7 +304,7 @@ bool EngineSceneSync::_UpdateInstances(::Engine& engine, SceneStore& sceneStore)
   {
     updatedAnyInstance = true;
     RendererMeshBinding* binding = _GetBinding(record.sceneIndex);
-    if(binding == nullptr && record.active && record.data.valid)
+    if(binding == nullptr && record.active && record.data.valid && ShouldUploadMeshToRenderer(record.data))
     {
       _meshBindings[record.sceneIndex] = UploadMeshToRenderer(engine, record.data, materialRecords);
       binding = _GetBinding(record.sceneIndex);

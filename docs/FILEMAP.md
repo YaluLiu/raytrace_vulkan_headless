@@ -74,8 +74,9 @@ call sites with `rg`.
 - `hdRobot/engineSceneSync.h` / `hdRobot/engineSceneSync.cpp`: Engine-facing
   Hydra scene synchronization helper owned by the session implementation;
   owns renderer mesh/instance binding state, initial scene upload, texture
-  asset refresh, light/geometry/instance/material incremental submission, and
-  render-tag visibility updates for renderer instances.
+  asset refresh, light/geometry/instance/material incremental submission,
+  non-geometry/empty-topology upload filtering, and render-tag visibility
+  updates for renderer instances.
 - `hdRobot/passBridge.cpp`: Pass-dependent frame bridge between Hydra render
   pass state and `Engine` frame execution.
 - `hdRobot/passBridgeConversions.h` / `hdRobot/passBridgeConversions.cpp`:
@@ -325,8 +326,9 @@ call sites with `rg`.
   scene-to-engine synchronizer. It consumes `hdrobot::SceneStore` snapshots and
   dirty queues, owns renderer mesh/instance binding state outside the Hydra
   scene store, uploads initial meshes/textures, refreshes texture resources,
-  submits lights/geometry/instances/material updates, and applies frame render
-  tag visibility to bound renderer instances.
+  filters non-geometry or empty-topology meshes out of renderer upload/binding
+  paths, submits lights/geometry/instances/material updates, and applies frame
+  render tag visibility to bound renderer instances.
 - `hdRobot/passBridge.h` / `hdRobot/passBridge.cpp`:
   Converts current Hydra pass state into frame-only renderer work: render
   state/AOV validation, main render size selection, current pass camera setup,
