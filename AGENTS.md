@@ -9,3 +9,4 @@ Rules:
 - Keep docs/FILEMAP.md current when adding, moving, or substantially changing modules
 - After modifying code files in this session, run `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` to keep the graph current
 - Prefer splitting work into multiple subtasks and delegating them to subagents to reduce per-session context usage
+- Treat task/design/planning docs as local-only scratch files: write and keep them when useful, but do not track or commit them. Only update tracked project docs that are explicitly required by these rules (for example docs/FILEMAP.md) or by a direct user request.
