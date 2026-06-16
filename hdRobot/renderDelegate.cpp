@@ -8,6 +8,7 @@
 #include "aovBridgeSpec.h"
 #include "camera.h"
 #include "heightScanSensor.h"
+#include "lidarPointCloudCsv.h"
 #include "lidarSensor.h"
 #include "light.h"
 #include "material.h"
@@ -28,10 +29,8 @@
 #include "pxr/imaging/hdSt/light.h"
 #include <algorithm>
 #include <cmath>
-#include <exception>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 
@@ -53,6 +52,9 @@ using hdrobot::MeshHandle;
 using hdrobot::RenderParam;
 using hdrobot::SceneStore;
 using hdrobot::TileConfig;
+using hdrobot::CountLidarPoints;
+using hdrobot::SelectLidarPointCloudSensors;
+using hdrobot::WriteLidarPointCloudCsv;
 
 namespace
 {
@@ -227,107 +229,81 @@ std::string GetCommandStringArg(const HdCommandArgs &args, const TfToken &key, c
   return fallback;
 }
 
-bool HasLidarPointFlag(uint32_t flags, uint32_t flag)
+bool GetCommandBoolArg(const HdCommandArgs &args, const TfToken &key, bool fallback)
 {
-  return (flags & flag) != 0;
+  const HdCommandArgs::const_iterator argIt = args.find(key.GetString());
+  if(argIt == args.end())
+  {
+    return fallback;
+  }
+
+  const VtValue &value = argIt->second;
+  if(value.IsHolding<bool>())
+  {
+    return value.UncheckedGet<bool>();
+  }
+  if(value.IsHolding<int>())
+  {
+    return value.UncheckedGet<int>() != 0;
+  }
+
+  TF_WARN("Ignoring command argument %s: expected bool, got %s.",
+          key.GetText(),
+          value.GetTypeName().c_str());
+  return fallback;
 }
 
-void WriteCsvString(std::ostream &output, const std::string &value)
+uint32_t GetCommandUInt32Arg(const HdCommandArgs &args, const TfToken &key, uint32_t fallback)
 {
-  if(value.find_first_of(",\"\n\r") == std::string::npos)
+  const HdCommandArgs::const_iterator argIt = args.find(key.GetString());
+  if(argIt == args.end())
   {
-    output << value;
-    return;
+    return fallback;
   }
 
-  output << '"';
-  for(const char c : value)
+  const VtValue &value = argIt->second;
+  if(value.IsHolding<int>())
   {
-    if(c == '"')
-    {
-      output << "\"\"";
-    }
-    else
-    {
-      output << c;
-    }
+    const int result = value.UncheckedGet<int>();
+    return result >= 0 ? static_cast<uint32_t>(result) : fallback;
   }
-  output << '"';
+
+  TF_WARN("Ignoring command argument %s: expected non-negative int, got %s.",
+          key.GetText(),
+          value.GetTypeName().c_str());
+  return fallback;
 }
 
-size_t CountLidarPoints(const LidarFramePointCloud &frame)
+uint64_t GetCommandUInt64Arg(const HdCommandArgs &args, const TfToken &key, uint64_t fallback)
 {
-  size_t result = 0;
-  for(const LidarSensorPointCloud &sensor : frame.sensors)
+  const HdCommandArgs::const_iterator argIt = args.find(key.GetString());
+  if(argIt == args.end())
   {
-    result += sensor.points.size();
+    return fallback;
   }
-  return result;
+
+  const VtValue &value = argIt->second;
+  if(value.IsHolding<int>())
+  {
+    const int result = value.UncheckedGet<int>();
+    return result >= 0 ? static_cast<uint64_t>(result) : fallback;
+  }
+  if(value.IsHolding<double>())
+  {
+    const double result = value.UncheckedGet<double>();
+    if(std::isfinite(result) && result >= 0.0 &&
+       result <= static_cast<double>(std::numeric_limits<long long>::max()))
+    {
+      return static_cast<uint64_t>(std::llround(result));
+    }
+  }
+
+  TF_WARN("Ignoring command argument %s: expected non-negative frame id, got %s.",
+          key.GetText(),
+          value.GetTypeName().c_str());
+  return fallback;
 }
 
-bool WriteLidarPointCloudCsv(const LidarFramePointCloud &frame,
-                             const std::string &filePath,
-                             std::string *errorMessage)
-{
-  try
-  {
-    const std::filesystem::path outputPath(filePath);
-    if(outputPath.has_parent_path())
-    {
-      std::filesystem::create_directories(outputPath.parent_path());
-    }
-
-    std::ofstream output(outputPath, std::ios::out | std::ios::trunc);
-    if(!output)
-    {
-      if(errorMessage != nullptr)
-      {
-        *errorMessage = "failed to open output file";
-      }
-      return false;
-    }
-
-    output << std::setprecision(9);
-    output << "frame_id,sensor_name,sensor_index,width,height,point_index,ring_index,beam_index,"
-              "x,y,z,range_meters,intensity,flags,valid,hit,out_of_range\n";
-
-    for(const LidarSensorPointCloud &sensor : frame.sensors)
-    {
-      for(size_t pointIndex = 0; pointIndex < sensor.points.size(); ++pointIndex)
-      {
-        const LidarPoint &point = sensor.points[pointIndex];
-        output << frame.frameId << ',';
-        WriteCsvString(output, sensor.name);
-        output << ',' << sensor.sensorIndex << ',' << sensor.width << ',' << sensor.height << ',' << pointIndex
-               << ',' << point.ringIndex << ',' << point.beamIndex << ',' << point.positionWs.x << ','
-               << point.positionWs.y << ',' << point.positionWs.z << ',' << point.rangeMeters << ','
-               << point.intensity << ',' << point.flags << ','
-               << (HasLidarPointFlag(point.flags, LidarPointFlagValid) ? 1 : 0) << ','
-               << (HasLidarPointFlag(point.flags, LidarPointFlagHit) ? 1 : 0) << ','
-               << (HasLidarPointFlag(point.flags, LidarPointFlagOutOfRange) ? 1 : 0) << '\n';
-      }
-    }
-
-    if(!output)
-    {
-      if(errorMessage != nullptr)
-      {
-        *errorMessage = "failed while writing output file";
-      }
-      return false;
-    }
-  }
-  catch(const std::exception &e)
-  {
-    if(errorMessage != nullptr)
-    {
-      *errorMessage = e.what();
-    }
-    return false;
-  }
-
-  return true;
-}
 } // namespace
 
 HdRobotRenderDelegate::HdRobotRenderDelegate(const HdRenderSettingsMap &settingsMap, std::string_view resourcePath)
@@ -417,11 +393,19 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken &command, [[maybe_unused
 
     const std::string filePath =
         GetCommandStringArg(args, HdRobotCommandArgTokens->filePath, kDefaultLidarPointCloudPath);
-    const LidarFramePointCloud frame =
+    const LidarFramePointCloud capturedFrame =
         _engineSession->CaptureLidarPointCloudFrame(*_renderParam, _sceneStore);
+    const uint64_t csvFrameId =
+        GetCommandUInt64Arg(args, HdRobotCommandArgTokens->frameId, capturedFrame.frameId);
+    const bool exportAllSensors =
+        GetCommandBoolArg(args, HdRobotCommandArgTokens->allSensors, true);
+    const uint32_t exportSensorIndex =
+        GetCommandUInt32Arg(args, HdRobotCommandArgTokens->sensorIndex, 0);
+    const LidarFramePointCloud frame =
+        SelectLidarPointCloudSensors(capturedFrame, exportAllSensors, exportSensorIndex);
 
     std::string errorMessage;
-    if(!WriteLidarPointCloudCsv(frame, filePath, &errorMessage))
+    if(!WriteLidarPointCloudCsv(frame, csvFrameId, filePath, &errorMessage))
     {
       TF_RUNTIME_ERROR("Can't export LiDAR point cloud to %s: %s",
                        filePath.c_str(),
@@ -429,8 +413,8 @@ bool HdRobotRenderDelegate::InvokeCommand(const TfToken &command, [[maybe_unused
       return false;
     }
 
-    printf("Exported LiDAR point cloud frame %llu (%zu sensors, %zu points) to %s\n",
-           static_cast<unsigned long long>(frame.frameId),
+    printf("Exported LiDAR point cloud CSV frame %llu (%zu sensors, %zu points) to %s\n",
+           static_cast<unsigned long long>(csvFrameId),
            frame.sensors.size(),
            CountLidarPoints(frame),
            filePath.c_str());

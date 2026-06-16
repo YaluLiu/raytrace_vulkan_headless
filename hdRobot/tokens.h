@@ -21,7 +21,11 @@ PXR_NAMESPACE_OPEN_SCOPE
   (printLicenses) \
   (exportLidarPointCloud)
 
-#define HD_ROBOT_COMMAND_ARG_TOKENS ((filePath, "filePath"))
+#define HD_ROBOT_COMMAND_ARG_TOKENS \
+  ((filePath, "filePath")) \
+  ((frameId, "frameId")) \
+  ((allSensors, "allSensors")) \
+  ((sensorIndex, "sensorIndex"))
 
 #define HD_ROBOT_RENDER_SETTING_TOKENS \
   ((tileEnabled, "hdRobot:tile:enabled")) \

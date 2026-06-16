@@ -25,6 +25,8 @@ add_library(
   hydraAovCopy.h
   hydraTextureAssetExport.cpp
   hydraTextureAssetExport.h
+  lidarPointCloudCsv.cpp
+  lidarPointCloudCsv.h
   renderBuffer.cpp
   renderBuffer.h
   renderDelegate.cpp
@@ -110,6 +112,21 @@ target_link_libraries(
     UsdRaySensor
     UsdRaySensorImaging
 )
+
+if(BUILD_TESTING)
+  add_executable(hdrobot_lidar_point_cloud_csv_test
+    tests/lidar_point_cloud_csv_test.cpp
+    lidarPointCloudCsv.cpp
+  )
+  target_include_directories(hdrobot_lidar_point_cloud_csv_test
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../engine/include
+  )
+  target_compile_features(hdrobot_lidar_point_cloud_csv_test PRIVATE cxx_std_20)
+  target_link_libraries(hdrobot_lidar_point_cloud_csv_test PRIVATE ${USD_LIBS_PUBLIC})
+  add_test(NAME hdrobot_lidar_point_cloud_csv_test COMMAND hdrobot_lidar_point_cloud_csv_test)
+endif()
 
 # Allow custom prefix for houdini directory structure
 if(NOT DEFINED PLUGINFO_LIBPATH_PREFIX)

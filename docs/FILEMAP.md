@@ -40,7 +40,9 @@ call sites with `rg`.
   compilation, renderer compile definitions, and focused CTest targets such as
   `engine_height_scan_basis_test` and `engine_camera_projection_test`.
 - `hdRobot/CMakeLists.txt`: Hydra plugin library, USD dependencies, plugin
-  metadata generation, and install layout.
+  metadata generation, install layout, and the focused
+  `hdrobot_lidar_point_cloud_csv_test` CSV serialization and sensor-selection
+  regression test.
 - `UsdRaySensor/CMakeLists.txt`: Schema-only ray-sensor USD plugin target,
   plugin metadata generation, and schema resource install layout.
 - `UsdRaySensorImaging/CMakeLists.txt`: UsdImaging adapter plugin target,
@@ -314,6 +316,10 @@ call sites with `rg`.
   ownership, LiDAR point cloud CSV export command handling, and
   `CommitResources()` routing from pending Hydra CPU updates into renderer
   resource submission.
+- `hdRobot/lidarPointCloudCsv.h` / `hdRobot/lidarPointCloudCsv.cpp`: Focused
+  LiDAR point cloud CSV serialization helper used by the Hydra export command;
+  it owns CSV escaping, row formatting, point counting, caller-supplied CSV
+  frame IDs, and optional selected-sensor filtering.
 - `hdRobot/renderPass.h` / `hdRobot/renderPass.cpp`: Hydra render pass object
   and frame execution entry into the bridge. It borrows delegate-owned
   `hdrobot::EngineSession` and no longer knows `hdrobot::RenderParam`.
