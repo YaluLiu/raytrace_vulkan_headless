@@ -143,6 +143,37 @@ def Xform "World"
 )USD";
   return path;
 }
+
+std::filesystem::path WriteStartTimeFixture()
+{
+  const std::filesystem::path path =
+      std::filesystem::temp_directory_path() / "headless_training_usd_scene_loader_start_time_test.usda";
+
+  std::ofstream output(path, std::ios::out | std::ios::trunc);
+  output << R"USD(#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 10
+)
+
+def Xform "World"
+{
+    def Mesh "AnimatedMesh"
+    {
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (0, 1, 0)]
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
+        double3 xformOp:translate = (100, 0, 0)
+        double3 xformOp:translate.timeSamples = {
+            0: (1, 2, 3),
+            10: (4, 5, 6),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+)USD";
+  return path;
+}
 } // namespace
 
 int main()
@@ -244,6 +275,16 @@ int main()
                           "headless_training_usd_scene_loader_test_texture.png");
   Require(selectedCameraScene.cameras.size() == 1 && selectedCameraScene.cameras[0].name == "/World/MainCamera",
           "camera path selection failed");
+
+  const std::filesystem::path startTimeFixture = WriteStartTimeFixture();
+  const headless_training::TrainingSceneDescription startTimeScene =
+      headless_training::LoadUsdTrainingScene(startTimeFixture);
+  std::filesystem::remove(startTimeFixture);
+  Require(startTimeScene.meshes.size() == 1, "expected one mesh in start-time fixture");
+  Require(Near(startTimeScene.meshes[0].worldTransform[3][0], 1.0f) &&
+              Near(startTimeScene.meshes[0].worldTransform[3][1], 2.0f) &&
+              Near(startTimeScene.meshes[0].worldTransform[3][2], 3.0f),
+          "USD loader should sample transforms at stage start time instead of default time");
 
   return 0;
 }

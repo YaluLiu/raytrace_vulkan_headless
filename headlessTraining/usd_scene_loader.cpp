@@ -895,7 +895,7 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
     throw std::runtime_error("failed to open USD stage: " + usdPath.string());
   }
 
-  const PXR_NS::UsdTimeCode time = PXR_NS::UsdTimeCode::Default();
+  const PXR_NS::UsdTimeCode time(stage->GetStartTimeCode());
   TrainingSceneDescription result;
   TextureRegistry textureRegistry(stage);
   bool cameraPathRequested = !options.cameraPath.empty();
