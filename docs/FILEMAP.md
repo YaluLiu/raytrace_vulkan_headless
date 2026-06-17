@@ -115,13 +115,19 @@ call sites with `rg`.
 - `headlessTraining/cli.h` / `headlessTraining/cli.cpp`: CLI option parsing,
   help text, required `--usd` / `--output-dir` validation, positive integer
   parsing for frame/render dimensions, output directory creation, optional
-  camera path, replay path, plugin search root, preview, and export toggles.
+  camera path, preview camera overrides, replay path, plugin search root,
+  preview, and export toggles.
+- `headlessTraining/preview_camera.h` /
+  `headlessTraining/preview_camera.cpp`: CPU-only preview camera helper that
+  computes visible mesh world bounds and builds the default pulled-back main
+  preview `CameraSpec`, with explicit CLI overrides for position, target, FOV,
+  and distance scale.
 - `headlessTraining/training_scene.h` /
   `headlessTraining/training_scene.cpp`: Engine-facing CPU scene model,
   texture/light/mesh upload, mesh/instance bookkeeping, default camera
-  construction, renderer output config construction, replay pose application,
-  and shared USD/Gf row-major matrix to engine `glm::mat4` transform
-  conversion.
+  construction, optional independent main preview camera submission, renderer
+  output config construction, replay pose application, and shared USD/Gf
+  row-major matrix to engine `glm::mat4` transform conversion.
 - `headlessTraining/usd_scene_loader.h` /
   `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
   `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`,
@@ -145,8 +151,11 @@ call sites with `rg`.
 - `headlessTraining/tests/physics_output_test.cpp`: CPU-only replay parser,
   matrix conversion, CSV writer, and manifest writer coverage.
 - `headlessTraining/tests/cli_test.cpp`: CPU-only CLI parsing coverage for
-  required options, output directory creation, numeric options, export toggles,
-  missing values, unknown options, and `--help`.
+  required options, output directory creation, numeric options, preview camera
+  overrides, export toggles, missing values, unknown options, and `--help`.
+- `headlessTraining/tests/preview_camera_test.cpp`: CPU-only coverage for
+  automatic preview camera bounds fitting, distance scaling, hidden mesh
+  exclusion, and explicit preview camera overrides.
 - `headlessTraining/tests/fixtures/smoke_scene.usda` and
   `headlessTraining/tests/fixtures/smoke_replay.json`: Minimal scene/replay
   pair for local `robot_training_headless` smoke runs.

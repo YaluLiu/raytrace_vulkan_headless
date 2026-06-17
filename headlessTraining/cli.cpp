@@ -1,8 +1,12 @@
 #include "cli.h"
 
+#include <cerrno>
 #include <charconv>
+#include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <sstream>
+#include <string>
 #include <string_view>
 
 namespace headless_training
@@ -27,10 +31,62 @@ bool ParsePositiveInt(std::string_view text, int* value)
   return true;
 }
 
+bool ParseFloat(std::string_view text, float* value)
+{
+  if(text.empty() || value == nullptr)
+  {
+    return false;
+  }
+
+  const std::string owned(text);
+  char* end = nullptr;
+  errno = 0;
+  const float parsed = std::strtof(owned.c_str(), &end);
+  if(errno != 0 || end == owned.c_str() || *end != '\0' || !std::isfinite(parsed))
+  {
+    return false;
+  }
+
+  *value = parsed;
+  return true;
+}
+
+bool ParseVec3(std::string_view text, glm::vec3* value)
+{
+  if(value == nullptr)
+  {
+    return false;
+  }
+
+  const size_t firstComma = text.find(',');
+  if(firstComma == std::string_view::npos)
+  {
+    return false;
+  }
+  const size_t secondComma = text.find(',', firstComma + 1);
+  if(secondComma == std::string_view::npos || text.find(',', secondComma + 1) != std::string_view::npos)
+  {
+    return false;
+  }
+
+  glm::vec3 parsed(0.0f);
+  if(!ParseFloat(text.substr(0, firstComma), &parsed.x) ||
+     !ParseFloat(text.substr(firstComma + 1, secondComma - firstComma - 1), &parsed.y) ||
+     !ParseFloat(text.substr(secondComma + 1), &parsed.z))
+  {
+    return false;
+  }
+
+  *value = parsed;
+  return true;
+}
+
 bool NeedsValue(std::string_view arg)
 {
   return arg == "--usd" || arg == "--output-dir" || arg == "--frames" || arg == "--width" || arg == "--height" ||
-         arg == "--physics-replay" || arg == "--camera" || arg == "--plugin-search-root";
+         arg == "--physics-replay" || arg == "--camera" || arg == "--plugin-search-root" ||
+         arg == "--preview-camera-position" || arg == "--preview-camera-target" || arg == "--preview-camera-fov" ||
+         arg == "--preview-camera-distance-scale";
 }
 
 bool ReadValue(int argc, char** argv, int* index, std::string* value, std::string* error)
@@ -73,6 +129,14 @@ std::string BuildHelpText()
       "  --height <pixels>             Render height. Default: 720.\n"
       "  --physics-replay <path>       Optional frame-by-frame instance transform JSON replay.\n"
       "  --camera <usd-path>           Optional USD camera prim path to use as the main camera.\n"
+      "  --preview-camera-position <x,y,z>\n"
+      "                                Override generated preview camera position.\n"
+      "  --preview-camera-target <x,y,z>\n"
+      "                                Override generated preview camera target.\n"
+      "  --preview-camera-fov <degrees>\n"
+      "                                Override preview camera vertical FOV in degrees.\n"
+      "  --preview-camera-distance-scale <scale>\n"
+      "                                Scale automatic preview camera distance. Default: 1.35.\n"
       "  --plugin-search-root <path>   Optional engine resource/plugin search root.\n"
       "  --save-preview                Save preview PNG for each frame.\n"
       "  --export-lidar                Enable LiDAR CSV export. Default: enabled.\n"
@@ -161,6 +225,47 @@ CliParseResult ParseCommandLine(int argc, char** argv)
         return result;
       }
       result.options.pluginSearchRoot = value;
+    }
+    else if(arg == "--preview-camera-position")
+    {
+      glm::vec3 parsed(0.0f);
+      if(!ReadValue(argc, argv, &i, &value, &result.error) || !ParseVec3(value, &parsed))
+      {
+        result.error = "expected comma-separated x,y,z for --preview-camera-position";
+        return result;
+      }
+      result.options.previewCameraPosition = parsed;
+    }
+    else if(arg == "--preview-camera-target")
+    {
+      glm::vec3 parsed(0.0f);
+      if(!ReadValue(argc, argv, &i, &value, &result.error) || !ParseVec3(value, &parsed))
+      {
+        result.error = "expected comma-separated x,y,z for --preview-camera-target";
+        return result;
+      }
+      result.options.previewCameraTarget = parsed;
+    }
+    else if(arg == "--preview-camera-fov")
+    {
+      float parsed = 0.0f;
+      if(!ReadValue(argc, argv, &i, &value, &result.error) || !ParseFloat(value, &parsed) || parsed <= 0.0f ||
+         parsed >= 180.0f)
+      {
+        result.error = "expected FOV in degrees between 0 and 180 for --preview-camera-fov";
+        return result;
+      }
+      result.options.previewCameraFovDegrees = parsed;
+    }
+    else if(arg == "--preview-camera-distance-scale")
+    {
+      float parsed = 0.0f;
+      if(!ReadValue(argc, argv, &i, &value, &result.error) || !ParseFloat(value, &parsed) || parsed <= 0.0f)
+      {
+        result.error = "expected positive number for --preview-camera-distance-scale";
+        return result;
+      }
+      result.options.previewCameraDistanceScale = parsed;
     }
     else if(arg == "--save-preview")
     {

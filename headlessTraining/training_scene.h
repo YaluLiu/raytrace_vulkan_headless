@@ -57,6 +57,10 @@ public:
 
   void uploadToEngine(Engine& engine);
   void configureEngineOutputs(Engine& engine, bool exportLidar, bool exportHeightScan) const;
+  void configureEngineOutputs(Engine& engine,
+                              bool exportLidar,
+                              bool exportHeightScan,
+                              const CameraSpec& mainCamera) const;
   void applyPoseUpdates(Engine& engine, const std::vector<InstancePoseUpdate>& updates) const;
 
   const TrainingSceneDescription& scene() const { return m_scene; }

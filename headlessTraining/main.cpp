@@ -1,6 +1,7 @@
 #include "cli.h"
 #include "output_writers.h"
 #include "physics_state_source.h"
+#include "preview_camera.h"
 #include "training_scene.h"
 #include "usd_scene_loader.h"
 
@@ -31,6 +32,32 @@ std::string RelativeOutputPath(const std::filesystem::path& outputDir, const std
   const std::filesystem::path relative = std::filesystem::relative(path, outputDir, ec);
   return ec ? path.string() : relative.generic_string();
 }
+
+bool HasPreviewCameraOverrides(const headless_training::CliOptions& options)
+{
+  return options.previewCameraPosition.has_value() || options.previewCameraTarget.has_value() ||
+         options.previewCameraFovDegrees.has_value() || options.previewCameraDistanceScale.has_value();
+}
+
+headless_training::PreviewCameraOptions MakePreviewCameraOptions(const headless_training::CliOptions& options)
+{
+  headless_training::PreviewCameraOptions result;
+  result.position = options.previewCameraPosition;
+  result.target = options.previewCameraTarget;
+  result.verticalFovDegrees = options.previewCameraFovDegrees;
+  result.distanceScale = options.previewCameraDistanceScale;
+  return result;
+}
+
+CameraSpec SelectMainCamera(const headless_training::TrainingSceneDescription& scene,
+                            const headless_training::CliOptions& options)
+{
+  if(!HasPreviewCameraOverrides(options) && !options.cameraPath.empty() && !scene.cameras.empty())
+  {
+    return scene.cameras.front();
+  }
+  return headless_training::BuildPreviewCamera(scene, MakePreviewCameraOptions(options));
+}
 } // namespace
 
 int main(int argc, char** argv)
@@ -53,7 +80,10 @@ int main(int argc, char** argv)
   {
     const CliOptions& options = parsed.options;
     UsdSceneLoadOptions loadOptions;
-    loadOptions.cameraPath = options.cameraPath;
+    if(!HasPreviewCameraOverrides(options))
+    {
+      loadOptions.cameraPath = options.cameraPath;
+    }
 
     TrainingSceneDescription scene = LoadUsdTrainingScene(options.usdPath, loadOptions);
     TrainingSceneRuntime runtime(std::move(scene));
@@ -71,7 +101,8 @@ int main(int argc, char** argv)
     }
     engine.setup(options.width, options.height);
     runtime.uploadToEngine(engine);
-    runtime.configureEngineOutputs(engine, options.exportLidar, options.exportHeightScan);
+    const CameraSpec mainCamera = SelectMainCamera(runtime.scene(), options);
+    runtime.configureEngineOutputs(engine, options.exportLidar, options.exportHeightScan, mainCamera);
     engine.createRenderResources();
 
     TrainingManifest manifest;

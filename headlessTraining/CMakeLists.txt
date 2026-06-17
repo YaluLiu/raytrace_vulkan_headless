@@ -15,6 +15,8 @@ add_library(
     cli.h
     output_writers.cpp
     output_writers.h
+    preview_camera.cpp
+    preview_camera.h
     physics_state_source.cpp
     physics_state_source.h
     training_scene.cpp
@@ -66,6 +68,13 @@ if(BUILD_TESTING)
   target_compile_features(headless_training_cli_test PRIVATE cxx_std_20)
   target_link_libraries(headless_training_cli_test PRIVATE ${HEADLESS_TRAINING_CORE})
   add_test(NAME headless_training_cli_test COMMAND headless_training_cli_test)
+
+  add_executable(headless_training_preview_camera_test
+    tests/preview_camera_test.cpp
+  )
+  target_compile_features(headless_training_preview_camera_test PRIVATE cxx_std_20)
+  target_link_libraries(headless_training_preview_camera_test PRIVATE ${HEADLESS_TRAINING_CORE})
+  add_test(NAME headless_training_preview_camera_test COMMAND headless_training_preview_camera_test)
 
   add_test(NAME headless_training_help_test COMMAND robot_training_headless --help)
   set_tests_properties(headless_training_help_test PROPERTIES PASS_REGULAR_EXPRESSION "Usage: robot_training_headless")

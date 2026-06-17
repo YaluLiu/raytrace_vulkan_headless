@@ -49,9 +49,21 @@ void TrainingSceneRuntime::configureEngineOutputs(Engine& engine, bool exportLid
   {
     cameras.push_back(MakeDefaultCamera());
   }
+  configureEngineOutputs(engine, exportLidar, exportHeightScan, cameras.front());
+}
 
+void TrainingSceneRuntime::configureEngineOutputs(Engine& engine,
+                                                  bool exportLidar,
+                                                  bool exportHeightScan,
+                                                  const CameraSpec& mainCamera) const
+{
+  std::vector<CameraSpec> cameras = m_scene.cameras;
+  if(cameras.empty())
+  {
+    cameras.push_back(mainCamera);
+  }
   engine.setCameras(cameras);
-  engine.setMainCamera(cameras.front());
+  engine.setMainCamera(mainCamera);
   engine.configureOutputs(BuildRendererOutputConfig(m_scene, exportLidar, exportHeightScan));
 }
 

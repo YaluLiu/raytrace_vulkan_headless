@@ -1,7 +1,10 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <string>
+
+#include <glm/glm.hpp>
 
 namespace headless_training
 {
@@ -13,6 +16,10 @@ struct CliOptions
   std::filesystem::path physicsReplayPath;
   std::string cameraPath;
   std::string pluginSearchRoot;
+  std::optional<glm::vec3> previewCameraPosition;
+  std::optional<glm::vec3> previewCameraTarget;
+  std::optional<float> previewCameraFovDegrees;
+  std::optional<float> previewCameraDistanceScale;
   int frames{1};
   int width{1280};
   int height{720};
