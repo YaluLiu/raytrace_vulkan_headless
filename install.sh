@@ -83,6 +83,8 @@ function train(){
         --width "${train_width}"
         --height "${train_height}"
         --save-preview
+        --preview-lidar-points
+        --preview-height-scan-points
         --export-lidar
         --export-height-scan
     )

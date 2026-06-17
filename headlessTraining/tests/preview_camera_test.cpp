@@ -100,6 +100,33 @@ int main()
   Require(DistanceToTarget(scaledCamera, expectedTarget) > DistanceToTarget(camera, expectedTarget),
           "distance scale should pull the automatic camera farther back");
 
+  headless_training::TrainingSceneDescription sensorScene;
+  LidarSensorSpec lidarSensor;
+  lidarSensor.name = "/World/Lidar";
+  sensorScene.lidarSensors.push_back(lidarSensor);
+  HeightScanSensorSpec heightScanSensor;
+  heightScanSensor.name = "/World/HeightScan";
+  sensorScene.heightScanSensors.push_back(heightScanSensor);
+
+  const RendererOutputConfig previewOverlayConfig =
+      headless_training::BuildRendererOutputConfig(sensorScene, false, false, true, true);
+  Require(previewOverlayConfig.lidar.sensors.size() == 1, "preview lidar overlay should configure lidar sensors");
+  Require(previewOverlayConfig.lidar.visualization.enabled, "preview lidar overlay should be enabled");
+  Require(previewOverlayConfig.lidar.visualization.visualizeAllSensors,
+          "preview lidar overlay should draw all sensors");
+  Require(previewOverlayConfig.heightScan.sensors.size() == 1,
+          "preview height scan overlay should configure height scan sensors");
+  Require(previewOverlayConfig.heightScan.visualization.enabled, "preview height scan overlay should be enabled");
+  Require(previewOverlayConfig.heightScan.visualization.visualizeAllSensors,
+          "preview height scan overlay should draw all sensors");
+
+  const RendererOutputConfig csvOnlyConfig =
+      headless_training::BuildRendererOutputConfig(sensorScene, true, true, false, false);
+  Require(csvOnlyConfig.lidar.sensors.size() == 1 && csvOnlyConfig.heightScan.sensors.size() == 1,
+          "CSV export should keep configuring sensors");
+  Require(!csvOnlyConfig.lidar.visualization.enabled && !csvOnlyConfig.heightScan.visualization.enabled,
+          "CSV export alone should not enable preview overlays");
+
   headless_training::PreviewCameraOptions overrideOptions;
   overrideOptions.position = glm::vec3(10.0f, 9.0f, 8.0f);
   overrideOptions.target = glm::vec3(1.0f, 2.0f, 3.0f);

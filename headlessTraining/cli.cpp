@@ -139,6 +139,11 @@ std::string BuildHelpText()
       "                                Scale automatic preview camera distance. Default: automatic.\n"
       "  --plugin-search-root <path>   Optional engine resource/plugin search root.\n"
       "  --save-preview                Save preview PNG for each frame.\n"
+      "  --preview-lidar-points        Overlay all LiDAR point clouds on preview PNGs.\n"
+      "  --no-preview-lidar-points     Disable LiDAR point cloud preview overlay.\n"
+      "  --preview-height-scan-points  Overlay all height scan points on preview PNGs.\n"
+      "  --no-preview-height-scan-points\n"
+      "                                Disable height scan point preview overlay.\n"
       "  --export-lidar                Enable LiDAR CSV export. Default: enabled.\n"
       "  --no-export-lidar             Disable LiDAR CSV export.\n"
       "  --export-height-scan          Enable height scan CSV export. Default: enabled.\n"
@@ -270,6 +275,22 @@ CliParseResult ParseCommandLine(int argc, char** argv)
     else if(arg == "--save-preview")
     {
       result.options.savePreview = true;
+    }
+    else if(arg == "--preview-lidar-points")
+    {
+      result.options.previewLidarPoints = true;
+    }
+    else if(arg == "--no-preview-lidar-points")
+    {
+      result.options.previewLidarPoints = false;
+    }
+    else if(arg == "--preview-height-scan-points")
+    {
+      result.options.previewHeightScanPoints = true;
+    }
+    else if(arg == "--no-preview-height-scan-points")
+    {
+      result.options.previewHeightScanPoints = false;
     }
     else if(arg == "--export-lidar")
     {

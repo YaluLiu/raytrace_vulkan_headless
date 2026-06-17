@@ -45,8 +45,8 @@ call sites with `rg`.
   registration; use `-DROBOT_ENGINE_SCHEMA_ONLY=ON` for schema-only builds.
 - `install.sh`: Local command wrapper for `hydra`, `schema`, `show`, and
   `train`; `train` configures/builds `robot_training_headless` and enables all
-  current training outputs: preview PNG, LiDAR CSV, height scan CSV, and
-  manifest JSON.
+  current training outputs: preview PNG, all-sensor LiDAR and height-scan
+  preview overlays, LiDAR CSV, height scan CSV, and manifest JSON.
 - `engine/CMakeLists.txt`: Engine renderer library sources, shader
   compilation, renderer compile definitions, and focused CTest targets such as
   `engine_height_scan_basis_test` and `engine_camera_projection_test`.
@@ -116,7 +116,7 @@ call sites with `rg`.
   help text, required `--usd` / `--output-dir` validation, positive integer
   parsing for frame/render dimensions, output directory creation, optional
   camera path, preview camera overrides, replay path, plugin search root,
-  preview, and export toggles.
+  preview, preview point-cloud overlay, and export toggles.
 - `headlessTraining/preview_camera.h` /
   `headlessTraining/preview_camera.cpp`: CPU-only preview camera helper that
   computes visible mesh world bounds and builds the default main preview
@@ -128,8 +128,9 @@ call sites with `rg`.
   `headlessTraining/training_scene.cpp`: Engine-facing CPU scene model,
   texture/light/mesh upload, mesh/instance bookkeeping, default camera
   construction, optional independent main preview camera submission, renderer
-  output config construction, replay pose application, and shared USD/Gf
-  row-major matrix to engine `glm::mat4` transform conversion.
+  output config construction including optional all-sensor preview point-cloud
+  overlays, replay pose application, and shared USD/Gf row-major matrix to
+  engine `glm::mat4` transform conversion.
 - `headlessTraining/usd_scene_loader.h` /
   `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
   `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`,

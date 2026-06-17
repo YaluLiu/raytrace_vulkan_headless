@@ -57,10 +57,8 @@ public:
 
   void uploadToEngine(Engine& engine);
   void configureEngineOutputs(Engine& engine, bool exportLidar, bool exportHeightScan) const;
-  void configureEngineOutputs(Engine& engine,
-                              bool exportLidar,
-                              bool exportHeightScan,
-                              const CameraSpec& mainCamera) const;
+  void configureEngineOutputs(Engine& engine, bool exportLidar, bool exportHeightScan, const CameraSpec& mainCamera,
+                              bool previewLidarPoints = false, bool previewHeightScanPoints = false) const;
   void applyPoseUpdates(Engine& engine, const std::vector<InstancePoseUpdate>& updates) const;
 
   const TrainingSceneDescription& scene() const { return m_scene; }
@@ -74,9 +72,9 @@ private:
 };
 
 CameraSpec MakeDefaultCamera();
-RendererOutputConfig BuildRendererOutputConfig(const TrainingSceneDescription& scene,
-                                                bool exportLidar,
-                                                bool exportHeightScan);
+RendererOutputConfig BuildRendererOutputConfig(const TrainingSceneDescription& scene, bool exportLidar,
+                                               bool exportHeightScan, bool previewLidarPoints = false,
+                                               bool previewHeightScanPoints = false);
 glm::mat4 MakeEngineTransformFromUsdRows(const std::array<double, 16>& rowMajorMatrix);
 
 } // namespace headless_training

@@ -52,10 +52,9 @@ void TrainingSceneRuntime::configureEngineOutputs(Engine& engine, bool exportLid
   configureEngineOutputs(engine, exportLidar, exportHeightScan, cameras.front());
 }
 
-void TrainingSceneRuntime::configureEngineOutputs(Engine& engine,
-                                                  bool exportLidar,
-                                                  bool exportHeightScan,
-                                                  const CameraSpec& mainCamera) const
+void TrainingSceneRuntime::configureEngineOutputs(Engine& engine, bool exportLidar, bool exportHeightScan,
+                                                  const CameraSpec& mainCamera, bool previewLidarPoints,
+                                                  bool previewHeightScanPoints) const
 {
   std::vector<CameraSpec> cameras = m_scene.cameras;
   if(cameras.empty())
@@ -64,7 +63,8 @@ void TrainingSceneRuntime::configureEngineOutputs(Engine& engine,
   }
   engine.setCameras(cameras);
   engine.setMainCamera(mainCamera);
-  engine.configureOutputs(BuildRendererOutputConfig(m_scene, exportLidar, exportHeightScan));
+  engine.configureOutputs(
+      BuildRendererOutputConfig(m_scene, exportLidar, exportHeightScan, previewLidarPoints, previewHeightScanPoints));
 }
 
 void TrainingSceneRuntime::applyPoseUpdates(Engine& engine, const std::vector<InstancePoseUpdate>& updates) const
@@ -107,20 +107,30 @@ CameraSpec MakeDefaultCamera()
   return camera;
 }
 
-RendererOutputConfig BuildRendererOutputConfig(const TrainingSceneDescription& scene,
-                                                bool exportLidar,
-                                                bool exportHeightScan)
+RendererOutputConfig BuildRendererOutputConfig(const TrainingSceneDescription& scene, bool exportLidar,
+                                               bool exportHeightScan, bool previewLidarPoints,
+                                               bool previewHeightScanPoints)
 {
   RendererOutputConfig config;
   config.tile.atlas.enabled = false;
   config.tile.requestedChannels = TileAovChannelMask::None();
-  if(exportLidar)
+  if(exportLidar || previewLidarPoints)
   {
     config.lidar.sensors = scene.lidarSensors;
   }
-  if(exportHeightScan)
+  if(previewLidarPoints && !scene.lidarSensors.empty())
+  {
+    config.lidar.visualization.enabled = true;
+    config.lidar.visualization.visualizeAllSensors = true;
+  }
+  if(exportHeightScan || previewHeightScanPoints)
   {
     config.heightScan.sensors = scene.heightScanSensors;
+  }
+  if(previewHeightScanPoints && !scene.heightScanSensors.empty())
+  {
+    config.heightScan.visualization.enabled = true;
+    config.heightScan.visualization.visualizeAllSensors = true;
   }
   return config;
 }

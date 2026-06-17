@@ -102,7 +102,8 @@ int main(int argc, char** argv)
     engine.setup(options.width, options.height);
     runtime.uploadToEngine(engine);
     const CameraSpec mainCamera = SelectMainCamera(runtime.scene(), options);
-    runtime.configureEngineOutputs(engine, options.exportLidar, options.exportHeightScan, mainCamera);
+    runtime.configureEngineOutputs(engine, options.exportLidar, options.exportHeightScan, mainCamera,
+                                   options.previewLidarPoints, options.previewHeightScanPoints);
     engine.createRenderResources();
 
     TrainingManifest manifest;

@@ -53,13 +53,16 @@ int main()
         Parse({"robot_training_headless", "--usd", usdPath.string(), "--output-dir", (tempDir / "out").string(),
                "--frames", "3", "--width", "64", "--height", "32", "--no-export-lidar", "--save-preview",
                "--preview-camera-position", "1.5,2.5,-3.5", "--preview-camera-target", "0,0.25,1",
-               "--preview-camera-fov", "60", "--preview-camera-distance-scale", "1.8"});
+               "--preview-camera-fov", "60", "--preview-camera-distance-scale", "1.8", "--preview-lidar-points",
+               "--preview-height-scan-points"});
     Require(result.ok, result.error.c_str());
     Require(result.options.frames == 3, "frames parse mismatch");
     Require(result.options.width == 64 && result.options.height == 32, "render size parse mismatch");
     Require(!result.options.exportLidar, "lidar toggle parse mismatch");
     Require(result.options.exportHeightScan, "height scan default should stay enabled");
     Require(result.options.savePreview, "preview toggle parse mismatch");
+    Require(result.options.previewLidarPoints, "preview lidar point overlay parse mismatch");
+    Require(result.options.previewHeightScanPoints, "preview height scan point overlay parse mismatch");
     Require(result.options.previewCameraPosition.has_value(), "preview camera position should parse");
     Require(Near(result.options.previewCameraPosition->x, 1.5f) &&
                 Near(result.options.previewCameraPosition->y, 2.5f) &&
@@ -76,6 +79,16 @@ int main()
                 Near(*result.options.previewCameraDistanceScale, 1.8f),
             "preview camera distance scale parse mismatch");
     Require(std::filesystem::exists(tempDir / "out"), "output directory should be created");
+  }
+
+  {
+    headless_training::CliParseResult result =
+        Parse({"robot_training_headless", "--usd", usdPath.string(), "--output-dir", (tempDir / "out1b").string(),
+               "--preview-lidar-points", "--preview-height-scan-points", "--no-preview-lidar-points",
+               "--no-preview-height-scan-points"});
+    Require(result.ok, result.error.c_str());
+    Require(!result.options.previewLidarPoints, "preview lidar point overlay should be disableable");
+    Require(!result.options.previewHeightScanPoints, "preview height scan point overlay should be disableable");
   }
 
   {

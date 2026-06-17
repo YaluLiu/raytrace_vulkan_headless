@@ -24,6 +24,8 @@ struct CliOptions
   int width{1280};
   int height{720};
   bool savePreview{false};
+  bool previewLidarPoints{false};
+  bool previewHeightScanPoints{false};
   bool exportLidar{true};
   bool exportHeightScan{true};
   bool showHelp{false};
