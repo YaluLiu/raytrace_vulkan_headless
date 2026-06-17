@@ -119,9 +119,11 @@ call sites with `rg`.
   preview, and export toggles.
 - `headlessTraining/preview_camera.h` /
   `headlessTraining/preview_camera.cpp`: CPU-only preview camera helper that
-  computes visible mesh world bounds and builds the default pulled-back main
-  preview `CameraSpec`, with explicit CLI overrides for position, target, FOV,
-  and distance scale.
+  computes visible mesh world bounds and builds the default main preview
+  `CameraSpec`; when height-scan gravity is available, it generates a
+  gravity-aligned overhead view focused on visible non-ground meshes and falls
+  back to ground/all bounds as needed. Explicit CLI overrides remain available
+  for position, target, FOV, and distance scale.
 - `headlessTraining/training_scene.h` /
   `headlessTraining/training_scene.cpp`: Engine-facing CPU scene model,
   texture/light/mesh upload, mesh/instance bookkeeping, default camera

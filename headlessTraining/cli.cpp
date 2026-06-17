@@ -136,7 +136,7 @@ std::string BuildHelpText()
       "  --preview-camera-fov <degrees>\n"
       "                                Override preview camera vertical FOV in degrees.\n"
       "  --preview-camera-distance-scale <scale>\n"
-      "                                Scale automatic preview camera distance. Default: 1.35.\n"
+      "                                Scale automatic preview camera distance. Default: automatic.\n"
       "  --plugin-search-root <path>   Optional engine resource/plugin search root.\n"
       "  --save-preview                Save preview PNG for each frame.\n"
       "  --export-lidar                Enable LiDAR CSV export. Default: enabled.\n"

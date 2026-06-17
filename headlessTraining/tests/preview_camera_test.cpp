@@ -54,6 +54,18 @@ headless_training::TrainingMeshInstance MakeMesh(std::string name, glm::vec3 tra
   return mesh;
 }
 
+headless_training::TrainingMeshInstance MakeMeshFromBounds(std::string name,
+                                                           glm::vec3 minPoint,
+                                                           glm::vec3 maxPoint,
+                                                           uint32_t traceMask = kTraceMaskDefaultGeometry)
+{
+  headless_training::TrainingMeshInstance mesh;
+  mesh.name = std::move(name);
+  mesh.geometry = MakeBoxGeometry(minPoint, maxPoint);
+  mesh.traceMask = traceMask;
+  return mesh;
+}
+
 float DistanceToTarget(const CameraSpec& camera, glm::vec3 target)
 {
   return glm::length(camera.position - target);
@@ -100,6 +112,30 @@ int main()
   Require(glm::dot(overrideCamera.forward, glm::normalize(*overrideOptions.target - *overrideOptions.position)) >
               0.999f,
           "explicit preview camera target should define forward direction");
+
+  headless_training::TrainingSceneDescription zUpScene;
+  zUpScene.meshes.push_back(MakeMeshFromBounds("/World/ground/terrain/mesh", glm::vec3(-10.0f, -13.0f, -0.05f),
+                                               glm::vec3(10.0f, 13.0f, 0.05f), kTraceMaskGround));
+  zUpScene.meshes.push_back(MakeMeshFromBounds("/World/envs/env_0/Robot/trunk/visuals",
+                                               glm::vec3(0.8f, -12.3f, 0.0f), glm::vec3(1.3f, -11.5f, 0.5f)));
+  zUpScene.meshes.push_back(MakeMeshFromBounds("/World/envs/env_1/Robot/trunk/visuals",
+                                               glm::vec3(7.7f, 8.6f, -0.6f), glm::vec3(8.2f, 9.3f, 0.0f)));
+  zUpScene.meshes.push_back(MakeMeshFromBounds("/World/envs/env_2/Robot/trunk/visuals",
+                                               glm::vec3(-5.1f, -12.1f, 0.0f), glm::vec3(-4.7f, -11.3f, 0.5f)));
+  HeightScanSensorSpec heightScan;
+  heightScan.params.gravityDirectionWs = glm::vec3(0.0f, 0.0f, -1.0f);
+  zUpScene.heightScanSensors.push_back(heightScan);
+
+  const CameraSpec zUpCamera = headless_training::BuildPreviewCamera(zUpScene);
+  const glm::vec3 zUpTarget(1.55f, -1.5f, -0.05f);
+  Require(Near(zUpCamera.position.x, zUpTarget.x) && Near(zUpCamera.position.y, zUpTarget.y),
+          "Z-up preview camera should center on non-ground meshes");
+  Require(zUpCamera.position.z > zUpTarget.z, "Z-up preview camera should move opposite gravity");
+  Require(glm::dot(zUpCamera.forward, glm::vec3(0.0f, 0.0f, -1.0f)) > 0.999f,
+          "Z-up preview camera should look along gravity");
+  Require(Near(zUpCamera.verticalFovDegrees, 90.0f), "Z-up preview camera should use the wide overview FOV");
+  Require(std::fabs(glm::dot(zUpCamera.up, zUpCamera.forward)) < 1.0e-4f,
+          "Z-up preview camera up vector should be perpendicular to forward");
 
   return 0;
 }
