@@ -3,6 +3,7 @@
 BUILD_TYPE="Release"
 DEFAULT_HYDRA_SCENE_PATH="/home/yalu/docker/assets/tile/pao/tile_pao.usd"
 DEFAULT_HYDRA_SCENE_PATH=/home/yalu/docker/assets/demo5/World0.usd
+DEFAULT_TRAIN_SCENE_PATH="/home/yalu/docker/assets/demo5/World0.usd"
 function format(){
     find engine \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
 }
@@ -51,6 +52,54 @@ function schema(){
     cmake --build . --target UsdRaySensor --config Release -j20
     cmake --install . --component UsdRaySensor
     cd ..
+}
+
+function train(){
+    set -e
+    tbb_dir="${TBB_DIR:-/usr/lib/x86_64-linux-gnu/cmake/TBB}"
+    project_root="$(pwd)"
+    train_scene_path="${TRAIN_SCENE_PATH:-${DEFAULT_TRAIN_SCENE_PATH}}"
+    train_output_dir="${TRAIN_OUTPUT_DIR:-${project_root}/output/train}"
+    train_frames="${TRAIN_FRAMES:-1}"
+    train_width="${TRAIN_WIDTH:-1280}"
+    train_height="${TRAIN_HEIGHT:-720}"
+
+    mkdir -p "${train_output_dir}"
+    mkdir -p build
+
+    cd build
+    cmake .. -Wno-dev \
+        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -DTBB_DIR="${tbb_dir}"
+
+    cmake --build . --target robot_training_headless --config Release -j20
+    cd "${project_root}"
+
+    train_args=(
+        --usd "${train_scene_path}"
+        --output-dir "${train_output_dir}"
+        --frames "${train_frames}"
+        --width "${train_width}"
+        --height "${train_height}"
+        --save-preview
+        --export-lidar
+        --export-height-scan
+    )
+
+    if [ -n "${TRAIN_PHYSICS_REPLAY}" ]; then
+        train_args+=(--physics-replay "${TRAIN_PHYSICS_REPLAY}")
+    fi
+    if [ -n "${TRAIN_CAMERA}" ]; then
+        train_args+=(--camera "${TRAIN_CAMERA}")
+    fi
+    if [ -n "${TRAIN_PLUGIN_SEARCH_ROOT}" ]; then
+        train_args+=(--plugin-search-root "${TRAIN_PLUGIN_SEARCH_ROOT}")
+    fi
+
+    echo "[train] TRAIN_SCENE_PATH=${train_scene_path}"
+    echo "[train] TRAIN_OUTPUT_DIR=${train_output_dir}"
+    "${project_root}/build/headlessTraining/robot_training_headless" "${train_args[@]}" "$@"
 }
 
 function show()

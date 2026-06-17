@@ -56,6 +56,7 @@ add_subdirectory(engine)
 add_subdirectory(UsdRaySensor)
 add_subdirectory(UsdRaySensorImaging)
 add_subdirectory(hdRobot)
+add_subdirectory(headlessTraining)
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory
 install(DIRECTORY "media" 

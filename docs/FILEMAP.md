@@ -8,10 +8,13 @@ call sites with `rg`.
 ## Top-Level Structure
 
 - `CMakeLists.txt`: Root build configuration, package setup, and unconditional
-  engine, `UsdRaySensor`, `UsdRaySensorImaging`, and `hdRobot` subdirectory
-  registration. `ROBOT_ENGINE_SCHEMA_ONLY=ON` configures only the
+  engine, `UsdRaySensor`, `UsdRaySensorImaging`, `hdRobot`, and
+  `headlessTraining` subdirectory registration. `ROBOT_ENGINE_SCHEMA_ONLY=ON`
+  configures only the
   `UsdRaySensor` schema plugin and skips Vulkan/engine/Hydra setup.
-- `install.sh`: Main local build/run helper used by Hydra workflows.
+- `install.sh`: Main local build/run helper used by Hydra workflows and the
+  `train` helper for `robot_training_headless` runs against the demo5
+  `World0.usd` scene.
 - `build_windows.bat`: Windows Hydra build helper; builds and installs
   `UsdRaySensor`, `UsdRaySensorImaging`, and `hdRobot`.
 - `engine/`: Core Vulkan graphics library. Public API lives under
@@ -29,6 +32,10 @@ call sites with `rg`.
 - `UsdRaySensorImaging/`: UsdImaging adapter plugin and shared Hydra sensor
   contract for exposing `LidarSensor` and `HeightScanSensor` prims as custom
   `lidarSensor` and `heightScanSensor` sprims.
+- `headlessTraining/`: Hydra-free training executable and CPU support code for
+  reading a limited USD static scene subset, applying replayed external
+  physics transforms, submitting scene/sensor state through the public
+  `Engine` API, and writing training CSV/manifest/preview outputs.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 
@@ -36,6 +43,10 @@ call sites with `rg`.
 
 - `CMakeLists.txt`: Start here for project-wide package setup and target
   registration; use `-DROBOT_ENGINE_SCHEMA_ONLY=ON` for schema-only builds.
+- `install.sh`: Local command wrapper for `hydra`, `schema`, `show`, and
+  `train`; `train` configures/builds `robot_training_headless` and enables all
+  current training outputs: preview PNG, LiDAR CSV, height scan CSV, and
+  manifest JSON.
 - `engine/CMakeLists.txt`: Engine renderer library sources, shader
   compilation, renderer compile definitions, and focused CTest targets such as
   `engine_height_scan_basis_test` and `engine_camera_projection_test`.
@@ -47,6 +58,11 @@ call sites with `rg`.
   plugin metadata generation, and schema resource install layout.
 - `UsdRaySensorImaging/CMakeLists.txt`: UsdImaging adapter plugin target,
   shared Hydra sensor token export, metadata generation, and install layout.
+- `headlessTraining/CMakeLists.txt`: `robot_training_headless` executable,
+  `headlessTrainingCore` static helper library, focused CPU CTest targets
+  `headless_training_usd_scene_loader_test`,
+  `headless_training_physics_output_test`, `headless_training_cli_test`, and
+  non-Vulkan executable startup test `headless_training_help_test`.
 - `build_windows.bat`: Windows route for building and installing the three USD
   plugin components into the configured USD plugin prefix.
 
@@ -61,6 +77,10 @@ call sites with `rg`.
 - `engine/src/core/frame_executor.hpp` / `engine/src/core/frame_executor.cpp`:
   Source of truth for per-frame engine pass sequencing; preview AOV rendering
   is followed by LiDAR point overlay and then height scan overlay.
+- `headlessTraining/main.cpp`: Dedicated Hydra-free CLI executable entry for
+  training data generation; orchestrates CLI parsing, USD scene loading,
+  optional physics replay, engine setup/upload/output configuration, per-frame
+  render/readback, preview saving, CSV writing, and manifest writing.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction, render
   param ownership, scene store ownership, delegate-owned render
@@ -85,6 +105,48 @@ call sites with `rg`.
   Hydra-to-engine data conversion helpers used by the bridge for mesh geometry,
   materials, cameras, lights, LiDAR, height scan, visualization, and tile
   config objects.
+
+## Headless Training
+
+- `headlessTraining/main.cpp`: `robot_training_headless` command-line program;
+  the runtime order is `Engine::setup`, scene upload, camera/output config,
+  `Engine::createRenderResources`, per-frame replay update, `Engine::render`,
+  sensor readback, optional preview save, and output manifest update.
+- `headlessTraining/cli.h` / `headlessTraining/cli.cpp`: CLI option parsing,
+  help text, required `--usd` / `--output-dir` validation, positive integer
+  parsing for frame/render dimensions, output directory creation, optional
+  camera path, replay path, plugin search root, preview, and export toggles.
+- `headlessTraining/training_scene.h` /
+  `headlessTraining/training_scene.cpp`: Engine-facing CPU scene model,
+  uploaded mesh/instance bookkeeping, default camera construction,
+  renderer output config construction, replay pose application, and shared
+  USD/Gf row-major matrix to engine `glm::mat4` transform conversion.
+- `headlessTraining/usd_scene_loader.h` /
+  `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
+  `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`, and
+  `HeightScanSensor` prims. It handles triangle/quad/convex fan triangulation,
+  fallback normals, visibility, `hdRobot:traceRole = "ground"` to
+  `kTraceMaskGround`, schema default sensor values, disabled sensor filtering,
+  and local `-Z`/`+Y` pose conventions.
+- `headlessTraining/physics_state_source.h` /
+  `headlessTraining/physics_state_source.cpp`: External physics boundary for
+  frame-by-frame instance pose updates. The first implementation loads strict
+  JSON replay files with named instance transforms and visibility flags.
+- `headlessTraining/output_writers.h` /
+  `headlessTraining/output_writers.cpp`: LiDAR CSV, height scan CSV, manifest
+  JSON, point/sample counting, CSV/JSON escaping, and frame file naming.
+- `headlessTraining/tests/usd_scene_loader_test.cpp`: CPU-only USD loader
+  coverage for quad triangulation, transform conversion, camera pose, schema
+  sensor defaults, disabled sensor filtering, parameter sanitization, and
+  ground trace-role mapping.
+- `headlessTraining/tests/physics_output_test.cpp`: CPU-only replay parser,
+  matrix conversion, CSV writer, and manifest writer coverage.
+- `headlessTraining/tests/cli_test.cpp`: CPU-only CLI parsing coverage for
+  required options, output directory creation, numeric options, export toggles,
+  missing values, unknown options, and `--help`.
+- `headlessTraining/tests/fixtures/smoke_scene.usda` and
+  `headlessTraining/tests/fixtures/smoke_replay.json`: Minimal scene/replay
+  pair for local `robot_training_headless` smoke runs.
 
 ## Engine Runtime Facade
 
@@ -493,6 +555,12 @@ call sites with `rg`.
   `engine/shaders/common/host_device.h`.
 - `engine/include/engine/texture_asset.hpp`: Texture usage, color-space, and
   encoded-byte payload DTOs consumed by `Engine::loadTextureAssets`.
+- `headlessTraining/usd_scene_loader.cpp`: Hydra-free limited USD loader for
+  training scenes; start here for direct USD mesh/camera/sensor ingestion
+  issues rather than `hdRobot/mesh.cpp` when the executable path is
+  `robot_training_headless`.
+- `headlessTraining/training_scene.cpp`: Scene submission and external replay
+  pose update bridge into `Engine::uploadMesh` and `Engine::updateInstance`.
 
 ## Shader Files
 
@@ -550,6 +618,15 @@ call sites with `rg`.
   `hdRobot/engineSession.cpp`, `hdRobot/renderDelegate.cpp`, then search
   for `RenderFrame`, `_Execute`, `ApplyPendingUpdates`, `CommitResources`,
   and `Sync`.
+- Headless training flow:
+  `headlessTraining/main.cpp`, `headlessTraining/training_scene.cpp`,
+  `headlessTraining/usd_scene_loader.cpp`,
+  `headlessTraining/physics_state_source.cpp`,
+  `headlessTraining/output_writers.cpp`, and `engine/include/engine/engine.hpp`,
+  then search for `robot_training_headless`, `LoadUsdTrainingScene`,
+  `TrainingSceneRuntime`, `LoadPhysicsReplay`, `WriteLidarCsv`,
+  `WriteHeightScanCsv`, `WriteManifestJson`, `configureEngineOutputs`,
+  `uploadToEngine`, and `applyPoseUpdates`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
   `hdRobot/engineSession.cpp`, `hdRobot/passBridge.cpp`,
@@ -686,16 +763,15 @@ call sites with `rg`.
 
 The graph report currently identifies these high-connectivity anchors:
 
-- `GetOrImportSourceGlTexture()`
+- `Sync()`
 - `_CreateGiMeshes()`
+- `LoadUsdTrainingScene()`
+- `ToGlm()`
+- `SetRenderSetting()`
 - `ensureResources()`
 - `createDesc()`
-- `RenderFrame()`
-- `destroy()`
-- `EnsureEngineReady()`
-- `CommitResources()`
-- `Sync()`
-- `_ProcessPrimvar()`
+- `GetHdRobotAovSpec()`
+- `rebuild()`
 
 When a question is ambiguous, start from the matching anchor, inspect its
 definition, then read direct callers/callees before widening to the full

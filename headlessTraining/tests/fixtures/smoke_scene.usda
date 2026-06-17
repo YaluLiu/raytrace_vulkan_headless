@@ -1,0 +1,58 @@
+#usda 1.0
+
+def Xform "World"
+{
+    def Mesh "Ground"
+    {
+        custom token hdRobot:traceRole = "ground"
+        point3f[] points = [(-2, 0, -2), (2, 0, -2), (2, 0, 2), (-2, 0, 2)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+    }
+
+    def Mesh "Box"
+    {
+        point3f[] points = [(-0.25, 0, -0.25), (0.25, 0, -0.25), (0.25, 0.5, -0.25), (-0.25, 0.5, -0.25)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0.5, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Camera "MainCamera"
+    {
+        float focalLength = 35
+        float horizontalAperture = 20
+        float verticalAperture = 15
+        float2 clippingRange = (0.05, 100)
+        matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 0.89442719, -0.4472136, 0), (0, 0.4472136, 0.89442719, 0), (0, 2, 4, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def LidarSensor "Lidar"
+    {
+        custom float azimuthStartDeg = -10
+        custom float azimuthEndDeg = 10
+        custom float azimuthStepDeg = 10
+        custom float verticalStartDeg = -20
+        custom float verticalEndDeg = -20
+        custom float verticalStepDeg = 1
+        custom float maxRange = 10
+        matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 0.89442719, -0.4472136, 0), (0, 0.4472136, 0.89442719, 0), (0, 1, 2, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def HeightScanSensor "Feet"
+    {
+        custom float uStart = -0.2
+        custom float uEnd = 0.2
+        custom float uStep = 0.2
+        custom float vStart = -0.2
+        custom float vEnd = 0.2
+        custom float vStep = 0.2
+        custom float maxRange = 5
+        custom float3 gravityDirectionWs = (0, -1, 0)
+        matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
