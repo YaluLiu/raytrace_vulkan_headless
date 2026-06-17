@@ -5,7 +5,7 @@ find_package(pxr REQUIRED)
 if(TARGET usd_ms)
   set(HEADLESS_TRAINING_USD_LIBS usd_ms)
 else()
-  set(HEADLESS_TRAINING_USD_LIBS usd usdGeom)
+  set(HEADLESS_TRAINING_USD_LIBS usd usdGeom usdLux usdShade)
 endif()
 
 add_library(

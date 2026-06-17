@@ -6,6 +6,7 @@
 #include <engine/mesh_types.hpp>
 #include <engine/output_config.hpp>
 #include <engine/renderer_types.hpp>
+#include <engine/texture_asset.hpp>
 
 #include <array>
 #include <cstdint>
@@ -35,6 +36,8 @@ struct TrainingMeshInstance
 struct TrainingSceneDescription
 {
   std::vector<TrainingMeshInstance> meshes;
+  std::vector<TextureAsset> textureAssets;
+  std::vector<Light> lights;
   std::vector<CameraSpec> cameras;
   std::vector<LidarSensorSpec> lidarSensors;
   std::vector<HeightScanSensorSpec> heightScanSensors;

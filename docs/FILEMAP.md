@@ -118,16 +118,19 @@ call sites with `rg`.
   camera path, replay path, plugin search root, preview, and export toggles.
 - `headlessTraining/training_scene.h` /
   `headlessTraining/training_scene.cpp`: Engine-facing CPU scene model,
-  uploaded mesh/instance bookkeeping, default camera construction,
-  renderer output config construction, replay pose application, and shared
-  USD/Gf row-major matrix to engine `glm::mat4` transform conversion.
+  texture/light/mesh upload, mesh/instance bookkeeping, default camera
+  construction, renderer output config construction, replay pose application,
+  and shared USD/Gf row-major matrix to engine `glm::mat4` transform
+  conversion.
 - `headlessTraining/usd_scene_loader.h` /
   `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
-  `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`, and
-  `HeightScanSensor` prims. It handles triangle/quad/convex fan triangulation,
-  fallback normals, visibility, `hdRobot:traceRole = "ground"` to
-  `kTraceMaskGround`, schema default sensor values, disabled sensor filtering,
-  and local `-Z`/`+Y` pose conventions.
+  `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`,
+  `HeightScanSensor`, basic `UsdPreviewSurface` material inputs, displayColor
+  fallback materials, texture assets, DomeLight, SphereLight, and CylinderLight
+  prims. It handles triangle/quad/convex fan triangulation, fallback normals,
+  visibility, `hdRobot:traceRole = "ground"` to `kTraceMaskGround`, schema
+  default sensor values, disabled sensor filtering, and local `-Z`/`+Y` pose
+  conventions.
 - `headlessTraining/physics_state_source.h` /
   `headlessTraining/physics_state_source.cpp`: External physics boundary for
   frame-by-frame instance pose updates. The first implementation loads strict
@@ -556,11 +559,12 @@ call sites with `rg`.
 - `engine/include/engine/texture_asset.hpp`: Texture usage, color-space, and
   encoded-byte payload DTOs consumed by `Engine::loadTextureAssets`.
 - `headlessTraining/usd_scene_loader.cpp`: Hydra-free limited USD loader for
-  training scenes; start here for direct USD mesh/camera/sensor ingestion
-  issues rather than `hdRobot/mesh.cpp` when the executable path is
-  `robot_training_headless`.
+  training scenes; start here for direct USD mesh/camera/sensor and basic
+  material/texture/light ingestion issues rather than `hdRobot/mesh.cpp` when
+  the executable path is `robot_training_headless`.
 - `headlessTraining/training_scene.cpp`: Scene submission and external replay
-  pose update bridge into `Engine::uploadMesh` and `Engine::updateInstance`.
+  pose update bridge into `Engine::loadTextureAssets`, `Engine::uploadMesh`,
+  `Engine::addLight`, and `Engine::updateInstance`.
 
 ## Shader Files
 

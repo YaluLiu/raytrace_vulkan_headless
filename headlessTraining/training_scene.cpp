@@ -23,7 +23,7 @@ void TrainingSceneRuntime::rebuildIndex()
 
 void TrainingSceneRuntime::uploadToEngine(Engine& engine)
 {
-  engine.loadTextureAssets({});
+  engine.loadTextureAssets(m_scene.textureAssets);
 
   for(TrainingMeshInstance& mesh : m_scene.meshes)
   {
@@ -33,6 +33,12 @@ void TrainingSceneRuntime::uploadToEngine(Engine& engine)
     mesh.engineMeshIndex = meshIndex;
     mesh.engineInstanceIndex = instanceIndex;
     engine.updateInstance(mesh.engineInstanceIndex, mesh.worldTransform, mesh.visible, mesh.traceMask);
+  }
+
+  engine.clearLights();
+  for(const Light& light : m_scene.lights)
+  {
+    engine.addLight(light);
   }
 }
 

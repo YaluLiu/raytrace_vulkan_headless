@@ -10,6 +10,11 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/ar/asset.h>
+#include <pxr/usd/ar/resolvedPath.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
+#include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
@@ -17,18 +22,33 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/lightAPI.h>
+#include <pxr/usd/usdLux/sphereLight.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/input.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
+#include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdShade/tokens.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <unordered_map>
+#include <utility>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -41,6 +61,120 @@ namespace
 {
 constexpr float kSensorEpsilon = 1.0e-6f;
 constexpr float kParamEpsilon = 1.0e-4f;
+constexpr int kLightTypeSphere = 0;
+constexpr int kLightTypeDome = 2;
+
+std::string TextureRegistryKey(const std::string& texturePath, TextureUsage usage)
+{
+  return texturePath + "#" + std::to_string(static_cast<int>(usage));
+}
+
+TextureColorSpace TextureColorSpaceForUsage(TextureUsage usage)
+{
+  switch(usage)
+  {
+  case TextureUsage::Metallic:
+  case TextureUsage::Roughness:
+  case TextureUsage::Normal:
+  case TextureUsage::Opacity:
+  case TextureUsage::Subsurface:
+    return TextureColorSpace::Linear;
+  case TextureUsage::Unknown:
+  case TextureUsage::BaseColor:
+  case TextureUsage::Emission:
+  case TextureUsage::Light:
+  default:
+    return TextureColorSpace::SRGB;
+  }
+}
+
+class TextureRegistry
+{
+public:
+  explicit TextureRegistry(PXR_NS::UsdStageRefPtr stage) : m_stage(std::move(stage)) {}
+
+  int Register(const PXR_NS::SdfAssetPath& assetPath, TextureUsage usage)
+  {
+    const std::string authoredPath = assetPath.GetAssetPath();
+    const std::string resolvedPath = assetPath.GetResolvedPath();
+    const std::string sourcePath = !resolvedPath.empty() ? resolvedPath : authoredPath;
+    if(sourcePath.empty())
+    {
+      return -1;
+    }
+
+    const std::string key = TextureRegistryKey(sourcePath, usage);
+    const auto it = m_textureIdByKey.find(key);
+    if(it != m_textureIdByKey.end())
+    {
+      return it->second;
+    }
+
+    TextureAsset textureAsset;
+    textureAsset.sourcePath = sourcePath;
+    textureAsset.usage = usage;
+    textureAsset.colorSpace = TextureColorSpaceForUsage(usage);
+    ExportTextureBytes(assetPath, textureAsset);
+
+    const int textureId = static_cast<int>(m_textureAssets.size());
+    m_textureAssets.emplace_back(std::move(textureAsset));
+    m_textureIdByKey.emplace(key, textureId);
+    return textureId;
+  }
+
+  std::vector<TextureAsset> TakeAssets()
+  {
+    return std::move(m_textureAssets);
+  }
+
+private:
+  PXR_NS::UsdStageRefPtr m_stage;
+  std::unordered_map<std::string, int> m_textureIdByKey;
+  std::vector<TextureAsset> m_textureAssets;
+
+  void ExportTextureBytes(const PXR_NS::SdfAssetPath& assetPath, TextureAsset& textureAsset) const
+  {
+    PXR_NS::ArResolverContextBinder contextBinder(m_stage->GetPathResolverContext());
+    PXR_NS::ArResolver& resolver = PXR_NS::ArGetResolver();
+
+    PXR_NS::ArResolvedPath resolvedPath;
+    if(!assetPath.GetResolvedPath().empty())
+    {
+      resolvedPath = PXR_NS::ArResolvedPath(assetPath.GetResolvedPath());
+    }
+    if(!resolvedPath)
+    {
+      resolvedPath = resolver.Resolve(assetPath.GetAssetPath());
+    }
+    if(!resolvedPath)
+    {
+      std::cerr << "[robot_training_headless] Warning: failed to resolve "
+                   "texture asset "
+                << assetPath.GetAssetPath() << '\n';
+      return;
+    }
+
+    textureAsset.sourcePath = resolvedPath.GetPathString();
+    std::shared_ptr<PXR_NS::ArAsset> asset = resolver.OpenAsset(resolvedPath);
+    if(!asset)
+    {
+      std::cerr << "[robot_training_headless] Warning: failed to open texture asset " << resolvedPath.GetPathString()
+                << '\n';
+      return;
+    }
+
+    const auto buffer = asset->GetBuffer();
+    const auto size = asset->GetSize();
+    if(!buffer || size == 0)
+    {
+      std::cerr << "[robot_training_headless] Warning: empty texture asset " << resolvedPath.GetPathString() << '\n';
+      return;
+    }
+
+    const auto* bytes = reinterpret_cast<const uint8_t*>(buffer.get());
+    textureAsset.encodedBytes.assign(bytes, bytes + size);
+  }
+};
 
 glm::vec3 ToGlm(const PXR_NS::GfVec3f& value)
 {
@@ -50,6 +184,13 @@ glm::vec3 ToGlm(const PXR_NS::GfVec3f& value)
 glm::vec3 ToGlm(const PXR_NS::GfVec3d& value)
 {
   return glm::vec3(static_cast<float>(value[0]), static_cast<float>(value[1]), static_cast<float>(value[2]));
+}
+
+glm::vec4 ToGlm(const PXR_NS::GfQuatd& value)
+{
+  const PXR_NS::GfVec3d imaginary = value.GetImaginary();
+  return glm::vec4(static_cast<float>(imaginary[0]), static_cast<float>(imaginary[1]), static_cast<float>(imaginary[2]),
+                   static_cast<float>(value.GetReal()));
 }
 
 std::array<double, 16> ToRowMajorArray(const PXR_NS::GfMatrix4d& matrix)
@@ -149,6 +290,94 @@ bool IsInvisible(const PXR_NS::UsdPrim& prim, PXR_NS::UsdTimeCode time)
   return imageable.ComputeVisibility(time) == PXR_NS::UsdGeomTokens->invisible;
 }
 
+bool ReadFloatAttr(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& name, float fallback, PXR_NS::UsdTimeCode time)
+{
+  const PXR_NS::UsdAttribute attr = prim.GetAttribute(name);
+  if(!attr)
+  {
+    return fallback;
+  }
+
+  PXR_NS::VtValue boxed;
+  if(!attr.Get(&boxed, time))
+  {
+    return fallback;
+  }
+
+  float value = fallback;
+  if(boxed.IsHolding<float>())
+  {
+    value = boxed.UncheckedGet<float>();
+  }
+  else if(boxed.IsHolding<double>())
+  {
+    value = static_cast<float>(boxed.UncheckedGet<double>());
+  }
+  else if(boxed.IsHolding<int>())
+  {
+    value = static_cast<float>(boxed.UncheckedGet<int>());
+  }
+  return std::isfinite(value) ? value : fallback;
+}
+
+bool ReadBoolAttr(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& name, bool fallback, PXR_NS::UsdTimeCode time)
+{
+  bool value = fallback;
+  const PXR_NS::UsdAttribute attr = prim.GetAttribute(name);
+  if(attr)
+  {
+    attr.Get(&value, time);
+  }
+  return value;
+}
+
+glm::vec3 ReadVec3Attr(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& name, glm::vec3 fallback,
+                       PXR_NS::UsdTimeCode time)
+{
+  PXR_NS::GfVec3f value(fallback.x, fallback.y, fallback.z);
+  const PXR_NS::UsdAttribute attr = prim.GetAttribute(name);
+  if(attr)
+  {
+    attr.Get(&value, time);
+  }
+  return ToGlm(value);
+}
+
+glm::vec3 ReadLightBaseEmission(const PXR_NS::UsdPrim& prim, float normalizeFactor, PXR_NS::UsdTimeCode time)
+{
+  float intensity = 1.0f;
+  float exposure = 0.0f;
+  PXR_NS::GfVec3f color(1.0f, 1.0f, 1.0f);
+
+  const PXR_NS::UsdLuxLightAPI lightApi(prim);
+  if(lightApi)
+  {
+    lightApi.GetIntensityAttr().Get(&intensity, time);
+    lightApi.GetExposureAttr().Get(&exposure, time);
+    lightApi.GetColorAttr().Get(&color, time);
+  }
+  else
+  {
+    intensity = ReadFloatAttr(prim, PXR_NS::TfToken("inputs:intensity"), intensity, time);
+    exposure = ReadFloatAttr(prim, PXR_NS::TfToken("inputs:exposure"), exposure, time);
+    const glm::vec3 fallbackColor = ReadVec3Attr(prim, PXR_NS::TfToken("inputs:color"), glm::vec3(1.0f), time);
+    color = PXR_NS::GfVec3f(fallbackColor.x, fallbackColor.y, fallbackColor.z);
+  }
+
+  return ToGlm(color) * (intensity * std::pow(2.0f, exposure) / std::max(normalizeFactor, kSensorEpsilon));
+}
+
+Light MakeDefaultLight()
+{
+  Light light{};
+  light.textureID = -1;
+  light.diffuse = 1.0f;
+  light.specular = 1.0f;
+  light.radius = 0.5f;
+  light.rotateQuat = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+  return light;
+}
+
 uint32_t ReadTraceMask(const PXR_NS::UsdPrim& prim)
 {
   const PXR_NS::UsdAttribute attr = prim.GetAttribute(PXR_NS::TfToken("hdRobot:traceRole"));
@@ -215,6 +444,181 @@ void AppendTriangle(MeshGeometry& geometry,
     geometry.vertices.push_back(vertex);
   }
   geometry.materialIndices.push_back(0);
+}
+
+bool ReadVec3Input(const PXR_NS::UsdShadeShader& shader, const PXR_NS::TfToken& name, PXR_NS::UsdTimeCode time,
+                   glm::vec3* value)
+{
+  const PXR_NS::UsdShadeInput input = shader.GetInput(name);
+  if(!input)
+  {
+    return false;
+  }
+
+  PXR_NS::GfVec3f usdValue;
+  if(!input.Get(&usdValue, time))
+  {
+    return false;
+  }
+
+  *value = ToGlm(usdValue);
+  return true;
+}
+
+bool ReadFloatInput(const PXR_NS::UsdShadeShader& shader, const PXR_NS::TfToken& name, PXR_NS::UsdTimeCode time,
+                    float* value)
+{
+  const PXR_NS::UsdShadeInput input = shader.GetInput(name);
+  if(!input)
+  {
+    return false;
+  }
+  return input.Get(value, time);
+}
+
+int ReadTextureInput(const PXR_NS::UsdShadeShader& shader, const PXR_NS::TfToken& inputName, TextureUsage usage,
+                     TextureRegistry& textureRegistry, PXR_NS::UsdTimeCode time)
+{
+  const PXR_NS::UsdShadeInput input = shader.GetInput(inputName);
+  if(!input)
+  {
+    return -1;
+  }
+
+  PXR_NS::UsdShadeConnectableAPI source;
+  PXR_NS::TfToken sourceName;
+  PXR_NS::UsdShadeAttributeType sourceType;
+  if(!input.GetConnectedSource(&source, &sourceName, &sourceType))
+  {
+    return -1;
+  }
+
+  const PXR_NS::UsdShadeShader textureShader(source.GetPrim());
+  if(!textureShader)
+  {
+    return -1;
+  }
+
+  const PXR_NS::UsdShadeInput fileInput = textureShader.GetInput(PXR_NS::TfToken("file"));
+  if(!fileInput)
+  {
+    return -1;
+  }
+
+  PXR_NS::SdfAssetPath texturePath;
+  if(!fileInput.Get(&texturePath, time))
+  {
+    return -1;
+  }
+  return textureRegistry.Register(texturePath, usage);
+}
+
+bool ApplyDisplayColorMaterial(const PXR_NS::UsdGeomMesh& mesh, PXR_NS::UsdTimeCode time, Material* material)
+{
+  const PXR_NS::UsdGeomGprim gprim(mesh.GetPrim());
+  PXR_NS::VtVec3fArray colors;
+  if(!gprim.GetDisplayColorAttr().Get(&colors, time) || colors.empty())
+  {
+    return false;
+  }
+
+  float opacity = 1.0f;
+  PXR_NS::VtFloatArray opacities;
+  if(gprim.GetDisplayOpacityAttr().Get(&opacities, time) && !opacities.empty())
+  {
+    opacity = std::clamp(opacities[0], 0.0f, 1.0f);
+  }
+
+  const glm::vec3 color = ToGlm(colors[0]);
+  material->diffuse = color;
+  material->baseColorFactor = color;
+  material->ambient = color * 0.1f;
+  material->opaque = opacity;
+  material->opacityFactor = opacity;
+  return true;
+}
+
+Material ReadPreviewSurfaceMaterial(const PXR_NS::UsdShadeShader& shader, TextureRegistry& textureRegistry,
+                                    PXR_NS::UsdTimeCode time)
+{
+  Material material;
+
+  glm::vec3 color;
+  const bool hasBaseColor = ReadVec3Input(shader, PXR_NS::TfToken("diffuseColor"), time, &color);
+  if(hasBaseColor)
+  {
+    material.diffuse = color;
+    material.baseColorFactor = color;
+    material.ambient = color * 0.1f;
+  }
+
+  if(ReadVec3Input(shader, PXR_NS::TfToken("emissiveColor"), time, &color))
+  {
+    material.emission = color;
+    material.emissionFactor = color;
+  }
+
+  float value = 0.0f;
+  if(ReadFloatInput(shader, PXR_NS::TfToken("metallic"), time, &value))
+  {
+    material.metallicFactor = std::clamp(value, 0.0f, 1.0f);
+  }
+  if(ReadFloatInput(shader, PXR_NS::TfToken("roughness"), time, &value))
+  {
+    material.roughnessFactor = std::clamp(value, 0.02f, 1.0f);
+  }
+  if(ReadFloatInput(shader, PXR_NS::TfToken("opacity"), time, &value))
+  {
+    material.opaque = std::clamp(value, 0.0f, 1.0f);
+    material.opacityFactor = material.opaque;
+  }
+
+  const int baseColorTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("diffuseColor"), TextureUsage::BaseColor, textureRegistry, time);
+  if(baseColorTextureId >= 0)
+  {
+    material.baseColorTextureId = baseColorTextureId;
+    if(!hasBaseColor)
+    {
+      material.diffuse = glm::vec3(1.0f);
+      material.baseColorFactor = glm::vec3(1.0f);
+      material.ambient = glm::vec3(0.1f);
+    }
+  }
+
+  material.metallicTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("metallic"), TextureUsage::Metallic, textureRegistry, time);
+  material.roughnessTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("roughness"), TextureUsage::Roughness, textureRegistry, time);
+  material.normalTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("normal"), TextureUsage::Normal, textureRegistry, time);
+  material.emissionTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("emissiveColor"), TextureUsage::Emission, textureRegistry, time);
+  material.opacityTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("opacity"), TextureUsage::Opacity, textureRegistry, time);
+
+  return material;
+}
+
+Material ReadMeshMaterial(const PXR_NS::UsdGeomMesh& mesh, TextureRegistry& textureRegistry, PXR_NS::UsdTimeCode time)
+{
+  PXR_NS::UsdShadeMaterial material =
+      PXR_NS::UsdShadeMaterialBindingAPI(mesh.GetPrim()).ComputeBoundMaterial(PXR_NS::UsdShadeTokens->allPurpose);
+  if(material)
+  {
+    PXR_NS::TfToken sourceName;
+    PXR_NS::UsdShadeAttributeType sourceType;
+    const PXR_NS::UsdShadeShader surfaceShader = material.ComputeSurfaceSource(
+        PXR_NS::TfTokenVector{PXR_NS::UsdShadeTokens->universalRenderContext}, &sourceName, &sourceType);
+    if(surfaceShader)
+    {
+      return ReadPreviewSurfaceMaterial(surfaceShader, textureRegistry, time);
+    }
+  }
+
+  Material fallbackMaterial;
+  ApplyDisplayColorMaterial(mesh, time, &fallbackMaterial);
+  return fallbackMaterial;
 }
 
 std::optional<glm::vec3> ReadAuthoredNormal(const PXR_NS::VtVec3fArray& normals,
@@ -350,12 +754,13 @@ MeshGeometry ReadMeshGeometry(const PXR_NS::UsdGeomMesh& mesh, PXR_NS::UsdTimeCo
   return geometry;
 }
 
-TrainingMeshInstance ReadMesh(const PXR_NS::UsdGeomMesh& mesh, PXR_NS::UsdTimeCode time)
+TrainingMeshInstance ReadMesh(const PXR_NS::UsdGeomMesh& mesh, TextureRegistry& textureRegistry,
+                              PXR_NS::UsdTimeCode time)
 {
   TrainingMeshInstance result;
   result.name = mesh.GetPath().GetString();
   result.geometry = ReadMeshGeometry(mesh, time);
-  result.materials.push_back(Material{});
+  result.materials.push_back(ReadMeshMaterial(mesh, textureRegistry, time));
   result.worldTransform = ToEngineTransform(PXR_NS::UsdGeomXformable(mesh.GetPrim()).ComputeLocalToWorldTransform(time));
   result.visible = !IsInvisible(mesh.GetPrim(), time);
   result.traceMask = ReadTraceMask(mesh.GetPrim());
@@ -440,6 +845,46 @@ HeightScanSensorSpec ReadHeightScanSensor(const PXR_NS::UsdGeomHeightScanSensor&
   result.params = SanitizeHeightScanParams(result.params);
   return result;
 }
+
+Light ReadDomeLight(const PXR_NS::UsdLuxDomeLight& domeLight, TextureRegistry& textureRegistry,
+                    PXR_NS::UsdTimeCode time)
+{
+  Light result = MakeDefaultLight();
+  result.type = kLightTypeDome;
+  result.baseEmission = ReadLightBaseEmission(domeLight.GetPrim(), 1.0f, time);
+  result.diffuse = ReadFloatAttr(domeLight.GetPrim(), PXR_NS::TfToken("inputs:diffuse"), 1.0f, time);
+  result.specular = ReadFloatAttr(domeLight.GetPrim(), PXR_NS::TfToken("inputs:specular"), 1.0f, time);
+  result.rotateQuat = ToGlm(PXR_NS::UsdGeomXformable(domeLight.GetPrim())
+                                .ComputeLocalToWorldTransform(time)
+                                .GetOrthonormalized()
+                                .ExtractRotationQuat());
+
+  PXR_NS::SdfAssetPath texturePath;
+  if(domeLight.GetTextureFileAttr().Get(&texturePath, time))
+  {
+    result.textureID = textureRegistry.Register(texturePath, TextureUsage::Light);
+  }
+  return result;
+}
+
+Light ReadSphereLikeLight(const PXR_NS::UsdPrim& prim, float radius, TextureRegistry& textureRegistry,
+                          PXR_NS::UsdTimeCode time)
+{
+  (void)textureRegistry;
+  Light result = MakeDefaultLight();
+  result.type = kLightTypeSphere;
+  result.position = ToGlm(
+      PXR_NS::UsdGeomXformable(prim).ComputeLocalToWorldTransform(time).Transform(PXR_NS::GfVec3d(0.0, 0.0, 0.0)));
+  result.radius = std::max(radius, 0.0f);
+  result.diffuse = ReadFloatAttr(prim, PXR_NS::TfToken("inputs:diffuse"), 1.0f, time);
+  result.specular = ReadFloatAttr(prim, PXR_NS::TfToken("inputs:specular"), 1.0f, time);
+
+  const bool normalize = ReadBoolAttr(prim, PXR_NS::TfToken("inputs:normalize"), false, time);
+  const float area = 4.0f * glm::pi<float>() * result.radius * result.radius;
+  const float normalizeFactor = normalize && area > kSensorEpsilon ? area : 1.0f;
+  result.baseEmission = ReadLightBaseEmission(prim, normalizeFactor, time);
+  return result;
+}
 } // namespace
 
 TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPath, const UsdSceneLoadOptions& options)
@@ -452,6 +897,7 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
 
   const PXR_NS::UsdTimeCode time = PXR_NS::UsdTimeCode::Default();
   TrainingSceneDescription result;
+  TextureRegistry textureRegistry(stage);
   bool cameraPathRequested = !options.cameraPath.empty();
   bool requestedCameraFound = false;
 
@@ -465,7 +911,7 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
     PXR_NS::UsdGeomMesh mesh(prim);
     if(mesh)
     {
-      result.meshes.push_back(ReadMesh(mesh, time));
+      result.meshes.push_back(ReadMesh(mesh, textureRegistry, time));
       continue;
     }
 
@@ -500,6 +946,31 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
       }
       continue;
     }
+
+    PXR_NS::UsdLuxDomeLight domeLight(prim);
+    if(domeLight)
+    {
+      result.lights.push_back(ReadDomeLight(domeLight, textureRegistry, time));
+      continue;
+    }
+
+    PXR_NS::UsdLuxSphereLight sphereLight(prim);
+    if(sphereLight)
+    {
+      float radius = 0.5f;
+      sphereLight.GetRadiusAttr().Get(&radius, time);
+      result.lights.push_back(ReadSphereLikeLight(prim, radius, textureRegistry, time));
+      continue;
+    }
+
+    PXR_NS::UsdLuxCylinderLight cylinderLight(prim);
+    if(cylinderLight)
+    {
+      float radius = 0.5f;
+      cylinderLight.GetRadiusAttr().Get(&radius, time);
+      result.lights.push_back(ReadSphereLikeLight(prim, radius, textureRegistry, time));
+      continue;
+    }
   }
 
   if(cameraPathRequested && !requestedCameraFound)
@@ -507,6 +978,7 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
     throw std::runtime_error("requested camera path was not found or was not a UsdGeomCamera: " + options.cameraPath);
   }
 
+  result.textureAssets = textureRegistry.TakeAssets();
   return result;
 }
 

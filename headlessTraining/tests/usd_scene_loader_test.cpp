@@ -31,14 +31,52 @@ std::filesystem::path WriteFixture()
 {
   const std::filesystem::path path =
       std::filesystem::temp_directory_path() / "headless_training_usd_scene_loader_test.usda";
+  const std::filesystem::path texturePath =
+      std::filesystem::temp_directory_path() / "headless_training_usd_scene_loader_test_texture.png";
+  {
+    std::ofstream texture(texturePath, std::ios::out | std::ios::binary | std::ios::trunc);
+    const unsigned char pngSignature[8] = {0x89u, 0x50u, 0x4eu, 0x47u, 0x0du, 0x0au, 0x1au, 0x0au};
+    texture.write(reinterpret_cast<const char*>(pngSignature), sizeof(pngSignature));
+  }
+
   std::ofstream output(path, std::ios::out | std::ios::trunc);
   output << R"USD(#usda 1.0
 
 def Xform "World"
 {
-    def Mesh "Ground"
+    def Scope "Looks"
+    {
+        def Material "PreviewMaterial"
+        {
+            token outputs:surface.connect = </World/Looks/PreviewMaterial/Shader.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </World/Looks/PreviewMaterial/albedoTexture.outputs:rgb>
+                color3f inputs:emissiveColor = (0.1, 0.2, 0.3)
+                float inputs:metallic = 0.25
+                float inputs:opacity = 0.75
+                float inputs:roughness = 0.33
+                token outputs:surface
+            }
+
+            def Shader "albedoTexture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @)USD"
+         << texturePath.generic_string() << R"USD(@
+                float3 outputs:rgb
+            }
+        }
+    }
+
+    def Mesh "Ground" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom token hdRobot:traceRole = "ground"
+        rel material:binding = </World/Looks/PreviewMaterial>
         point3f[] points = [(-1, 0, -1), (1, 0, -1), (1, 0, 1), (-1, 0, 1)]
         normal3f[] normals = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0)]
         uniform token normalsInterpolation = "faceVarying"
@@ -46,6 +84,15 @@ def Xform "World"
         int[] faceVertexIndices = [0, 1, 2, 3]
         matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2, 3, 4, 1))
         uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Mesh "DisplayColorMesh"
+    {
+        color3f[] primvars:displayColor = [(0.4, 0.5, 0.6)]
+        float[] primvars:displayOpacity = [0.7]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (0, 1, 0)]
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
     }
 
     def Camera "MainCamera"
@@ -75,6 +122,23 @@ def Xform "World"
         custom float uStep = -0.25
         custom float3 gravityDirectionWs = (0, 0, -2)
     }
+
+    def DomeLight "Sky"
+    {
+        color3f inputs:color = (0.2, 0.3, 0.4)
+        float inputs:intensity = 2
+        asset inputs:texture:file = @)USD"
+         << texturePath.generic_string() << R"USD(@
+    }
+
+    def SphereLight "Bulb"
+    {
+        color3f inputs:color = (1, 0.5, 0.25)
+        float inputs:intensity = 3
+        float inputs:radius = 2
+        matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 6, 7, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
 }
 )USD";
   return path;
@@ -87,8 +151,10 @@ int main()
   const headless_training::TrainingSceneDescription scene =
       headless_training::LoadUsdTrainingScene(fixture);
   std::filesystem::remove(fixture);
+  std::filesystem::remove(std::filesystem::temp_directory_path() /
+                          "headless_training_usd_scene_loader_test_texture.png");
 
-  Require(scene.meshes.size() == 1, "expected one mesh");
+  Require(scene.meshes.size() == 2, "expected two meshes");
   const headless_training::TrainingMeshInstance& mesh = scene.meshes[0];
   Require(mesh.name == "/World/Ground", "mesh path mismatch");
   Require(mesh.traceMask == kTraceMaskGround, "ground traceRole did not map to ground trace mask");
@@ -101,6 +167,44 @@ int main()
   Require(Near(mesh.worldTransform[3][0], 2.0f) && Near(mesh.worldTransform[3][1], 3.0f) &&
               Near(mesh.worldTransform[3][2], 4.0f),
           "USD matrix did not convert to engine translation");
+  Require(mesh.materials.size() == 1, "expected one material on ground mesh");
+  Require(mesh.materials[0].baseColorTextureId == 0, "UsdUVTexture diffuseColor should register base color texture");
+  Require(Near(mesh.materials[0].metallicFactor, 0.25f), "UsdPreviewSurface metallic mismatch");
+  Require(Near(mesh.materials[0].roughnessFactor, 0.33f), "UsdPreviewSurface roughness mismatch");
+  Require(Near(mesh.materials[0].opacityFactor, 0.75f), "UsdPreviewSurface opacity mismatch");
+  Require(Near(mesh.materials[0].emissionFactor.x, 0.1f) && Near(mesh.materials[0].emissionFactor.y, 0.2f) &&
+              Near(mesh.materials[0].emissionFactor.z, 0.3f),
+          "UsdPreviewSurface emissiveColor mismatch");
+
+  const headless_training::TrainingMeshInstance& displayColorMesh = scene.meshes[1];
+  Require(displayColorMesh.materials.size() == 1, "expected displayColor fallback material");
+  Require(Near(displayColorMesh.materials[0].baseColorFactor.x, 0.4f) &&
+              Near(displayColorMesh.materials[0].baseColorFactor.y, 0.5f) &&
+              Near(displayColorMesh.materials[0].baseColorFactor.z, 0.6f),
+          "displayColor should become fallback material base color");
+  Require(Near(displayColorMesh.materials[0].opacityFactor, 0.7f),
+          "displayOpacity should become fallback material opacity");
+
+  Require(scene.textureAssets.size() == 2, "expected material and dome texture assets");
+  Require(scene.textureAssets[0].usage == TextureUsage::BaseColor, "first texture should be base color");
+  Require(scene.textureAssets[1].usage == TextureUsage::Light, "second texture should be dome light");
+  Require(!scene.textureAssets[0].encodedBytes.empty() && !scene.textureAssets[1].encodedBytes.empty(),
+          "texture assets should export encoded bytes");
+  Require(scene.lights.size() == 2, "expected dome and sphere light");
+  Require(scene.lights[0].type == 2, "dome light type mismatch");
+  Require(scene.lights[0].textureID == 1, "dome light should reference light texture");
+  if(!(Near(scene.lights[0].baseEmission.x, 0.4f) && Near(scene.lights[0].baseEmission.y, 0.6f) &&
+       Near(scene.lights[0].baseEmission.z, 0.8f)))
+  {
+    std::cerr << "actual dome base emission: " << scene.lights[0].baseEmission.x << ", "
+              << scene.lights[0].baseEmission.y << ", " << scene.lights[0].baseEmission.z << '\n';
+    Require(false, "dome light base emission mismatch");
+  }
+  Require(scene.lights[1].type == 0, "sphere light type mismatch");
+  Require(Near(scene.lights[1].position.x, 5.0f) && Near(scene.lights[1].position.y, 6.0f) &&
+              Near(scene.lights[1].position.z, 7.0f),
+          "sphere light transform mismatch");
+  Require(Near(scene.lights[1].radius, 2.0f), "sphere light radius mismatch");
 
   Require(scene.cameras.size() == 1, "expected one camera");
   Require(scene.cameras[0].name == "/World/MainCamera", "camera path mismatch");
@@ -136,6 +240,8 @@ int main()
   const headless_training::TrainingSceneDescription selectedCameraScene =
       headless_training::LoadUsdTrainingScene(selectedFixture, options);
   std::filesystem::remove(selectedFixture);
+  std::filesystem::remove(std::filesystem::temp_directory_path() /
+                          "headless_training_usd_scene_loader_test_texture.png");
   Require(selectedCameraScene.cameras.size() == 1 && selectedCameraScene.cameras[0].name == "/World/MainCamera",
           "camera path selection failed");
 
