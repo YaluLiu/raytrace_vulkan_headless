@@ -25,6 +25,7 @@
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usd/usdLux/cylinderLight.h>
@@ -63,6 +64,12 @@ constexpr float kSensorEpsilon = 1.0e-6f;
 constexpr float kParamEpsilon = 1.0e-4f;
 constexpr int kLightTypeSphere = 0;
 constexpr int kLightTypeDome = 2;
+
+struct TexCoordPrimvar
+{
+  PXR_NS::VtVec2fArray values;
+  PXR_NS::TfToken interpolation;
+};
 
 std::string TextureRegistryKey(const std::string& texturePath, TextureUsage usage)
 {
@@ -419,9 +426,104 @@ glm::vec2 DefaultTexCoord(glm::vec3 position)
   return glm::vec2((position.x + 1.0f) * 0.5f, 1.0f - ((position.z + 1.0f) * 0.5f));
 }
 
+glm::vec2 ToEngineTexCoord(const PXR_NS::GfVec2f& texCoord)
+{
+  return glm::vec2(texCoord[0], 1.0f - texCoord[1]);
+}
+
+std::optional<TexCoordPrimvar> ReadTexCoordPrimvar(const PXR_NS::UsdGeomMesh& mesh, PXR_NS::UsdTimeCode time)
+{
+  const PXR_NS::TfToken texCoordNames[] = {PXR_NS::TfToken("st"),   PXR_NS::TfToken("st0"),
+                                           PXR_NS::TfToken("st_0"), PXR_NS::TfToken("st1"),
+                                           PXR_NS::TfToken("st_1"), PXR_NS::TfToken("UV0"),
+                                           PXR_NS::TfToken("UV1")};
+
+  const PXR_NS::UsdGeomPrimvarsAPI primvarsApi(mesh.GetPrim());
+  for(const PXR_NS::TfToken& name : texCoordNames)
+  {
+    const PXR_NS::UsdGeomPrimvar primvar = primvarsApi.GetPrimvar(name);
+    if(!primvar)
+    {
+      continue;
+    }
+
+    PXR_NS::VtVec2fArray values;
+    if(!primvar.ComputeFlattened(&values, time) || values.empty())
+    {
+      continue;
+    }
+
+    TexCoordPrimvar result;
+    result.values = std::move(values);
+    result.interpolation = primvar.GetInterpolation();
+    return result;
+  }
+  return std::nullopt;
+}
+
+std::optional<glm::vec2> ReadAuthoredTexCoord(const TexCoordPrimvar& texCoords,
+                                              int pointIndex,
+                                              size_t faceIndex,
+                                              int faceVertexStart,
+                                              int faceCornerIndex)
+{
+  size_t texCoordIndex = std::numeric_limits<size_t>::max();
+  if(texCoords.interpolation == PXR_NS::UsdGeomTokens->faceVarying)
+  {
+    texCoordIndex = static_cast<size_t>(faceVertexStart + faceCornerIndex);
+  }
+  else if(texCoords.interpolation == PXR_NS::UsdGeomTokens->uniform)
+  {
+    texCoordIndex = faceIndex;
+  }
+  else if(texCoords.interpolation == PXR_NS::UsdGeomTokens->constant)
+  {
+    texCoordIndex = 0;
+  }
+  else
+  {
+    texCoordIndex = static_cast<size_t>(pointIndex);
+  }
+
+  if(texCoordIndex >= texCoords.values.size())
+  {
+    return std::nullopt;
+  }
+  return ToEngineTexCoord(texCoords.values[texCoordIndex]);
+}
+
+std::array<glm::vec2, 3> ResolveTriangleTexCoords(const PXR_NS::VtVec3fArray& points,
+                                                  const std::optional<TexCoordPrimvar>& texCoords,
+                                                  size_t faceIndex,
+                                                  int faceVertexStart,
+                                                  const int pointIndices[3],
+                                                  const int faceCornerIndices[3])
+{
+  std::array<glm::vec2, 3> result{
+      DefaultTexCoord(ToGlm(points[static_cast<size_t>(pointIndices[0])])),
+      DefaultTexCoord(ToGlm(points[static_cast<size_t>(pointIndices[1])])),
+      DefaultTexCoord(ToGlm(points[static_cast<size_t>(pointIndices[2])]))};
+  if(!texCoords)
+  {
+    return result;
+  }
+
+  for(size_t corner = 0; corner < result.size(); ++corner)
+  {
+    const std::optional<glm::vec2> authored =
+        ReadAuthoredTexCoord(*texCoords, pointIndices[corner], faceIndex, faceVertexStart, faceCornerIndices[corner]);
+    if(authored)
+    {
+      result[corner] = *authored;
+    }
+  }
+  return result;
+}
+
 void AppendTriangle(MeshGeometry& geometry,
                     const PXR_NS::VtVec3fArray& points,
                     const std::array<glm::vec3, 3>& cornerNormals,
+                    const std::array<glm::vec2, 3>& cornerTexCoords,
                     int i0,
                     int i1,
                     int i2)
@@ -439,7 +541,7 @@ void AppendTriangle(MeshGeometry& geometry,
     vertex.pos = positions[corner];
     vertex.nrm = NormalizeOr(cornerNormals[static_cast<size_t>(corner)], faceNormal);
     vertex.color = glm::vec3(1.0f);
-    vertex.texCoord = DefaultTexCoord(vertex.pos);
+    vertex.texCoord = cornerTexCoords[static_cast<size_t>(corner)];
     geometry.indices.push_back(static_cast<uint32_t>(geometry.vertices.size()));
     geometry.vertices.push_back(vertex);
   }
@@ -543,15 +645,27 @@ Material ReadPreviewSurfaceMaterial(const PXR_NS::UsdShadeShader& shader, Textur
 {
   Material material;
 
-  glm::vec3 color;
-  const bool hasBaseColor = ReadVec3Input(shader, PXR_NS::TfToken("diffuseColor"), time, &color);
-  if(hasBaseColor)
+  const int baseColorTextureId =
+      ReadTextureInput(shader, PXR_NS::TfToken("diffuseColor"), TextureUsage::BaseColor, textureRegistry, time);
+  if(baseColorTextureId >= 0)
   {
-    material.diffuse = color;
-    material.baseColorFactor = color;
-    material.ambient = color * 0.1f;
+    material.baseColorTextureId = baseColorTextureId;
+    material.diffuse = glm::vec3(1.0f);
+    material.baseColorFactor = glm::vec3(1.0f);
+    material.ambient = glm::vec3(0.1f);
+  }
+  else
+  {
+    glm::vec3 color;
+    if(ReadVec3Input(shader, PXR_NS::TfToken("diffuseColor"), time, &color))
+    {
+      material.diffuse = color;
+      material.baseColorFactor = color;
+      material.ambient = color * 0.1f;
+    }
   }
 
+  glm::vec3 color;
   if(ReadVec3Input(shader, PXR_NS::TfToken("emissiveColor"), time, &color))
   {
     material.emission = color;
@@ -571,19 +685,6 @@ Material ReadPreviewSurfaceMaterial(const PXR_NS::UsdShadeShader& shader, Textur
   {
     material.opaque = std::clamp(value, 0.0f, 1.0f);
     material.opacityFactor = material.opaque;
-  }
-
-  const int baseColorTextureId =
-      ReadTextureInput(shader, PXR_NS::TfToken("diffuseColor"), TextureUsage::BaseColor, textureRegistry, time);
-  if(baseColorTextureId >= 0)
-  {
-    material.baseColorTextureId = baseColorTextureId;
-    if(!hasBaseColor)
-    {
-      material.diffuse = glm::vec3(1.0f);
-      material.baseColorFactor = glm::vec3(1.0f);
-      material.ambient = glm::vec3(0.1f);
-    }
   }
 
   material.metallicTextureId =
@@ -706,6 +807,7 @@ MeshGeometry ReadMeshGeometry(const PXR_NS::UsdGeomMesh& mesh, PXR_NS::UsdTimeCo
   }
   mesh.GetNormalsAttr().Get(&normals, time);
   const PXR_NS::TfToken normalsInterpolation = mesh.GetNormalsInterpolation();
+  const std::optional<TexCoordPrimvar> texCoords = ReadTexCoordPrimvar(mesh, time);
 
   MeshGeometry geometry;
   int indexCursor = 0;
@@ -743,7 +845,9 @@ MeshGeometry ReadMeshGeometry(const PXR_NS::UsdGeomMesh& mesh, PXR_NS::UsdTimeCo
       }
       const std::array<glm::vec3, 3> cornerNormals =
           ResolveTriangleNormals(points, normals, normalsInterpolation, faceIndex, indexCursor, tri, faceCornerIndices);
-      AppendTriangle(geometry, points, cornerNormals, tri[0], tri[1], tri[2]);
+      const std::array<glm::vec2, 3> cornerTexCoords =
+          ResolveTriangleTexCoords(points, texCoords, faceIndex, indexCursor, tri, faceCornerIndices);
+      AppendTriangle(geometry, points, cornerNormals, cornerTexCoords, tri[0], tri[1], tri[2]);
     }
     indexCursor += count;
   }

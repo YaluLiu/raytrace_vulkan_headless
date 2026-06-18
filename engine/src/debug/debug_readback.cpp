@@ -1,3 +1,5 @@
+#include <cmath>
+#include <cstdint>
 #include <sstream>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -5,6 +7,33 @@
 #include "core/renderer_internal.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/buffers_vk.hpp"
+
+namespace
+{
+float ClampFiniteUnit(float value)
+{
+  if(!std::isfinite(value))
+  {
+    return 0.0f;
+  }
+  return glm::clamp(value, 0.0f, 1.0f);
+}
+
+float LinearToSrgb(float value)
+{
+  const float linear = ClampFiniteUnit(value);
+  if(linear <= 0.0031308f)
+  {
+    return linear * 12.92f;
+  }
+  return 1.055f * std::pow(linear, 1.0f / 2.4f) - 0.055f;
+}
+
+uint8_t UnitFloatToByte(float value)
+{
+  return static_cast<uint8_t>(glm::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
+}
+} // namespace
 
 std::vector<uint32_t> Engine::readObjectIdImage()
 {
@@ -146,14 +175,14 @@ void Engine::saveOffscreenColorToFile(const char* filename)
 
   for(uint32_t i = 0; i < imageWidth * imageHeight; ++i)
   {
-    float r              = src[i * 4 + 0];
-    float g              = src[i * 4 + 1];
-    float b              = src[i * 4 + 2];
-    float a              = src[i * 4 + 3];
-    imageData[i * 4 + 0] = uint8_t(glm::clamp(r, 0.0f, 1.0f) * 255.0f);
-    imageData[i * 4 + 1] = uint8_t(glm::clamp(g, 0.0f, 1.0f) * 255.0f);
-    imageData[i * 4 + 2] = uint8_t(glm::clamp(b, 0.0f, 1.0f) * 255.0f);
-    imageData[i * 4 + 3] = uint8_t(glm::clamp(a, 0.0f, 1.0f) * 255.0f);
+    const float r        = src[i * 4 + 0];
+    const float g        = src[i * 4 + 1];
+    const float b        = src[i * 4 + 2];
+    const float a        = src[i * 4 + 3];
+    imageData[i * 4 + 0] = UnitFloatToByte(LinearToSrgb(r));
+    imageData[i * 4 + 1] = UnitFloatToByte(LinearToSrgb(g));
+    imageData[i * 4 + 2] = UnitFloatToByte(LinearToSrgb(b));
+    imageData[i * 4 + 3] = UnitFloatToByte(ClampFiniteUnit(a));
   }
 
   vkUnmapMemory(device, stagingMemory);

@@ -53,6 +53,7 @@ def Xform "World"
             def Shader "Shader"
             {
                 uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
                 color3f inputs:diffuseColor.connect = </World/Looks/PreviewMaterial/albedoTexture.outputs:rgb>
                 color3f inputs:emissiveColor = (0.1, 0.2, 0.3)
                 float inputs:metallic = 0.25
@@ -80,6 +81,9 @@ def Xform "World"
         point3f[] points = [(-1, 0, -1), (1, 0, -1), (1, 0, 1), (-1, 0, 1)]
         normal3f[] normals = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0)]
         uniform token normalsInterpolation = "faceVarying"
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+            interpolation = "vertex"
+        )
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 1, 2, 3]
         matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2, 3, 4, 1))
@@ -195,11 +199,19 @@ int main()
   Require(Near(mesh.geometry.vertices[0].nrm.x, 1.0f) && Near(mesh.geometry.vertices[1].nrm.y, 1.0f) &&
               Near(mesh.geometry.vertices[2].nrm.z, 1.0f) && Near(mesh.geometry.vertices[5].nrm.x, -1.0f),
           "face-varying normals should follow original face corners through triangulation");
+  Require(Near(mesh.geometry.vertices[0].texCoord.x, 0.0f) && Near(mesh.geometry.vertices[0].texCoord.y, 1.0f) &&
+              Near(mesh.geometry.vertices[1].texCoord.x, 1.0f) && Near(mesh.geometry.vertices[1].texCoord.y, 1.0f) &&
+              Near(mesh.geometry.vertices[2].texCoord.x, 1.0f) && Near(mesh.geometry.vertices[2].texCoord.y, 0.0f) &&
+              Near(mesh.geometry.vertices[5].texCoord.x, 0.0f) && Near(mesh.geometry.vertices[5].texCoord.y, 0.0f),
+          "authored primvars:st should be used and V-flipped through triangulation");
   Require(Near(mesh.worldTransform[3][0], 2.0f) && Near(mesh.worldTransform[3][1], 3.0f) &&
               Near(mesh.worldTransform[3][2], 4.0f),
           "USD matrix did not convert to engine translation");
   Require(mesh.materials.size() == 1, "expected one material on ground mesh");
   Require(mesh.materials[0].baseColorTextureId == 0, "UsdUVTexture diffuseColor should register base color texture");
+  Require(Near(mesh.materials[0].baseColorFactor.x, 1.0f) && Near(mesh.materials[0].baseColorFactor.y, 1.0f) &&
+              Near(mesh.materials[0].baseColorFactor.z, 1.0f),
+          "texture-connected diffuseColor fallback should not darken base color texture");
   Require(Near(mesh.materials[0].metallicFactor, 0.25f), "UsdPreviewSurface metallic mismatch");
   Require(Near(mesh.materials[0].roughnessFactor, 0.33f), "UsdPreviewSurface roughness mismatch");
   Require(Near(mesh.materials[0].opacityFactor, 0.75f), "UsdPreviewSurface opacity mismatch");
