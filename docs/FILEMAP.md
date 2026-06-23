@@ -35,7 +35,8 @@ call sites with `rg`.
 - `headlessTraining/`: Hydra-free training executable and CPU support code for
   reading a limited USD static scene subset, applying replayed external
   physics transforms, submitting scene/sensor state through the public
-  `Engine` API, and writing training CSV/manifest/preview outputs.
+  `Engine` API, writing training CSV/manifest/preview outputs, and running the
+  ImGui-based `robot_training_viewer` debug viewport.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 
@@ -58,7 +59,8 @@ call sites with `rg`.
   plugin metadata generation, and schema resource install layout.
 - `UsdRaySensorImaging/CMakeLists.txt`: UsdImaging adapter plugin target,
   shared Hydra sensor token export, metadata generation, and install layout.
-- `headlessTraining/CMakeLists.txt`: `robot_training_headless` executable,
+- `headlessTraining/CMakeLists.txt`: `robot_training_headless` batch
+  executable, `robot_training_viewer` ImGui debug executable,
   `headlessTrainingCore` static helper library, focused CPU CTest targets
   `headless_training_usd_scene_loader_test`,
   `headless_training_physics_output_test`, `headless_training_cli_test`, and
@@ -81,6 +83,9 @@ call sites with `rg`.
   training data generation; orchestrates CLI parsing, USD scene loading,
   optional physics replay, engine setup/upload/output configuration, per-frame
   render/readback, preview saving, CSV writing, and manifest writing.
+- `headlessTraining/viewer_main.cpp`: Dedicated Hydra-free ImGui viewer entry
+  for loading a USD/replay scene, creating `ViewerApp`, and running the
+  interactive debug viewport without writing training manifests.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction, render
   param ownership, scene store ownership, delegate-owned render
@@ -112,6 +117,23 @@ call sites with `rg`.
   the runtime order is `Engine::setup`, scene upload, camera/output config,
   `Engine::createRenderResources`, per-frame replay update, `Engine::render`,
   sensor readback, optional preview save, and output manifest update.
+- `headlessTraining/viewer_main.cpp`: `robot_training_viewer` command-line
+  entry; parses viewer-specific options where `--output-dir` is optional and
+  delegates all window/runtime work to `ViewerApp`.
+- `headlessTraining/viewer_app.h` / `headlessTraining/viewer_app.cpp`:
+  ImGui/GLFW/nvpro_core viewer application. It creates a window Vulkan
+  context with the Engine-required extensions, injects that context into
+  `Engine`, renders the preview color AOV into an ImGui viewport, owns replay
+  play/step behavior, and performs explicit screenshot/LiDAR/height-scan debug
+  exports under `viewer_debug/` without writing a training manifest.
+- `headlessTraining/viewer_camera_controller.h` /
+  `headlessTraining/viewer_camera_controller.cpp`: Viewer-only orbit camera
+  controller and scene focus helper that produce a `CameraSpec` submitted via
+  `Engine::setMainCamera()` each frame.
+- `headlessTraining/viewer_output_config.h` /
+  `headlessTraining/viewer_output_config.cpp`: Viewer-only state and
+  `RendererOutputConfig` builder for decoupling sensor compute enablement from
+  LiDAR/height-scan overlay visibility and All/Single sensor visualization.
 - `headlessTraining/cli.h` / `headlessTraining/cli.cpp`: CLI option parsing,
   help text, required `--usd` / `--output-dir` validation, positive integer
   parsing for frame/render dimensions, output directory creation, optional
@@ -643,6 +665,15 @@ call sites with `rg`.
   `TrainingSceneRuntime`, `LoadPhysicsReplay`, `WriteLidarCsv`,
   `WriteHeightScanCsv`, `WriteManifestJson`, `configureEngineOutputs`,
   `uploadToEngine`, and `applyPoseUpdates`.
+- Training viewer flow:
+  `headlessTraining/viewer_main.cpp`, `headlessTraining/viewer_app.cpp`,
+  `headlessTraining/viewer_camera_controller.cpp`,
+  `headlessTraining/viewer_output_config.cpp`,
+  `headlessTraining/training_scene.cpp`, and `engine/include/engine/engine.hpp`,
+  then search for `robot_training_viewer`, `ViewerApp`,
+  `BuildViewerOutputConfig`, `ViewerCameraController`, `GetAovTexture`,
+  `ImGui_ImplVulkan_AddTexture`, `readLidarPointCloudFrame`, and
+  `readHeightScanFrame`.
 - Hydra camera and multi-camera flow:
   `hdRobot/camera.cpp`, `hdRobot/renderParam.h`,
   `hdRobot/engineSession.cpp`, `hdRobot/passBridge.cpp`,

@@ -46,6 +46,8 @@ struct Engine::Impl final : nvvkhl::AppOffline
 
 namespace engine
 {
+void configureEngineSearchPaths(Engine& renderer);
+
 class EngineImplAccess final
 {
 public:

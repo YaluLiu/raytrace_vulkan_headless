@@ -91,6 +91,7 @@ void Engine::setup(const VkInstance& instance,
                            const VkPhysicalDevice& physicalDevice,
                            uint32_t queueFamily)
 {
+  engine::configureEngineSearchPaths(*this);
   m_impl->setup(instance, device, physicalDevice, queueFamily);
   auto& impl = engine::EngineImplAccess::impl(*this);
   impl.alloc.init(device, physicalDevice);

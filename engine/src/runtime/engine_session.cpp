@@ -75,6 +75,31 @@ void syncMainViewStateFromCameraManip(engine::EngineImplAccess::Impl& impl)
 }
 }
 
+namespace engine
+{
+void configureEngineSearchPaths(Engine& renderer)
+{
+  auto& impl = EngineImplAccess::impl(renderer);
+  defaultSearchPaths.clear();
+  addSearchPathIfExists(defaultSearchPaths, fs::current_path() / "engine");
+  addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY);
+  addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY / "..");
+
+  if(!impl.pluginSearchRoot.empty())
+  {
+    addSearchPathIfExists(defaultSearchPaths, impl.pluginSearchRoot);
+  }
+  else
+  {
+    const std::string usdRoot = getUsdRootFromEnvironment();
+    if(!usdRoot.empty())
+    {
+      addSearchPathIfExists(defaultSearchPaths, fs::path(usdRoot) / "plugin/usd/hdRobot");
+    }
+  }
+}
+} // namespace engine
+
 void Engine::setup(int width, int height)
 {
   auto& impl = engine::EngineImplAccess::impl(*this);
@@ -116,23 +141,7 @@ void Engine::setupContext()
   auto& impl = engine::EngineImplAccess::impl(*this);
   NVPSystem system("session");
 
-  defaultSearchPaths.clear();
-  addSearchPathIfExists(defaultSearchPaths, fs::current_path() / "engine");
-  addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY);
-  addSearchPathIfExists(defaultSearchPaths, fs::path(NVPSystem::exePath()) / PROJECT_RELDIRECTORY / "..");
-
-  if(!impl.pluginSearchRoot.empty())
-  {
-    addSearchPathIfExists(defaultSearchPaths, impl.pluginSearchRoot);
-  }
-  else
-  {
-    const std::string usdRoot = getUsdRootFromEnvironment();
-    if(!usdRoot.empty())
-    {
-      addSearchPathIfExists(defaultSearchPaths, fs::path(usdRoot) / "plugin/usd/hdRobot");
-    }
-  }
+  engine::configureEngineSearchPaths(*this);
 
   nvvk::ContextCreateInfo contextInfo;
   contextInfo.verboseUsed              = false;

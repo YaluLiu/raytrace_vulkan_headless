@@ -47,6 +47,18 @@ add_executable(robot_training_headless main.cpp)
 target_compile_features(robot_training_headless PRIVATE cxx_std_20)
 target_link_libraries(robot_training_headless PRIVATE ${HEADLESS_TRAINING_CORE})
 
+add_executable(robot_training_viewer
+  viewer_main.cpp
+  viewer_app.cpp
+  viewer_app.h
+  viewer_camera_controller.cpp
+  viewer_camera_controller.h
+  viewer_output_config.cpp
+  viewer_output_config.h
+)
+target_compile_features(robot_training_viewer PRIVATE cxx_std_20)
+target_link_libraries(robot_training_viewer PRIVATE ${HEADLESS_TRAINING_CORE} nvpro_core)
+
 if(BUILD_TESTING)
   add_executable(headless_training_usd_scene_loader_test
     tests/usd_scene_loader_test.cpp
