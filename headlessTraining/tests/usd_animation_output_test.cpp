@@ -94,6 +94,12 @@ int main()
               Near(updates[0].worldTransform[3][2], 6.0f),
           "second USD animation translation mismatch");
   Require(!source->nextFrame(updates), "USD animation source should report exhaustion");
+  source->reset();
+  Require(source->nextFrame(updates), "reset USD animation source should return first frame again");
+  Require(updates.size() == 1, "expected one reset-frame USD animation update");
+  Require(Near(updates[0].worldTransform[3][0], 1.0f) && Near(updates[0].worldTransform[3][1], 2.0f) &&
+              Near(updates[0].worldTransform[3][2], 3.0f),
+          "reset USD animation translation mismatch");
 
   LidarFramePointCloud lidarFrame;
   lidarFrame.frameId = 11;

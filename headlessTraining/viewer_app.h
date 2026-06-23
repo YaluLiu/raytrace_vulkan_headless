@@ -103,6 +103,7 @@ private:
   void applyOutputConfigIfDirty();
   void processPendingExports();
   void stepReplay();
+  void resetReplay();
   void exportScreenshot();
   void exportLidarCsv();
   void exportHeightScanCsv();

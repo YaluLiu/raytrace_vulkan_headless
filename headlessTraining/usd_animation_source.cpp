@@ -110,6 +110,8 @@ public:
     return true;
   }
 
+  void reset() override { m_nextFrame = 0; }
+
 private:
   PXR_NS::UsdStageRefPtr m_stage;
   std::vector<AnimatedPrim> m_prims;

@@ -126,7 +126,7 @@ call sites with `rg`.
   ImGui/GLFW/nvpro_core viewer application. It creates a window Vulkan
   context with the Engine-required extensions, injects that context into
   `Engine`, renders the preview color AOV into an ImGui viewport, owns USD
-  animation play/step behavior, and performs explicit
+  animation play/step/reset behavior, and performs explicit
   screenshot/LiDAR/height-scan debug exports under `viewer_debug/` without
   writing a training manifest.
 - `headlessTraining/viewer_camera_controller.h` /

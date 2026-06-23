@@ -633,6 +633,11 @@ void ViewerApp::drawReplayPanel()
       stepReplay();
     }
   }
+  ImGui::SameLine();
+  if(ImGui::Button("Reset"))
+  {
+    resetReplay();
+  }
   ImGui::Text("Applied frames: %llu", static_cast<unsigned long long>(m_state.frameIndex));
   if(m_animationSource == nullptr)
   {
@@ -842,6 +847,21 @@ void ViewerApp::stepReplay()
   m_runtime->applyPoseUpdates(m_engine, updates);
   m_state.frameIndex = m_nextAnimationFrameIndex;
   ++m_nextAnimationFrameIndex;
+}
+
+void ViewerApp::resetReplay()
+{
+  if(m_animationSource == nullptr)
+  {
+    m_statusLine = "USD file has no sampled mesh animation";
+    return;
+  }
+
+  m_animationSource->reset();
+  m_state.replayEnded = false;
+  m_state.replayPaused = true;
+  m_nextAnimationFrameIndex = 0;
+  stepReplay();
 }
 
 void ViewerApp::exportScreenshot()

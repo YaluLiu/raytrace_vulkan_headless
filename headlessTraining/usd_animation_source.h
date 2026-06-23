@@ -14,6 +14,7 @@ class AnimationStateSource
 public:
   virtual ~AnimationStateSource() = default;
   virtual bool nextFrame(std::vector<InstancePoseUpdate>& updates) = 0;
+  virtual void reset() = 0;
 };
 
 std::unique_ptr<AnimationStateSource> LoadUsdAnimationSource(const std::filesystem::path& usdPath,
