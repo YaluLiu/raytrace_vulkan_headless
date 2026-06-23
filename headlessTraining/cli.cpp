@@ -84,9 +84,8 @@ bool ParseVec3(std::string_view text, glm::vec3* value)
 bool NeedsValue(std::string_view arg)
 {
   return arg == "--usd" || arg == "--output-dir" || arg == "--frames" || arg == "--width" || arg == "--height" ||
-         arg == "--physics-replay" || arg == "--camera" || arg == "--plugin-search-root" ||
-         arg == "--preview-camera-position" || arg == "--preview-camera-target" || arg == "--preview-camera-fov" ||
-         arg == "--preview-camera-distance-scale";
+         arg == "--camera" || arg == "--plugin-search-root" || arg == "--preview-camera-position" ||
+         arg == "--preview-camera-target" || arg == "--preview-camera-fov" || arg == "--preview-camera-distance-scale";
 }
 
 bool ReadValue(int argc, char** argv, int* index, std::string* value, std::string* error)
@@ -127,7 +126,6 @@ std::string BuildHelpText()
       "  --frames <N>                  Number of frames to render. Default: 1.\n"
       "  --width <pixels>              Render width. Default: 1280.\n"
       "  --height <pixels>             Render height. Default: 720.\n"
-      "  --physics-replay <path>       Optional frame-by-frame instance transform JSON replay.\n"
       "  --camera <usd-path>           Optional USD camera prim path to use as the main camera.\n"
       "  --preview-camera-position <x,y,z>\n"
       "                                Override generated preview camera position.\n"
@@ -206,14 +204,6 @@ CliParseResult ParseCommandLine(int argc, char** argv)
         result.error = "expected positive integer for --height";
         return result;
       }
-    }
-    else if(arg == "--physics-replay")
-    {
-      if(!ReadValue(argc, argv, &i, &value, &result.error))
-      {
-        return result;
-      }
-      result.options.physicsReplayPath = value;
     }
     else if(arg == "--camera")
     {
@@ -330,12 +320,6 @@ CliParseResult ParseCommandLine(int argc, char** argv)
     result.error = "USD file does not exist: " + result.options.usdPath.string();
     return result;
   }
-  if(!result.options.physicsReplayPath.empty() && !std::filesystem::exists(result.options.physicsReplayPath))
-  {
-    result.error = "physics replay file does not exist: " + result.options.physicsReplayPath.string();
-    return result;
-  }
-
   std::error_code ec;
   std::filesystem::create_directories(result.options.outputDir, ec);
   if(ec)

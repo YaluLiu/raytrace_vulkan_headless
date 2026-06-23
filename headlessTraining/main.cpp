@@ -1,8 +1,8 @@
 #include "cli.h"
 #include "output_writers.h"
-#include "physics_state_source.h"
 #include "preview_camera.h"
 #include "training_scene.h"
+#include "usd_animation_source.h"
 #include "usd_scene_loader.h"
 
 #include <engine/engine.hpp>
@@ -87,12 +87,7 @@ int main(int argc, char** argv)
 
     TrainingSceneDescription scene = LoadUsdTrainingScene(options.usdPath, loadOptions);
     TrainingSceneRuntime runtime(std::move(scene));
-
-    std::unique_ptr<PhysicsStateSource> physicsReplay;
-    if(!options.physicsReplayPath.empty())
-    {
-      physicsReplay = LoadPhysicsReplay(options.physicsReplayPath);
-    }
+    std::unique_ptr<AnimationStateSource> animationSource = LoadUsdAnimationSource(options.usdPath, runtime.scene());
 
     Engine engine;
     if(!options.pluginSearchRoot.empty())
@@ -108,7 +103,6 @@ int main(int argc, char** argv)
 
     TrainingManifest manifest;
     manifest.usdPath = options.usdPath.string();
-    manifest.physicsReplayPath = options.physicsReplayPath.string();
     manifest.width = static_cast<uint32_t>(options.width);
     manifest.height = static_cast<uint32_t>(options.height);
     manifest.requestedFrames = static_cast<uint32_t>(options.frames);
@@ -120,9 +114,9 @@ int main(int argc, char** argv)
     for(int frameIndex = 0; frameIndex < options.frames; ++frameIndex)
     {
       std::vector<InstancePoseUpdate> poseUpdates;
-      if(physicsReplay && !physicsReplay->nextFrame(poseUpdates))
+      if(animationSource && !animationSource->nextFrame(poseUpdates))
       {
-        std::cerr << "[robot_training_headless] Warning: physics replay ended before frame " << frameIndex
+        std::cerr << "[robot_training_headless] Warning: USD animation ended before frame " << frameIndex
                   << "; reusing current instance transforms\n";
       }
       runtime.applyPoseUpdates(engine, poseUpdates);

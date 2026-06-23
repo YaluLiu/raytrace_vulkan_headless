@@ -113,6 +113,14 @@ int main()
 
   {
     headless_training::CliParseResult result =
+        Parse({"robot_training_headless", "--usd", usdPath.string(), "--output-dir", (tempDir / "out4b").string(),
+               "--physics-replay", "replay.json"});
+    Require(!result.ok && result.error.find("unknown option") != std::string::npos,
+            "removed physics replay option should fail");
+  }
+
+  {
+    headless_training::CliParseResult result =
         Parse({"robot_training_headless", "--usd", usdPath.string(), "--output-dir", (tempDir / "out5").string(),
                "--preview-camera-position", "1,2"});
     Require(!result.ok && result.error.find("--preview-camera-position") != std::string::npos,

@@ -169,15 +169,6 @@ ViewerCliParseResult ParseViewerCommandLine(int argc, char** argv)
         result.options.height = parsed;
       }
     }
-    else if(IsOption(arg, "--physics-replay"))
-    {
-      if(!ReadValue(i, argc, argv, value, result.error))
-      {
-        result.ok = false;
-        return result;
-      }
-      result.options.physicsReplayPath = value;
-    }
     else if(IsOption(arg, "--camera"))
     {
       if(!ReadValue(i, argc, argv, value, result.error))
@@ -243,7 +234,6 @@ std::string BuildViewerHelpText()
          "Options:\n"
          "  --width <pixels>             Window and render width (default: 1280)\n"
          "  --height <pixels>            Window and render height (default: 720)\n"
-         "  --physics-replay <path>      Optional replay JSON\n"
          "  --camera <usd-path>          Optional USD camera path\n"
          "  --plugin-search-root <path>  Optional shader/plugin search root\n"
          "  --output-dir <path>          Optional directory for explicit debug exports\n"
@@ -301,10 +291,7 @@ void ViewerApp::initialize()
   m_cameraController.reset(initialCamera, ComputeViewerFocusTarget(scene, initialCamera));
 
   m_runtime.emplace(std::move(scene));
-  if(!m_options.physicsReplayPath.empty())
-  {
-    m_physicsReplay = LoadPhysicsReplay(m_options.physicsReplayPath);
-  }
+  m_animationSource = LoadUsdAnimationSource(m_options.usdPath, m_runtime->scene());
 
   createWindow();
   createVulkanContext();
@@ -621,13 +608,13 @@ void ViewerApp::drawReplayPanel()
   }
   if(ImGui::Button(m_state.replayPaused ? "Play" : "Pause"))
   {
-    if(m_physicsReplay == nullptr)
+    if(m_animationSource == nullptr)
     {
-      m_statusLine = "load a replay with --physics-replay to play frame updates";
+      m_statusLine = "USD file has no sampled mesh animation";
     }
     else if(m_state.replayEnded)
     {
-      m_statusLine = "replay ended";
+      m_statusLine = "USD animation ended";
     }
     else
     {
@@ -637,9 +624,9 @@ void ViewerApp::drawReplayPanel()
   ImGui::SameLine();
   if(ImGui::Button("Step"))
   {
-    if(m_physicsReplay == nullptr)
+    if(m_animationSource == nullptr)
     {
-      m_statusLine = "load a replay with --physics-replay to step frames";
+      m_statusLine = "USD file has no sampled mesh animation";
     }
     else
     {
@@ -647,13 +634,13 @@ void ViewerApp::drawReplayPanel()
     }
   }
   ImGui::Text("Applied frames: %llu", static_cast<unsigned long long>(m_state.frameIndex));
-  if(m_physicsReplay == nullptr)
+  if(m_animationSource == nullptr)
   {
-    ImGui::TextUnformatted("No replay loaded");
+    ImGui::TextUnformatted("No USD animation samples");
   }
   else if(m_state.replayEnded)
   {
-    ImGui::TextUnformatted("Replay ended");
+    ImGui::TextUnformatted("USD animation ended");
   }
 }
 
@@ -840,21 +827,21 @@ void ViewerApp::processPendingExports()
 
 void ViewerApp::stepReplay()
 {
-  if(!m_physicsReplay || m_state.replayEnded)
+  if(!m_animationSource || m_state.replayEnded)
   {
     return;
   }
   std::vector<InstancePoseUpdate> updates;
-  if(!m_physicsReplay->nextFrame(updates))
+  if(!m_animationSource->nextFrame(updates))
   {
     m_state.replayEnded = true;
     m_state.replayPaused = true;
-    m_statusLine = "replay ended";
+    m_statusLine = "USD animation ended";
     return;
   }
   m_runtime->applyPoseUpdates(m_engine, updates);
-  m_state.frameIndex = m_nextReplayFrameIndex;
-  ++m_nextReplayFrameIndex;
+  m_state.frameIndex = m_nextAnimationFrameIndex;
+  ++m_nextAnimationFrameIndex;
 }
 
 void ViewerApp::exportScreenshot()

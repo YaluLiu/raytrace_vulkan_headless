@@ -25,7 +25,6 @@ struct FrameOutputManifest
 struct TrainingManifest
 {
   std::string usdPath;
-  std::string physicsReplayPath;
   uint32_t width{0};
   uint32_t height{0};
   uint32_t requestedFrames{0};

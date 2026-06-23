@@ -89,9 +89,6 @@ function train(){
         --export-height-scan
     )
 
-    if [ -n "${TRAIN_PHYSICS_REPLAY}" ]; then
-        train_args+=(--physics-replay "${TRAIN_PHYSICS_REPLAY}")
-    fi
     if [ -n "${TRAIN_CAMERA}" ]; then
         train_args+=(--camera "${TRAIN_CAMERA}")
     fi

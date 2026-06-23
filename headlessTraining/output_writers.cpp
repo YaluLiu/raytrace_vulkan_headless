@@ -218,8 +218,6 @@ bool WriteManifestJson(const TrainingManifest& manifest,
     output << "{\n";
     output << "  \"usd\": ";
     WriteJsonString(output, manifest.usdPath);
-    output << ",\n  \"physics_replay\": ";
-    WriteJsonString(output, manifest.physicsReplayPath);
     output << ",\n  \"width\": " << manifest.width << ",\n";
     output << "  \"height\": " << manifest.height << ",\n";
     output << "  \"requested_frames\": " << manifest.requestedFrames << ",\n";

@@ -1,5 +1,6 @@
 #include "output_writers.h"
-#include "physics_state_source.h"
+#include "usd_animation_source.h"
+#include "usd_scene_loader.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -36,71 +37,63 @@ std::string ReadFile(const std::filesystem::path& path)
   content << input.rdbuf();
   return content.str();
 }
+
+std::filesystem::path WriteAnimatedUsdFixture(const std::filesystem::path& tempDir)
+{
+  const std::filesystem::path usdPath = tempDir / "animated_scene.usda";
+  std::ofstream usd(usdPath, std::ios::out | std::ios::trunc);
+  usd << R"USD(#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 10
+)
+
+def Xform "World"
+{
+    double3 xformOp:translate.timeSamples = {
+        0: (1, 2, 3),
+        10: (4, 5, 6),
+    }
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Mesh "RobotMesh"
+    {
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (0, 1, 0)]
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
+    }
+}
+)USD";
+  return usdPath;
+}
 } // namespace
 
 int main()
 {
-  const std::filesystem::path tempDir = std::filesystem::temp_directory_path() / "headless_training_physics_output_test";
+  const std::filesystem::path tempDir =
+      std::filesystem::temp_directory_path() / "headless_training_usd_animation_output_test";
   std::filesystem::remove_all(tempDir);
   std::filesystem::create_directories(tempDir);
 
-  const std::filesystem::path replayPath = tempDir / "replay.json";
-  {
-    std::ofstream replay(replayPath, std::ios::out | std::ios::trunc);
-    replay << R"JSON({
-  "frames": [
-    {
-      "frame": 0,
-      "instances": [
-        {
-          "name": "/World/Robot/base",
-          "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1],
-          "visible": false
-        }
-      ]
-    }
-  ]
-})JSON";
-  }
-
-  std::unique_ptr<headless_training::PhysicsStateSource> source =
-      headless_training::LoadPhysicsReplay(replayPath);
+  const std::filesystem::path usdPath = WriteAnimatedUsdFixture(tempDir);
+  const headless_training::TrainingSceneDescription scene = headless_training::LoadUsdTrainingScene(usdPath);
+  std::unique_ptr<headless_training::AnimationStateSource> source =
+      headless_training::LoadUsdAnimationSource(usdPath, scene);
+  Require(source != nullptr, "expected USD animation source for sampled xform");
   std::vector<headless_training::InstancePoseUpdate> updates;
-  Require(source->nextFrame(updates), "expected one replay frame");
-  Require(updates.size() == 1, "expected one replay update");
-  Require(updates[0].name == "/World/Robot/base", "replay update name mismatch");
-  Require(!updates[0].visible, "replay visibility mismatch");
+  Require(source->nextFrame(updates), "expected first USD animation frame");
+  Require(updates.size() == 1, "expected one USD animation update");
+  Require(updates[0].name == "/World/RobotMesh", "USD animation update name mismatch");
+  Require(updates[0].visible, "USD animation visibility mismatch");
   Require(Near(updates[0].worldTransform[3][0], 1.0f) && Near(updates[0].worldTransform[3][1], 2.0f) &&
               Near(updates[0].worldTransform[3][2], 3.0f),
-          "replay matrix translation mismatch");
-  Require(!source->nextFrame(updates), "replay should report exhaustion");
-
-  const std::filesystem::path badReplayPath = tempDir / "bad_replay.json";
-  {
-    std::ofstream replay(badReplayPath, std::ios::out | std::ios::trunc);
-    replay << R"JSON({
-  "frames": [
-    {
-      "instances": [
-        {
-          "name": "/World/Robot/base",
-          "matrix": [1e999, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-        }
-      ]
-    }
-  ]
-})JSON";
-  }
-  bool rejectedBadNumber = false;
-  try
-  {
-    (void)headless_training::LoadPhysicsReplay(badReplayPath);
-  }
-  catch(const std::runtime_error&)
-  {
-    rejectedBadNumber = true;
-  }
-  Require(rejectedBadNumber, "replay parser should reject non-finite JSON numbers");
+          "first USD animation translation mismatch");
+  Require(source->nextFrame(updates), "expected second USD animation frame");
+  Require(updates.size() == 1, "expected one second-frame USD animation update");
+  Require(Near(updates[0].worldTransform[3][0], 4.0f) && Near(updates[0].worldTransform[3][1], 5.0f) &&
+              Near(updates[0].worldTransform[3][2], 6.0f),
+          "second USD animation translation mismatch");
+  Require(!source->nextFrame(updates), "USD animation source should report exhaustion");
 
   LidarFramePointCloud lidarFrame;
   lidarFrame.frameId = 11;

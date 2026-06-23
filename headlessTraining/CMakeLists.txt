@@ -17,10 +17,10 @@ add_library(
     output_writers.h
     preview_camera.cpp
     preview_camera.h
-    physics_state_source.cpp
-    physics_state_source.h
     training_scene.cpp
     training_scene.h
+    usd_animation_source.cpp
+    usd_animation_source.h
     usd_scene_loader.cpp
     usd_scene_loader.h
 )
@@ -67,12 +67,12 @@ if(BUILD_TESTING)
   target_link_libraries(headless_training_usd_scene_loader_test PRIVATE ${HEADLESS_TRAINING_CORE})
   add_test(NAME headless_training_usd_scene_loader_test COMMAND headless_training_usd_scene_loader_test)
 
-  add_executable(headless_training_physics_output_test
-    tests/physics_output_test.cpp
+  add_executable(headless_training_usd_animation_output_test
+    tests/usd_animation_output_test.cpp
   )
-  target_compile_features(headless_training_physics_output_test PRIVATE cxx_std_20)
-  target_link_libraries(headless_training_physics_output_test PRIVATE ${HEADLESS_TRAINING_CORE})
-  add_test(NAME headless_training_physics_output_test COMMAND headless_training_physics_output_test)
+  target_compile_features(headless_training_usd_animation_output_test PRIVATE cxx_std_20)
+  target_link_libraries(headless_training_usd_animation_output_test PRIVATE ${HEADLESS_TRAINING_CORE})
+  add_test(NAME headless_training_usd_animation_output_test COMMAND headless_training_usd_animation_output_test)
 
   add_executable(headless_training_cli_test
     tests/cli_test.cpp

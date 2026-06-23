@@ -33,10 +33,10 @@ call sites with `rg`.
   contract for exposing `LidarSensor` and `HeightScanSensor` prims as custom
   `lidarSensor` and `heightScanSensor` sprims.
 - `headlessTraining/`: Hydra-free training executable and CPU support code for
-  reading a limited USD static scene subset, applying replayed external
-  physics transforms, submitting scene/sensor state through the public
-  `Engine` API, writing training CSV/manifest/preview outputs, and running the
-  ImGui-based `robot_training_viewer` debug viewport.
+  reading a limited USD scene subset, applying sampled USD animation
+  transforms, submitting scene/sensor state through the public `Engine` API,
+  writing training CSV/manifest/preview outputs, and running the ImGui-based
+  `robot_training_viewer` debug viewport.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 
@@ -63,8 +63,9 @@ call sites with `rg`.
   executable, `robot_training_viewer` ImGui debug executable,
   `headlessTrainingCore` static helper library, focused CPU CTest targets
   `headless_training_usd_scene_loader_test`,
-  `headless_training_physics_output_test`, `headless_training_cli_test`, and
-  non-Vulkan executable startup test `headless_training_help_test`.
+  `headless_training_usd_animation_output_test`,
+  `headless_training_cli_test`, and non-Vulkan executable startup test
+  `headless_training_help_test`.
 - `build_windows.bat`: Windows route for building and installing the three USD
   plugin components into the configured USD plugin prefix.
 
@@ -81,11 +82,11 @@ call sites with `rg`.
   is followed by LiDAR point overlay and then height scan overlay.
 - `headlessTraining/main.cpp`: Dedicated Hydra-free CLI executable entry for
   training data generation; orchestrates CLI parsing, USD scene loading,
-  optional physics replay, engine setup/upload/output configuration, per-frame
-  render/readback, preview saving, CSV writing, and manifest writing.
+  optional USD animation sampling, engine setup/upload/output configuration,
+  per-frame render/readback, preview saving, CSV writing, and manifest writing.
 - `headlessTraining/viewer_main.cpp`: Dedicated Hydra-free ImGui viewer entry
-  for loading a USD/replay scene, creating `ViewerApp`, and running the
-  interactive debug viewport without writing training manifests.
+  for loading a USD scene, creating `ViewerApp`, and running the interactive
+  debug viewport without writing training manifests.
 - `hdRobot/rendererPlugin.cpp`: Hydra plugin registration.
 - `hdRobot/renderDelegate.cpp`: Hydra render delegate construction, render
   param ownership, scene store ownership, delegate-owned render
@@ -115,17 +116,19 @@ call sites with `rg`.
 
 - `headlessTraining/main.cpp`: `robot_training_headless` command-line program;
   the runtime order is `Engine::setup`, scene upload, camera/output config,
-  `Engine::createRenderResources`, per-frame replay update, `Engine::render`,
-  sensor readback, optional preview save, and output manifest update.
+  `Engine::createRenderResources`, per-frame USD animation update,
+  `Engine::render`, sensor readback, optional preview save, and output manifest
+  update.
 - `headlessTraining/viewer_main.cpp`: `robot_training_viewer` command-line
   entry; parses viewer-specific options where `--output-dir` is optional and
   delegates all window/runtime work to `ViewerApp`.
 - `headlessTraining/viewer_app.h` / `headlessTraining/viewer_app.cpp`:
   ImGui/GLFW/nvpro_core viewer application. It creates a window Vulkan
   context with the Engine-required extensions, injects that context into
-  `Engine`, renders the preview color AOV into an ImGui viewport, owns replay
-  play/step behavior, and performs explicit screenshot/LiDAR/height-scan debug
-  exports under `viewer_debug/` without writing a training manifest.
+  `Engine`, renders the preview color AOV into an ImGui viewport, owns USD
+  animation play/step behavior, and performs explicit
+  screenshot/LiDAR/height-scan debug exports under `viewer_debug/` without
+  writing a training manifest.
 - `headlessTraining/viewer_camera_controller.h` /
   `headlessTraining/viewer_camera_controller.cpp`: Viewer-only orbit camera
   controller and scene focus helper that produce a `CameraSpec` submitted via
@@ -137,8 +140,8 @@ call sites with `rg`.
 - `headlessTraining/cli.h` / `headlessTraining/cli.cpp`: CLI option parsing,
   help text, required `--usd` / `--output-dir` validation, positive integer
   parsing for frame/render dimensions, output directory creation, optional
-  camera path, preview camera overrides, replay path, plugin search root,
-  preview, preview point-cloud overlay, and export toggles.
+  camera path, preview camera overrides, plugin search root, preview, preview
+  point-cloud overlay, and export toggles.
 - `headlessTraining/preview_camera.h` /
   `headlessTraining/preview_camera.cpp`: CPU-only preview camera helper that
   computes visible mesh world bounds and builds the default main preview
@@ -151,7 +154,7 @@ call sites with `rg`.
   texture/light/mesh upload, mesh/instance bookkeeping, default camera
   construction, optional independent main preview camera submission, renderer
   output config construction including optional all-sensor preview point-cloud
-  overlays, replay pose application, and shared USD/Gf row-major matrix to
+  overlays, animation pose application, and shared USD/Gf row-major matrix to
   engine `glm::mat4` transform conversion.
 - `headlessTraining/usd_scene_loader.h` /
   `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
@@ -162,10 +165,11 @@ call sites with `rg`.
   visibility, `hdRobot:traceRole = "ground"` to `kTraceMaskGround`, schema
   default sensor values, disabled sensor filtering, and local `-Z`/`+Y` pose
   conventions.
-- `headlessTraining/physics_state_source.h` /
-  `headlessTraining/physics_state_source.cpp`: External physics boundary for
-  frame-by-frame instance pose updates. The first implementation loads strict
-  JSON replay files with named instance transforms and visibility flags.
+- `headlessTraining/usd_animation_source.h` /
+  `headlessTraining/usd_animation_source.cpp`: USD animation source for
+  frame-by-frame instance pose updates. It opens the USD stage, collects mesh
+  and ancestor xform/visibility time samples, and emits named instance
+  transforms sampled at each timestamp.
 - `headlessTraining/output_writers.h` /
   `headlessTraining/output_writers.cpp`: LiDAR CSV, height scan CSV, manifest
   JSON, point/sample counting, CSV/JSON escaping, and frame file naming.
@@ -173,17 +177,16 @@ call sites with `rg`.
   coverage for quad triangulation, transform conversion, camera pose, schema
   sensor defaults, disabled sensor filtering, parameter sanitization, and
   ground trace-role mapping.
-- `headlessTraining/tests/physics_output_test.cpp`: CPU-only replay parser,
-  matrix conversion, CSV writer, and manifest writer coverage.
+- `headlessTraining/tests/usd_animation_output_test.cpp`: CPU-only USD
+  animation source, matrix conversion, CSV writer, and manifest writer coverage.
 - `headlessTraining/tests/cli_test.cpp`: CPU-only CLI parsing coverage for
   required options, output directory creation, numeric options, preview camera
   overrides, export toggles, missing values, unknown options, and `--help`.
 - `headlessTraining/tests/preview_camera_test.cpp`: CPU-only coverage for
   automatic preview camera bounds fitting, distance scaling, hidden mesh
   exclusion, and explicit preview camera overrides.
-- `headlessTraining/tests/fixtures/smoke_scene.usda` and
-  `headlessTraining/tests/fixtures/smoke_replay.json`: Minimal scene/replay
-  pair for local `robot_training_headless` smoke runs.
+- `headlessTraining/tests/fixtures/smoke_scene.usda`: Minimal scene fixture for
+  local `robot_training_headless` smoke runs.
 
 ## Engine Runtime Facade
 
@@ -596,7 +599,7 @@ call sites with `rg`.
   training scenes; start here for direct USD mesh/camera/sensor and basic
   material/texture/light ingestion issues rather than `hdRobot/mesh.cpp` when
   the executable path is `robot_training_headless`.
-- `headlessTraining/training_scene.cpp`: Scene submission and external replay
+- `headlessTraining/training_scene.cpp`: Scene submission and USD animation
   pose update bridge into `Engine::loadTextureAssets`, `Engine::uploadMesh`,
   `Engine::addLight`, and `Engine::updateInstance`.
 
@@ -659,10 +662,10 @@ call sites with `rg`.
 - Headless training flow:
   `headlessTraining/main.cpp`, `headlessTraining/training_scene.cpp`,
   `headlessTraining/usd_scene_loader.cpp`,
-  `headlessTraining/physics_state_source.cpp`,
+  `headlessTraining/usd_animation_source.cpp`,
   `headlessTraining/output_writers.cpp`, and `engine/include/engine/engine.hpp`,
   then search for `robot_training_headless`, `LoadUsdTrainingScene`,
-  `TrainingSceneRuntime`, `LoadPhysicsReplay`, `WriteLidarCsv`,
+  `TrainingSceneRuntime`, `LoadUsdAnimationSource`, `WriteLidarCsv`,
   `WriteHeightScanCsv`, `WriteManifestJson`, `configureEngineOutputs`,
   `uploadToEngine`, and `applyPoseUpdates`.
 - Training viewer flow:

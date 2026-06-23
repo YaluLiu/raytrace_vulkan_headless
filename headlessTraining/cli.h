@@ -13,7 +13,6 @@ struct CliOptions
 {
   std::filesystem::path usdPath;
   std::filesystem::path outputDir;
-  std::filesystem::path physicsReplayPath;
   std::string cameraPath;
   std::string pluginSearchRoot;
   std::optional<glm::vec3> previewCameraPosition;

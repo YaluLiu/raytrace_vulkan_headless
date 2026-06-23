@@ -1,7 +1,7 @@
 #pragma once
 
-#include "physics_state_source.h"
 #include "training_scene.h"
+#include "usd_animation_source.h"
 #include "viewer_camera_controller.h"
 #include "viewer_output_config.h"
 
@@ -25,7 +25,6 @@ namespace headless_training
 struct ViewerCliOptions
 {
   std::filesystem::path usdPath;
-  std::filesystem::path physicsReplayPath;
   std::string cameraPath;
   std::string pluginSearchRoot;
   std::filesystem::path outputDir;
@@ -61,7 +60,7 @@ private:
   GLFWwindow* m_window{nullptr};
   Engine m_engine;
   std::optional<TrainingSceneRuntime> m_runtime;
-  std::unique_ptr<PhysicsStateSource> m_physicsReplay;
+  std::unique_ptr<AnimationStateSource> m_animationSource;
   ViewerState m_state;
   ViewerCameraController m_cameraController;
   RendererOutputConfig m_lastOutputConfig;
@@ -75,7 +74,7 @@ private:
   bool m_pendingHeightScanCsvExport{false};
   bool m_orbitDragActive{false};
   bool m_panDragActive{false};
-  uint64_t m_nextReplayFrameIndex{0};
+  uint64_t m_nextAnimationFrameIndex{0};
   VkSampler m_viewportSampler{VK_NULL_HANDLE};
   VkDescriptorSet m_viewportDescriptor{VK_NULL_HANDLE};
   VkImageView m_registeredImageView{VK_NULL_HANDLE};

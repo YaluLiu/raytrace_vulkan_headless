@@ -74,7 +74,7 @@ void TrainingSceneRuntime::applyPoseUpdates(Engine& engine, const std::vector<In
     const TrainingMeshInstance* mesh = findMesh(update.name);
     if(mesh == nullptr)
     {
-      std::cerr << "[robot_training_headless] Warning: physics replay references unknown instance " << update.name
+      std::cerr << "[robot_training_headless] Warning: animation source references unknown instance " << update.name
                 << '\n';
       continue;
     }
