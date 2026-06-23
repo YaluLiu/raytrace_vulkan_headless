@@ -87,6 +87,7 @@ private:
   void initializeEngine();
   void createViewportSampler();
   void refreshViewportTexture();
+  void releaseViewportTexture();
 
   void runFrame();
   void drawUi();
@@ -100,6 +101,7 @@ private:
   void drawFrameToSwapchain();
 
   void applyCameraInput(bool viewportHovered, ImVec2 viewportSize);
+  void syncFramebufferResizeBeforeRender();
   void applyOutputConfigIfDirty();
   void processPendingExports();
   void stepReplay();

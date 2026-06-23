@@ -271,10 +271,9 @@ void ViewerApp::onResize(int width, int height)
   {
     return;
   }
+  releaseViewportTexture();
   m_engine.resize(width, height);
   m_resizePending = true;
-  m_viewportDescriptor = VK_NULL_HANDLE;
-  m_registeredImageView = VK_NULL_HANDLE;
 }
 
 void ViewerApp::initialize()
@@ -317,10 +316,9 @@ void ViewerApp::shutdown()
     m_engineReady = false;
   }
 
-  if(m_viewportDescriptor != VK_NULL_HANDLE && ImGui::GetCurrentContext() != nullptr)
+  if(m_viewportDescriptor != VK_NULL_HANDLE)
   {
-    ImGui_ImplVulkan_RemoveTexture(m_viewportDescriptor);
-    m_viewportDescriptor = VK_NULL_HANDLE;
+    releaseViewportTexture();
   }
 
   if(m_viewportSampler != VK_NULL_HANDLE)
@@ -477,8 +475,20 @@ void ViewerApp::refreshViewportTexture()
   m_registeredImageView = colorAov->imageView;
 }
 
+void ViewerApp::releaseViewportTexture()
+{
+  if(m_viewportDescriptor != VK_NULL_HANDLE && ImGui::GetCurrentContext() != nullptr)
+  {
+    ImGui_ImplVulkan_RemoveTexture(m_viewportDescriptor);
+  }
+  m_viewportDescriptor = VK_NULL_HANDLE;
+  m_registeredImageView = VK_NULL_HANDLE;
+}
+
 void ViewerApp::runFrame()
 {
+  syncFramebufferResizeBeforeRender();
+
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   drawUi();
@@ -798,6 +808,23 @@ void ViewerApp::applyCameraInput(bool viewportHovered, ImVec2 viewportSize)
     input.wheelDelta = io.MouseWheel;
   }
   m_cameraController.update(input);
+}
+
+void ViewerApp::syncFramebufferResizeBeforeRender()
+{
+  if(m_window == nullptr || !m_appReady)
+  {
+    return;
+  }
+
+  int width = 0;
+  int height = 0;
+  glfwGetFramebufferSize(m_window, &width, &height);
+  if(width > 0 && height > 0 &&
+     (static_cast<uint32_t>(width) != m_size.width || static_cast<uint32_t>(height) != m_size.height))
+  {
+    onFramebufferSize(width, height);
+  }
 }
 
 void ViewerApp::applyOutputConfigIfDirty()
