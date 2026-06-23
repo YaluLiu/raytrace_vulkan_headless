@@ -68,6 +68,8 @@ private:
   bool m_engineReady{false};
   bool m_appReady{false};
   bool m_resizePending{false};
+  int m_pendingResizeWidth{0};
+  int m_pendingResizeHeight{0};
   bool m_surfaceCreated{false};
   bool m_pendingScreenshotExport{false};
   bool m_pendingLidarCsvExport{false};
@@ -90,6 +92,8 @@ private:
   void releaseViewportTexture();
 
   void runFrame();
+  static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+  void deferFramebufferResize(int width, int height);
   void drawUi();
   void drawViewportPanel();
   void drawCameraPanel();
@@ -101,7 +105,7 @@ private:
   void drawFrameToSwapchain();
 
   void applyCameraInput(bool viewportHovered, ImVec2 viewportSize);
-  void syncFramebufferResizeBeforeRender();
+  bool syncFramebufferResizeBeforeRender();
   void applyOutputConfigIfDirty();
   void processPendingExports();
   void stepReplay();

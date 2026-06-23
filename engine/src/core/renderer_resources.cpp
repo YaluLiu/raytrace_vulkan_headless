@@ -53,6 +53,6 @@ void resizeRenderTargets(Engine& renderer, int width, int height)
 
   impl.sizeRef().width = width;
   impl.sizeRef().height = height;
-  impl.outputController.createPreviewTargets(impl.sizeRef());
+  impl.outputController.resizePreview(impl.sizeRef());
 }
 } // namespace engine

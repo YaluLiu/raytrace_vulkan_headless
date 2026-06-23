@@ -273,7 +273,6 @@ void ViewerApp::onResize(int width, int height)
   }
   releaseViewportTexture();
   m_engine.resize(width, height);
-  m_resizePending = true;
 }
 
 void ViewerApp::initialize()
@@ -303,6 +302,7 @@ void ViewerApp::initialize()
   createInfo.size = {static_cast<uint32_t>(m_options.width), static_cast<uint32_t>(m_options.height)};
   createInfo.window = m_window;
   create(createInfo);
+  glfwSetFramebufferSizeCallback(m_window, &ViewerApp::framebufferSizeCallback);
   m_appReady = true;
   createViewportSampler();
   initializeEngine();
@@ -746,6 +746,10 @@ void ViewerApp::drawSensorControls(const char* label, SensorViewerSettings& sett
 
 void ViewerApp::drawFrameToSwapchain()
 {
+  if(syncFramebufferResizeBeforeRender())
+  {
+    return;
+  }
   prepareFrame();
   const uint32_t curFrame = getCurFrame();
   const VkCommandBuffer cmdBuf = getCommandBuffers()[curFrame];
@@ -770,6 +774,30 @@ void ViewerApp::drawFrameToSwapchain()
 
   vkEndCommandBuffer(cmdBuf);
   submitFrame();
+}
+
+void ViewerApp::framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+  auto* app = static_cast<ViewerApp*>(glfwGetWindowUserPointer(window));
+  if(app != nullptr)
+  {
+    app->deferFramebufferResize(width, height);
+  }
+}
+
+void ViewerApp::deferFramebufferResize(int width, int height)
+{
+  if(width <= 0 || height <= 0)
+  {
+    return;
+  }
+  m_pendingResizeWidth = width;
+  m_pendingResizeHeight = height;
+  m_resizePending = true;
+  if(ImGui::GetCurrentContext() != nullptr)
+  {
+    ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
+  }
 }
 
 void ViewerApp::applyCameraInput(bool viewportHovered, ImVec2 viewportSize)
@@ -810,11 +838,11 @@ void ViewerApp::applyCameraInput(bool viewportHovered, ImVec2 viewportSize)
   m_cameraController.update(input);
 }
 
-void ViewerApp::syncFramebufferResizeBeforeRender()
+bool ViewerApp::syncFramebufferResizeBeforeRender()
 {
   if(m_window == nullptr || !m_appReady)
   {
-    return;
+    return false;
   }
 
   int width = 0;
@@ -823,8 +851,25 @@ void ViewerApp::syncFramebufferResizeBeforeRender()
   if(width > 0 && height > 0 &&
      (static_cast<uint32_t>(width) != m_size.width || static_cast<uint32_t>(height) != m_size.height))
   {
-    onFramebufferSize(width, height);
+    deferFramebufferResize(width, height);
   }
+  if(!m_resizePending)
+  {
+    return false;
+  }
+
+  const int pendingWidth = m_pendingResizeWidth;
+  const int pendingHeight = m_pendingResizeHeight;
+  m_resizePending = false;
+  m_pendingResizeWidth = 0;
+  m_pendingResizeHeight = 0;
+  if(pendingWidth > 0 && pendingHeight > 0 &&
+     (static_cast<uint32_t>(pendingWidth) != m_size.width || static_cast<uint32_t>(pendingHeight) != m_size.height))
+  {
+    nvvkhl::AppBaseVk::onFramebufferSize(pendingWidth, pendingHeight);
+    return true;
+  }
+  return false;
 }
 
 void ViewerApp::applyOutputConfigIfDirty()

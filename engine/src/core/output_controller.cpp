@@ -33,6 +33,9 @@ void OutputController::createPreviewTargets(VkExtent2D size)
 
 void OutputController::resizePreview(VkExtent2D size)
 {
+  // Overlay framebuffers attach preview image views, so release them before the preview targets are recreated.
+  m_lidarPointCloudPass.destroyGraphicsPipeline();
+  m_heightScanPass.destroyGraphicsPipeline();
   m_previewPipeline.recreateAovTargets(size);
 }
 
