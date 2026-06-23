@@ -62,6 +62,18 @@ def Xform "World"
         int[] faceVertexCounts = [3]
         int[] faceVertexIndices = [0, 1, 2]
     }
+
+    def LidarSensor "FrontLidar"
+    {
+        double3 xformOp:translate = (0.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def HeightScanSensor "Feet"
+    {
+        double3 xformOp:translate = (0, 0.25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
 }
 )USD";
   return usdPath;
@@ -80,26 +92,63 @@ int main()
   std::unique_ptr<headless_training::AnimationStateSource> source =
       headless_training::LoadUsdAnimationSource(usdPath, scene);
   Require(source != nullptr, "expected USD animation source for sampled xform");
-  std::vector<headless_training::InstancePoseUpdate> updates;
+  headless_training::AnimationFrameUpdates updates;
   Require(source->nextFrame(updates), "expected first USD animation frame");
-  Require(updates.size() == 1, "expected one USD animation update");
-  Require(updates[0].name == "/World/RobotMesh", "USD animation update name mismatch");
-  Require(updates[0].visible, "USD animation visibility mismatch");
-  Require(Near(updates[0].worldTransform[3][0], 1.0f) && Near(updates[0].worldTransform[3][1], 2.0f) &&
-              Near(updates[0].worldTransform[3][2], 3.0f),
+  Require(updates.instancePoses.size() == 1, "expected one USD animation update");
+  Require(updates.lidarSensorPoses.size() == 1, "expected one LiDAR sensor animation update");
+  Require(updates.heightScanSensorPoses.size() == 1, "expected one height scan sensor animation update");
+  Require(updates.instancePoses[0].name == "/World/RobotMesh", "USD animation update name mismatch");
+  Require(updates.instancePoses[0].visible, "USD animation visibility mismatch");
+  Require(Near(updates.instancePoses[0].worldTransform[3][0], 1.0f) &&
+              Near(updates.instancePoses[0].worldTransform[3][1], 2.0f) &&
+              Near(updates.instancePoses[0].worldTransform[3][2], 3.0f),
           "first USD animation translation mismatch");
+  Require(updates.lidarSensorPoses[0].name == "/World/FrontLidar", "first LiDAR animation update name mismatch");
+  Require(Near(updates.lidarSensorPoses[0].position.x, 1.5f) &&
+              Near(updates.lidarSensorPoses[0].position.y, 2.0f) &&
+              Near(updates.lidarSensorPoses[0].position.z, 3.0f),
+          "first LiDAR animation position mismatch");
+  Require(updates.heightScanSensorPoses[0].name == "/World/Feet",
+          "first height scan animation update name mismatch");
+  Require(Near(updates.heightScanSensorPoses[0].position.x, 1.0f) &&
+              Near(updates.heightScanSensorPoses[0].position.y, 2.25f) &&
+              Near(updates.heightScanSensorPoses[0].position.z, 3.0f),
+          "first height scan animation position mismatch");
   Require(source->nextFrame(updates), "expected second USD animation frame");
-  Require(updates.size() == 1, "expected one second-frame USD animation update");
-  Require(Near(updates[0].worldTransform[3][0], 4.0f) && Near(updates[0].worldTransform[3][1], 5.0f) &&
-              Near(updates[0].worldTransform[3][2], 6.0f),
+  Require(updates.instancePoses.size() == 1, "expected one second-frame USD animation update");
+  Require(updates.lidarSensorPoses.size() == 1, "expected one second-frame LiDAR sensor animation update");
+  Require(updates.heightScanSensorPoses.size() == 1,
+          "expected one second-frame height scan sensor animation update");
+  Require(Near(updates.instancePoses[0].worldTransform[3][0], 4.0f) &&
+              Near(updates.instancePoses[0].worldTransform[3][1], 5.0f) &&
+              Near(updates.instancePoses[0].worldTransform[3][2], 6.0f),
           "second USD animation translation mismatch");
+  Require(Near(updates.lidarSensorPoses[0].position.x, 4.5f) &&
+              Near(updates.lidarSensorPoses[0].position.y, 5.0f) &&
+              Near(updates.lidarSensorPoses[0].position.z, 6.0f),
+          "second LiDAR animation position mismatch");
+  Require(Near(updates.heightScanSensorPoses[0].position.x, 4.0f) &&
+              Near(updates.heightScanSensorPoses[0].position.y, 5.25f) &&
+              Near(updates.heightScanSensorPoses[0].position.z, 6.0f),
+          "second height scan animation position mismatch");
   Require(!source->nextFrame(updates), "USD animation source should report exhaustion");
   source->reset();
   Require(source->nextFrame(updates), "reset USD animation source should return first frame again");
-  Require(updates.size() == 1, "expected one reset-frame USD animation update");
-  Require(Near(updates[0].worldTransform[3][0], 1.0f) && Near(updates[0].worldTransform[3][1], 2.0f) &&
-              Near(updates[0].worldTransform[3][2], 3.0f),
+  Require(updates.instancePoses.size() == 1, "expected one reset-frame USD animation update");
+  Require(updates.lidarSensorPoses.size() == 1, "expected one reset-frame LiDAR animation update");
+  Require(updates.heightScanSensorPoses.size() == 1, "expected one reset-frame height scan animation update");
+  Require(Near(updates.instancePoses[0].worldTransform[3][0], 1.0f) &&
+              Near(updates.instancePoses[0].worldTransform[3][1], 2.0f) &&
+              Near(updates.instancePoses[0].worldTransform[3][2], 3.0f),
           "reset USD animation translation mismatch");
+  Require(Near(updates.lidarSensorPoses[0].position.x, 1.5f) &&
+              Near(updates.lidarSensorPoses[0].position.y, 2.0f) &&
+              Near(updates.lidarSensorPoses[0].position.z, 3.0f),
+          "reset LiDAR animation position mismatch");
+  Require(Near(updates.heightScanSensorPoses[0].position.x, 1.0f) &&
+              Near(updates.heightScanSensorPoses[0].position.y, 2.25f) &&
+              Near(updates.heightScanSensorPoses[0].position.z, 3.0f),
+          "reset height scan animation position mismatch");
 
   LidarFramePointCloud lidarFrame;
   lidarFrame.frameId = 11;

@@ -620,7 +620,7 @@ void ViewerApp::drawReplayPanel()
   {
     if(m_animationSource == nullptr)
     {
-      m_statusLine = "USD file has no sampled mesh animation";
+      m_statusLine = "USD file has no sampled animation";
     }
     else if(m_state.replayEnded)
     {
@@ -636,7 +636,7 @@ void ViewerApp::drawReplayPanel()
   {
     if(m_animationSource == nullptr)
     {
-      m_statusLine = "USD file has no sampled mesh animation";
+      m_statusLine = "USD file has no sampled animation";
     }
     else
     {
@@ -908,7 +908,7 @@ void ViewerApp::stepReplay()
   {
     return;
   }
-  std::vector<InstancePoseUpdate> updates;
+  AnimationFrameUpdates updates;
   if(!m_animationSource->nextFrame(updates))
   {
     m_state.replayEnded = true;
@@ -916,7 +916,10 @@ void ViewerApp::stepReplay()
     m_statusLine = "USD animation ended";
     return;
   }
-  m_runtime->applyPoseUpdates(m_engine, updates);
+  if(m_runtime->applyPoseUpdates(m_engine, updates))
+  {
+    m_outputConfigDirty = true;
+  }
   m_state.frameIndex = m_nextAnimationFrameIndex;
   ++m_nextAnimationFrameIndex;
 }
@@ -925,7 +928,7 @@ void ViewerApp::resetReplay()
 {
   if(m_animationSource == nullptr)
   {
-    m_statusLine = "USD file has no sampled mesh animation";
+    m_statusLine = "USD file has no sampled animation";
     return;
   }
 

@@ -154,8 +154,9 @@ call sites with `rg`.
   texture/light/mesh upload, mesh/instance bookkeeping, default camera
   construction, optional independent main preview camera submission, renderer
   output config construction including optional all-sensor preview point-cloud
-  overlays, animation pose application, and shared USD/Gf row-major matrix to
-  engine `glm::mat4` transform conversion.
+  overlays, animation pose application for mesh instances plus LiDAR and
+  height-scan sensor poses, and shared USD/Gf row-major matrix to engine
+  `glm::mat4` transform conversion.
 - `headlessTraining/usd_scene_loader.h` /
   `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
   `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`,
@@ -167,9 +168,9 @@ call sites with `rg`.
   conventions.
 - `headlessTraining/usd_animation_source.h` /
   `headlessTraining/usd_animation_source.cpp`: USD animation source for
-  frame-by-frame instance pose updates. It opens the USD stage, collects mesh
-  and ancestor xform/visibility time samples, and emits named instance
-  transforms sampled at each timestamp.
+  frame-by-frame scene pose updates. It opens the USD stage, collects mesh,
+  LiDAR sensor, height-scan sensor, and ancestor xform/visibility time samples,
+  and emits named instance and sensor poses sampled at each timestamp.
 - `headlessTraining/output_writers.h` /
   `headlessTraining/output_writers.cpp`: LiDAR CSV, height scan CSV, manifest
   JSON, point/sample counting, CSV/JSON escaping, and frame file naming.

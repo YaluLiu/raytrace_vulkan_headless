@@ -113,13 +113,17 @@ int main(int argc, char** argv)
 
     for(int frameIndex = 0; frameIndex < options.frames; ++frameIndex)
     {
-      std::vector<InstancePoseUpdate> poseUpdates;
+      AnimationFrameUpdates poseUpdates;
       if(animationSource && !animationSource->nextFrame(poseUpdates))
       {
         std::cerr << "[robot_training_headless] Warning: USD animation ended before frame " << frameIndex
-                  << "; reusing current instance transforms\n";
+                  << "; reusing current scene transforms\n";
       }
-      runtime.applyPoseUpdates(engine, poseUpdates);
+      if(runtime.applyPoseUpdates(engine, poseUpdates))
+      {
+        runtime.configureEngineOutputs(engine, options.exportLidar, options.exportHeightScan, mainCamera,
+                                       options.previewLidarPoints, options.previewHeightScanPoints);
+      }
 
       engine.render();
 

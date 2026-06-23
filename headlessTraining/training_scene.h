@@ -50,6 +50,21 @@ struct InstancePoseUpdate
   bool visible{true};
 };
 
+struct SensorPoseUpdate
+{
+  std::string name;
+  glm::vec3 position{0.0f};
+  glm::vec3 forward{0.0f, 0.0f, -1.0f};
+  glm::vec3 up{0.0f, 1.0f, 0.0f};
+};
+
+struct AnimationFrameUpdates
+{
+  std::vector<InstancePoseUpdate> instancePoses;
+  std::vector<SensorPoseUpdate> lidarSensorPoses;
+  std::vector<SensorPoseUpdate> heightScanSensorPoses;
+};
+
 class TrainingSceneRuntime
 {
 public:
@@ -60,6 +75,7 @@ public:
   void configureEngineOutputs(Engine& engine, bool exportLidar, bool exportHeightScan, const CameraSpec& mainCamera,
                               bool previewLidarPoints = false, bool previewHeightScanPoints = false) const;
   void applyPoseUpdates(Engine& engine, const std::vector<InstancePoseUpdate>& updates) const;
+  bool applyPoseUpdates(Engine& engine, const AnimationFrameUpdates& updates);
 
   const TrainingSceneDescription& scene() const { return m_scene; }
   const TrainingMeshInstance* findMesh(std::string_view name) const;
@@ -67,6 +83,8 @@ public:
 private:
   TrainingSceneDescription m_scene;
   std::unordered_map<std::string, size_t> m_meshByName;
+  std::unordered_map<std::string, size_t> m_lidarSensorByName;
+  std::unordered_map<std::string, size_t> m_heightScanSensorByName;
 
   void rebuildIndex();
 };

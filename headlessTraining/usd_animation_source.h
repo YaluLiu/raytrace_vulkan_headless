@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace headless_training
@@ -13,7 +14,14 @@ class AnimationStateSource
 {
 public:
   virtual ~AnimationStateSource() = default;
-  virtual bool nextFrame(std::vector<InstancePoseUpdate>& updates) = 0;
+  virtual bool nextFrame(AnimationFrameUpdates& updates) = 0;
+  bool nextFrame(std::vector<InstancePoseUpdate>& updates)
+  {
+    AnimationFrameUpdates frameUpdates;
+    const bool result = nextFrame(frameUpdates);
+    updates = std::move(frameUpdates.instancePoses);
+    return result;
+  }
   virtual void reset() = 0;
 };
 

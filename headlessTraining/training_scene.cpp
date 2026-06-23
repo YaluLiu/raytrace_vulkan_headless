@@ -19,6 +19,18 @@ void TrainingSceneRuntime::rebuildIndex()
   {
     m_meshByName.emplace(m_scene.meshes[i].name, i);
   }
+
+  m_lidarSensorByName.clear();
+  for(size_t i = 0; i < m_scene.lidarSensors.size(); ++i)
+  {
+    m_lidarSensorByName.emplace(m_scene.lidarSensors[i].name, i);
+  }
+
+  m_heightScanSensorByName.clear();
+  for(size_t i = 0; i < m_scene.heightScanSensors.size(); ++i)
+  {
+    m_heightScanSensorByName.emplace(m_scene.heightScanSensors[i].name, i);
+  }
 }
 
 void TrainingSceneRuntime::uploadToEngine(Engine& engine)
@@ -82,6 +94,48 @@ void TrainingSceneRuntime::applyPoseUpdates(Engine& engine, const std::vector<In
     engine.updateInstance(mesh->engineInstanceIndex, update.worldTransform, mesh->visible && update.visible,
                           mesh->traceMask);
   }
+}
+
+bool TrainingSceneRuntime::applyPoseUpdates(Engine& engine, const AnimationFrameUpdates& updates)
+{
+  applyPoseUpdates(engine, updates.instancePoses);
+
+  bool sensorPosesChanged = false;
+  for(const SensorPoseUpdate& update : updates.lidarSensorPoses)
+  {
+    const auto it = m_lidarSensorByName.find(update.name);
+    if(it == m_lidarSensorByName.end())
+    {
+      std::cerr << "[robot_training_headless] Warning: animation source references unknown LiDAR sensor "
+                << update.name << '\n';
+      continue;
+    }
+
+    LidarSensorSpec& sensor = m_scene.lidarSensors[it->second];
+    sensor.position = update.position;
+    sensor.forward = update.forward;
+    sensor.up = update.up;
+    sensorPosesChanged = true;
+  }
+
+  for(const SensorPoseUpdate& update : updates.heightScanSensorPoses)
+  {
+    const auto it = m_heightScanSensorByName.find(update.name);
+    if(it == m_heightScanSensorByName.end())
+    {
+      std::cerr << "[robot_training_headless] Warning: animation source references unknown height scan sensor "
+                << update.name << '\n';
+      continue;
+    }
+
+    HeightScanSensorSpec& sensor = m_scene.heightScanSensors[it->second];
+    sensor.position = update.position;
+    sensor.forward = update.forward;
+    sensor.up = update.up;
+    sensorPosesChanged = true;
+  }
+
+  return sensorPosesChanged;
 }
 
 const TrainingMeshInstance* TrainingSceneRuntime::findMesh(std::string_view name) const
