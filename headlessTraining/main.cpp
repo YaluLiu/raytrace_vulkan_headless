@@ -7,6 +7,7 @@
 
 #include <engine/engine.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
@@ -52,9 +53,15 @@ headless_training::PreviewCameraOptions MakePreviewCameraOptions(const headless_
 CameraSpec SelectMainCamera(const headless_training::TrainingSceneDescription& scene,
                             const headless_training::CliOptions& options)
 {
-  if(!HasPreviewCameraOverrides(options) && !options.cameraPath.empty() && !scene.cameras.empty())
+  if(!HasPreviewCameraOverrides(options) && !options.cameraPath.empty())
   {
-    return scene.cameras.front();
+    const auto cameraIt = std::find_if(scene.cameras.begin(), scene.cameras.end(), [&](const CameraSpec& camera) {
+      return camera.name == options.cameraPath;
+    });
+    if(cameraIt != scene.cameras.end())
+    {
+      return *cameraIt;
+    }
   }
   return headless_training::BuildPreviewCamera(scene, MakePreviewCameraOptions(options));
 }

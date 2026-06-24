@@ -31,12 +31,16 @@ public:
 
 private:
   glm::vec3 m_target{0.0f};
+  glm::vec3 m_forward{0.0f, 0.0f, -1.0f};
+  glm::vec3 m_up{0.0f, 1.0f, 0.0f};
   float m_distance{5.0f};
   float m_yawRadians{0.0f};
   float m_pitchRadians{0.0f};
   float m_verticalFovDegrees{45.0f};
+  float m_horizontalFovDegrees{0.0f};
   float m_clipStart{0.1f};
   float m_clipEnd{1000.0f};
+  CameraConformPolicy m_conformPolicy{CameraConformPolicy::MatchVertically};
 };
 
 glm::vec3 ComputeViewerFocusTarget(const TrainingSceneDescription& scene, const CameraSpec& fallbackCamera);

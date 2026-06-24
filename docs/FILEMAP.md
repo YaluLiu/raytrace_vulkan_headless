@@ -66,8 +66,8 @@ call sites with `rg`.
   `headlessTrainingCore` static helper library, focused CPU CTest targets
   `headless_training_usd_scene_loader_test`,
   `headless_training_usd_animation_output_test`,
-  `headless_training_cli_test`, and non-Vulkan executable startup test
-  `headless_training_help_test`.
+  `headless_training_cli_test`, `headless_training_viewer_camera_controller_test`,
+  and non-Vulkan executable startup test `headless_training_help_test`.
 - `build_windows.bat`: Windows route for building and installing the three USD
   plugin components into the configured USD plugin prefix.
 
@@ -128,7 +128,8 @@ call sites with `rg`.
   ImGui/GLFW/nvpro_core viewer application. It creates a window Vulkan
   context with the Engine-required extensions, injects that context into
   `Engine`, converts the linear float preview color AOV into a viewer-only
-  sRGB display texture for the ImGui viewport, owns USD animation
+  sRGB display texture for the ImGui viewport, owns the Camera panel source
+  selector for Auto preview versus loaded USD cameras, owns USD animation
   play/step/reset behavior, and performs explicit
   screenshot/LiDAR/height-scan debug exports under `viewer_debug/` without
   writing a training manifest.
@@ -162,7 +163,8 @@ call sites with `rg`.
   `glm::mat4` transform conversion.
 - `headlessTraining/usd_scene_loader.h` /
   `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
-  `UsdGeomMesh`, first or selected `UsdGeomCamera`, `LidarSensor`,
+  `UsdGeomMesh`, all `UsdGeomCamera` prims with optional requested-camera path
+  validation, `LidarSensor`,
   `HeightScanSensor`, basic `UsdPreviewSurface` material inputs, displayColor
   fallback materials, texture assets, DomeLight, SphereLight, and CylinderLight
   prims. It handles triangle/quad/convex fan triangulation, fallback normals,
@@ -189,6 +191,9 @@ call sites with `rg`.
 - `headlessTraining/tests/preview_camera_test.cpp`: CPU-only coverage for
   automatic preview camera bounds fitting, distance scaling, hidden mesh
   exclusion, and explicit preview camera overrides.
+- `headlessTraining/tests/viewer_camera_controller_test.cpp`: CPU-only coverage
+  for preserving authored USD camera orientation, roll/up, filmback FOV, clip
+  range, and conform policy when the viewer orbit controller is reset.
 - `headlessTraining/tests/fixtures/smoke_scene.usda`: Minimal scene fixture for
   local `robot_training_headless` smoke runs.
 

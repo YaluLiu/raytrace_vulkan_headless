@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -36,6 +37,8 @@ namespace
 constexpr float kMinControlsPanelWidth = 280.0f;
 constexpr float kMaxControlsPanelWidth = 380.0f;
 constexpr float kPreferredControlsPanelFraction = 0.26f;
+constexpr const char* kAutoPreviewCameraLabel = "Auto preview";
+constexpr float kUsdCameraResetDistance = 5.0f;
 constexpr VkFormat kViewportDisplayFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
 constexpr uint32_t kViewportConvertWorkgroupSize = 16;
 constexpr auto kReplayFrameInterval = std::chrono::nanoseconds(1'000'000'000 / 60);
@@ -100,15 +103,58 @@ void AddExternalSharingExtensions(nvvk::ContextCreateInfo& contextInfo)
 #endif
 }
 
-CameraSpec SelectInitialCamera(const TrainingSceneDescription& scene, const ViewerCliOptions& options)
+std::vector<std::string> BuildCameraSourceLabels(const TrainingSceneDescription& scene)
 {
-  UsdSceneLoadOptions loadOptions;
-  loadOptions.cameraPath = options.cameraPath;
-  if(!options.cameraPath.empty() && !scene.cameras.empty())
+  std::vector<std::string> result;
+  result.push_back(kAutoPreviewCameraLabel);
+  for(size_t i = 0; i < scene.cameras.size(); ++i)
   {
-    return scene.cameras.front();
+    result.push_back(scene.cameras[i].name.empty() ? "Camera " + std::to_string(i) : scene.cameras[i].name);
   }
-  return BuildPreviewCamera(scene);
+  return result;
+}
+
+int SelectInitialCameraSource(const TrainingSceneDescription& scene, const std::string& cameraPath)
+{
+  if(cameraPath.empty())
+  {
+    return 0;
+  }
+  for(size_t i = 0; i < scene.cameras.size(); ++i)
+  {
+    if(scene.cameras[i].name == cameraPath)
+    {
+      return static_cast<int>(i + 1);
+    }
+  }
+  return 0;
+}
+
+CameraSpec CameraForSource(const TrainingSceneDescription& scene, const CameraSpec& autoPreviewCamera, int sourceIndex)
+{
+  if(sourceIndex <= 0)
+  {
+    return autoPreviewCamera;
+  }
+  const size_t cameraIndex = static_cast<size_t>(sourceIndex - 1);
+  if(cameraIndex < scene.cameras.size())
+  {
+    return scene.cameras[cameraIndex];
+  }
+  return autoPreviewCamera;
+}
+
+glm::vec3 ComputeUsdCameraResetTarget(const TrainingSceneDescription& scene, const CameraSpec& camera)
+{
+  const glm::vec3 focusTarget = ComputeViewerFocusTarget(scene, camera);
+  const glm::vec3 forward = glm::length(camera.forward) > 0.0f ? glm::normalize(camera.forward)
+                                                               : glm::vec3(0.0f, 0.0f, -1.0f);
+  float distance = glm::dot(focusTarget - camera.position, forward);
+  if(!std::isfinite(distance) || distance <= 0.0f)
+  {
+    distance = kUsdCameraResetDistance;
+  }
+  return camera.position + forward * distance;
 }
 
 std::vector<std::string> LidarSensorNames(const TrainingSceneDescription& scene)
@@ -251,7 +297,7 @@ std::string BuildViewerHelpText()
          "Options:\n"
          "  --width <pixels>             Window and render width (default: 1280)\n"
          "  --height <pixels>            Window and render height (default: 720)\n"
-         "  --camera <usd-path>          Optional USD camera path\n"
+         "  --camera <usd-path>          Optional startup USD camera path\n"
          "  --plugin-search-root <path>  Optional shader/plugin search root\n"
          "  --output-dir <path>          Optional directory for explicit debug exports\n"
          "  --enable-lidar               Enable LiDAR compute at startup\n"
@@ -302,11 +348,12 @@ void ViewerApp::initialize()
   m_state.lidar.enableCompute = m_options.enableLidar;
   m_state.heightScan.enableCompute = m_options.enableHeightScan;
   m_state.exportSettings.outputDir = m_options.outputDir;
-  const CameraSpec initialCamera = SelectInitialCamera(scene, m_options);
-  m_state.visualCamera = initialCamera;
-  m_cameraController.reset(initialCamera, ComputeViewerFocusTarget(scene, initialCamera));
+  m_autoPreviewCamera = BuildPreviewCamera(scene);
+  m_cameraSourceLabels = BuildCameraSourceLabels(scene);
+  m_selectedCameraSource = SelectInitialCameraSource(scene, m_options.cameraPath);
 
   m_runtime.emplace(std::move(scene));
+  resetCameraControllerToSelectedCamera();
   m_animationSource = LoadUsdAnimationSource(m_options.usdPath, m_runtime->scene());
 
   createWindow();
@@ -842,6 +889,24 @@ void ViewerApp::runFrame()
   drawFrameToSwapchain();
 }
 
+void ViewerApp::resetCameraControllerToSelectedCamera()
+{
+  if(!m_runtime)
+  {
+    return;
+  }
+
+  const TrainingSceneDescription& scene = m_runtime->scene();
+  const int maxSourceIndex = m_cameraSourceLabels.empty() ? 0 : static_cast<int>(m_cameraSourceLabels.size() - 1);
+  m_selectedCameraSource = std::clamp(m_selectedCameraSource, 0, maxSourceIndex);
+
+  const CameraSpec camera = CameraForSource(scene, m_autoPreviewCamera, m_selectedCameraSource);
+  const glm::vec3 target = m_selectedCameraSource == 0 ? ComputeViewerFocusTarget(scene, camera)
+                                                       : ComputeUsdCameraResetTarget(scene, camera);
+  m_state.visualCamera = camera;
+  m_cameraController.reset(camera, target);
+}
+
 void ViewerApp::drawUi()
 {
   const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
@@ -902,6 +967,29 @@ void ViewerApp::drawCameraPanel()
   {
     return;
   }
+  if(!m_cameraSourceLabels.empty())
+  {
+    m_selectedCameraSource =
+        std::clamp(m_selectedCameraSource, 0, static_cast<int>(m_cameraSourceLabels.size() - 1));
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::BeginCombo("Source", m_cameraSourceLabels[static_cast<size_t>(m_selectedCameraSource)].c_str()))
+    {
+      for(size_t i = 0; i < m_cameraSourceLabels.size(); ++i)
+      {
+        const bool selected = static_cast<int>(i) == m_selectedCameraSource;
+        if(ImGui::Selectable(m_cameraSourceLabels[i].c_str(), selected))
+        {
+          m_selectedCameraSource = static_cast<int>(i);
+          resetCameraControllerToSelectedCamera();
+        }
+        if(selected)
+        {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+  }
   float fov = m_state.visualCamera.verticalFovDegrees;
   float clipStart = m_state.visualCamera.clipStart;
   float clipEnd = m_state.visualCamera.clipEnd;
@@ -917,8 +1005,7 @@ void ViewerApp::drawCameraPanel()
   }
   if(ImGui::Button("Reset camera"))
   {
-    const CameraSpec resetCamera = SelectInitialCamera(m_runtime->scene(), m_options);
-    m_cameraController.reset(resetCamera, ComputeViewerFocusTarget(m_runtime->scene(), resetCamera));
+    resetCameraControllerToSelectedCamera();
   }
   ImGui::SameLine();
   if(ImGui::Button("Print camera args"))

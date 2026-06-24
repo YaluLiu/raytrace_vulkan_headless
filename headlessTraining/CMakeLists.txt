@@ -88,6 +88,15 @@ if(BUILD_TESTING)
   target_link_libraries(headless_training_preview_camera_test PRIVATE ${HEADLESS_TRAINING_CORE})
   add_test(NAME headless_training_preview_camera_test COMMAND headless_training_preview_camera_test)
 
+  add_executable(headless_training_viewer_camera_controller_test
+    tests/viewer_camera_controller_test.cpp
+    viewer_camera_controller.cpp
+    viewer_camera_controller.h
+  )
+  target_compile_features(headless_training_viewer_camera_controller_test PRIVATE cxx_std_20)
+  target_link_libraries(headless_training_viewer_camera_controller_test PRIVATE ${HEADLESS_TRAINING_CORE})
+  add_test(NAME headless_training_viewer_camera_controller_test COMMAND headless_training_viewer_camera_controller_test)
+
   add_test(NAME headless_training_help_test COMMAND robot_training_headless --help)
   set_tests_properties(headless_training_help_test PROPERTIES PASS_REGULAR_EXPRESSION "Usage: robot_training_headless")
 endif()

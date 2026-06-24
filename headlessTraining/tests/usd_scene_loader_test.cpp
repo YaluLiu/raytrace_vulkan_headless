@@ -2,12 +2,14 @@
 
 #include <engine/renderer_types.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace
@@ -106,6 +108,16 @@ def Xform "World"
         float verticalAperture = 10
         float2 clippingRange = (0.2, 500)
         matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 2, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Camera "RearCamera"
+    {
+        float focalLength = 35
+        float horizontalAperture = 24
+        float verticalAperture = 18
+        float2 clippingRange = (0.1, 250)
+        matrix4d xformOp:transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 4, 5, 1))
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
 
@@ -249,7 +261,7 @@ int main()
           "sphere light transform mismatch");
   Require(Near(scene.lights[1].radius, 2.0f), "sphere light radius mismatch");
 
-  Require(scene.cameras.size() == 1, "expected one camera");
+  Require(scene.cameras.size() == 2, "expected two cameras");
   Require(scene.cameras[0].name == "/World/MainCamera", "camera path mismatch");
   Require(Near(scene.cameras[0].position.x, 0.0f) && Near(scene.cameras[0].position.y, 1.0f) &&
               Near(scene.cameras[0].position.z, 2.0f),
@@ -257,6 +269,7 @@ int main()
   Require(Near(scene.cameras[0].forward.x, 0.0f) && Near(scene.cameras[0].forward.y, 0.0f) &&
               Near(scene.cameras[0].forward.z, -1.0f),
           "camera forward should use local -Z");
+  Require(scene.cameras[1].name == "/World/RearCamera", "second camera path mismatch");
 
   Require(scene.lidarSensors.size() == 1, "disabled lidar should be skipped");
   const LidarSensorSpec& lidar = scene.lidarSensors[0];
@@ -278,15 +291,38 @@ int main()
   Require(Near(heightScan.params.gravityDirectionWs.z, -1.0f), "height scan gravity should be normalized");
 
   headless_training::UsdSceneLoadOptions options;
-  options.cameraPath = "/World/MainCamera";
+  options.cameraPath = "/World/RearCamera";
   const std::filesystem::path selectedFixture = WriteFixture();
   const headless_training::TrainingSceneDescription selectedCameraScene =
       headless_training::LoadUsdTrainingScene(selectedFixture, options);
   std::filesystem::remove(selectedFixture);
   std::filesystem::remove(std::filesystem::temp_directory_path() /
                           "headless_training_usd_scene_loader_test_texture.png");
-  Require(selectedCameraScene.cameras.size() == 1 && selectedCameraScene.cameras[0].name == "/World/MainCamera",
-          "camera path selection failed");
+  const auto selectedCameraIt =
+      std::find_if(selectedCameraScene.cameras.begin(), selectedCameraScene.cameras.end(), [](const CameraSpec& camera) {
+        return camera.name == "/World/RearCamera";
+      });
+  Require(selectedCameraScene.cameras.size() == 2, "camera path should not filter loaded cameras");
+  Require(selectedCameraIt != selectedCameraScene.cameras.end(), "camera path selection failed");
+  Require(Near(selectedCameraIt->position.x, 3.0f) && Near(selectedCameraIt->position.y, 4.0f) &&
+              Near(selectedCameraIt->position.z, 5.0f),
+          "selected camera transform mismatch");
+
+  options.cameraPath = "/World/MissingCamera";
+  const std::filesystem::path missingCameraFixture = WriteFixture();
+  bool missingCameraRejected = false;
+  try
+  {
+    (void)headless_training::LoadUsdTrainingScene(missingCameraFixture, options);
+  }
+  catch(const std::runtime_error& error)
+  {
+    missingCameraRejected = std::string(error.what()).find("requested camera path") != std::string::npos;
+  }
+  std::filesystem::remove(missingCameraFixture);
+  std::filesystem::remove(std::filesystem::temp_directory_path() /
+                          "headless_training_usd_scene_loader_test_texture.png");
+  Require(missingCameraRejected, "missing requested camera path should fail clearly");
 
   const std::filesystem::path startTimeFixture = WriteStartTimeFixture();
   const headless_training::TrainingSceneDescription startTimeScene =

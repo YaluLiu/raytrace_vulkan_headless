@@ -64,6 +64,9 @@ private:
   std::unique_ptr<AnimationStateSource> m_animationSource;
   ViewerState m_state;
   ViewerCameraController m_cameraController;
+  std::vector<std::string> m_cameraSourceLabels;
+  CameraSpec m_autoPreviewCamera;
+  int m_selectedCameraSource{0};
   RendererOutputConfig m_lastOutputConfig;
   bool m_outputConfigDirty{true};
   bool m_engineReady{false};
@@ -125,6 +128,7 @@ private:
   void drawFrameToSwapchain();
 
   void applyCameraInput(bool viewportHovered, ImVec2 viewportSize);
+  void resetCameraControllerToSelectedCamera();
   bool syncFramebufferResizeBeforeRender();
   void applyOutputConfigIfDirty();
   void processPendingExports();

@@ -1002,7 +1002,8 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
   const PXR_NS::UsdTimeCode time(stage->GetStartTimeCode());
   TrainingSceneDescription result;
   TextureRegistry textureRegistry(stage);
-  bool cameraPathRequested = !options.cameraPath.empty();
+  const bool cameraPathRequested = !options.cameraPath.empty();
+  const PXR_NS::SdfPath requestedCameraPath(options.cameraPath);
   bool requestedCameraFound = false;
 
   for(const PXR_NS::UsdPrim& prim : stage->Traverse())
@@ -1022,11 +1023,10 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
     PXR_NS::UsdGeomCamera camera(prim);
     if(camera)
     {
-      const bool selected = !cameraPathRequested || prim.GetPath() == PXR_NS::SdfPath(options.cameraPath);
-      if(selected && result.cameras.empty())
+      result.cameras.push_back(ReadCamera(camera, time));
+      if(cameraPathRequested && prim.GetPath() == requestedCameraPath)
       {
-        result.cameras.push_back(ReadCamera(camera, time));
-        requestedCameraFound = cameraPathRequested;
+        requestedCameraFound = true;
       }
       continue;
     }

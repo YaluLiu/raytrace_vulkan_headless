@@ -41,6 +41,30 @@ glm::vec3 ForwardFromAngles(float yaw, float pitch)
   return glm::normalize(glm::vec3(std::sin(yaw) * cp, std::sin(pitch), -std::cos(yaw) * cp));
 }
 
+glm::vec3 ResolveCameraUp(glm::vec3 forward, glm::vec3 requestedUp)
+{
+  const glm::vec3 normalizedForward = NormalizeOr(forward, glm::vec3(0.0f, 0.0f, -1.0f));
+  glm::vec3 up = requestedUp - normalizedForward * glm::dot(requestedUp, normalizedForward);
+  if(!IsFinite(up) || glm::length2(up) < 1.0e-12f)
+  {
+    const glm::vec3 fallbackUp =
+        std::fabs(glm::dot(normalizedForward, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.99f
+            ? glm::vec3(0.0f, 1.0f, 0.0f)
+            : glm::vec3(0.0f, 0.0f, 1.0f);
+    up = fallbackUp - normalizedForward * glm::dot(fallbackUp, normalizedForward);
+  }
+  return NormalizeOr(up, glm::vec3(0.0f, 1.0f, 0.0f));
+}
+
+float ClampOptionalHorizontalFov(float fovDegrees)
+{
+  if(!std::isfinite(fovDegrees) || fovDegrees <= 0.0f)
+  {
+    return 0.0f;
+  }
+  return std::clamp(fovDegrees, 1.0f, 179.0f);
+}
+
 void IncludePoint(glm::vec3& minPoint, glm::vec3& maxPoint, bool& valid, glm::vec3 point)
 {
   if(!IsFinite(point))
@@ -62,9 +86,13 @@ void ViewerCameraController::reset(const CameraSpec& camera, glm::vec3 target)
   const glm::vec3 forward = NormalizeOr(toTarget, camera.forward);
   m_pitchRadians = std::clamp(std::asin(std::clamp(forward.y, -1.0f, 1.0f)), -kMaxPitchRadians, kMaxPitchRadians);
   m_yawRadians = std::atan2(forward.x, -forward.z);
+  m_forward = forward;
+  m_up = ResolveCameraUp(m_forward, camera.up);
   m_verticalFovDegrees = std::clamp(camera.verticalFovDegrees, 1.0f, 179.0f);
+  m_horizontalFovDegrees = ClampOptionalHorizontalFov(camera.horizontalFovDegrees);
   m_clipStart = camera.clipStart;
   m_clipEnd = camera.clipEnd;
+  m_conformPolicy = camera.conformPolicy;
 }
 
 void ViewerCameraController::update(const ViewerCameraInput& input)
@@ -73,11 +101,14 @@ void ViewerCameraController::update(const ViewerCameraInput& input)
   {
     m_yawRadians -= input.deltaX * kOrbitSensitivity;
     m_pitchRadians = std::clamp(m_pitchRadians - input.deltaY * kOrbitSensitivity, -kMaxPitchRadians, kMaxPitchRadians);
+    m_forward = ForwardFromAngles(m_yawRadians, m_pitchRadians);
+    const glm::vec3 right =
+        NormalizeOr(glm::cross(m_forward, glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
+    m_up = ResolveCameraUp(m_forward, glm::cross(right, m_forward));
   }
 
-  const glm::vec3 forward = ForwardFromAngles(m_yawRadians, m_pitchRadians);
-  const glm::vec3 right = NormalizeOr(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
-  const glm::vec3 up = NormalizeOr(glm::cross(right, forward), glm::vec3(0.0f, 1.0f, 0.0f));
+  const glm::vec3 right = NormalizeOr(glm::cross(m_forward, m_up), glm::vec3(1.0f, 0.0f, 0.0f));
+  const glm::vec3 up = ResolveCameraUp(m_forward, m_up);
 
   if(input.pan)
   {
@@ -95,22 +126,22 @@ void ViewerCameraController::update(const ViewerCameraInput& input)
 CameraSpec ViewerCameraController::camera() const
 {
   CameraSpec result;
-  const glm::vec3 forward = ForwardFromAngles(m_yawRadians, m_pitchRadians);
-  const glm::vec3 right = NormalizeOr(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
   result.name = "viewer_orbit";
-  result.position = m_target - forward * m_distance;
-  result.forward = forward;
-  result.up = NormalizeOr(glm::cross(right, forward), glm::vec3(0.0f, 1.0f, 0.0f));
+  result.position = m_target - m_forward * m_distance;
+  result.forward = m_forward;
+  result.up = m_up;
   result.verticalFovDegrees = m_verticalFovDegrees;
-  result.horizontalFovDegrees = 0.0f;
+  result.horizontalFovDegrees = m_horizontalFovDegrees;
   result.clipStart = m_clipStart;
   result.clipEnd = m_clipEnd;
+  result.conformPolicy = m_conformPolicy;
   return result;
 }
 
 void ViewerCameraController::setVerticalFovDegrees(float fovDegrees)
 {
   m_verticalFovDegrees = std::clamp(fovDegrees, 1.0f, 179.0f);
+  m_horizontalFovDegrees = 0.0f;
 }
 
 void ViewerCameraController::setClipRange(float clipStart, float clipEnd)
