@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -37,6 +38,8 @@ constexpr float kMaxControlsPanelWidth = 380.0f;
 constexpr float kPreferredControlsPanelFraction = 0.26f;
 constexpr VkFormat kViewportDisplayFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
 constexpr uint32_t kViewportConvertWorkgroupSize = 16;
+constexpr auto kReplayFrameInterval = std::chrono::nanoseconds(1'000'000'000 / 60);
+using ReplayClock = std::chrono::steady_clock;
 
 void ThrowIfVkFailed(VkResult result, const char* message)
 {
@@ -316,6 +319,7 @@ void ViewerApp::initialize()
   createInfo.surface = m_surface;
   createInfo.size = {static_cast<uint32_t>(m_options.width), static_cast<uint32_t>(m_options.height)};
   createInfo.window = m_window;
+  createInfo.useVsync = true;
   create(createInfo);
   glfwSetFramebufferSizeCallback(m_window, &ViewerApp::framebufferSizeCallback);
   m_appReady = true;
@@ -825,10 +829,7 @@ void ViewerApp::runFrame()
   ImGui::NewFrame();
   drawUi();
 
-  if(!m_state.replayPaused && !m_state.replayEnded)
-  {
-    stepReplay();
-  }
+  advanceReplayForPlayback();
 
   m_state.visualCamera = m_cameraController.camera();
   m_engine.setMainCamera(m_state.visualCamera);
@@ -960,7 +961,12 @@ void ViewerApp::drawReplayPanel()
     }
     else
     {
+      const bool wasPaused = m_state.replayPaused;
       m_state.replayPaused = !m_state.replayPaused;
+      if(wasPaused && !m_state.replayPaused)
+      {
+        resetReplayPlaybackClock();
+      }
     }
   }
   ImGui::SameLine();
@@ -973,6 +979,7 @@ void ViewerApp::drawReplayPanel()
     else
     {
       stepReplay();
+      m_nextReplayTick = ReplayClock::now() + kReplayFrameInterval;
     }
   }
   ImGui::SameLine();
@@ -1234,6 +1241,32 @@ void ViewerApp::processPendingExports()
   }
 }
 
+void ViewerApp::resetReplayPlaybackClock()
+{
+  m_nextReplayTick = ReplayClock::now();
+}
+
+void ViewerApp::advanceReplayForPlayback()
+{
+  if(m_state.replayPaused || m_state.replayEnded || !m_animationSource)
+  {
+    return;
+  }
+
+  const auto now = ReplayClock::now();
+  if(now < m_nextReplayTick)
+  {
+    return;
+  }
+
+  stepReplay();
+  m_nextReplayTick += kReplayFrameInterval;
+  if(m_nextReplayTick < now)
+  {
+    m_nextReplayTick = now + kReplayFrameInterval;
+  }
+}
+
 void ViewerApp::stepReplay()
 {
   if(!m_animationSource || m_state.replayEnded)
@@ -1267,6 +1300,7 @@ void ViewerApp::resetReplay()
   m_animationSource->reset();
   m_state.replayEnded = false;
   m_state.replayPaused = true;
+  m_nextReplayTick = {};
   m_nextAnimationFrameIndex = 0;
   stepReplay();
 }

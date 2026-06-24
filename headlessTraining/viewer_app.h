@@ -12,6 +12,7 @@
 #include <imgui.h>
 
 #include <filesystem>
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
@@ -76,6 +77,7 @@ private:
   bool m_pendingHeightScanCsvExport{false};
   bool m_orbitDragActive{false};
   bool m_panDragActive{false};
+  std::chrono::steady_clock::time_point m_nextReplayTick{};
   uint64_t m_nextAnimationFrameIndex{0};
   VkSampler m_viewportSampler{VK_NULL_HANDLE};
   VkDescriptorSet m_viewportDescriptor{VK_NULL_HANDLE};
@@ -126,6 +128,8 @@ private:
   bool syncFramebufferResizeBeforeRender();
   void applyOutputConfigIfDirty();
   void processPendingExports();
+  void resetReplayPlaybackClock();
+  void advanceReplayForPlayback();
   void stepReplay();
   void resetReplay();
   void exportScreenshot();
