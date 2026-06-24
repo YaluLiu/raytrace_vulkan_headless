@@ -234,8 +234,9 @@ call sites with `rg`.
 - `engine/include/engine/texture_asset.hpp`: Public engine texture asset
   contract: `TextureUsage`, `TextureColorSpace`, and encoded `TextureAsset`
   payloads passed from `hdRobot` to `Engine`.
-- `engine/src/debug/debug_readback.cpp`: Readback/debug helpers for object ID image
-  downloads and offscreen color PNG output.
+- `engine/src/debug/debug_readback.cpp`: Readback/debug helpers for object ID
+  image downloads and offscreen color PNG output; color PNG export flips the raw
+  engine preview AOV vertically to match viewer/Hydra presentation.
 - `engine/include/engine/aov_texture.hpp`: Pure Vulkan engine AOV enum and texture
   descriptor returned by `Engine::GetAovTexture`, including tile AOV
   atlas values exposed to Hydra without Hydra or OpenGL types. Display tile
@@ -628,8 +629,9 @@ call sites with `rg`.
   converted to neutral luminance so its intensity illuminates materials without
   tinting their base color.
 - `engine/features/preview/shaders/viewer_display_color.comp`: Viewer-only
-  display conversion shader that clamps linear float preview color and converts
-  RGB to sRGB before ImGui presents it on the UNORM swapchain.
+  display conversion shader that flips the raw engine preview AOV vertically,
+  clamps linear float preview color, and converts RGB to sRGB before ImGui
+  presents it on the UNORM swapchain.
 - `engine/features/tile/shaders/tile_multiview.vert` /
   `engine/features/tile/shaders/tile_multiview.frag`: Multiview tile mesh shader variants
   that read camera arrays from `TileFrameUniforms`.

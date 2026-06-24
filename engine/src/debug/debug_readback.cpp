@@ -173,16 +173,22 @@ void Engine::saveOffscreenColorToFile(const char* filename)
   std::vector<uint8_t> imageData(imageWidth * imageHeight * 4);
   float*               src = reinterpret_cast<float*>(data);
 
-  for(uint32_t i = 0; i < imageWidth * imageHeight; ++i)
+  for(uint32_t y = 0; y < imageHeight; ++y)
   {
-    const float r        = src[i * 4 + 0];
-    const float g        = src[i * 4 + 1];
-    const float b        = src[i * 4 + 2];
-    const float a        = src[i * 4 + 3];
-    imageData[i * 4 + 0] = UnitFloatToByte(LinearToSrgb(r));
-    imageData[i * 4 + 1] = UnitFloatToByte(LinearToSrgb(g));
-    imageData[i * 4 + 2] = UnitFloatToByte(LinearToSrgb(b));
-    imageData[i * 4 + 3] = UnitFloatToByte(ClampFiniteUnit(a));
+    const uint32_t srcY = imageHeight - 1 - y;
+    for(uint32_t x = 0; x < imageWidth; ++x)
+    {
+      const uint32_t srcPixel = (srcY * imageWidth + x) * 4;
+      const uint32_t dstPixel = (y * imageWidth + x) * 4;
+      const float r = src[srcPixel + 0];
+      const float g = src[srcPixel + 1];
+      const float b = src[srcPixel + 2];
+      const float a = src[srcPixel + 3];
+      imageData[dstPixel + 0] = UnitFloatToByte(LinearToSrgb(r));
+      imageData[dstPixel + 1] = UnitFloatToByte(LinearToSrgb(g));
+      imageData[dstPixel + 2] = UnitFloatToByte(LinearToSrgb(b));
+      imageData[dstPixel + 3] = UnitFloatToByte(ClampFiniteUnit(a));
+    }
   }
 
   vkUnmapMemory(device, stagingMemory);

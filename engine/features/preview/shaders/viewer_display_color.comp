@@ -33,7 +33,8 @@ void main()
     return;
   }
 
-  vec4 linearColor = texelFetch(sourceColor, pixel, 0);
+  ivec2 sourcePixel = ivec2(pixel.x, size.y - 1 - pixel.y);
+  vec4 linearColor = texelFetch(sourceColor, sourcePixel, 0);
   vec4 srgbColor = vec4(linearToSrgb(linearColor.r),
                         linearToSrgb(linearColor.g),
                         linearToSrgb(linearColor.b),
