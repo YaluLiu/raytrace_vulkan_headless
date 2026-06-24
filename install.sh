@@ -101,6 +101,49 @@ function train(){
     "${project_root}/build/headlessTraining/robot_training_headless" "${train_args[@]}" "$@"
 }
 
+function train_viewer(){
+    set -e
+    tbb_dir="${TBB_DIR:-/usr/lib/x86_64-linux-gnu/cmake/TBB}"
+    project_root="$(pwd)"
+    train_scene_path="${TRAIN_SCENE_PATH:-${DEFAULT_TRAIN_SCENE_PATH}}"
+    train_width="${TRAIN_WIDTH:-1280}"
+    train_height="${TRAIN_HEIGHT:-720}"
+
+    mkdir -p build
+
+    cd build
+    cmake .. -Wno-dev \
+        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -DTBB_DIR="${tbb_dir}"
+
+    cmake --build . --target robot_training_viewer --config Release -j20
+    cd "${project_root}"
+
+    viewer_args=(
+        --usd "${train_scene_path}"
+        --width "${train_width}"
+        --height "${train_height}"
+    )
+
+    if [ -n "${TRAIN_OUTPUT_DIR}" ]; then
+        mkdir -p "${TRAIN_OUTPUT_DIR}"
+        viewer_args+=(--output-dir "${TRAIN_OUTPUT_DIR}")
+    fi
+    if [ -n "${TRAIN_CAMERA}" ]; then
+        viewer_args+=(--camera "${TRAIN_CAMERA}")
+    fi
+    if [ -n "${TRAIN_PLUGIN_SEARCH_ROOT}" ]; then
+        viewer_args+=(--plugin-search-root "${TRAIN_PLUGIN_SEARCH_ROOT}")
+    fi
+
+    echo "[train_viewer] TRAIN_SCENE_PATH=${train_scene_path}"
+    if [ -n "${TRAIN_OUTPUT_DIR}" ]; then
+        echo "[train_viewer] TRAIN_OUTPUT_DIR=${TRAIN_OUTPUT_DIR}"
+    fi
+    "${project_root}/build/headlessTraining/robot_training_viewer" "${viewer_args[@]}" "$@"
+}
+
 function show()
 {
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"

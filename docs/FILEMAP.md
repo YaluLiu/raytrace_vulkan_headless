@@ -44,10 +44,12 @@ call sites with `rg`.
 
 - `CMakeLists.txt`: Start here for project-wide package setup and target
   registration; use `-DROBOT_ENGINE_SCHEMA_ONLY=ON` for schema-only builds.
-- `install.sh`: Local command wrapper for `hydra`, `schema`, `show`, and
-  `train`; `train` configures/builds `robot_training_headless` and enables all
-  current training outputs: preview PNG, all-sensor LiDAR and height-scan
-  preview overlays, LiDAR CSV, height scan CSV, and manifest JSON.
+- `install.sh`: Local command wrapper for `hydra`, `schema`, `show`, `train`,
+  and `train_viewer`; `train` configures/builds `robot_training_headless` and
+  enables all current training outputs: preview PNG, all-sensor LiDAR and
+  height-scan preview overlays, LiDAR CSV, height scan CSV, and manifest JSON.
+  `train_viewer` configures/builds `robot_training_viewer` and opens the same
+  training scene through the ImGui playback/debug viewport.
 - `engine/CMakeLists.txt`: Engine renderer library sources, shader
   compilation, renderer compile definitions, and focused CTest targets such as
   `engine_height_scan_basis_test` and `engine_camera_projection_test`.
