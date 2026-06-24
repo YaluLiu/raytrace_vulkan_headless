@@ -123,6 +123,7 @@ set(ENGINE_SHADER_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/dome_background.vert
   ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/mesh.frag
   ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/mesh.vert
+  ${CMAKE_CURRENT_SOURCE_DIR}/features/preview/shaders/viewer_display_color.comp
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/dome_background_tile_multiview.frag
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/dome_background_tile_multiview.vert
   ${CMAKE_CURRENT_SOURCE_DIR}/features/tile/shaders/tile_multiview.frag

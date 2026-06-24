@@ -1,0 +1,42 @@
+#version 460
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D sourceColor;
+layout(rgba32f, set = 0, binding = 1) writeonly uniform image2D displayColor;
+
+float clampFiniteUnit(float value)
+{
+  if(isnan(value) || isinf(value))
+  {
+    return 0.0;
+  }
+  return clamp(value, 0.0, 1.0);
+}
+
+float linearToSrgb(float value)
+{
+  float linear = clampFiniteUnit(value);
+  if(linear <= 0.0031308)
+  {
+    return linear * 12.92;
+  }
+  return 1.055 * pow(linear, 1.0 / 2.4) - 0.055;
+}
+
+void main()
+{
+  ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+  ivec2 size = imageSize(displayColor);
+  if(pixel.x >= size.x || pixel.y >= size.y)
+  {
+    return;
+  }
+
+  vec4 linearColor = texelFetch(sourceColor, pixel, 0);
+  vec4 srgbColor = vec4(linearToSrgb(linearColor.r),
+                        linearToSrgb(linearColor.g),
+                        linearToSrgb(linearColor.b),
+                        clampFiniteUnit(linearColor.a));
+  imageStore(displayColor, pixel, srgbColor);
+}

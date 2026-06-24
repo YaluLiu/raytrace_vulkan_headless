@@ -80,6 +80,18 @@ private:
   VkSampler m_viewportSampler{VK_NULL_HANDLE};
   VkDescriptorSet m_viewportDescriptor{VK_NULL_HANDLE};
   VkImageView m_registeredImageView{VK_NULL_HANDLE};
+  VkImage m_viewportDisplayImage{VK_NULL_HANDLE};
+  VkDeviceMemory m_viewportDisplayMemory{VK_NULL_HANDLE};
+  VkImageView m_viewportDisplayImageView{VK_NULL_HANDLE};
+  VkExtent2D m_viewportDisplayExtent{0, 0};
+  bool m_viewportDisplayInitialized{false};
+  VkDescriptorPool m_viewportConversionDescriptorPool{VK_NULL_HANDLE};
+  VkDescriptorSetLayout m_viewportConversionDescriptorSetLayout{VK_NULL_HANDLE};
+  VkDescriptorSet m_viewportConversionDescriptorSet{VK_NULL_HANDLE};
+  VkPipelineLayout m_viewportConversionPipelineLayout{VK_NULL_HANDLE};
+  VkPipeline m_viewportConversionPipeline{VK_NULL_HANDLE};
+  VkImageView m_viewportConversionSourceView{VK_NULL_HANDLE};
+  VkImageView m_viewportConversionOutputView{VK_NULL_HANDLE};
   std::string m_statusLine;
 
   void initialize();
@@ -88,6 +100,12 @@ private:
   void createVulkanContext();
   void initializeEngine();
   void createViewportSampler();
+  void createViewportConversionResources();
+  void destroyViewportConversionResources();
+  void destroyViewportDisplayImage();
+  void ensureViewportDisplayImage(VkExtent2D extent);
+  void updateViewportConversionDescriptorSet(const ExportedAovTexture& colorAov);
+  void convertViewportTexture(const ExportedAovTexture& colorAov);
   void refreshViewportTexture();
   void releaseViewportTexture();
 

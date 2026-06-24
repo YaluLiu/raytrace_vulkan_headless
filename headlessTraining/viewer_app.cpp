@@ -11,7 +11,9 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "imgui.h"
 #include "imgui/imgui_helper.h"
+#include "nvh/fileoperations.hpp"
 #include "nvp/nvpsystem.hpp"
+#include "nvvk/shaders_vk.hpp"
 
 #include <algorithm>
 #include <array>
@@ -24,6 +26,8 @@
 #include <sstream>
 #include <utility>
 
+extern std::vector<std::string> defaultSearchPaths;
+
 namespace headless_training
 {
 namespace
@@ -31,6 +35,16 @@ namespace
 constexpr float kMinControlsPanelWidth = 280.0f;
 constexpr float kMaxControlsPanelWidth = 380.0f;
 constexpr float kPreferredControlsPanelFraction = 0.26f;
+constexpr VkFormat kViewportDisplayFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+constexpr uint32_t kViewportConvertWorkgroupSize = 16;
+
+void ThrowIfVkFailed(VkResult result, const char* message)
+{
+  if(result != VK_SUCCESS)
+  {
+    throw std::runtime_error(message);
+  }
+}
 
 bool IsOption(const char* arg, const char* name)
 {
@@ -272,6 +286,7 @@ void ViewerApp::onResize(int width, int height)
     return;
   }
   releaseViewportTexture();
+  destroyViewportDisplayImage();
   m_engine.resize(width, height);
 }
 
@@ -306,19 +321,21 @@ void ViewerApp::initialize()
   m_appReady = true;
   createViewportSampler();
   initializeEngine();
+  createViewportConversionResources();
 }
 
 void ViewerApp::shutdown()
 {
+  if(m_viewportDescriptor != VK_NULL_HANDLE)
+  {
+    releaseViewportTexture();
+  }
+  destroyViewportConversionResources();
+
   if(m_engineReady)
   {
     m_engine.cleanup();
     m_engineReady = false;
-  }
-
-  if(m_viewportDescriptor != VK_NULL_HANDLE)
-  {
-    releaseViewportTexture();
   }
 
   if(m_viewportSampler != VK_NULL_HANDLE)
@@ -455,6 +472,312 @@ void ViewerApp::createViewportSampler()
   }
 }
 
+void ViewerApp::createViewportConversionResources()
+{
+  if(m_viewportConversionPipeline != VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
+  bindings[0].binding = 0;
+  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  bindings[0].descriptorCount = 1;
+  bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+  bindings[1].binding = 1;
+  bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  bindings[1].descriptorCount = 1;
+  bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+  VkDescriptorSetLayoutCreateInfo layoutInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+  layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+  layoutInfo.pBindings = bindings.data();
+  ThrowIfVkFailed(vkCreateDescriptorSetLayout(getDevice(), &layoutInfo, nullptr, &m_viewportConversionDescriptorSetLayout),
+                  "failed to create viewer display conversion descriptor set layout");
+
+  std::array<VkDescriptorPoolSize, 2> poolSizes{};
+  poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  poolSizes[0].descriptorCount = 1;
+  poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  poolSizes[1].descriptorCount = 1;
+
+  VkDescriptorPoolCreateInfo poolInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+  poolInfo.maxSets = 1;
+  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+  poolInfo.pPoolSizes = poolSizes.data();
+  ThrowIfVkFailed(vkCreateDescriptorPool(getDevice(), &poolInfo, nullptr, &m_viewportConversionDescriptorPool),
+                  "failed to create viewer display conversion descriptor pool");
+
+  VkDescriptorSetAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+  allocateInfo.descriptorPool = m_viewportConversionDescriptorPool;
+  allocateInfo.descriptorSetCount = 1;
+  allocateInfo.pSetLayouts = &m_viewportConversionDescriptorSetLayout;
+  ThrowIfVkFailed(vkAllocateDescriptorSets(getDevice(), &allocateInfo, &m_viewportConversionDescriptorSet),
+                  "failed to allocate viewer display conversion descriptor set");
+
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+  pipelineLayoutInfo.setLayoutCount = 1;
+  pipelineLayoutInfo.pSetLayouts = &m_viewportConversionDescriptorSetLayout;
+  ThrowIfVkFailed(vkCreatePipelineLayout(getDevice(), &pipelineLayoutInfo, nullptr, &m_viewportConversionPipelineLayout),
+                  "failed to create viewer display conversion pipeline layout");
+
+  const std::string shaderCode =
+      nvh::loadFile("spv/viewer_display_color.comp.spv", true, defaultSearchPaths, true);
+  if(shaderCode.empty())
+  {
+    throw std::runtime_error("failed to load viewer display conversion shader");
+  }
+  VkShaderModule shaderModule = nvvk::createShaderModule(getDevice(), shaderCode);
+  if(shaderModule == VK_NULL_HANDLE)
+  {
+    throw std::runtime_error("failed to create viewer display conversion shader module");
+  }
+
+  VkComputePipelineCreateInfo pipelineInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
+  pipelineInfo.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  pipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+  pipelineInfo.stage.module = shaderModule;
+  pipelineInfo.stage.pName = "main";
+  pipelineInfo.layout = m_viewportConversionPipelineLayout;
+  const VkResult pipelineResult =
+      vkCreateComputePipelines(getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_viewportConversionPipeline);
+  vkDestroyShaderModule(getDevice(), shaderModule, nullptr);
+  ThrowIfVkFailed(pipelineResult, "failed to create viewer display conversion pipeline");
+}
+
+void ViewerApp::destroyViewportConversionResources()
+{
+  VkDevice device = getDevice();
+  if(device == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  vkDeviceWaitIdle(device);
+  destroyViewportDisplayImage();
+
+  if(m_viewportConversionPipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(device, m_viewportConversionPipeline, nullptr);
+    m_viewportConversionPipeline = VK_NULL_HANDLE;
+  }
+  if(m_viewportConversionPipelineLayout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(device, m_viewportConversionPipelineLayout, nullptr);
+    m_viewportConversionPipelineLayout = VK_NULL_HANDLE;
+  }
+  if(m_viewportConversionDescriptorPool != VK_NULL_HANDLE)
+  {
+    vkDestroyDescriptorPool(device, m_viewportConversionDescriptorPool, nullptr);
+    m_viewportConversionDescriptorPool = VK_NULL_HANDLE;
+    m_viewportConversionDescriptorSet = VK_NULL_HANDLE;
+  }
+  if(m_viewportConversionDescriptorSetLayout != VK_NULL_HANDLE)
+  {
+    vkDestroyDescriptorSetLayout(device, m_viewportConversionDescriptorSetLayout, nullptr);
+    m_viewportConversionDescriptorSetLayout = VK_NULL_HANDLE;
+  }
+  m_viewportConversionSourceView = VK_NULL_HANDLE;
+  m_viewportConversionOutputView = VK_NULL_HANDLE;
+}
+
+void ViewerApp::destroyViewportDisplayImage()
+{
+  VkDevice device = getDevice();
+  if(device == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  if(m_viewportDisplayImageView != VK_NULL_HANDLE || m_viewportDisplayImage != VK_NULL_HANDLE
+     || m_viewportDisplayMemory != VK_NULL_HANDLE)
+  {
+    vkDeviceWaitIdle(device);
+  }
+
+  if(m_viewportDisplayImageView != VK_NULL_HANDLE)
+  {
+    vkDestroyImageView(device, m_viewportDisplayImageView, nullptr);
+    m_viewportDisplayImageView = VK_NULL_HANDLE;
+  }
+  if(m_viewportDisplayImage != VK_NULL_HANDLE)
+  {
+    vkDestroyImage(device, m_viewportDisplayImage, nullptr);
+    m_viewportDisplayImage = VK_NULL_HANDLE;
+  }
+  if(m_viewportDisplayMemory != VK_NULL_HANDLE)
+  {
+    vkFreeMemory(device, m_viewportDisplayMemory, nullptr);
+    m_viewportDisplayMemory = VK_NULL_HANDLE;
+  }
+  m_viewportDisplayExtent = {0, 0};
+  m_viewportDisplayInitialized = false;
+  m_viewportConversionOutputView = VK_NULL_HANDLE;
+}
+
+void ViewerApp::ensureViewportDisplayImage(VkExtent2D extent)
+{
+  if(extent.width == 0 || extent.height == 0)
+  {
+    return;
+  }
+  if(m_viewportDisplayImage != VK_NULL_HANDLE && m_viewportDisplayExtent.width == extent.width
+     && m_viewportDisplayExtent.height == extent.height)
+  {
+    return;
+  }
+
+  releaseViewportTexture();
+  destroyViewportDisplayImage();
+
+  VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+  imageInfo.imageType = VK_IMAGE_TYPE_2D;
+  imageInfo.format = kViewportDisplayFormat;
+  imageInfo.extent = {extent.width, extent.height, 1};
+  imageInfo.mipLevels = 1;
+  imageInfo.arrayLayers = 1;
+  imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+  imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+  imageInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  ThrowIfVkFailed(vkCreateImage(getDevice(), &imageInfo, nullptr, &m_viewportDisplayImage),
+                  "failed to create viewer display image");
+
+  VkMemoryRequirements memReq{};
+  vkGetImageMemoryRequirements(getDevice(), m_viewportDisplayImage, &memReq);
+  VkMemoryAllocateInfo memoryInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+  memoryInfo.allocationSize = memReq.size;
+  memoryInfo.memoryTypeIndex = getMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  ThrowIfVkFailed(vkAllocateMemory(getDevice(), &memoryInfo, nullptr, &m_viewportDisplayMemory),
+                  "failed to allocate viewer display image memory");
+  ThrowIfVkFailed(vkBindImageMemory(getDevice(), m_viewportDisplayImage, m_viewportDisplayMemory, 0),
+                  "failed to bind viewer display image memory");
+
+  VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+  viewInfo.image = m_viewportDisplayImage;
+  viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  viewInfo.format = kViewportDisplayFormat;
+  viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  viewInfo.subresourceRange.levelCount = 1;
+  viewInfo.subresourceRange.layerCount = 1;
+  ThrowIfVkFailed(vkCreateImageView(getDevice(), &viewInfo, nullptr, &m_viewportDisplayImageView),
+                  "failed to create viewer display image view");
+
+  m_viewportDisplayExtent = extent;
+  m_viewportDisplayInitialized = false;
+  m_viewportConversionOutputView = VK_NULL_HANDLE;
+}
+
+void ViewerApp::updateViewportConversionDescriptorSet(const ExportedAovTexture& colorAov)
+{
+  if(m_viewportConversionDescriptorSet == VK_NULL_HANDLE || m_viewportSampler == VK_NULL_HANDLE
+     || m_viewportDisplayImageView == VK_NULL_HANDLE)
+  {
+    return;
+  }
+  if(m_viewportConversionSourceView == colorAov.imageView
+     && m_viewportConversionOutputView == m_viewportDisplayImageView)
+  {
+    return;
+  }
+
+  VkDescriptorImageInfo sourceInfo{};
+  sourceInfo.sampler = m_viewportSampler;
+  sourceInfo.imageView = colorAov.imageView;
+  sourceInfo.imageLayout = colorAov.layout;
+
+  VkDescriptorImageInfo outputInfo{};
+  outputInfo.imageView = m_viewportDisplayImageView;
+  outputInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+  std::array<VkWriteDescriptorSet, 2> writes{};
+  writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writes[0].dstSet = m_viewportConversionDescriptorSet;
+  writes[0].dstBinding = 0;
+  writes[0].descriptorCount = 1;
+  writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  writes[0].pImageInfo = &sourceInfo;
+  writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writes[1].dstSet = m_viewportConversionDescriptorSet;
+  writes[1].dstBinding = 1;
+  writes[1].descriptorCount = 1;
+  writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  writes[1].pImageInfo = &outputInfo;
+  vkUpdateDescriptorSets(getDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+
+  m_viewportConversionSourceView = colorAov.imageView;
+  m_viewportConversionOutputView = m_viewportDisplayImageView;
+}
+
+void ViewerApp::convertViewportTexture(const ExportedAovTexture& colorAov)
+{
+  if(m_viewportConversionPipeline == VK_NULL_HANDLE || m_viewportConversionDescriptorSet == VK_NULL_HANDLE
+     || m_viewportDisplayImage == VK_NULL_HANDLE || colorAov.image == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  VkCommandBuffer cmdBuf = createTempCmdBuffer();
+
+  VkImageMemoryBarrier sourceBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+  sourceBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+  sourceBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  sourceBarrier.oldLayout = colorAov.layout;
+  sourceBarrier.newLayout = colorAov.layout;
+  sourceBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  sourceBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  sourceBarrier.image = colorAov.image;
+  sourceBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  sourceBarrier.subresourceRange.levelCount = 1;
+  sourceBarrier.subresourceRange.layerCount = 1;
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+                       nullptr, 0, nullptr, 1, &sourceBarrier);
+
+  VkImageMemoryBarrier displayWriteBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+  displayWriteBarrier.srcAccessMask = m_viewportDisplayInitialized ? VK_ACCESS_SHADER_READ_BIT : 0;
+  displayWriteBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  displayWriteBarrier.oldLayout =
+      m_viewportDisplayInitialized ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+  displayWriteBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+  displayWriteBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  displayWriteBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  displayWriteBarrier.image = m_viewportDisplayImage;
+  displayWriteBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  displayWriteBarrier.subresourceRange.levelCount = 1;
+  displayWriteBarrier.subresourceRange.layerCount = 1;
+  vkCmdPipelineBarrier(cmdBuf,
+                       m_viewportDisplayInitialized ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                                                    : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &displayWriteBarrier);
+
+  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_viewportConversionPipeline);
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_viewportConversionPipelineLayout, 0, 1,
+                          &m_viewportConversionDescriptorSet, 0, nullptr);
+  const uint32_t groupCountX =
+      (m_viewportDisplayExtent.width + kViewportConvertWorkgroupSize - 1) / kViewportConvertWorkgroupSize;
+  const uint32_t groupCountY =
+      (m_viewportDisplayExtent.height + kViewportConvertWorkgroupSize - 1) / kViewportConvertWorkgroupSize;
+  vkCmdDispatch(cmdBuf, groupCountX, groupCountY, 1);
+
+  VkImageMemoryBarrier displayReadBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+  displayReadBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  displayReadBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  displayReadBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+  displayReadBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  displayReadBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  displayReadBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  displayReadBarrier.image = m_viewportDisplayImage;
+  displayReadBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  displayReadBarrier.subresourceRange.levelCount = 1;
+  displayReadBarrier.subresourceRange.layerCount = 1;
+  vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                       nullptr, 0, nullptr, 1, &displayReadBarrier);
+
+  submitTempCmdBuffer(cmdBuf);
+  m_viewportDisplayInitialized = true;
+}
+
 void ViewerApp::refreshViewportTexture()
 {
   const std::optional<ExportedAovTexture> colorAov = m_engine.GetAovTexture(Aov::Color);
@@ -462,7 +785,16 @@ void ViewerApp::refreshViewportTexture()
   {
     return;
   }
-  if(m_viewportDescriptor != VK_NULL_HANDLE && m_registeredImageView == colorAov->imageView)
+  ensureViewportDisplayImage(colorAov->extent);
+  if(m_viewportDisplayImageView == VK_NULL_HANDLE)
+  {
+    return;
+  }
+
+  updateViewportConversionDescriptorSet(*colorAov);
+  convertViewportTexture(*colorAov);
+
+  if(m_viewportDescriptor != VK_NULL_HANDLE && m_registeredImageView == m_viewportDisplayImageView)
   {
     return;
   }
@@ -470,9 +802,9 @@ void ViewerApp::refreshViewportTexture()
   {
     ImGui_ImplVulkan_RemoveTexture(m_viewportDescriptor);
   }
-  m_viewportDescriptor =
-      ImGui_ImplVulkan_AddTexture(m_viewportSampler, colorAov->imageView, colorAov->layout);
-  m_registeredImageView = colorAov->imageView;
+  m_viewportDescriptor = ImGui_ImplVulkan_AddTexture(m_viewportSampler, m_viewportDisplayImageView,
+                                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  m_registeredImageView = m_viewportDisplayImageView;
 }
 
 void ViewerApp::releaseViewportTexture()

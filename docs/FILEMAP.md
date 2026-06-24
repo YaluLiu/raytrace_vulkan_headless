@@ -125,8 +125,9 @@ call sites with `rg`.
 - `headlessTraining/viewer_app.h` / `headlessTraining/viewer_app.cpp`:
   ImGui/GLFW/nvpro_core viewer application. It creates a window Vulkan
   context with the Engine-required extensions, injects that context into
-  `Engine`, renders the preview color AOV into an ImGui viewport, owns USD
-  animation play/step/reset behavior, and performs explicit
+  `Engine`, converts the linear float preview color AOV into a viewer-only
+  sRGB display texture for the ImGui viewport, owns USD animation
+  play/step/reset behavior, and performs explicit
   screenshot/LiDAR/height-scan debug exports under `viewer_debug/` without
   writing a training manifest.
 - `headlessTraining/viewer_camera_controller.h` /
@@ -619,6 +620,9 @@ call sites with `rg`.
   diffuse shading from the shared light buffer. DomeLight surface lighting is
   converted to neutral luminance so its intensity illuminates materials without
   tinting their base color.
+- `engine/features/preview/shaders/viewer_display_color.comp`: Viewer-only
+  display conversion shader that clamps linear float preview color and converts
+  RGB to sRGB before ImGui presents it on the UNORM swapchain.
 - `engine/features/tile/shaders/tile_multiview.vert` /
   `engine/features/tile/shaders/tile_multiview.frag`: Multiview tile mesh shader variants
   that read camera arrays from `TileFrameUniforms`.
