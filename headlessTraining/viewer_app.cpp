@@ -1,8 +1,8 @@
 #include "viewer_app.h"
 
-#include "output_writers.h"
 #include "preview_camera.h"
 #include "usd_scene_loader.h"
+#include "viewer_export.h"
 
 #include <engine/aov_texture.hpp>
 
@@ -20,12 +20,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
-#include <limits>
 #include <stdexcept>
-#include <sstream>
 #include <utility>
 
 extern std::vector<std::string> defaultSearchPaths;
@@ -50,34 +46,6 @@ void ThrowIfVkFailed(VkResult result, const char* message)
   {
     throw std::runtime_error(message);
   }
-}
-
-bool IsOption(const char* arg, const char* name)
-{
-  return std::strcmp(arg, name) == 0;
-}
-
-bool ReadValue(int& index, int argc, char** argv, std::string& value, std::string& error)
-{
-  if(index + 1 >= argc)
-  {
-    error = std::string("missing value for ") + argv[index];
-    return false;
-  }
-  value = argv[++index];
-  return true;
-}
-
-bool ParsePositiveInt(const std::string& text, int& value)
-{
-  char* end = nullptr;
-  const long parsed = std::strtol(text.c_str(), &end, 10);
-  if(end == text.c_str() || *end != '\0' || parsed <= 0 || parsed > std::numeric_limits<int>::max())
-  {
-    return false;
-  }
-  value = static_cast<int>(parsed);
-  return true;
 }
 
 void AddExternalSharingExtensions(nvvk::ContextCreateInfo& contextInfo)
@@ -178,134 +146,7 @@ std::vector<std::string> HeightScanSensorNames(const TrainingSceneDescription& s
   return result;
 }
 
-void ThrowIfWriteFailed(bool ok, const std::string& errorMessage, const std::filesystem::path& path)
-{
-  if(!ok)
-  {
-    throw std::runtime_error(errorMessage.empty() ? "failed to write " + path.string() : errorMessage);
-  }
-}
 } // namespace
-
-ViewerCliParseResult ParseViewerCommandLine(int argc, char** argv)
-{
-  ViewerCliParseResult result;
-  result.ok = true;
-
-  for(int i = 1; i < argc; ++i)
-  {
-    const char* arg = argv[i];
-    std::string value;
-    if(IsOption(arg, "--help") || IsOption(arg, "-h"))
-    {
-      result.options.showHelp = true;
-    }
-    else if(IsOption(arg, "--usd"))
-    {
-      if(!ReadValue(i, argc, argv, value, result.error))
-      {
-        result.ok = false;
-        return result;
-      }
-      result.options.usdPath = value;
-    }
-    else if(IsOption(arg, "--width") || IsOption(arg, "--height"))
-    {
-      if(!ReadValue(i, argc, argv, value, result.error))
-      {
-        result.ok = false;
-        return result;
-      }
-      int parsed = 0;
-      if(!ParsePositiveInt(value, parsed))
-      {
-        result.ok = false;
-        result.error = std::string("invalid positive integer for ") + arg + ": " + value;
-        return result;
-      }
-      if(IsOption(arg, "--width"))
-      {
-        result.options.width = parsed;
-      }
-      else
-      {
-        result.options.height = parsed;
-      }
-    }
-    else if(IsOption(arg, "--camera"))
-    {
-      if(!ReadValue(i, argc, argv, value, result.error))
-      {
-        result.ok = false;
-        return result;
-      }
-      result.options.cameraPath = value;
-    }
-    else if(IsOption(arg, "--plugin-search-root"))
-    {
-      if(!ReadValue(i, argc, argv, value, result.error))
-      {
-        result.ok = false;
-        return result;
-      }
-      result.options.pluginSearchRoot = value;
-    }
-    else if(IsOption(arg, "--output-dir"))
-    {
-      if(!ReadValue(i, argc, argv, value, result.error))
-      {
-        result.ok = false;
-        return result;
-      }
-      result.options.outputDir = value;
-    }
-    else if(IsOption(arg, "--enable-lidar"))
-    {
-      result.options.enableLidar = true;
-    }
-    else if(IsOption(arg, "--disable-lidar"))
-    {
-      result.options.enableLidar = false;
-    }
-    else if(IsOption(arg, "--enable-height-scan"))
-    {
-      result.options.enableHeightScan = true;
-    }
-    else if(IsOption(arg, "--disable-height-scan"))
-    {
-      result.options.enableHeightScan = false;
-    }
-    else
-    {
-      result.ok = false;
-      result.error = std::string("unknown option: ") + arg;
-      return result;
-    }
-  }
-
-  if(!result.options.showHelp && result.options.usdPath.empty())
-  {
-    result.ok = false;
-    result.error = "missing required --usd <path>";
-  }
-  return result;
-}
-
-std::string BuildViewerHelpText()
-{
-  return "Usage: robot_training_viewer --usd <path> [options]\n\n"
-         "Options:\n"
-         "  --width <pixels>             Window and render width (default: 1280)\n"
-         "  --height <pixels>            Window and render height (default: 720)\n"
-         "  --camera <usd-path>          Optional startup USD camera path\n"
-         "  --plugin-search-root <path>  Optional shader/plugin search root\n"
-         "  --output-dir <path>          Optional directory for explicit debug exports\n"
-         "  --enable-lidar               Enable LiDAR compute at startup\n"
-         "  --disable-lidar              Disable LiDAR compute at startup\n"
-         "  --enable-height-scan         Enable height scan compute at startup\n"
-         "  --disable-height-scan        Disable height scan compute at startup\n"
-         "  --help                       Show this help\n";
-}
 
 ViewerApp::ViewerApp(ViewerCliOptions options) : m_options(std::move(options)) {}
 
@@ -1313,17 +1154,17 @@ void ViewerApp::processPendingExports()
 {
   if(m_pendingScreenshotExport)
   {
-    exportScreenshot();
+    m_statusLine = ExportViewerScreenshot(m_engine, m_state.exportSettings, m_state.frameIndex);
     m_pendingScreenshotExport = false;
   }
   if(m_pendingLidarCsvExport)
   {
-    exportLidarCsv();
+    m_statusLine = ExportViewerLidarCsv(m_engine, m_state.exportSettings, m_state.frameIndex);
     m_pendingLidarCsvExport = false;
   }
   if(m_pendingHeightScanCsvExport)
   {
-    exportHeightScanCsv();
+    m_statusLine = ExportViewerHeightScanCsv(m_engine, m_state.exportSettings, m_state.frameIndex);
     m_pendingHeightScanCsvExport = false;
   }
 }
@@ -1390,75 +1231,6 @@ void ViewerApp::resetReplay()
   m_nextReplayTick = {};
   m_nextAnimationFrameIndex = 0;
   stepReplay();
-}
-
-void ViewerApp::exportScreenshot()
-{
-  const std::filesystem::path path = viewerDebugPath("frame", ".png");
-  std::filesystem::create_directories(path.parent_path());
-  m_engine.saveFrame(path.string());
-  m_statusLine = "saved " + path.string();
-}
-
-void ViewerApp::exportLidarCsv()
-{
-  const std::filesystem::path path = viewerDebugPath("lidar_frame", ".csv");
-  std::filesystem::create_directories(path.parent_path());
-  std::string error;
-  ThrowIfWriteFailed(WriteLidarCsv(m_engine.readLidarPointCloudFrame(), m_state.frameIndex, path, &error), error, path);
-  m_statusLine = "saved " + path.string();
-}
-
-void ViewerApp::exportHeightScanCsv()
-{
-  const std::filesystem::path path = viewerDebugPath("height_scan_frame", ".csv");
-  std::filesystem::create_directories(path.parent_path());
-  std::string error;
-  ThrowIfWriteFailed(WriteHeightScanCsv(m_engine.readHeightScanFrame(), m_state.frameIndex, path, &error), error, path);
-  m_statusLine = "saved " + path.string();
-}
-
-void ViewerApp::exportDebugBundle()
-{
-  exportScreenshot();
-  if(m_state.lidar.enableCompute)
-  {
-    exportLidarCsv();
-  }
-  if(m_state.heightScan.enableCompute)
-  {
-    exportHeightScanCsv();
-  }
-  m_statusLine = "saved debug bundle to " + (m_state.exportSettings.outputDir / "viewer_debug").string();
-}
-
-std::filesystem::path ViewerApp::viewerDebugPath(const std::string& prefix, const std::string& extension) const
-{
-  return makeUniquePath(m_state.exportSettings.outputDir / "viewer_debug" /
-                        FormatFrameFileName(prefix, m_state.frameIndex, extension));
-}
-
-std::filesystem::path ViewerApp::makeUniquePath(std::filesystem::path path) const
-{
-  if(!std::filesystem::exists(path))
-  {
-    return path;
-  }
-
-  const std::filesystem::path parent = path.parent_path();
-  const std::string stem = path.stem().string();
-  const std::string extension = path.extension().string();
-  for(int suffix = 1; suffix < 10000; ++suffix)
-  {
-    std::ostringstream name;
-    name << stem << "_" << suffix;
-    std::filesystem::path candidate = parent / (name.str() + extension);
-    if(!std::filesystem::exists(candidate))
-    {
-      return candidate;
-    }
-  }
-  return path;
 }
 
 } // namespace headless_training

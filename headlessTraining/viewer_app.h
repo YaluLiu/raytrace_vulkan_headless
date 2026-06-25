@@ -3,6 +3,7 @@
 #include "training_scene.h"
 #include "usd_animation_source.h"
 #include "viewer_camera_controller.h"
+#include "viewer_cli.h"
 #include "viewer_output_config.h"
 
 #include <engine/engine.hpp>
@@ -11,7 +12,6 @@
 #include <nvvkhl/appbase_vk.hpp>
 #include <imgui.h>
 
-#include <filesystem>
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -22,29 +22,6 @@ struct GLFWwindow;
 
 namespace headless_training
 {
-
-struct ViewerCliOptions
-{
-  std::filesystem::path usdPath;
-  std::string cameraPath;
-  std::string pluginSearchRoot;
-  std::filesystem::path outputDir;
-  int width{1280};
-  int height{720};
-  bool enableLidar{true};
-  bool enableHeightScan{true};
-  bool showHelp{false};
-};
-
-struct ViewerCliParseResult
-{
-  ViewerCliOptions options;
-  bool ok{false};
-  std::string error;
-};
-
-ViewerCliParseResult ParseViewerCommandLine(int argc, char** argv);
-std::string BuildViewerHelpText();
 
 class ViewerApp final : public nvvkhl::AppBaseVk
 {
@@ -136,12 +113,6 @@ private:
   void advanceReplayForPlayback();
   void stepReplay();
   void resetReplay();
-  void exportScreenshot();
-  void exportLidarCsv();
-  void exportHeightScanCsv();
-  void exportDebugBundle();
-  std::filesystem::path viewerDebugPath(const std::string& prefix, const std::string& extension) const;
-  std::filesystem::path makeUniquePath(std::filesystem::path path) const;
 };
 
 } // namespace headless_training

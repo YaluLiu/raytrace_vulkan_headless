@@ -116,27 +116,37 @@ call sites with `rg`.
 
 ## Headless Training
 
-- `headlessTraining/main.cpp`: `robot_training_headless` command-line program;
-  the runtime order is `Engine::setup`, scene upload, camera/output config,
+- `headlessTraining/main.cpp`: Thin `robot_training_headless` command-line
+  entry; parses batch CLI options, prints help/errors, and delegates the
+  render/export workflow to `RunTraining()`.
+- `headlessTraining/training_runner.h` /
+  `headlessTraining/training_runner.cpp`: Batch training orchestrator. The
+  runtime order is `Engine::setup`, scene upload, camera/output config,
   `Engine::createRenderResources`, per-frame USD animation update,
   `Engine::render`, sensor readback, optional preview save, and output manifest
   update.
 - `headlessTraining/viewer_main.cpp`: `robot_training_viewer` command-line
-  entry; parses viewer-specific options where `--output-dir` is optional and
-  delegates all window/runtime work to `ViewerApp`.
+  entry; delegates viewer-specific option parsing to `viewer_cli.*` and all
+  window/runtime work to `ViewerApp`.
 - `headlessTraining/viewer_app.h` / `headlessTraining/viewer_app.cpp`:
   ImGui/GLFW/nvpro_core viewer application. It creates a window Vulkan
   context with the Engine-required extensions, injects that context into
   `Engine`, converts the linear float preview color AOV into a viewer-only
   sRGB display texture for the ImGui viewport, owns the Camera panel source
   selector for Auto preview versus loaded USD cameras, owns USD animation
-  play/step/reset behavior, and performs explicit
-  screenshot/LiDAR/height-scan debug exports under `viewer_debug/` without
-  writing a training manifest.
+  play/step/reset behavior, and routes explicit debug exports through
+  `viewer_export.*` without writing a training manifest.
+- `headlessTraining/viewer_cli.h` /
+  `headlessTraining/viewer_cli.cpp`: Viewer-only CLI option parsing and help
+  text; `--output-dir` remains optional because viewer exports are explicit
+  debug actions.
 - `headlessTraining/viewer_camera_controller.h` /
   `headlessTraining/viewer_camera_controller.cpp`: Viewer-only orbit camera
   controller and scene focus helper that produce a `CameraSpec` submitted via
   `Engine::setMainCamera()` each frame.
+- `headlessTraining/viewer_export.h` /
+  `headlessTraining/viewer_export.cpp`: Viewer-only debug export helpers for
+  unique `viewer_debug/` screenshot, LiDAR CSV, and height-scan CSV paths.
 - `headlessTraining/viewer_output_config.h` /
   `headlessTraining/viewer_output_config.cpp`: Viewer-only state and
   `RendererOutputConfig` builder for decoupling sensor compute enablement from
@@ -162,15 +172,33 @@ call sites with `rg`.
   height-scan sensor poses, and shared USD/Gf row-major matrix to engine
   `glm::mat4` transform conversion.
 - `headlessTraining/usd_scene_loader.h` /
-  `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader for active
-  `UsdGeomMesh`, all `UsdGeomCamera` prims with optional requested-camera path
-  validation, `LidarSensor`,
-  `HeightScanSensor`, basic `UsdPreviewSurface` material inputs, displayColor
-  fallback materials, texture assets, DomeLight, SphereLight, and CylinderLight
-  prims. It handles triangle/quad/convex fan triangulation, fallback normals,
-  visibility, `hdRobot:traceRole = "ground"` to `kTraceMaskGround`, schema
-  default sensor values, disabled sensor filtering, and local `-Z`/`+Y` pose
-  conventions.
+  `headlessTraining/usd_scene_loader.cpp`: Limited USD stage reader entry for
+  active prim traversal, optional requested-camera path validation, and final
+  `TrainingSceneDescription` assembly.
+- `headlessTraining/usd_scene_reader_utils.h` /
+  `headlessTraining/usd_scene_reader_utils.cpp`: Shared USD-to-engine
+  conversion helpers for vectors, matrices, camera poses, camera intrinsics,
+  trace masks, generic attribute reads, visibility, and numeric sanitization.
+- `headlessTraining/usd_texture_registry.h` /
+  `headlessTraining/usd_texture_registry.cpp`: Texture asset de-duplication,
+  USD asset resolution, encoded-byte extraction, and texture color-space
+  assignment.
+- `headlessTraining/usd_material_reader.h` /
+  `headlessTraining/usd_material_reader.cpp`: Basic `UsdPreviewSurface`
+  material input, texture connection, emission/metallic/roughness/opacity, and
+  displayColor fallback material reading.
+- `headlessTraining/usd_mesh_reader.h` /
+  `headlessTraining/usd_mesh_reader.cpp`: Mesh topology ingestion for
+  triangle/quad/convex fan triangulation, authored/fallback normals, texture
+  coordinates, visibility, trace role, material binding, and transform capture.
+- `headlessTraining/usd_sensor_reader.h` /
+  `headlessTraining/usd_sensor_reader.cpp`: `LidarSensor` and
+  `HeightScanSensor` prim detection, enabled sensor conversion, schema default
+  handling, parameter sanitization, and local `-Z`/`+Y` pose conventions.
+- `headlessTraining/usd_light_reader.h` /
+  `headlessTraining/usd_light_reader.cpp`: DomeLight, SphereLight, and
+  CylinderLight conversion, including emission normalization and dome texture
+  registration.
 - `headlessTraining/usd_animation_source.h` /
   `headlessTraining/usd_animation_source.cpp`: USD animation source for
   frame-by-frame scene pose updates. It opens the USD stage, collects mesh,
@@ -605,10 +633,12 @@ call sites with `rg`.
   `engine/shaders/common/host_device.h`.
 - `engine/include/engine/texture_asset.hpp`: Texture usage, color-space, and
   encoded-byte payload DTOs consumed by `Engine::loadTextureAssets`.
-- `headlessTraining/usd_scene_loader.cpp`: Hydra-free limited USD loader for
-  training scenes; start here for direct USD mesh/camera/sensor and basic
-  material/texture/light ingestion issues rather than `hdRobot/mesh.cpp` when
-  the executable path is `robot_training_headless`.
+- `headlessTraining/usd_scene_loader.cpp`: Hydra-free limited USD loader entry
+  for training scenes; start here for traversal/assembly issues, then route to
+  `usd_mesh_reader.*`, `usd_material_reader.*`, `usd_texture_registry.*`,
+  `usd_sensor_reader.*`, or `usd_light_reader.*` for direct USD
+  mesh/material/texture/sensor/light ingestion issues rather than
+  `hdRobot/mesh.cpp` when the executable path is `robot_training_headless`.
 - `headlessTraining/training_scene.cpp`: Scene submission and USD animation
   pose update bridge into `Engine::loadTextureAssets`, `Engine::uploadMesh`,
   `Engine::addLight`, and `Engine::updateInstance`.
@@ -674,21 +704,25 @@ call sites with `rg`.
   for `RenderFrame`, `_Execute`, `ApplyPendingUpdates`, `CommitResources`,
   and `Sync`.
 - Headless training flow:
-  `headlessTraining/main.cpp`, `headlessTraining/training_scene.cpp`,
+  `headlessTraining/main.cpp`, `headlessTraining/training_runner.cpp`,
+  `headlessTraining/training_scene.cpp`,
   `headlessTraining/usd_scene_loader.cpp`,
   `headlessTraining/usd_animation_source.cpp`,
   `headlessTraining/output_writers.cpp`, and `engine/include/engine/engine.hpp`,
   then search for `robot_training_headless`, `LoadUsdTrainingScene`,
-  `TrainingSceneRuntime`, `LoadUsdAnimationSource`, `WriteLidarCsv`,
-  `WriteHeightScanCsv`, `WriteManifestJson`, `configureEngineOutputs`,
-  `uploadToEngine`, and `applyPoseUpdates`.
+  `RunTraining`, `TrainingSceneRuntime`, `LoadUsdAnimationSource`,
+  `WriteLidarCsv`, `WriteHeightScanCsv`, `WriteManifestJson`,
+  `configureEngineOutputs`, `uploadToEngine`, and `applyPoseUpdates`.
 - Training viewer flow:
-  `headlessTraining/viewer_main.cpp`, `headlessTraining/viewer_app.cpp`,
+  `headlessTraining/viewer_main.cpp`, `headlessTraining/viewer_cli.cpp`,
+  `headlessTraining/viewer_app.cpp`,
   `headlessTraining/viewer_camera_controller.cpp`,
+  `headlessTraining/viewer_export.cpp`,
   `headlessTraining/viewer_output_config.cpp`,
   `headlessTraining/training_scene.cpp`, and `engine/include/engine/engine.hpp`,
   then search for `robot_training_viewer`, `ViewerApp`,
-  `BuildViewerOutputConfig`, `ViewerCameraController`, `GetAovTexture`,
+  `ParseViewerCommandLine`, `BuildViewerOutputConfig`,
+  `ViewerCameraController`, `ExportViewerScreenshot`, `GetAovTexture`,
   `ImGui_ImplVulkan_AddTexture`, `readLidarPointCloudFrame`, and
   `readHeightScanFrame`.
 - Hydra camera and multi-camera flow:

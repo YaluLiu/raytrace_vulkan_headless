@@ -17,12 +17,26 @@ add_library(
     output_writers.h
     preview_camera.cpp
     preview_camera.h
+    training_runner.cpp
+    training_runner.h
     training_scene.cpp
     training_scene.h
     usd_animation_source.cpp
     usd_animation_source.h
+    usd_light_reader.cpp
+    usd_light_reader.h
+    usd_material_reader.cpp
+    usd_material_reader.h
+    usd_mesh_reader.cpp
+    usd_mesh_reader.h
     usd_scene_loader.cpp
     usd_scene_loader.h
+    usd_scene_reader_utils.cpp
+    usd_scene_reader_utils.h
+    usd_sensor_reader.cpp
+    usd_sensor_reader.h
+    usd_texture_registry.cpp
+    usd_texture_registry.h
 )
 
 target_compile_features(${HEADLESS_TRAINING_CORE} PUBLIC cxx_std_20)
@@ -53,6 +67,10 @@ add_executable(robot_training_viewer
   viewer_app.h
   viewer_camera_controller.cpp
   viewer_camera_controller.h
+  viewer_cli.cpp
+  viewer_cli.h
+  viewer_export.cpp
+  viewer_export.h
   viewer_output_config.cpp
   viewer_output_config.h
 )
