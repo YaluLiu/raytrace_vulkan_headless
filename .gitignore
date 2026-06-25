@@ -60,7 +60,6 @@ imgui.ini
 test.rchit
 
 chatgpt/
-graphify-out/
 output/
 
 提示词.md
@@ -78,3 +77,8 @@ build_hydra/
 docs/*
 !docs/FILEMAP.md
 docs/PLAN/
+
+# codegraph 
+.codegraph
+# graphify
+graphify-out/
