@@ -1,7 +1,8 @@
 #pragma once
 
+#include "physics_fabric.h"
 #include "training_scene.h"
-#include "usd_animation_source.h"
+#include "usd_physics_replay_source.h"
 #include "viewer_camera_controller.h"
 #include "viewer_cli.h"
 #include "viewer_output_config.h"
@@ -38,7 +39,8 @@ private:
   GLFWwindow* m_window{nullptr};
   Engine m_engine;
   std::optional<TrainingSceneRuntime> m_runtime;
-  std::unique_ptr<AnimationStateSource> m_animationSource;
+  std::unique_ptr<PhysicsFrameSource> m_physicsFrameSource;
+  PhysicsFabric m_physicsFabric;
   ViewerState m_state;
   ViewerCameraController m_cameraController;
   std::vector<std::string> m_cameraSourceLabels;

@@ -1,5 +1,5 @@
 #include "output_writers.h"
-#include "usd_animation_source.h"
+#include "usd_physics_replay_source.h"
 #include "usd_scene_loader.h"
 
 #include <cmath>
@@ -89,11 +89,14 @@ int main()
 
   const std::filesystem::path usdPath = WriteAnimatedUsdFixture(tempDir);
   const headless_training::TrainingSceneDescription scene = headless_training::LoadUsdTrainingScene(usdPath);
-  std::unique_ptr<headless_training::AnimationStateSource> source =
-      headless_training::LoadUsdAnimationSource(usdPath, scene);
-  Require(source != nullptr, "expected USD animation source for sampled xform");
-  headless_training::AnimationFrameUpdates updates;
-  Require(source->nextFrame(updates), "expected first USD animation frame");
+  std::unique_ptr<headless_training::PhysicsFrameSource> source =
+      headless_training::LoadUsdPhysicsReplaySource(usdPath, scene);
+  Require(source != nullptr, "expected USD physics replay source for sampled xform");
+  headless_training::PhysicsFrameSnapshot snapshot;
+  Require(source->nextFrame(snapshot) == headless_training::PhysicsFrameStatus::Advanced,
+          "expected first USD animation frame");
+  headless_training::AnimationFrameUpdates& updates = snapshot.updates;
+  Require(snapshot.frameIndex == 0, "first USD physics replay frame index mismatch");
   Require(updates.instancePoses.size() == 1, "expected one USD animation update");
   Require(updates.lidarSensorPoses.size() == 1, "expected one LiDAR sensor animation update");
   Require(updates.heightScanSensorPoses.size() == 1, "expected one height scan sensor animation update");
@@ -114,7 +117,9 @@ int main()
               Near(updates.heightScanSensorPoses[0].position.y, 2.25f) &&
               Near(updates.heightScanSensorPoses[0].position.z, 3.0f),
           "first height scan animation position mismatch");
-  Require(source->nextFrame(updates), "expected second USD animation frame");
+  Require(source->nextFrame(snapshot) == headless_training::PhysicsFrameStatus::Advanced,
+          "expected second USD animation frame");
+  Require(snapshot.frameIndex == 1, "second USD physics replay frame index mismatch");
   Require(updates.instancePoses.size() == 1, "expected one second-frame USD animation update");
   Require(updates.lidarSensorPoses.size() == 1, "expected one second-frame LiDAR sensor animation update");
   Require(updates.heightScanSensorPoses.size() == 1,
@@ -131,9 +136,12 @@ int main()
               Near(updates.heightScanSensorPoses[0].position.y, 5.25f) &&
               Near(updates.heightScanSensorPoses[0].position.z, 6.0f),
           "second height scan animation position mismatch");
-  Require(!source->nextFrame(updates), "USD animation source should report exhaustion");
+  Require(source->nextFrame(snapshot) == headless_training::PhysicsFrameStatus::EndOfStream,
+          "USD physics replay source should report exhaustion");
   source->reset();
-  Require(source->nextFrame(updates), "reset USD animation source should return first frame again");
+  Require(source->nextFrame(snapshot) == headless_training::PhysicsFrameStatus::Advanced,
+          "reset USD physics replay source should return first frame again");
+  Require(snapshot.frameIndex == 0, "reset USD physics replay frame index mismatch");
   Require(updates.instancePoses.size() == 1, "expected one reset-frame USD animation update");
   Require(updates.lidarSensorPoses.size() == 1, "expected one reset-frame LiDAR animation update");
   Require(updates.heightScanSensorPoses.size() == 1, "expected one reset-frame height scan animation update");

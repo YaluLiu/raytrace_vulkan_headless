@@ -1,9 +1,11 @@
 #include "training_runner.h"
 
 #include "output_writers.h"
+#include "physics_fabric.h"
 #include "preview_camera.h"
+#include "training_frame_consumer.h"
 #include "training_scene.h"
-#include "usd_animation_source.h"
+#include "usd_physics_replay_source.h"
 #include "usd_scene_loader.h"
 
 #include <engine/engine.hpp>
@@ -66,6 +68,25 @@ CameraSpec SelectMainCamera(const headless_training::TrainingSceneDescription& s
   }
   return headless_training::BuildPreviewCamera(scene, MakePreviewCameraOptions(options));
 }
+
+void PublishNextPhysicsFrame(headless_training::PhysicsFrameSource& source,
+                             headless_training::PhysicsFabric& fabric,
+                             int frameIndex)
+{
+  headless_training::PhysicsFrameSnapshot snapshot;
+  switch(source.nextFrame(snapshot))
+  {
+    case headless_training::PhysicsFrameStatus::Advanced:
+      fabric.publish(std::move(snapshot));
+      break;
+    case headless_training::PhysicsFrameStatus::EndOfStream:
+      std::cerr << "[robot_training_headless] Warning: USD animation ended before frame " << frameIndex
+                << "; reusing current scene transforms\n";
+      break;
+    case headless_training::PhysicsFrameStatus::NoSource:
+      break;
+  }
+}
 } // namespace
 
 namespace headless_training
@@ -81,7 +102,9 @@ void RunTraining(const CliOptions& options)
 
   TrainingSceneDescription scene = LoadUsdTrainingScene(options.usdPath, loadOptions);
   TrainingSceneRuntime runtime(std::move(scene));
-  std::unique_ptr<AnimationStateSource> animationSource = LoadUsdAnimationSource(options.usdPath, runtime.scene());
+  std::unique_ptr<PhysicsFrameSource> physicsFrameSource =
+      LoadUsdPhysicsReplaySource(options.usdPath, runtime.scene());
+  PhysicsFabric physicsFabric;
 
   Engine engine;
   if(!options.pluginSearchRoot.empty())
@@ -107,13 +130,12 @@ void RunTraining(const CliOptions& options)
 
   for(int frameIndex = 0; frameIndex < options.frames; ++frameIndex)
   {
-    AnimationFrameUpdates poseUpdates;
-    if(animationSource && !animationSource->nextFrame(poseUpdates))
+    if(physicsFrameSource)
     {
-      std::cerr << "[robot_training_headless] Warning: USD animation ended before frame " << frameIndex
-                << "; reusing current scene transforms\n";
+      PublishNextPhysicsFrame(*physicsFrameSource, physicsFabric, frameIndex);
     }
-    if(runtime.applyPoseUpdates(engine, poseUpdates))
+    const TrainingFrameApplyResult applyResult = ApplyLatestFabricFrame(physicsFabric, runtime, engine);
+    if(applyResult.sensorOutputsDirty)
     {
       runtime.configureEngineOutputs(engine, options.exportLidar, options.exportHeightScan, mainCamera,
                                      options.previewLidarPoints, options.previewHeightScanPoints);

@@ -14,12 +14,20 @@ add_library(
   STATIC
     core/output_writers.cpp
     core/output_writers.h
+    core/physics_fabric.cpp
+    core/physics_fabric.h
+    core/physics_frame.cpp
+    core/physics_frame.h
     core/preview_camera.cpp
     core/preview_camera.h
+    core/training_frame_consumer.cpp
+    core/training_frame_consumer.h
     core/training_scene.cpp
     core/training_scene.h
     core/usd_animation_source.cpp
     core/usd_animation_source.h
+    core/usd_physics_replay_source.cpp
+    core/usd_physics_replay_source.h
     core/usd_light_reader.cpp
     core/usd_light_reader.h
     core/usd_material_reader.cpp
@@ -113,6 +121,20 @@ if(BUILD_TESTING)
   target_compile_features(headless_training_usd_animation_output_test PRIVATE cxx_std_20)
   target_link_libraries(headless_training_usd_animation_output_test PRIVATE ${HEADLESS_TRAINING_CORE})
   add_test(NAME headless_training_usd_animation_output_test COMMAND headless_training_usd_animation_output_test)
+
+  add_executable(headless_training_physics_fabric_test
+    tests/physics_fabric_test.cpp
+  )
+  target_compile_features(headless_training_physics_fabric_test PRIVATE cxx_std_20)
+  target_link_libraries(headless_training_physics_fabric_test PRIVATE ${HEADLESS_TRAINING_CORE})
+  add_test(NAME headless_training_physics_fabric_test COMMAND headless_training_physics_fabric_test)
+
+  add_executable(headless_training_training_frame_consumer_test
+    tests/training_frame_consumer_test.cpp
+  )
+  target_compile_features(headless_training_training_frame_consumer_test PRIVATE cxx_std_20)
+  target_link_libraries(headless_training_training_frame_consumer_test PRIVATE ${HEADLESS_TRAINING_CORE})
+  add_test(NAME headless_training_training_frame_consumer_test COMMAND headless_training_training_frame_consumer_test)
 
   add_executable(headless_training_cli_test
     tests/cli_test.cpp

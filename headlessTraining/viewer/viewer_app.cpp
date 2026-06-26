@@ -1,6 +1,7 @@
 #include "viewer_app.h"
 
 #include "preview_camera.h"
+#include "training_frame_consumer.h"
 #include "usd_scene_loader.h"
 #include "viewer_export.h"
 
@@ -195,7 +196,7 @@ void ViewerApp::initialize()
 
   m_runtime.emplace(std::move(scene));
   resetCameraControllerToSelectedCamera();
-  m_animationSource = LoadUsdAnimationSource(m_options.usdPath, m_runtime->scene());
+  m_physicsFrameSource = LoadUsdPhysicsReplaySource(m_options.usdPath, m_runtime->scene());
 
   createWindow();
   createVulkanContext();
@@ -879,7 +880,7 @@ void ViewerApp::drawReplayPanel()
   }
   if(ImGui::Button(m_state.replayPaused ? "Play" : "Pause"))
   {
-    if(m_animationSource == nullptr)
+    if(m_physicsFrameSource == nullptr)
     {
       m_statusLine = "USD file has no sampled animation";
     }
@@ -900,7 +901,7 @@ void ViewerApp::drawReplayPanel()
   ImGui::SameLine();
   if(ImGui::Button("Step"))
   {
-    if(m_animationSource == nullptr)
+    if(m_physicsFrameSource == nullptr)
     {
       m_statusLine = "USD file has no sampled animation";
     }
@@ -916,7 +917,7 @@ void ViewerApp::drawReplayPanel()
     resetReplay();
   }
   ImGui::Text("Applied frames: %llu", static_cast<unsigned long long>(m_state.frameIndex));
-  if(m_animationSource == nullptr)
+  if(m_physicsFrameSource == nullptr)
   {
     ImGui::TextUnformatted("No USD animation samples");
   }
@@ -1176,7 +1177,7 @@ void ViewerApp::resetReplayPlaybackClock()
 
 void ViewerApp::advanceReplayForPlayback()
 {
-  if(m_state.replayPaused || m_state.replayEnded || !m_animationSource)
+  if(m_state.replayPaused || m_state.replayEnded || !m_physicsFrameSource)
   {
     return;
   }
@@ -1197,19 +1198,27 @@ void ViewerApp::advanceReplayForPlayback()
 
 void ViewerApp::stepReplay()
 {
-  if(!m_animationSource || m_state.replayEnded)
+  if(!m_physicsFrameSource || m_state.replayEnded)
   {
     return;
   }
-  AnimationFrameUpdates updates;
-  if(!m_animationSource->nextFrame(updates))
+  PhysicsFrameSnapshot snapshot;
+  const PhysicsFrameStatus status = m_physicsFrameSource->nextFrame(snapshot);
+  if(status == PhysicsFrameStatus::EndOfStream)
   {
     m_state.replayEnded = true;
     m_state.replayPaused = true;
     m_statusLine = "USD animation ended";
     return;
   }
-  if(m_runtime->applyPoseUpdates(m_engine, updates))
+  if(status == PhysicsFrameStatus::NoSource)
+  {
+    m_statusLine = "USD file has no sampled animation";
+    return;
+  }
+  m_physicsFabric.publish(std::move(snapshot));
+  const TrainingFrameApplyResult applyResult = ApplyLatestFabricFrame(m_physicsFabric, *m_runtime, m_engine);
+  if(applyResult.sensorOutputsDirty)
   {
     m_outputConfigDirty = true;
   }
@@ -1219,13 +1228,14 @@ void ViewerApp::stepReplay()
 
 void ViewerApp::resetReplay()
 {
-  if(m_animationSource == nullptr)
+  if(m_physicsFrameSource == nullptr)
   {
     m_statusLine = "USD file has no sampled animation";
     return;
   }
 
-  m_animationSource->reset();
+  m_physicsFrameSource->reset();
+  m_physicsFabric.clear();
   m_state.replayEnded = false;
   m_state.replayPaused = true;
   m_nextReplayTick = {};
