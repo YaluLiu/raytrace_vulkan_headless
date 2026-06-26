@@ -54,7 +54,9 @@ call sites with `rg`.
   enables all current training outputs: preview PNG, all-sensor LiDAR and
   height-scan preview overlays, LiDAR CSV, height scan CSV, and manifest JSON.
   `train_viewer` configures/builds `robot_training_viewer` and opens the same
-  training scene through the ImGui playback/debug viewport.
+  training scene through the ImGui playback/debug viewport. `python` builds
+  `robot_raster_py` with the active Python interpreter and copies the extension
+  into that interpreter's platform site-packages directory.
 - `engine/CMakeLists.txt`: Engine renderer library sources, shader
   compilation, renderer compile definitions, and focused CTest targets such as
   `engine_height_scan_basis_test` and `engine_camera_projection_test`.

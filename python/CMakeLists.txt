@@ -34,3 +34,10 @@ target_include_directories(robot_raster_py
     ${PROJECT_SOURCE_DIR}/headlessTraining/core
 )
 target_link_libraries(robot_raster_py PRIVATE headlessTrainingCore)
+
+if(UNIX)
+  set_target_properties(robot_raster_py PROPERTIES
+    BUILD_RPATH "\$ORIGIN;$<TARGET_FILE_DIR:UsdRaySensor>"
+    INSTALL_RPATH "\$ORIGIN"
+  )
+endif()

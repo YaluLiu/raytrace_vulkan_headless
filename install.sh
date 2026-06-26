@@ -144,6 +144,52 @@ function train_viewer(){
     "${project_root}/build/headlessTraining/robot_training_viewer" "${viewer_args[@]}" "$@"
 }
 
+function python(){
+    set -e
+    tbb_dir="${TBB_DIR:-/usr/lib/x86_64-linux-gnu/cmake/TBB}"
+    project_root="$(pwd)"
+    python_exe="${PYTHON:-python3}"
+    python_exe="$("${python_exe}" -c "import sys; print(sys.executable)")"
+
+    "${python_exe}" -c "import pybind11" 2>/dev/null || \
+        "${python_exe}" -m pip install pybind11 || \
+        "${python_exe}" -m pip install --user --break-system-packages pybind11
+
+    mkdir -p build-python
+    cd build-python
+    cmake .. -Wno-dev \
+        -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -DROBOT_ENGINE_BUILD_PYTHON=ON \
+        -DPython3_EXECUTABLE="${python_exe}" \
+        -DTBB_DIR="${tbb_dir}"
+
+    cmake --build . --target robot_raster_py --config Release -j20
+    cd "${project_root}"
+
+    module_path="$(find "${project_root}/build-python/python" -maxdepth 1 -name "robot_raster_py*.so" -print -quit)"
+    if [ -z "${module_path}" ]; then
+        echo "[python] failed to find built robot_raster_py module"
+        exit 1
+    fi
+    site_dir="$("${python_exe}" - <<'PY'
+import os
+import site
+import sysconfig
+
+platlib = sysconfig.get_path("platlib")
+print(platlib if os.access(platlib, os.W_OK) else site.getusersitepackages())
+PY
+)"
+    mkdir -p "${site_dir}"
+    install -Dm755 "${module_path}" "${site_dir}/$(basename "${module_path}")"
+    install -Dm755 "${project_root}/build-python/UsdRaySensor/UsdRaySensor.so" "${site_dir}/UsdRaySensor.so"
+
+    echo "[python] installed $(basename "${module_path}") to ${site_dir}"
+    echo "[python] installed UsdRaySensor.so to ${site_dir}"
+    echo "[python] demo: ${python_exe} python/isaac_lab_height_scan_demo.py --usd <scene.usd>"
+}
+
 function show()
 {
     hydra_scene_path="${HYDRA_SCENE_PATH:-${DEFAULT_HYDRA_SCENE_PATH}}"
