@@ -76,6 +76,7 @@ public:
                               bool previewLidarPoints = false, bool previewHeightScanPoints = false) const;
   void applyPoseUpdates(Engine& engine, const std::vector<InstancePoseUpdate>& updates) const;
   bool applyPoseUpdates(Engine& engine, const AnimationFrameUpdates& updates);
+  void setHeightScanSensors(std::vector<HeightScanSensorSpec> sensors);
 
   const TrainingSceneDescription& scene() const { return m_scene; }
   const TrainingMeshInstance* findMesh(std::string_view name) const;

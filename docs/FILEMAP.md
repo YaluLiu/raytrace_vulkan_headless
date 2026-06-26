@@ -37,6 +37,11 @@ call sites with `rg`.
   transforms, submitting scene/sensor state through the public `Engine` API,
   writing training CSV/manifest/preview outputs, and running the ImGui-based
   `robot_training_viewer` debug viewport.
+- `python/`: Optional `ROBOT_ENGINE_BUILD_PYTHON=ON` pybind11 extension
+  exposing `robot_raster_py.HeightScanProvider` for Isaac Lab policy tests.
+  The provider loads a USD scene once through `headlessTrainingCore`, creates
+  synthetic per-env height-scan sensors from Python pose arrays, renders, and
+  returns world-frame hit points as a NumPy `float32` array.
 - `graphify-out/`: Generated knowledge graph and graph report.
 - `docs/`: Tracked human/agent navigation and design documents.
 
@@ -68,6 +73,10 @@ call sites with `rg`.
   `headless_training_usd_animation_output_test`,
   `headless_training_cli_test`, `headless_training_viewer_camera_controller_test`,
   and non-Vulkan executable startup test `headless_training_help_test`.
+- `python/CMakeLists.txt`: Optional Python extension build. It requires
+  Python3 development headers, NumPy, and pybind11, links `robot_raster_py`
+  against `headlessTrainingCore`, and is only configured when
+  `ROBOT_ENGINE_BUILD_PYTHON=ON`.
 - `build_windows.bat`: Windows route for building and installing the three USD
   plugin components into the configured USD plugin prefix.
 
@@ -175,8 +184,9 @@ call sites with `rg`.
   construction, optional independent main preview camera submission, renderer
   output config construction including optional all-sensor preview point-cloud
   overlays, animation pose application for mesh instances plus LiDAR and
-  height-scan sensor poses, and shared USD/Gf row-major matrix to engine
-  `glm::mat4` transform conversion.
+  height-scan sensor poses, synthetic height-scan sensor replacement for the
+  Python provider, and shared USD/Gf row-major matrix to engine `glm::mat4`
+  transform conversion.
 - `headlessTraining/core/usd_scene_loader.h` /
   `headlessTraining/core/usd_scene_loader.cpp`: Limited USD stage reader entry for
   active prim traversal, optional requested-camera path validation, and final
@@ -230,6 +240,22 @@ call sites with `rg`.
   range, and conform policy when the viewer orbit controller is reset.
 - `headlessTraining/tests/fixtures/smoke_scene.usda`: Minimal scene fixture for
   local `robot_training_headless` smoke runs.
+
+## Python Binding
+
+- `python/robot_raster_py.cpp`: pybind11 module registration for
+  `robot_raster_py`, intentionally limited to binding names and method
+  signatures.
+- `python/height_scan_provider.h` /
+  `python/height_scan_provider.cpp`: Isaac Lab-facing height scan adapter. It
+  owns an engine instance and a `TrainingSceneRuntime`, sets runtime
+  height-scan params from Python, maps each input pose row to a synthetic
+  `HeightScanSensorSpec`, calls `Engine::render()`, reads
+  `Engine::readHeightScanFrame()`, and returns `(num_envs, num_rays, 3)`
+  world-frame hit points.
+- `python/isaac_lab_height_scan_demo.py`: Standalone smoke test and Isaac
+  Lab integration sketch showing provider creation, height-scan parameter
+  mapping, `RayCaster` pose tensor extraction, and `ray_hits_w` replacement.
 
 ## Engine Runtime Facade
 

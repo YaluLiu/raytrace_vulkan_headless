@@ -36,6 +36,7 @@ add_library(
     core/usd_texture_registry.h
 )
 
+set_target_properties(${HEADLESS_TRAINING_CORE} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(${HEADLESS_TRAINING_CORE} PUBLIC cxx_std_20)
 
 target_include_directories(

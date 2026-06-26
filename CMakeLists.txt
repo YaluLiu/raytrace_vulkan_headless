@@ -4,6 +4,7 @@ project(vk_engine)
 include(CTest)
 
 option(ROBOT_ENGINE_SCHEMA_ONLY "Configure only the UsdRaySensor schema plugin." OFF)
+option(ROBOT_ENGINE_BUILD_PYTHON "Build Python bindings." OFF)
 
 if(ROBOT_ENGINE_SCHEMA_ONLY)
   add_subdirectory(UsdRaySensor)
@@ -57,6 +58,9 @@ add_subdirectory(UsdRaySensor)
 add_subdirectory(UsdRaySensorImaging)
 add_subdirectory(hdRobot)
 add_subdirectory(headlessTraining)
+if(ROBOT_ENGINE_BUILD_PYTHON)
+  add_subdirectory(python)
+endif()
 #--------------------------------------------------------------------------------------------------
 # Install - copying the media directory
 install(DIRECTORY "media" 

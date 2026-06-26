@@ -96,6 +96,12 @@ void TrainingSceneRuntime::applyPoseUpdates(Engine& engine, const std::vector<In
   }
 }
 
+void TrainingSceneRuntime::setHeightScanSensors(std::vector<HeightScanSensorSpec> sensors)
+{
+  m_scene.heightScanSensors = std::move(sensors);
+  rebuildIndex();
+}
+
 bool TrainingSceneRuntime::applyPoseUpdates(Engine& engine, const AnimationFrameUpdates& updates)
 {
   applyPoseUpdates(engine, updates.instancePoses);
