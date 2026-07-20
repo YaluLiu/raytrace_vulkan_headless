@@ -1,0 +1,23 @@
+# Keep the knowledge graph code-only and limited to the actively developed
+# engine, hdRobot, and headlessTraining source trees.
+UsdRaySensor/
+UsdRaySensorImaging/
+python/
+docs/
+media/
+output/
+graphify-out/
+build*/
+
+# graphify can classify documentation and images anywhere in the tree; those
+# file types are outside this project's code graph.
+*.md
+*.txt
+*.rst
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg

@@ -76,9 +76,16 @@ build_hydra/
 
 docs/*
 !docs/FILEMAP.md
+!docs/filemap/
+!docs/filemap/*.md
 docs/PLAN/
 
-# codegraph 
+# CodeGraph uses .gitignore as its exclusion configuration. These directories
+# remain tracked by Git, but only the actively developed code is indexed.
 .codegraph
+/UsdRaySensor/
+/UsdRaySensorImaging/
+/python/
+
 # graphify
 graphify-out/
