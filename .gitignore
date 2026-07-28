@@ -79,6 +79,9 @@ docs/*
 !docs/FILEMAP.md
 !docs/filemap/
 !docs/filemap/*.md
+!docs/plans/
+docs/plans/*
+!docs/plans/GPU_PHYSICS_FABRIC.md
 docs/PLAN/
 
 # CodeGraph uses .gitignore as its exclusion configuration. These directories
@@ -90,3 +93,6 @@ docs/PLAN/
 
 # graphify
 graphify-out/
+
+#prompt
+prompt.md
