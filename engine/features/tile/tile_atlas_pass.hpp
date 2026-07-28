@@ -2,6 +2,7 @@
 
 #include <engine/aov_texture.hpp>
 #include <engine/output_config.hpp>
+#include <engine/tile_depth_types.hpp>
 #include "features/tile/multiview_tile_pipeline.hpp"
 #include "features/tile/multiview_tile_targets.hpp"
 #include "features/tile/tile_aov_channel.hpp"
@@ -35,6 +36,7 @@ public:
               ViewUniforms& viewUniforms,
               const PreviewPipeline& previewPipeline);
   std::optional<ExportedAovTexture> getAovTexture(Aov aov) const;
+  TileDepthFrame readDepthFrame();
   void markConsumed(const std::string& outputDirectory = "output");
 
   bool isMultiviewSupported() const { return m_multiviewSupported; }
@@ -45,6 +47,9 @@ private:
   void logUnavailableOnce(const char* reason);
   TileAovChannelMask effectiveChannels() const;
 
+  VkDevice m_device{VK_NULL_HANDLE};
+  uint32_t m_graphicsQueueIndex{0};
+  nvvk::ResourceAllocatorDma* m_allocator{nullptr};
   TileAovChannelAtlas m_colorAtlas;
   TileAovChannelAtlas m_depthAtlas;
   MultiviewTileTargets m_multiviewTileTargets;
@@ -60,4 +65,6 @@ private:
   bool m_depthDirty{false};
   bool m_colorExportValid{false};
   bool m_depthExportValid{false};
+  uint64_t m_frameId{0};
+  uint32_t m_lastRenderedDepthCameraCount{0};
 };

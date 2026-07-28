@@ -117,6 +117,11 @@ HeightScanFrame OutputController::readHeightScanFrame()
   return m_heightScanPass.readHeightScanFrame();
 }
 
+TileDepthFrame OutputController::readTileDepthFrame()
+{
+  return m_tileAtlasPass.readDepthFrame();
+}
+
 void OutputController::markTileAovAtlasConsumed(const std::string& outputDirectory)
 {
   m_tileAtlasPass.markConsumed(outputDirectory);

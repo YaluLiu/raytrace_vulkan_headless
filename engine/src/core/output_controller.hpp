@@ -2,6 +2,7 @@
 
 #include <engine/aov_texture.hpp>
 #include <engine/output_config.hpp>
+#include <engine/tile_depth_types.hpp>
 #include "features/height_scan/height_scan_pass.hpp"
 #include "features/lidar/lidar_point_cloud_pass.hpp"
 #include "features/preview/preview_pipeline.hpp"
@@ -47,6 +48,7 @@ public:
   void applyConfig(RendererOutputConfig config);
   LidarFramePointCloud readLidarPointCloudFrame();
   HeightScanFrame readHeightScanFrame();
+  TileDepthFrame readTileDepthFrame();
   TileAtlasConfig getTileConfig() const { return m_tileAtlasPass.getConfig(); }
   void markTileAovAtlasConsumed(const std::string& outputDirectory = "output");
   bool isTileMultiviewSupported() const { return m_tileAtlasPass.isMultiviewSupported(); }

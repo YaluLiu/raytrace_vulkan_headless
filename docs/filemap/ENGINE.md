@@ -14,6 +14,7 @@ loading another domain map.
 | `engine/include/engine/texture_asset.hpp` | Encoded texture payload, usage, and color-space contract. |
 | `engine/include/engine/aov_texture.hpp` | Exported engine AOV enum and Vulkan texture descriptor. |
 | `engine/include/engine/tile_config.hpp` | Tile atlas dimensions, channels, and normalization. |
+| `engine/include/engine/tile_depth_types.hpp` | Camera-major normalized tile-depth CPU readback contract. |
 | `engine/include/engine/lidar_types.hpp` | LiDAR sensor, visualization, sample, and readback types. |
 | `engine/include/engine/height_scan_types.hpp` | Height-scan sensor, grid, sample, and readback types. |
 
@@ -52,7 +53,7 @@ height-scan generation/overlay, and requested readback/export work.
 | Feature | First files |
 | --- | --- |
 | Preview AOVs | `engine/features/preview/preview_pipeline.*` |
-| Tile atlas | `engine/features/tile/tile_atlas_pass.*`, `tile_aov_channel.*` |
+| Tile atlas and depth readback | `engine/features/tile/tile_atlas_pass.*`, `tile_aov_channel.*` |
 | Tile multiview | `engine/features/tile/multiview_tile_targets.*`, `multiview_tile_pipeline.*` |
 | LiDAR CPU layout | `engine/features/lidar/lidar_scan.*` |
 | LiDAR GPU generation/readback | `lidar_point_cloud_pass.*`, `lidar_point_generation_pipeline.*` |
@@ -78,6 +79,7 @@ height-scan generation/overlay, and requested readback/export work.
 
 - `engine/tests/camera_projection_test.cpp`
 - `engine/tests/height_scan_basis_test.cpp`
+- `engine/tests/tile_depth_types_test.cpp`
 
 ## Question Routes
 
@@ -86,7 +88,7 @@ height-scan generation/overlay, and requested readback/export work.
 | Setup/teardown | `engine_session.cpp`, `render_resource_lifecycle.cpp` | `setup`, `createRenderResources`, `destroyResourcesInShutdownOrder` |
 | Resize | `engine_facade.cpp`, `preview_pipeline.cpp` | `onResize`, `resizeRenderTargets`, `recreateAovTargets` |
 | Frame order | `frame_executor.cpp`, `output_controller.cpp` | `recordFramePasses`, `recordPreviewAovs`, `recordTileAtlas` |
-| AOV access | `aov_texture.hpp`, `output_controller.cpp` | `GetAovTexture`, `getAovTexture` |
+| AOV access/readback | `aov_texture.hpp`, `tile_depth_types.hpp`, `output_controller.cpp` | `GetAovTexture`, `readTileDepthFrame` |
 | Camera projection | `camera_projection.cpp`, `view_uniforms.cpp` | `BuildCameraProjection`, `setMainCamera`, `setCameras` |
 | Mesh upload/update | `engine_scene.cpp`, `gpu_scene.cpp`, `mesh_store.cpp` | `uploadMesh`, `updateMeshGeometry`, `updateMaterialsAtRuntime` |
 | TLAS/trace masks | `rt_scene.cpp` | `markTlasDirty`, `flush`, `kTraceMaskGround` |

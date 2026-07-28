@@ -58,6 +58,12 @@ they still share one multiview graphics pass and do not repeat geometry
 draws. Tile output does not save tile color or tile depth files locally; Hydra
 consumes the atlas through tile AOV render buffers.
 
+CPU callers can use `Engine::readTileDepthFrame()` after `render()` to read
+only the rendered camera tiles as tightly packed, top-left-origin
+`[camera][y][x]` floats. This contract preserves the shader's Vulkan
+zero-to-one perspective depth; callers that need linear view-axis depth must
+convert it using each camera's clip range.
+
 The atlas size is controlled only by tile configuration:
 `tilePixelWidth * gridColumns` by `tilePixelHeight * gridRows`. Hydra render
 setting tokens keep the existing `hdRobot:tile:cameraWidth` and
@@ -99,6 +105,10 @@ in `hdRobot/`; engine components should remain free of OpenUSD Hydra types.
 - `Aov::InstanceId`
 - `Aov::TileColor`
 - `Aov::TileDepth`
+
+`Engine::readTileDepthFrame()` is the typed CPU readback counterpart for
+`Aov::TileDepth`; unlike `GetAovTexture()`, it returns camera-major host data
+and omits unused atlas cells.
 
 Hydra consumes these handles through `hdRobot/hydraAovCopy.cpp` and
 `hdRobot/glInteropCache.cpp`. Fixed tile AOVs use exact atlas-sized render

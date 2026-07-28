@@ -134,6 +134,12 @@ HeightScanFrame Engine::readHeightScanFrame()
   return impl.outputController.readHeightScanFrame();
 }
 
+TileDepthFrame Engine::readTileDepthFrame()
+{
+  auto& impl = engine::EngineImplAccess::impl(*this);
+  return impl.outputController.readTileDepthFrame();
+}
+
 void Engine::setMainCameraClipRange(float clipStart, float clipEnd)
 {
   auto& impl = engine::EngineImplAccess::impl(*this);

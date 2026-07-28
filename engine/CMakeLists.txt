@@ -41,6 +41,7 @@ set(ENGINE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/shaders/host_device.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/texture_asset.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/tile_config.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/engine/tile_depth_types.hpp
 )
 
 set(ENGINE_PRIVATE_HEADERS
@@ -223,6 +224,16 @@ if(BUILD_TESTING)
       ${CMAKE_CURRENT_SOURCE_DIR}
   )
   add_test(NAME engine_camera_projection_test COMMAND engine_camera_projection_test)
+
+  add_executable(engine_tile_depth_types_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tile_depth_types_test.cpp
+  )
+  target_include_directories(engine_tile_depth_types_test
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  target_compile_features(engine_tile_depth_types_test PRIVATE cxx_std_20)
+  add_test(NAME engine_tile_depth_types_test COMMAND engine_tile_depth_types_test)
 endif()
 
 

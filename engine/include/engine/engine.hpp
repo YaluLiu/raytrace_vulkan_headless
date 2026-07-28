@@ -4,6 +4,7 @@
 #include <engine/mesh_types.hpp>
 #include <engine/output_config.hpp>
 #include <engine/renderer_types.hpp>
+#include <engine/tile_depth_types.hpp>
 #include <engine/texture_asset.hpp>
 
 #include <memory>
@@ -86,6 +87,7 @@ public:
   bool isTileMultiviewSupported() const;
   uint32_t getTileMultiviewMaxViewCount() const;
   std::optional<ExportedAovTexture> GetAovTexture(Aov aov) const;
+  TileDepthFrame readTileDepthFrame();
   LidarFramePointCloud readLidarPointCloudFrame();
   HeightScanFrame readHeightScanFrame();
 
