@@ -34,7 +34,8 @@ TrainingSceneDescription LoadUsdTrainingScene(const std::filesystem::path& usdPa
   TrainingSceneDescription result;
   TextureRegistry textureRegistry(stage);
   const bool cameraPathRequested = !options.cameraPath.empty();
-  const PXR_NS::SdfPath requestedCameraPath(options.cameraPath);
+  const PXR_NS::SdfPath requestedCameraPath =
+      cameraPathRequested ? PXR_NS::SdfPath(options.cameraPath) : PXR_NS::SdfPath();
   bool requestedCameraFound = false;
 
   for(const PXR_NS::UsdPrim& prim : stage->Traverse())

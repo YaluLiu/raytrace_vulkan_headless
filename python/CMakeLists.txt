@@ -23,6 +23,8 @@ endif()
 
 pybind11_add_module(robot_raster_py
   robot_raster_py.cpp
+  depth_camera_provider.cpp
+  depth_camera_provider.h
   height_scan_provider.cpp
   height_scan_provider.h
 )

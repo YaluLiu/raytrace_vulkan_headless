@@ -61,6 +61,32 @@ USD scene path supported by your local USD installation:
 HYDRA_SCENE_PATH=/path/to/scene.usda bash install.sh hydra
 ```
 
+## Python batched depth cameras
+
+Build and install the optional pybind11 module:
+
+```bash
+bash install.sh python
+```
+
+The provider loads the USD scene once, creates `n` cameras from an authored
+USD camera template, accepts batched world poses, and returns a C-contiguous
+`float32` array shaped `[n, h, w]`:
+
+```python
+import numpy as np
+import robot_raster_py as rr
+
+provider = rr.DepthCameraProvider("scene.usda", camera_count=2, width=64, height=48)
+positions = np.array([[0, 1, 3], [1, 1, 3]], dtype=np.float32)
+quaternions_wxyz = np.array([[1, 0, 0, 0], [1, 0, 0, 0]], dtype=np.float32)
+depth = provider.compute_from_camera_poses(positions, quaternions_wxyz)
+```
+
+Camera-local `-Z` is forward and `+Y` is up. By default depth is linear
+view-axis depth in USD scene units; pass `linearize=False` for Vulkan
+normalized depth in `[0, 1]`. Output rows use a top-left image origin.
+
 ## Visual Regression (AI Self-check)
 
 The old `baseline` and `selfcheck` helpers have been removed from

@@ -187,7 +187,8 @@ PY
 
     echo "[python] installed $(basename "${module_path}") to ${site_dir}"
     echo "[python] installed UsdRaySensor.so to ${site_dir}"
-    echo "[python] demo: ${python_exe} python/isaac_lab_height_scan_demo.py --usd <scene.usd>"
+    echo "[python] depth demo: ${python_exe} python/depth_camera_demo.py --usd <scene.usd>"
+    echo "[python] height-scan demo: ${python_exe} python/isaac_lab_height_scan_demo.py --usd <scene.usd>"
 }
 
 function show()

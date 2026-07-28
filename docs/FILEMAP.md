@@ -53,5 +53,5 @@ the source and call path, skip this file and inspect that source directly.
 | USD scene/material/sensor ingestion | Headless | `usd_scene_loader.cpp` and the focused `usd_*_reader.cpp` |
 | Physics replay or frame handoff | Headless | `PhysicsFrameSource`, `PhysicsFabric`, `ApplyLatestFabricFrame` |
 | USD schema or imaging adapter behavior | Stable integrations | `schema.usda`, generated schema APIs, imaging adapters |
-| Python/Isaac Lab binding | Stable integrations + Headless | `HeightScanProvider`, `TrainingSceneRuntime` |
+| Python/Isaac Lab binding | Stable integrations + Headless | `DepthCameraProvider`, `HeightScanProvider`, `TrainingSceneRuntime` |
 | Build or install failure | Relevant map | Root and target `CMakeLists.txt`, `install.sh`, failing output |

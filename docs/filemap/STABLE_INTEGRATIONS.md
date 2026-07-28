@@ -36,7 +36,9 @@ The adapters bridge schema prims into the sensor sprims implemented by
 | Files | Responsibility |
 | --- | --- |
 | `python/robot_raster_py.cpp` | pybind11 module and public Python signatures. |
+| `python/depth_camera_provider.*` | Creates a fixed camera batch from a USD camera template, updates batched poses, and returns NumPy `[n,h,w]` depth. |
 | `python/height_scan_provider.*` | Loads a training scene, maps environment poses to synthetic sensors, renders, and returns NumPy hit points. |
+| `python/depth_camera_demo.py` | Standalone multi-camera depth smoke example. |
 | `python/isaac_lab_height_scan_demo.py` | Smoke test and Isaac Lab integration sketch. |
 | `python/CMakeLists.txt` | Optional `ROBOT_ENGINE_BUILD_PYTHON=ON` extension target. |
 
@@ -50,3 +52,4 @@ unless the integration becomes permanent.
 - `build_windows.bat`: build/install schema, imaging, and Hydra delegate
   components on Windows.
 - `bash install.sh python`: build and install the optional Python extension.
+- `python3 python/depth_camera_demo.py --usd <scene.usd>`: render a NumPy depth batch after installation.

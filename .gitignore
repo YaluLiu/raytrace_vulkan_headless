@@ -47,6 +47,7 @@ log_*.txt
 # config and build
 **/spv/*.spv
 build/
+build-python/
 build_demo/
 /build/*
 /out/build/x64-Debug

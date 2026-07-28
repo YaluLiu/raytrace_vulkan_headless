@@ -57,6 +57,32 @@ bash install.sh hydra
 HYDRA_SCENE_PATH=/path/to/scene.usda bash install.sh hydra
 ```
 
+## Python 批量深度相机
+
+构建并安装可选的 pybind11 模块：
+
+```bash
+bash install.sh python
+```
+
+`DepthCameraProvider` 只加载一次 USD 场景，根据 USD 中的相机模板创建
+`n` 个相机，接收批量世界位姿，并返回 C-contiguous、`float32`、形状为
+`[n, h, w]` 的 NumPy 深度图：
+
+```python
+import numpy as np
+import robot_raster_py as rr
+
+provider = rr.DepthCameraProvider("scene.usda", camera_count=2, width=64, height=48)
+positions = np.array([[0, 1, 3], [1, 1, 3]], dtype=np.float32)
+quaternions_wxyz = np.array([[1, 0, 0, 0], [1, 0, 0, 0]], dtype=np.float32)
+depth = provider.compute_from_camera_poses(positions, quaternions_wxyz)
+```
+
+相机局部坐标约定为 `-Z` 向前、`+Y` 向上。默认输出 USD 场景单位下的
+相机前向轴线性深度；传入 `linearize=False` 可获取 `[0, 1]` Vulkan
+归一化深度。输出采用左上角为原点的图像行顺序。
+
 ## 视觉回归（AI 自验收）
 
 旧的 `baseline` 和 `selfcheck` helper 已从 `install.sh` 移除。现在可以使用
