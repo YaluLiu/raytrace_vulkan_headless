@@ -7,20 +7,6 @@
 - Stable `UsdRaySensor/` and `UsdRaySensorImaging/` code and temporary
   `python/` code are excluded from both indexes.
 
-## Graphify
-
-Use Graphify for architecture, cross-module relationships, and dependency-path
-questions. Skip it for localized file or symbol work.
-
-- Read `graphify-out/GRAPH_SUMMARY.md` as the default graph entry point.
-- Do not read `graphify-out/GRAPH_REPORT.md` in full by default. Search it by
-  task term or community ID and read only matching sections when deeper graph
-  context is needed.
-- Never load `graphify-out/graph.json` wholesale. Use bounded, task-specific
-  traversal for relationship or path questions.
-- After modifying indexed code, run `bash install.sh graphify_index` to rebuild
-  the graph and its compact summary.
-
 ## FileMap
 
 Use FileMap only when the task's owning domain or first source entry point is
@@ -35,3 +21,16 @@ FileMap.
   against current source.
 - Keep `docs/FILEMAP.md` and the affected domain map current when adding,
   moving, or substantially changing modules.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
